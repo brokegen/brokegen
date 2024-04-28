@@ -8,7 +8,7 @@ version = '0.1'
 license = {text = '0BSD'}
 dependencies = [
     'fastapi',
-    'httpx',
+    'httpx[http2]',
     'hypercorn',
     'importlib-metadata; python_version>="3.12"'
 ]

@@ -8,6 +8,7 @@ from starlette.responses import StreamingResponse
 
 client = httpx.AsyncClient(
     base_url="http://localhost:11434",
+    http2=True,
     proxy=None,
     timeout=None,
     max_redirects=0,
