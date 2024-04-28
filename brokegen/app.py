@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request
 from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
 
-client = httpx.AsyncClient(
+_real_ollama_client = httpx.AsyncClient(
     base_url="http://localhost:11434",
     http2=True,
     proxy=None,
@@ -32,15 +32,16 @@ async def lifespan(app: FastAPI):
 
         https://github.com/tiangolo/fastapi/issues/1788#issuecomment-1320916419
         """
-        logger.debug(f"/ollama-proxy: {request.url.path}")
+        urlpath_noprefix = request.url.path.removeprefix("/ollama-proxy")
+        logger.debug(f"/ollama-proxy: {request.method} {urlpath_noprefix}")
 
-        url = httpx.URL(path=request.url.path.removeprefix("/ollama-proxy"),
+        url = httpx.URL(path=urlpath_noprefix,
                         query=request.url.query.encode("utf-8"))
-        rp_req = client.build_request(request.method,
-                                      url,
-                                      headers=request.headers.raw,
-                                      content=request.stream())
-        rp_resp = await client.send(rp_req, stream=True)
+        rp_req = _real_ollama_client.build_request(request.method,
+                                                   url,
+                                                   headers=request.headers.raw,
+                                                   content=request.stream())
+        rp_resp = await _real_ollama_client.send(rp_req, stream=True)
         return StreamingResponse(
             rp_resp.aiter_raw(),
             status_code=rp_resp.status_code,
