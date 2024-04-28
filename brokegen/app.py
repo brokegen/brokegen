@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 import httpx
@@ -5,11 +6,22 @@ from fastapi import FastAPI, Request
 from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
 
-client = httpx.AsyncClient(base_url="http://localhost:11434")
+client = httpx.AsyncClient(
+    base_url="http://localhost:11434",
+    proxy=None,
+    timeout=None,
+    max_redirects=0,
+    follow_redirects=False,
+)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logging.getLogger('hypercorn.error').disabled = True
+    logging.basicConfig()
+
     async def do_proxy(
             request: Request,
     ):
@@ -18,6 +30,8 @@ async def lifespan(app: FastAPI):
 
         https://github.com/tiangolo/fastapi/issues/1788#issuecomment-1320916419
         """
+        logger.debug(f"/ollama-proxy: {request.url.path}")
+
         url = httpx.URL(path=request.url.path.removeprefix("/ollama-proxy"),
                         query=request.url.query.encode("utf-8"))
         rp_req = client.build_request(request.method,
