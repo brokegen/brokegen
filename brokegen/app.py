@@ -66,4 +66,7 @@ if __name__ == "__main__":
     import asyncio
     from hypercorn.asyncio import serve
 
-    asyncio.run(serve(app, config))
+    try:
+        asyncio.run(serve(app, config))
+    except OSError as e:
+        logger.error(e)
