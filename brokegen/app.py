@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
             background=BackgroundTask(rp_resp.aclose),
         )
 
-    app.add_route("/ollama-proxy/{path:path}", do_proxy, ['GET', 'POST'])
+    app.add_route("/ollama-proxy/{path:path}", do_proxy, ['GET', 'POST', 'HEAD'])
 
     yield
 
