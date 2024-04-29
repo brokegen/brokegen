@@ -9,6 +9,30 @@ serve: $(activate_script)
   	--workers 8 \
   	brokegen.app:app
 
+.PHONY: serve-standalone
+serve-standalone: pyinstaller-dist/brokegen-debug-arm64
+	"./pyinstaller-dist/brokegen-debug-arm64/brokegen-debug-arm64"
+
+pyinstaller-dist/brokegen-debug-arm64: brokegen/app.py
+	source $(activate_script) \
+		&& pyinstaller \
+			--target-architecture arm64 \
+			--specpath $(dir $@) \
+			--noupx --windowed --debug=all \
+			--noconfirm \
+			--distpath $(dir $@) --name $(notdir $@) \
+			$<
+
+pyinstaller-dist/brokegen-release-arm64: brokegen/app.py
+	source $(activate_script) \
+		&& pyinstaller \
+			--target-architecture arm64 \
+			--specpath $(dir $@) \
+			--noupx --windowed \
+			--noconfirm \
+			--onefile --distpath $(dir $@) --name $(notdir $@) \
+			$<
+
 .PHONY: wheel
 wheel:
 	@:

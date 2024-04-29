@@ -1,5 +1,6 @@
 import logging
 from contextlib import asynccontextmanager
+from typing import Any
 
 import httpx
 from fastapi import FastAPI, Request
@@ -53,3 +54,15 @@ async def lifespan(app: FastAPI):
 
 
 app: FastAPI = FastAPI(lifespan=lifespan)
+
+
+if __name__ == "__main__":
+    from hypercorn.config import Config
+    config = Config()
+    config.bind = ['0.0.0.0:9749']
+    config.loglevel = 'debug'
+
+    import asyncio
+    from hypercorn.asyncio import serve
+
+    asyncio.run(serve(app, config))
