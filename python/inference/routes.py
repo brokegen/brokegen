@@ -2,11 +2,11 @@ import logging
 from datetime import timezone, datetime
 
 import httpx
-from fastapi import Depends, FastAPI, Request
+from fastapi import APIRouter, Depends, FastAPI, Request
 from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
 
-from access.ratelimits import RatelimitsDB, ApiAccess, ApiAccessWithResponse
+from access.ratelimits import RatelimitsDB, ApiAccessWithResponse
 from access.ratelimits import get_db as get_ratelimits_db
 
 _real_ollama_client = httpx.AsyncClient(
@@ -25,7 +25,7 @@ logger.setLevel(logging.DEBUG)
 def install_proxy_routes(app: FastAPI):
     async def do_proxy(
             request: Request,
-            ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
+            ratelimits_db: RatelimitsDB,
     ):
         """
         Implements a simple reverse proxy, as stream-y as possible
@@ -47,8 +47,19 @@ def install_proxy_routes(app: FastAPI):
             api_bucket=__name__,
             accessed_at=datetime.now(tz=timezone.utc),
             api_endpoint=urlpath_noprefix,
-            request=rp_req,
-            response=rp_resp,
+            request={
+                'method': rp_req.method,
+                'url': str(rp_req.url),
+                'headers': rp_req.headers.multi_items(),
+                # TODO: This is probably safe to read at this point, since we already packaged everything
+                'content': "[skipped + not implemented]",
+            },
+            response={
+                'status_code': rp_resp.status_code,
+                'headers': rp_resp.headers.multi_items(),
+                # Not making a copy of the content, because we should really fork it and not block the StreamingResponse
+                'content': "[skipped + not implemented]",
+            },
         )
         ratelimits_db.add(new_access)
         ratelimits_db.commit()
@@ -60,4 +71,16 @@ def install_proxy_routes(app: FastAPI):
             background=BackgroundTask(rp_resp.aclose),
         )
 
-    app.add_route("/ollama-proxy/{path:path}", do_proxy, ['GET', 'POST', 'HEAD'])
+    ollama_forwarder = APIRouter()
+
+    # TODO: Either OpenAPI or FastAPI doesn't parse these `{path:path}` directives correctly
+    @ollama_forwarder.post("/ollama-proxy/{path:path}")
+    @ollama_forwarder.get("/ollama-proxy/{path:path}")
+    @ollama_forwarder.head("/ollama-proxy/{path:path}")
+    async def do_proxy_get(
+            request: Request,
+            ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
+    ):
+        return await do_proxy(request, ratelimits_db)
+
+    app.include_router(ollama_forwarder)
