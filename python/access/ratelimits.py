@@ -4,6 +4,7 @@ For potential debugging and caching purposes, offer infrastructure for every net
 Ideally, we would use something like `structlog` or `logging.handlers.HTTPHandler` to send logs elsewhere,
 but this will work for the small scale we have (one user, no automation of LLM requests).
 """
+
 try:
     import orjson as json
 except ImportError:
@@ -71,18 +72,24 @@ class RequestInterceptor:
         self.ratelimits_db = ratelimits_db
         self.new_access: ApiAccessWithResponse | None = None
 
-        self.request_content: bytearray = bytearray()
+        self.request_content: list[bytes] = []
 
-        self.response_content_bytes: bytearray = bytearray()
+        self.response_content_bytes: list[bytes] = []
         self.response_content: list = []
 
     async def wrap_request_content(self, request_content_stream: AsyncIterator[bytes]):
         async for chunk in request_content_stream:
             if len(chunk) > 0:
+                # TODO: Save up the list of messages, if we really need to.
                 self.logger.debug(f"Intercepting request chunk: {len(chunk)=} bytes")
 
             yield chunk
-            self.request_content.extend(chunk)
+            self.request_content.append(chunk)
+
+        # Try decoding the entire contents if there's not that much.
+        # NB This will break on gzip/brotli/etc encoding.
+        if len(self.request_content) == 1 and len(self.request_content[0]) < 80:
+            self.logger.debug(f"Intercepted request chunk: {self.request_content[0].decode('utf-8')}")
 
     async def consolidate_response_content(self, response: httpx.Response):
         """
@@ -93,10 +100,11 @@ class RequestInterceptor:
     async def wrap_response_content(
             self,
             response: httpx.Response,
+            print_all_response_data: bool = False,
             disable_json_decode: bool = False,
     ):
         async for line in response.aiter_lines():
-            if len(line) > 0:
+            if print_all_response_data and len(line) > 0:
                 self.logger.debug(f"Intercepting response line: {line[:120]}")
 
             yield line
@@ -117,7 +125,7 @@ class RequestInterceptor:
                 self.logger.debug(f"Intercepting encoded response chunk: {len(chunk)=} bytes")
 
             yield chunk
-            self.response_content_bytes.extend(chunk)
+            self.response_content_bytes.append(chunk)
 
         # Wait for the entire response to be forwarded before erroring out
         raise NotImplementedError()
@@ -159,6 +167,10 @@ class RequestInterceptor:
 
         consolidated_response = None
         for next_response in self.response_content:
+            if type(next_response) is not dict:
+                self.logger.info(f"Cannot decode stored responses as JSON, skipping")
+                return
+
             if consolidated_response is None:
                 # We have to do a dict copy because the old ones uhh disappear, for some reason.
                 consolidated_response = dict(next_response)
@@ -210,15 +222,17 @@ class RequestInterceptor:
         merged_access = self.ratelimits_db.merge(self.new_access)
 
         if self.request_content:
+            merged_request_bytes = bytearray(b''.join(self.request_content))
             if decode_request_as_json:
-                merged_access.request['content'] = json.loads(self.request_content)
+                merged_access.request['content'] = json.loads(merged_request_bytes)
             else:
-                merged_access.request['content'] = self.request_content.decode('utf-8')
+                merged_access.request['content'] = merged_request_bytes.decode('utf-8')
         else:
             del merged_access.request['content']
 
         if self.response_content_bytes:
-            merged_access.response['content'] = self.response_content_bytes.decode('utf-8')
+            merged_response_bytes = bytearray(b''.join(self.response_content_bytes))
+            merged_access.response['content'] = merged_response_bytes.decode('utf-8')
         elif self.response_content:
             merged_access.response['content'] = self.response_content
         else:

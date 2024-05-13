@@ -1,11 +1,12 @@
 import logging
+from datetime import datetime, timezone
 
 import httpx
 from fastapi import APIRouter, Depends, FastAPI, Request
 from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
 
-from access.ratelimits import RatelimitsDB, RequestInterceptor
+from access.ratelimits import RatelimitsDB, RequestInterceptor, ApiAccessWithResponse
 from access.ratelimits import get_db as get_ratelimits_db
 
 _real_ollama_client = httpx.AsyncClient(
@@ -21,24 +22,45 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-async def forward_request_nolog(request: Request):
+async def forward_request_nodetails(
+        request: Request,
+        ratelimits_db: RatelimitsDB,
+):
     """
     Implements a simple proxy, as stream-y as possible
 
     https://github.com/tiangolo/fastapi/issues/1788#issuecomment-1320916419
     """
     urlpath_noprefix = request.url.path.removeprefix("/ollama-proxy")
-    logger.debug(f"/ollama-proxy: {request.method} {urlpath_noprefix}")
+    logger.debug(f"/ollama-proxy: start nolog handler for {request.method} {urlpath_noprefix}")
 
     url = httpx.URL(path=urlpath_noprefix,
                     query=request.url.query.encode("utf-8"))
-    rp_req = _real_ollama_client.build_request(
+    upstream_request = _real_ollama_client.build_request(
         request.method,
         url,
         headers=request.headers.raw,
         content=request.stream(),
     )
-    upstream_response = await _real_ollama_client.send(rp_req, stream=True)
+
+    upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
+    new_access = ApiAccessWithResponse(
+        api_bucket=f"ollama:{urlpath_noprefix}",
+        accessed_at=datetime.now(tz=timezone.utc),
+        api_endpoint=str(upstream_response.request.url),
+        request={
+            'method': upstream_response.request.method,
+            'url': str(upstream_response.request.url),
+            'headers': upstream_response.request.headers.multi_items().sort(),
+        },
+        response={
+            'status_code': upstream_response.status_code,
+            'headers': upstream_response.headers.multi_items().sort(),
+        },
+    )
+    ratelimits_db.add(new_access)
+    ratelimits_db.commit()
+
     return StreamingResponse(
         upstream_response.aiter_raw(),
         status_code=upstream_response.status_code,
@@ -54,7 +76,7 @@ async def forward_request(
     intercept = RequestInterceptor(logger, ratelimits_db)
 
     urlpath_noprefix = request.url.path.removeprefix("/ollama-proxy")
-    logger.debug(f"/ollama-proxy: {request.method} {urlpath_noprefix}")
+    logger.debug(f"/ollama-proxy: start handler for {request.method} {urlpath_noprefix}")
 
     url = httpx.URL(path=urlpath_noprefix,
                     query=request.url.query.encode("utf-8"))
@@ -66,7 +88,7 @@ async def forward_request(
     )
 
     upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
-    intercept.generate_api_access(upstream_response, api_bucket="Ollama")
+    intercept.generate_api_access(upstream_response, api_bucket=f"ollama:{urlpath_noprefix}")
 
     async def post_forward_cleanup():
         await upstream_response.aclose()
@@ -86,20 +108,20 @@ async def forward_request(
 def install_proxy_routes(app: FastAPI):
     ollama_forwarder = APIRouter()
 
-    @ollama_forwarder.head("/ollama-proxy/{path:path}")
-    async def do_proxy_head(request: Request):
-        """
-        Don't bother logging HEAD requests, since they aren't _supposed_ to encode anything
-        """
-        return await forward_request_nolog(request)
-
     # TODO: Either OpenAPI or FastAPI doesn't parse these `{path:path}` directives correctly
-    @ollama_forwarder.post("/ollama-proxy/{path:path}")
     @ollama_forwarder.get("/ollama-proxy/{path:path}")
+    @ollama_forwarder.head("/ollama-proxy/{path:path}")
+    @ollama_forwarder.post("/ollama-proxy/{path:path}")
     async def do_proxy_get_post(
             request: Request,
             ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
     ):
+        if (
+                request.method == 'HEAD'
+                or request.url.path == "/ollama-proxy/api/show"
+        ):
+            return await forward_request_nodetails(request, ratelimits_db)
+
         return await forward_request(request, ratelimits_db)
 
     app.include_router(ollama_forwarder)

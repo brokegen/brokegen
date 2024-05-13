@@ -4,6 +4,7 @@ if __name__ == '__main__':
     # https://github.com/encode/uvicorn/issues/939
     # https://pyinstaller.org/en/latest/common-issues-and-pitfalls.html
     import multiprocessing
+
     multiprocessing.freeze_support()
 
 import logging
@@ -38,10 +39,14 @@ async def lifespan_logging(app: FastAPI):
         LOGFORMAT = "  %(log_color)s%(levelname)-8s%(reset)s | %(log_color)s%(message)s%(reset)s"
         formatter = ColoredFormatter(LOGFORMAT)
 
-        stream = logging.StreamHandler()
-        stream.setLevel(logging.DEBUG)
-        stream.setFormatter(formatter)
-        root_logger.addHandler(stream)
+        colorlog_stdout = logging.StreamHandler()
+        colorlog_stdout.setLevel(logging.DEBUG)
+        colorlog_stdout.setFormatter(formatter)
+        root_logger.addHandler(colorlog_stdout)
+
+        # https://github.com/tiangolo/fastapi/discussions/7457
+        # Convert uvicorn logging to this format also
+        logging.getLogger("uvicorn.access").handlers = [colorlog_stdout]
 
     except ImportError:
         logging.basicConfig()
@@ -67,8 +72,8 @@ async def lifespan_generic(app: FastAPI):
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content=jsonable_encoder({
-                "detail"    : exc.errors(),  # optionally include the errors
-                "body"      : exc.body,
+                "detail": exc.errors(),  # optionally include the errors
+                "body": exc.body,
                 "custom msg": {"Your error message"}}),
         )
 
