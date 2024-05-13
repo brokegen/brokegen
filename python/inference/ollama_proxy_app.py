@@ -1,72 +1,94 @@
+# https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
+from inference.routes import install_proxy_routes
+
+if __name__ == '__main__':
+    # Doubly needed when working with uvicorn, probably
+    # https://github.com/encode/uvicorn/issues/939
+    # https://pyinstaller.org/en/latest/common-issues-and-pitfalls.html
+    import multiprocessing
+
+    multiprocessing.freeze_support()
+
 import logging
 from contextlib import asynccontextmanager
-from typing import Any
 
-import httpx
-from fastapi import FastAPI, Request
-from starlette.background import BackgroundTask
-from starlette.responses import StreamingResponse
-
-_real_ollama_client = httpx.AsyncClient(
-    base_url="http://localhost:11434",
-    http2=True,
-    proxy=None,
-    timeout=None,
-    max_redirects=0,
-    follow_redirects=False,
-)
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+from fastapi import FastAPI
+from fastapi.encoders import jsonable_encoder
+from starlette import status
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    logging.getLogger('hypercorn.error').disabled = True
-    logging.basicConfig()
-
-    async def do_proxy(
-            request: Request,
-    ):
-        """
-        Implements a simple reverse proxy, as stream-y as possible
-
-        https://github.com/tiangolo/fastapi/issues/1788#issuecomment-1320916419
-        """
-        urlpath_noprefix = request.url.path.removeprefix("/ollama-proxy")
-        logger.debug(f"/ollama-proxy: {request.method} {urlpath_noprefix}")
-
-        url = httpx.URL(path=urlpath_noprefix,
-                        query=request.url.query.encode("utf-8"))
-        rp_req = _real_ollama_client.build_request(request.method,
-                                                   url,
-                                                   headers=request.headers.raw,
-                                                   content=request.stream())
-        rp_resp = await _real_ollama_client.send(rp_req, stream=True)
-        return StreamingResponse(
-            rp_resp.aiter_raw(),
-            status_code=rp_resp.status_code,
-            headers=rp_resp.headers,
-            background=BackgroundTask(rp_resp.aclose),
-        )
-
-    app.add_route("/ollama-proxy/{path:path}", do_proxy, ['GET', 'POST', 'HEAD'])
-
+async def lifespan_for_fastapi(app: FastAPI):
+    install_proxy_routes(app)
     yield
 
 
-app: FastAPI = FastAPI(lifespan=lifespan)
-
-
-if __name__ == "__main__":
-    from hypercorn.config import Config
-    config = Config()
-    config.bind = ['0.0.0.0:9749']
-    config.loglevel = 'debug'
-
-    import asyncio
-    from hypercorn.asyncio import serve
+@asynccontextmanager
+async def lifespan_logging(app: FastAPI):
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
 
     try:
-        asyncio.run(serve(app, config))
-    except OSError as e:
-        logger.error(e)
+        import colorlog
+        from colorlog import ColoredFormatter
+
+        LOGFORMAT = "  %(log_color)s%(levelname)-8s%(reset)s | %(log_color)s%(message)s%(reset)s"
+        formatter = ColoredFormatter(LOGFORMAT)
+
+        stream = logging.StreamHandler()
+        stream.setLevel(logging.DEBUG)
+        stream.setFormatter(formatter)
+        root_logger.addHandler(stream)
+
+    except ImportError:
+        logging.basicConfig()
+
+    # Silence the very annoying logs
+    logging.getLogger("httpx").setLevel(logging.INFO)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
+
+    async with lifespan_for_fastapi(app):
+        yield
+
+    root_logger.setLevel(logging.WARNING)
+    root_logger.handlers = []
+
+
+@asynccontextmanager
+async def lifespan_generic(app: FastAPI):
+    @app.exception_handler(Exception)
+    async def print_exception_stacks(request: Request, exc):
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content=jsonable_encoder({
+                "detail"    : exc.errors(),  # optionally include the errors
+                "body"      : exc.body,
+                "custom msg": {"Your error message"}}),
+        )
+
+    async with lifespan_logging(app):
+        yield
+
+
+app: FastAPI = FastAPI(
+    docs_url=None,
+    redoc_url=None,
+    lifespan=lifespan_generic,
+    openapi_tags=[
+        {"name": "Favorite"},
+    ],
+)
+
+if __name__ == "__main__":
+    import asyncio
+    import uvicorn
+
+    # TODO: Read config from sys.argv
+    # NB Forget it, no multiprocess'd workers, I can't figure out what to do with them from within PyInstaller
+    config = uvicorn.Config(app, port=6633, log_level="debug", reload=False, workers=1)
+    server = uvicorn.Server(config)
+
+    asyncio.run(server.serve())

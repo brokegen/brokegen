@@ -14,20 +14,24 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+inference = [
+    'fastapi',
+    'httpx[http2]',
+    'pyinstaller',
+    'uvicorn',
+    # "Optional" dependencies
+    'colorlog',
+]
 ingest = [
-    "pyinstaller",
+    'pyinstaller',
+    'pypandoc',
 ]
 testing = [
     'pytest',
 ]
-viewer = [
-    'fastapi',
-    'httpx[http2]',
-    'hypercorn',
-]
 
 [tool.setuptools]
 packages = [
-    'brokegen',
+    'inference',
     'ingest',
 ]

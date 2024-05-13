@@ -1,6 +1,4 @@
 import logging
-from contextlib import asynccontextmanager
-from typing import Any
 
 import httpx
 from fastapi import FastAPI, Request
@@ -15,15 +13,12 @@ _real_ollama_client = httpx.AsyncClient(
     max_redirects=0,
     follow_redirects=False,
 )
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    logging.getLogger('hypercorn.error').disabled = True
-    logging.basicConfig()
-
+def install_proxy_routes(app: FastAPI):
     async def do_proxy(
             request: Request,
     ):
@@ -50,23 +45,3 @@ async def lifespan(app: FastAPI):
         )
 
     app.add_route("/ollama-proxy/{path:path}", do_proxy, ['GET', 'POST', 'HEAD'])
-
-    yield
-
-
-app: FastAPI = FastAPI(lifespan=lifespan)
-
-
-if __name__ == "__main__":
-    from hypercorn.config import Config
-    config = Config()
-    config.bind = ['0.0.0.0:9749']
-    config.loglevel = 'debug'
-
-    import asyncio
-    from hypercorn.asyncio import serve
-
-    try:
-        asyncio.run(serve(app, config))
-    except OSError as e:
-        logger.error(e)
