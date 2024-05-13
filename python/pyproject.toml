@@ -4,19 +4,30 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = 'brokegen'
-version = '0.1'
+version = '0.2'
 license = {text = '0BSD'}
+
+# Virtually all dependencies are optional, because of how disparate our build targets are.
+# More specifically, pyinstaller gets a bit complex, so give each build target its own dependencies + venv.
 dependencies = [
-    'fastapi',
-    'httpx[http2]',
-    'hypercorn',
     'importlib-metadata; python_version>="3.12"'
 ]
 
 [project.optional-dependencies]
+ingest = [
+    "pyinstaller",
+]
 testing = [
     'pytest',
 ]
+viewer = [
+    'fastapi',
+    'httpx[http2]',
+    'hypercorn',
+]
 
 [tool.setuptools]
-packages = ['brokegen']
+packages = [
+    'brokegen',
+    'ingest',
+]
