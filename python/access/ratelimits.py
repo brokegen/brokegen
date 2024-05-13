@@ -74,7 +74,7 @@ class RequestInterceptor:
         self.request_content: bytearray = bytearray()
 
         self.response_content_bytes: bytearray = bytearray()
-        self.response_content_strs: list[str] = []
+        self.response_content: list = []
 
     async def wrap_request_content(self, request_content_stream: AsyncIterator[bytes]):
         async for chunk in request_content_stream:
@@ -101,10 +101,10 @@ class RequestInterceptor:
 
             yield line
             if disable_json_decode:
-                self.response_content_strs.append(line)
+                self.response_content.append(line)
             else:
-                decoded_line = json.loads(line)
-                self.response_content_strs.append(decoded_line)
+                decoded_line: dict = json.loads(line)
+                self.response_content.append(decoded_line)
 
     async def wrap_response_content_raw(self, response: httpx.Response):
         """
@@ -153,28 +153,74 @@ class RequestInterceptor:
 
         return self.new_access
 
+    def _consolidate_content(self):
+        if not self.response_content:
+            return
+
+        consolidated_response = None
+        for next_response in self.response_content:
+            if consolidated_response is None:
+                # We have to do a dict copy because the old ones uhh disappear, for some reason.
+                consolidated_response = dict(next_response)
+                continue
+
+            for k, v in next_response.items():
+                if k not in consolidated_response:
+                    consolidated_response[k] = v
+                    continue
+
+                if k == 'created_at':
+                    consolidated_response['terminal_created_at'] = v
+                    continue
+
+                elif k == 'done':
+                    if consolidated_response[k]:
+                        self.logger.warning(f"Received additional JSON after streaming indicated we were {k}={v}")
+
+                elif k == 'model':
+                    if consolidated_response[k] != v:
+                        self.logger.error(
+                            f"Received new model name \"{v}\" during streaming response, expected {consolidated_response[k]}")
+                        return
+
+                elif k == 'response':
+                    consolidated_response[k] += v
+                    continue
+
+                else:
+                    self.logger.error(f"Received unidentified JSON pair, {k}={v}")
+                    return
+
+                # In the non-exceptional case, just update with the new value.
+                consolidated_response[k] = v
+
+        self.response_content = [consolidated_response]
+
     def update_api_access_content(
             self,
             do_commit: bool = True,
+            decode_request_as_json: bool = True,
     ):
         """
         Intended to be called during cleanup, so we can update the DB with content we're done streaming
+
+        TODO: We assume the request/response content is UTF8-encoded;
+              for correctness we should read the encoding from HTTP headers.
         """
-        # https://sqlalche.me/e/20/bhk3
         merged_access = self.ratelimits_db.merge(self.new_access)
-        # merged_access = self.new_access
-        # self.ratelimits_db.refresh(merged_access)
 
         if self.request_content:
-            merged_access.request['content'] = self.request_content.decode('utf-8')
+            if decode_request_as_json:
+                merged_access.request['content'] = json.loads(self.request_content)
+            else:
+                merged_access.request['content'] = self.request_content.decode('utf-8')
         else:
             del merged_access.request['content']
 
         if self.response_content_bytes:
-            # TODO: This assume the response content is UTF-8, we could probably read the encoding from HTTP headers
             merged_access.response['content'] = self.response_content_bytes.decode('utf-8')
-        elif self.response_content_strs:
-            merged_access.response['content'] = self.response_content_strs
+        elif self.response_content:
+            merged_access.response['content'] = self.response_content
         else:
             del merged_access.response['content']
 

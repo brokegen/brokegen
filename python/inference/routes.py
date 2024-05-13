@@ -66,12 +66,15 @@ async def forward_request(
     )
 
     upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
-    intercept.generate_api_access(upstream_response, api_bucket=__name__)
+    intercept.generate_api_access(upstream_response, api_bucket="Ollama")
 
     async def post_forward_cleanup():
         await upstream_response.aclose()
+        intercept._consolidate_content()
         intercept.update_api_access_content()
 
+    # TODO: Provide an exception handler that returns an HTTP error to the client,
+    #       especially for cases where we KeyboardInterrupt.
     return StreamingResponse(
         intercept.wrap_response_content(upstream_response),
         status_code=upstream_response.status_code,
