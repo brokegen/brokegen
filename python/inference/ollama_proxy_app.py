@@ -46,6 +46,8 @@ async def lifespan_logging(app: FastAPI):
         logging.basicConfig()
 
     # Silence the very annoying logs
+    logging.getLogger("httpcore.http11").setLevel(logging.INFO)
+    logging.getLogger("httpcore.connection").setLevel(logging.INFO)
     logging.getLogger("httpx").setLevel(logging.INFO)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
@@ -91,4 +93,8 @@ if __name__ == "__main__":
     config = uvicorn.Config(app, port=6633, log_level="debug", reload=False, workers=1)
     server = uvicorn.Server(config)
 
-    asyncio.run(server.serve())
+    try:
+        asyncio.run(server.serve())
+
+    except KeyboardInterrupt:
+        print("Caught KeyboardInterrupt, exiting gracefully")

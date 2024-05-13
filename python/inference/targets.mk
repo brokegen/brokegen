@@ -12,6 +12,7 @@ ollama-proxy: $(pyinstaller_venv)
 			--target-architecture x86_64 \
 			--noupx --console \
 			--noconfirm \
+			--hidden-import colorlog \
 			--specpath dist \
 			--onefile --name "brokegen-ollama-proxy" \
 			$(python_root)inference/ollama_proxy_app.py
