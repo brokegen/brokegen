@@ -17,6 +17,12 @@ ollama-proxy: $(pyinstaller_venv)
 			--onefile --name "brokegen-ollama-proxy" \
 			$(python_root)inference/ollama_proxy_app.py
 
+.PHONY: run-ollama-proxy
+run-ollama-proxy:
+	[ -d data/ ] || mkdir data/
+	PYTHONPATH=$(python_root) \
+		python $(python_root)inference/ollama_proxy_app.py
+
 build: $(python_root)venv-inference-amd64
 $(python_root)venv-inference-amd64:
 	arch -x86_64 $(python_amd64) -m venv "$@"

@@ -1,22 +1,23 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
-from inference.routes import install_proxy_routes
-
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
     # https://pyinstaller.org/en/latest/common-issues-and-pitfalls.html
     import multiprocessing
-
     multiprocessing.freeze_support()
 
 import logging
 from contextlib import asynccontextmanager
 
+import click
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
 from starlette import status
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+
+from access.ratelimits import init_db as init_ratelimits_db
+from inference.routes import install_proxy_routes
 
 
 @asynccontextmanager
@@ -84,11 +85,15 @@ app: FastAPI = FastAPI(
     ],
 )
 
-if __name__ == "__main__":
+
+@click.command()
+@click.option('--data-dir', default='data', help='Filesystem directory to store/read data from')
+def run_proxy(data_dir):
     import asyncio
     import uvicorn
 
-    # TODO: Read config from sys.argv
+    init_ratelimits_db(f"{data_dir}/ratelimits.db")
+
     # NB Forget it, no multiprocess'd workers, I can't figure out what to do with them from within PyInstaller
     config = uvicorn.Config(app, port=6633, log_level="debug", reload=False, workers=1)
     server = uvicorn.Server(config)
@@ -98,3 +103,7 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:
         print("Caught KeyboardInterrupt, exiting gracefully")
+
+
+if __name__ == "__main__":
+    run_proxy()

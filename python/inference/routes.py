@@ -1,9 +1,13 @@
 import logging
+from datetime import timezone, datetime
 
 import httpx
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
+
+from access.ratelimits import RatelimitsDB, ApiAccess, ApiAccessWithResponse
+from access.ratelimits import get_db as get_ratelimits_db
 
 _real_ollama_client = httpx.AsyncClient(
     base_url="http://localhost:11434",
@@ -21,6 +25,7 @@ logger.setLevel(logging.DEBUG)
 def install_proxy_routes(app: FastAPI):
     async def do_proxy(
             request: Request,
+            ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
     ):
         """
         Implements a simple reverse proxy, as stream-y as possible
@@ -37,6 +42,17 @@ def install_proxy_routes(app: FastAPI):
                                                    headers=request.headers.raw,
                                                    content=request.stream())
         rp_resp = await _real_ollama_client.send(rp_req, stream=True)
+
+        new_access = ApiAccessWithResponse(
+            api_bucket=__name__,
+            accessed_at=datetime.now(tz=timezone.utc),
+            api_endpoint=urlpath_noprefix,
+            request=rp_req,
+            response=rp_resp,
+        )
+        ratelimits_db.add(new_access)
+        ratelimits_db.commit()
+
         return StreamingResponse(
             rp_resp.aiter_raw(),
             status_code=rp_resp.status_code,

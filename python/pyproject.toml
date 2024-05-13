@@ -10,20 +10,21 @@ license = {text = '0BSD'}
 # Virtually all dependencies are optional, because of how disparate our build targets are.
 # More specifically, pyinstaller gets a bit complex, so give each build target its own dependencies + venv.
 dependencies = [
-    'importlib-metadata; python_version>="3.12"'
+    'click',
+    'pyinstaller',
+    'importlib-metadata; python_version>="3.11"',
 ]
 
 [project.optional-dependencies]
 inference = [
     'fastapi',
     'httpx[http2]',
-    'pyinstaller',
+    'sqlalchemy',
     'uvicorn',
     # "Optional" dependencies
     'colorlog',
 ]
 ingest = [
-    'pyinstaller',
     'pypandoc',
 ]
 testing = [
