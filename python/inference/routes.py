@@ -13,7 +13,8 @@ _real_ollama_client = httpx.AsyncClient(
     base_url="http://localhost:11434",
     http2=True,
     proxy=None,
-    timeout=None,
+    cert=None,
+    timeout=httpx.Timeout(2.0, read=None),
     max_redirects=0,
     follow_redirects=False,
 )
@@ -23,7 +24,7 @@ logger.setLevel(logging.DEBUG)
 
 
 async def forward_request_nodetails(
-        request: Request,
+        original_request: Request,
         ratelimits_db: RatelimitsDB,
 ):
     """
@@ -31,16 +32,17 @@ async def forward_request_nodetails(
 
     https://github.com/tiangolo/fastapi/issues/1788#issuecomment-1320916419
     """
-    urlpath_noprefix = request.url.path.removeprefix("/ollama-proxy")
-    logger.debug(f"/ollama-proxy: start nolog handler for {request.method} {urlpath_noprefix}")
+    urlpath_noprefix = original_request.url.path.removeprefix("/ollama-proxy")
+    logger.debug(f"/ollama-proxy: start nolog handler for {original_request.method} {urlpath_noprefix}")
 
-    url = httpx.URL(path=urlpath_noprefix,
-                    query=request.url.query.encode("utf-8"))
+    proxy_url = httpx.URL(path=urlpath_noprefix,
+                          query=original_request.url.query.encode("utf-8"))
     upstream_request = _real_ollama_client.build_request(
-        request.method,
-        url,
-        headers=request.headers.raw,
-        content=request.stream(),
+        method=original_request.method,
+        url=proxy_url,
+        content=original_request.stream(),
+        headers=original_request.headers,
+        cookies=original_request.cookies,
     )
 
     upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
@@ -70,21 +72,22 @@ async def forward_request_nodetails(
 
 
 async def forward_request(
-        request: Request,
+        original_request: Request,
         ratelimits_db: RatelimitsDB,
 ):
     intercept = RequestInterceptor(logger, ratelimits_db)
 
-    urlpath_noprefix = request.url.path.removeprefix("/ollama-proxy")
-    logger.debug(f"/ollama-proxy: start handler for {request.method} {urlpath_noprefix}")
+    urlpath_noprefix = original_request.url.path.removeprefix("/ollama-proxy")
+    logger.debug(f"/ollama-proxy: start handler for {original_request.method} {urlpath_noprefix}")
 
-    url = httpx.URL(path=urlpath_noprefix,
-                    query=request.url.query.encode("utf-8"))
+    proxy_url = httpx.URL(path=urlpath_noprefix,
+                          query=original_request.url.query.encode("utf-8"))
     upstream_request = _real_ollama_client.build_request(
-        request.method,
-        url,
-        headers=request.headers.raw,
-        content=intercept.wrap_request_content(request.stream()),
+        method=original_request.method,
+        url=proxy_url,
+        content=intercept.wrap_request_content(original_request.stream()),
+        headers=original_request.headers,
+        cookies=original_request.cookies,
     )
 
     upstream_response = await _real_ollama_client.send(upstream_request, stream=True)

@@ -136,21 +136,28 @@ class RequestInterceptor:
             api_bucket: str,
             do_commit: bool = True,
     ):
+        request_dict = {
+            'method': upstream_response.request.method,
+            'url': str(upstream_response.request.url),
+        }
+        if upstream_response.request.headers:
+            request_dict['headers'] = upstream_response.request.headers.multi_items().sort()
+
+        response_dict = {
+            'status_code': upstream_response.status_code,
+            'content': "[not recorded yet]",
+        }
+        if upstream_response.headers:
+            response_dict['headers'] = upstream_response.headers.multi_items().sort()
+        if upstream_response.cookies:
+            response_dict['cookies'] = upstream_response.cookies.jar.items()
+
         self.new_access = ApiAccessWithResponse(
             api_bucket=api_bucket,
             accessed_at=datetime.now(tz=timezone.utc),
             api_endpoint=str(upstream_response.request.url),
-            request={
-                'method': upstream_response.request.method,
-                'url': str(upstream_response.request.url),
-                'headers': upstream_response.request.headers.multi_items().sort(),
-                'content': "[not recorded yet]",
-            },
-            response={
-                'status_code': upstream_response.status_code,
-                'headers': upstream_response.headers.multi_items().sort(),
-                'content': "[not recorded yet]",
-            },
+            request=request_dict,
+            response=response_dict,
         )
 
         self.ratelimits_db.add(self.new_access)

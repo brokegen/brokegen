@@ -14,12 +14,12 @@ import click
 from fastapi import FastAPI
 
 from access.ratelimits import init_db as init_ratelimits_db
-from inference.routes import install_proxy_routes
+from inference.routes_langchain import install_langchain_routes
 
 
 @asynccontextmanager
 async def lifespan_for_fastapi(app: FastAPI):
-    install_proxy_routes(app)
+    install_langchain_routes(app)
     yield
 
 
@@ -68,14 +68,14 @@ app: FastAPI = FastAPI(
 
 @click.command()
 @click.option('--data-dir', default='data', help='Filesystem directory to store/read data from')
-def run_proxy(data_dir):
+@click.option('--bind-port', default=6634, help='uvicorn bind port')
+def run_proxy(data_dir, bind_port):
     import asyncio
     import uvicorn
 
     init_ratelimits_db(f"{data_dir}/ratelimits.db")
 
-    # NB Forget it, no multiprocess'd workers, I can't figure out what to do with them from within PyInstaller
-    config = uvicorn.Config(app, port=6633, log_level="debug", reload=False, workers=1)
+    config = uvicorn.Config(app, port=bind_port, log_level="debug", reload=False, workers=1)
     server = uvicorn.Server(config)
 
     try:

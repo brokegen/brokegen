@@ -17,9 +17,15 @@ dependencies = [
 
 [project.optional-dependencies]
 inference = [
+    'faiss-cpu',
     'fastapi',
     'httpx[http2]',
+    'langchain',
+    'langchain_experimental',
+    'redis',
+    'simsimd==3.7.7',
     'sqlalchemy',
+    'tqdm',
     'uvicorn',
     # "Optional" dependencies
     'colorlog',
