@@ -23,6 +23,7 @@ inference = [
     'uvicorn',
     # "Optional" dependencies
     'colorlog',
+    'orjson',
 ]
 ingest = [
     'pypandoc',
