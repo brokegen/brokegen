@@ -15,4 +15,5 @@ test:
 	@:
 
 
--include python/ingest.mk
+-include python/inference/targets.mk
+-include python/ingest/targets.mk
