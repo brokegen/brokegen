@@ -2,6 +2,7 @@ import logging
 import os
 import pprint
 import threading
+import tracemalloc
 from typing import Generator, Dict
 
 from inference.embeddings.vectorestore import VectorStoreReadOnly, EmbedderConfig
@@ -14,6 +15,34 @@ class _Borg:
 
     def __init__(self):
         self.__dict__ = self._shared_state
+
+
+class RAMEstimator:
+    start_size: int
+
+    def __init__(
+            self,
+            log_fn,
+            desc: str,
+            manage_tracemalloc_hooks: bool = False,
+    ):
+        self.log_fn = log_fn or print
+        self.desc = desc
+        self.manage_tracemalloc_hooks = manage_tracemalloc_hooks
+
+    def __enter__(self):
+        if self.manage_tracemalloc_hooks:
+            tracemalloc.start()
+
+        self.start_size, _ = tracemalloc.get_traced_memory()
+        return self
+
+    def __exit__(self, exc_type, exc_value, tb):
+        end_size, _ = tracemalloc.get_traced_memory()
+        self.log_fn(f"Memory size delta for {self.desc}: {end_size - self.start_size:_}")
+
+        if self.manage_tracemalloc_hooks:
+            tracemalloc.stop()
 
 
 class KnowledgeSingleton(_Borg):
@@ -64,10 +93,12 @@ class KnowledgeSingleton(_Borg):
         if embedder_config not in self.loaded_vectorstores:
             self.loaded_vectorstores[embedder_config] = VectorStoreReadOnly(embedder_config)
 
-        for parent_dir, shard_id in _generate_on_disk_shard_ids():
-            shard = self.loaded_vectorstores[embedder_config]._load_from(parent_dir, shard_id)
-            if shard is not None:
-                self.loaded_vectorstores[embedder_config]._copy_in(shard, destructive=True)
+        with RAMEstimator(logger.info, f"all shards in {data_dir}", manage_tracemalloc_hooks=True):
+            for parent_dir, shard_id in _generate_on_disk_shard_ids():
+                with RAMEstimator(logger.debug, shard_id):
+                    shard = self.loaded_vectorstores[embedder_config]._load_from(parent_dir, shard_id)
+                    if shard is not None:
+                        self.loaded_vectorstores[embedder_config]._copy_in(shard, destructive=True)
 
     def as_retriever(self, **kwargs):
         if len(self.loaded_vectorstores) > 1:
