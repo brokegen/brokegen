@@ -43,3 +43,7 @@ python-test:
 clean: venv-clean
 venv-clean:
 	-rm -r venv
+
+
+
+-include xcode/targets.mk
