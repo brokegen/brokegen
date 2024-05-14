@@ -19,7 +19,6 @@
 		CE9867502BF4047C008D6C41 /* BrokegenApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrokegenApp.swift; sourceTree = "<group>"; };
 		CE9867522BF4047C008D6C41 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		CE9867542BF4047E008D6C41 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		CE9867562BF4047E008D6C41 /* Brokegen.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Brokegen.entitlements; sourceTree = "<group>"; };
 		CE9867582BF4047E008D6C41 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		CE9867602BF414B3008D6C41 /* ProxyProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProxyProcess.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -58,7 +57,6 @@
 				CE9867502BF4047C008D6C41 /* BrokegenApp.swift */,
 				CE9867522BF4047C008D6C41 /* ContentView.swift */,
 				CE9867542BF4047E008D6C41 /* Assets.xcassets */,
-				CE9867562BF4047E008D6C41 /* Brokegen.entitlements */,
 				CE9867572BF4047E008D6C41 /* Preview Content */,
 			);
 			path = Brokegen;
