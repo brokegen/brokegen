@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ContentView: View {
+struct ProcessOutputView: View {
     @State private var headerText: String
     @Binding private var text: String
 
@@ -19,7 +19,7 @@ struct ContentView: View {
         .padding()
     }
 
-    public func text(_ text: String) -> ContentView {
+    public func text(_ text: String) -> ProcessOutputView {
         let view = self
         view.text = text
 
@@ -40,7 +40,7 @@ struct ContentView: View {
         """
 
         var body: some View {
-            ContentView(
+            ProcessOutputView(
                 headerText: "/usr/sbin/ioreg -c IOPlatformExpertDevice -d 2",
                 text: $sampleText)
         }

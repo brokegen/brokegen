@@ -13,14 +13,7 @@ struct BrokegenApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(
-                headerText: "ioreg -c IOPlatformExpertDevice",
-                text: $proxyOutput)
-            .task {
-                proxyProcess.launch { result, stdoutData in
-                    self.proxyOutput = String(data: stdoutData, encoding: .utf8)!
-                }
-            }
+            LLMSidebarView()
         }
     }
 }
