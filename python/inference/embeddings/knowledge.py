@@ -1,5 +1,6 @@
 import logging
 import os
+import pprint
 import threading
 from typing import Generator, Dict
 
@@ -57,7 +58,7 @@ class KnowledgeSingleton(_Borg):
                     known_faiss.add((path, filename[:-6]))
 
             known_valid = known_pkl.intersection(known_faiss)
-            logger.info(f"Identified vectorstore shards {known_valid=}")
+            logger.info(f"Identified vectorstore shards {pprint.pformat(known_valid, width=256)}")
             yield from known_valid
 
         if embedder_config not in self.loaded_vectorstores:
