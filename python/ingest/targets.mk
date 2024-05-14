@@ -29,7 +29,8 @@ $(python_root)venv-ingest-amd64:
 	arch -x86_64 $(python_amd64) -m venv "$@"
 ifneq (,$(socks_proxy_wheel))
 	source "$@"/bin/activate \
-		&& pip install --no-deps $(socks_proxy_wheel)
+		&& pip install --no-deps $(socks_proxy_wheel) \
+		&& pip install "httpx[socks]"
 endif
 	source "$@"/bin/activate \
 		&& cd "$(python_root)" \
