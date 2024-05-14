@@ -25,7 +25,6 @@ from access.ratelimits import get_db as get_ratelimits_db
 from inference.routes import forward_request, forward_request_nodetails
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 class JSONStreamingResponse(StreamingResponse, JSONResponse):
@@ -104,7 +103,6 @@ Question: {input}""",
 
                 ollama_style_response = dict()
                 ollama_style_response['model'] = request_content_json['model']
-                # ollama_style_response['created_at'] = datetime.utcnow().isoformat() + 'Z'
                 ollama_style_response['response'] = chunk['answer']
                 ollama_style_response['done'] = False
 

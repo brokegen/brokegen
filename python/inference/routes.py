@@ -20,7 +20,6 @@ _real_ollama_client = httpx.AsyncClient(
 )
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 async def forward_request_nodetails(

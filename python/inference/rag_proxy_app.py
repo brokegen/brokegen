@@ -26,7 +26,6 @@ async def lifespan_for_fastapi(app: FastAPI):
 @asynccontextmanager
 async def lifespan_logging(app: FastAPI):
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)
 
     try:
         import colorlog
@@ -69,7 +68,13 @@ app: FastAPI = FastAPI(
 @click.command()
 @click.option('--data-dir', default='data', help='Filesystem directory to store/read data from')
 @click.option('--bind-port', default=6634, help='uvicorn bind port')
-def run_proxy(data_dir, bind_port):
+@click.option('--log-level', default='DEBUG', help='loglevel to pass to Python `logging`')
+def run_proxy(data_dir, bind_port, log_level):
+    numeric_log_level = getattr(logging, str(log_level).upper(), None)
+    if not isinstance(numeric_log_level, int):
+        print(f"Log level not recognized, ignoring: {log_level}")
+    logging.getLogger().setLevel(level=numeric_log_level)
+
     import asyncio
     import uvicorn
 

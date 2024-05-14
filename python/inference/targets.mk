@@ -34,8 +34,9 @@ rag-proxy: $(pyinstaller_venv)
 	source "$(pyinstaller_venv)"/bin/activate \
 		&& arch -x86_64 pyinstaller \
 			--target-architecture x86_64 \
-			--noupx --console \
+			--console \
 			--noconfirm \
+			--debug imports,bootloader \
 			--hidden-import colorlog \
 			--specpath dist \
 			--onefile --name "brokegen-rag-proxy" \
