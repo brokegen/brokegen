@@ -67,9 +67,15 @@ class RequestInterceptor:
     Wraps an httpx request/response pair, and stores all that content with SQLAlchemy.
     """
 
-    def __init__(self, logger: logging.Logger, ratelimits_db: RatelimitsDB):
+    def __init__(
+            self,
+            logger: logging.Logger,
+            ratelimits_db: RatelimitsDB | None = None,
+    ):
         self.logger = logger
         self.ratelimits_db = ratelimits_db
+        if not ratelimits_db:
+            self.ratelimits_db = next(get_db())
         self.new_access: ApiAccessWithResponse | None = None
 
         self.request_content: list[bytes] = []
@@ -91,19 +97,13 @@ class RequestInterceptor:
         if len(self.request_content) == 1 and len(self.request_content[0]) < 80:
             self.logger.debug(f"Intercepted request chunk: {self.request_content[0].decode('utf-8')}")
 
-    async def consolidate_response_content(self, response: httpx.Response):
-        """
-        Decodes the response into text lines, and then consolidates the streaming JSON into one JSON blob.
-        """
-        raise NotImplementedError()
-
     async def wrap_response_content(
             self,
-            response: httpx.Response,
+            response_lines: AsyncIterator[str],
             print_all_response_data: bool = False,
             disable_json_decode: bool = False,
     ):
-        async for line in response.aiter_lines():
+        async for line in response_lines:
             if print_all_response_data and len(line) > 0:
                 self.logger.debug(f"Intercepting response line: {line[:120]}")
 
@@ -114,13 +114,13 @@ class RequestInterceptor:
                 decoded_line: dict = json.loads(line)
                 self.response_content.append(decoded_line)
 
-    async def wrap_response_content_raw(self, response: httpx.Response):
+    async def wrap_response_content_raw(self, response_bytes: AsyncIterator[bytes]):
         """
         Don't do any decoding (of gzip, or brotli, or any other HTTP-level compression/encoding
 
         Mostly useful for direct streaming, with low overhead. Which we don't need yet.
         """
-        async for chunk in response.aiter_raw():
+        async for chunk in response_bytes:
             if len(chunk) > 0:
                 self.logger.debug(f"Intercepting encoded response chunk: {len(chunk)=} bytes")
 
@@ -230,10 +230,11 @@ class RequestInterceptor:
 
         if self.request_content:
             merged_request_bytes = bytearray(b''.join(self.request_content))
-            if decode_request_as_json:
-                merged_access.request['content'] = json.loads(merged_request_bytes)
-            else:
-                merged_access.request['content'] = merged_request_bytes.decode('utf-8')
+            if len(merged_request_bytes) > 0:
+                if decode_request_as_json:
+                    merged_access.request['content'] = json.loads(merged_request_bytes)
+                else:
+                    merged_access.request['content'] = merged_request_bytes.decode('utf-8')
         else:
             del merged_access.request['content']
 

@@ -1,27 +1,26 @@
 try:
-    import orjson as json
+    import orjson as fast_json
 except ImportError:
-    import json
+    import json as fast_json
 
+import json
 import logging
 from collections.abc import AsyncIterable, Iterable
 
-from faiss import IndexFlatL2
+import langchain_core.documents
 from fastapi import APIRouter, Depends, FastAPI, Request
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.retrieval import create_retrieval_chain
-from langchain_community.docstore import InMemoryDocstore
-from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.llms.ollama import Ollama
-from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import PromptTemplate
 from pydantic import BaseModel
 from starlette.background import BackgroundTask
 from starlette.concurrency import iterate_in_threadpool
 from starlette.responses import JSONResponse, StreamingResponse
 
-from access.ratelimits import RatelimitsDB
+from access.ratelimits import RatelimitsDB, RequestInterceptor
 from access.ratelimits import get_db as get_ratelimits_db
+from embeddings.knowledge import KnowledgeSingleton, get_knowledge_dependency
 from inference.routes import forward_request, forward_request_nodetails
 
 logger = logging.getLogger(__name__)
@@ -55,8 +54,16 @@ class JSONStreamingResponse(StreamingResponse, JSONResponse):
         self.init_headers(headers)
 
 
+def document_encoder(obj):
+    if isinstance(obj, langchain_core.documents.Document):
+        return obj.to_json()
+    else:
+        return obj
+
+
 async def do_transparent_rag(
         request: Request,
+        knowledge: KnowledgeSingleton,
         context_template: str = """\
 Use any sources you can. Some recent context is provided to try and provide newer information:
 
@@ -68,13 +75,14 @@ Reasoning: Let's think step by step in order to produce the answer.
 
 Question: {input}""",
         stream: bool = True,
-        embedder_name: str = 'nomic-embed-text:latest',
-        embedder_dims: int = 768,
+        print_all_response_data: bool = False,
 ):
     """
     This "transparent" proxy works okay for our purposes (not modifying client code), but is horribly brittle.
+
+    TODO: Figure out how to plug in to/modify langchain so we can cache the raw request/response info.
     """
-    request_content_json = json.loads(await request.body())
+    request_content_json = fast_json.loads(await request.body())
     llm = Ollama(
         model=request_content_json['model'],
     )
@@ -82,15 +90,12 @@ Question: {input}""",
     prompt = PromptTemplate.from_template(context_template)
     document_chain = create_stuff_documents_chain(llm, prompt)
 
-    embedder = OllamaEmbeddings(model=embedder_name)
-    dummy_vectorstore = FAISS(
-        embedding_function=embedder,
-        index=IndexFlatL2(embedder_dims),
-        docstore=InMemoryDocstore(),
-        index_to_docstore_id={},
+    retriever = knowledge.as_retriever(
+        search_type='similarity',
+        search_kwargs={
+            'k': 18,
+        },
     )
-    retriever = dummy_vectorstore.as_retriever()
-
     retrieval_chain = create_retrieval_chain(retriever, document_chain)
 
     if stream:
@@ -99,6 +104,8 @@ Question: {input}""",
                 'input': request_content_json['prompt'],
             }):
                 if not chunk.get('answer'):
+                    logger.debug(
+                        f"Partial `retrieval_chain` response: {json.dumps(chunk, indent=2, default=document_encoder)}")
                     continue
 
                 ollama_style_response = dict()
@@ -106,7 +113,8 @@ Question: {input}""",
                 ollama_style_response['response'] = chunk['answer']
                 ollama_style_response['done'] = False
 
-                logger.debug(json.dumps(ollama_style_response))
+                if print_all_response_data:
+                    logger.debug(json.dumps(ollama_style_response))
                 yield ollama_style_response
 
             yield {
@@ -129,8 +137,7 @@ Question: {input}""",
         ollama_style_response['done'] = True
 
         # Pretty-print the actual output, since otherwise we'll never know what the True Context was.
-        # TODO: Figure out how to plug in to/modify langchain so we can cache the raw request/response info.
-        logger.info(json.dumps(langchain_response, indent=2))
+        logger.info(json.dumps(langchain_response, indent=2, default=document_encoder))
         return ollama_style_response
 
 
@@ -144,9 +151,10 @@ def install_langchain_routes(app: FastAPI):
     async def do_proxy_get_post(
             request: Request,
             ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
+            knowledge: KnowledgeSingleton = Depends(get_knowledge_dependency),
     ):
         if request.url.path == "/ollama-proxy/api/generate":
-            return await do_transparent_rag(request)
+            return await do_transparent_rag(request, knowledge)
 
         if (
                 request.method == 'HEAD'

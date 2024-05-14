@@ -100,7 +100,8 @@ async def forward_request(
     # TODO: Provide an exception handler that returns an HTTP error to the client,
     #       especially for cases where we KeyboardInterrupt.
     return StreamingResponse(
-        intercept.wrap_response_content(upstream_response),
+        # content=intercept.wrap_response_content_raw(upstream_response.aiter_raw()),
+        content=intercept.wrap_response_content(upstream_response.aiter_lines()),
         status_code=upstream_response.status_code,
         headers=upstream_response.headers,
         background=BackgroundTask(post_forward_cleanup),

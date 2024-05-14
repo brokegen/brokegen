@@ -1,4 +1,5 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
+
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
@@ -14,17 +15,11 @@ import click
 from fastapi import FastAPI
 
 from access.ratelimits import init_db as init_ratelimits_db
+from embeddings.knowledge import get_knowledge
 from inference.routes_langchain import install_langchain_routes
 
 
-@asynccontextmanager
-async def lifespan_for_fastapi(app: FastAPI):
-    install_langchain_routes(app)
-    yield
-
-
-@asynccontextmanager
-async def lifespan_logging(app: FastAPI):
+def reconfigure_loglevels():
     root_logger = logging.getLogger()
 
     try:
@@ -46,6 +41,21 @@ async def lifespan_logging(app: FastAPI):
     except ImportError:
         logging.basicConfig()
 
+
+# Early call, because I can't figure out why our outputs are hidden
+reconfigure_loglevels()
+
+
+@asynccontextmanager
+async def lifespan_for_fastapi(app: FastAPI):
+    install_langchain_routes(app)
+    yield
+
+
+@asynccontextmanager
+async def lifespan_logging(app: FastAPI):
+    reconfigure_loglevels()
+
     # Silence the very annoying logs
     logging.getLogger("httpcore.http11").setLevel(logging.INFO)
     logging.getLogger("httpcore.connection").setLevel(logging.INFO)
@@ -56,29 +66,32 @@ async def lifespan_logging(app: FastAPI):
     async with lifespan_for_fastapi(app):
         yield
 
+    root_logger = logging.getLogger()
     root_logger.setLevel(logging.WARNING)
     root_logger.handlers = []
-
-
-app: FastAPI = FastAPI(
-    lifespan=lifespan_logging,
-)
 
 
 @click.command()
 @click.option('--data-dir', default='data', help='Filesystem directory to store/read data from')
 @click.option('--bind-port', default=6634, help='uvicorn bind port')
-@click.option('--log-level', default='DEBUG', help='loglevel to pass to Python `logging`')
+@click.option('--log-level', default='INFO', help='loglevel to pass to Python `logging`')
 def run_proxy(data_dir, bind_port, log_level):
     numeric_log_level = getattr(logging, str(log_level).upper(), None)
     if not isinstance(numeric_log_level, int):
         print(f"Log level not recognized, ignoring: {log_level}")
-    logging.getLogger().setLevel(level=numeric_log_level)
+        logging.getLogger().setLevel(level=logging.INFO)
+    else:
+        logging.getLogger().setLevel(level=numeric_log_level)
 
     import asyncio
     import uvicorn
 
+    app: FastAPI = FastAPI(
+        lifespan=lifespan_logging,
+    )
+
     init_ratelimits_db(f"{data_dir}/ratelimits.db")
+    get_knowledge().load_shards_from(data_dir)
 
     config = uvicorn.Config(app, port=bind_port, log_level="debug", reload=False, workers=1)
     server = uvicorn.Server(config)
