@@ -100,6 +100,7 @@ Question: {input}""",
 
     if stream:
         async def async_iter():
+            # TODO: Sometimes the astream Chunk is too big
             async for chunk in retrieval_chain.astream({
                 'input': request_content_json['prompt'],
             }):
@@ -123,12 +124,20 @@ Question: {input}""",
                 'done': True,
             }
 
-        return JSONStreamingResponse(
-            async_iter(),
-            status_code=200,
-        )
+        try:
+            return JSONStreamingResponse(
+                async_iter(),
+                status_code=200,
+            )
+        except ValueError as e:
+            # TODO: Check how many response chunks we've already tried streaming out;
+            #       it's probably zero, but we should verify that, just in case.
+            if str(e) == "Chunk too big":
+                logger.warning("Failed to stream all this data, starting over in a non-stream mode."
+                               "Hopefully this doesn't mess up the client.")
+                stream = False
 
-    else:
+    if not stream:
         langchain_response = await retrieval_chain.ainvoke({'input': request_content_json['prompt']})
 
         ollama_style_response = dict()
