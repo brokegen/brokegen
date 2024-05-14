@@ -3,7 +3,7 @@ import os
 import threading
 from typing import Generator, Dict
 
-from embeddings.vectorestore import VectorStoreReadOnly, EmbedderConfig
+from inference.embeddings.vectorestore import VectorStoreReadOnly, EmbedderConfig
 
 logger = logging.getLogger(__name__)
 

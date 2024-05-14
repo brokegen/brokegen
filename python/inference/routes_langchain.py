@@ -18,9 +18,9 @@ from starlette.background import BackgroundTask
 from starlette.concurrency import iterate_in_threadpool
 from starlette.responses import JSONResponse, StreamingResponse
 
-from access.ratelimits import RatelimitsDB, RequestInterceptor
+from access.ratelimits import RatelimitsDB
 from access.ratelimits import get_db as get_ratelimits_db
-from embeddings.knowledge import KnowledgeSingleton, get_knowledge_dependency
+from inference.embeddings.knowledge import KnowledgeSingleton, get_knowledge_dependency
 from inference.routes import forward_request, forward_request_nodetails
 
 logger = logging.getLogger(__name__)

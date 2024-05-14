@@ -1,5 +1,4 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
-
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
@@ -15,7 +14,7 @@ import click
 from fastapi import FastAPI
 
 from access.ratelimits import init_db as init_ratelimits_db
-from embeddings.knowledge import get_knowledge
+from inference.embeddings.knowledge import get_knowledge
 from inference.routes_langchain import install_langchain_routes
 
 
