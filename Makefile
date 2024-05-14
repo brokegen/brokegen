@@ -37,7 +37,7 @@ test: python-test
 python-test: venv
 python-test:
 	source venv/bin/activate \
-		&& pytest
+		&& PYTHONPATH=python/ pytest
 
 .PHONY: venv-clean
 clean: venv-clean

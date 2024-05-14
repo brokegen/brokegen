@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from .ollama_proxy_app import app
+from inference._apps.ollama_proxy import app
 
 client = TestClient(app)
 

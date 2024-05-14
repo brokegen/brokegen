@@ -17,8 +17,7 @@ from typing import TypeAlias, AsyncIterator
 
 import httpx
 from sqlalchemy import create_engine, Column, String, DateTime, JSON
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 engine = None
 SessionLocal: Callable = None

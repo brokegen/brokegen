@@ -4,9 +4,9 @@ python_amd64 := /Library/Frameworks/Python.framework/Versions/3.11/bin/python3.1
 # On local development system, we need to set `https_proxy` to download new pip wheels.
 socks_proxy_wheel := $(wildcard $(HOME)/Documents/PySocks-1.7.1-py3-none-any.whl)
 
-# As a quick smoke test, just run the top-level Python apps, and make sure they do something.
+
+
 .PHONY: run-ingest
-test: run-ingest
 run-ingest:
 	python $(python_root)ingest_cli.py $(python_root)
 
@@ -23,6 +23,8 @@ ingest-cli: $(pyinstaller_venv)
 			--specpath dist \
 			--onefile --name "brokegen-ingest-cli" \
 			$(python_root)ingest_cli.py
+
+
 
 build: $(python_root)venv-ingest-amd64
 $(python_root)venv-ingest-amd64:

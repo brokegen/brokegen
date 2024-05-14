@@ -61,6 +61,13 @@ async def lifespan_logging(app: FastAPI):
     root_logger.handlers = []
 
 
+# TODO: Check how initialization affects early-startup logging, and whether we should move this into a function.
+# Otherwise, this has to stay here so pytest can access it easily.
+app: FastAPI = FastAPI(
+    lifespan=lifespan_logging,
+)
+
+
 @click.command()
 @click.option('--data-dir', default='data', help='Filesystem directory to store/read data from')
 def run_proxy(data_dir):
@@ -68,10 +75,6 @@ def run_proxy(data_dir):
     import uvicorn
 
     init_ratelimits_db(f"{data_dir}/ratelimits.db")
-
-    app: FastAPI = FastAPI(
-        lifespan=lifespan_logging,
-    )
 
     # NB Forget it, no multiprocess'd workers, I can't figure out what to do with them from within PyInstaller
     config = uvicorn.Config(app, port=6633, log_level="debug", reload=False, workers=1)
