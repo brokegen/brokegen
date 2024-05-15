@@ -1,6 +1,4 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
-import access.ratelimits
-
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
@@ -15,6 +13,7 @@ from contextlib import asynccontextmanager
 import click
 from fastapi import FastAPI
 
+import access.ratelimits
 import history
 
 
@@ -47,7 +46,7 @@ reconfigure_loglevels()
 
 @asynccontextmanager
 async def lifespan_for_fastapi(app: FastAPI):
-    history.routes_ollama.install_forwards(app)
+    history.ollama_routes.install_forwards(app)
     yield
 
 

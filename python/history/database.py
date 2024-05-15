@@ -42,13 +42,44 @@ def get_db() -> Generator[HistoryDB]:
         db.close()
 
 
+class ExecutorConfigRecord(Base):
+    __tablename__ = 'ExecutorConfigRecords'
+
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+
+    # This should be the primary key, but the ORM layer would need us to encode it as str
+    executor_info = Column(JSON, nullable=False, unique=True)
+    created_at = Column(DateTime)
+
+
 class ModelConfigRecord(Base):
     __tablename__ = 'ModelConfigRecords'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
 
-    machine_id = Column(String, nullable=False)
     human_id = Column(String, nullable=False)
     first_seen_at = Column(DateTime)
+    last_seen = Column(DateTime)
 
-    inference_params = Column(JSON)
+    executor_info = Column(JSON, nullable=False)  # relationship=ExecutorConfigRecord.executor_info)
+    static_model_info = Column(JSON)
+    """
+    Contains parameters that are not something our client can change,
+    e.g. if user updated/created a new ollama model that reuses the same `human_id`.
+
+    This can be surfaced to the end user, but since it's virtually inactionable,
+    should be shown differently.
+    """
+
+    default_inference_params = Column(JSON)
+    """
+    Parameters that can be overridden at "runtime", i.e. by individual message calls.
+    If these change, they are likely to be intentional and temporary changes, e.g.:
+
+    - intentional: the client overrides the system prompt
+    - intentional: the set of stop tokens changes for a different prompt type
+    - temporary: the temperature used for inference is being prompt-engineered by DSPy
+
+    These will be important to surface to the user, but that's _because_ they were
+    assumed to be changed in response to user actions.
+    """
