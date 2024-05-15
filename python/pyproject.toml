@@ -23,7 +23,7 @@ inference = [
     'langchain',
     'langchain_experimental',
     'simsimd==3.7.7',
-    'sqlalchemy',
+    'SQLAlchemy',
     'tqdm',
     'uvicorn',
     # "Optional" dependencies
