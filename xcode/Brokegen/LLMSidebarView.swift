@@ -83,9 +83,6 @@ struct LLMSidebarView: View {
                         .frame(alignment: .trailing)
                     }
                 }
-                .toolbarTitleDisplayMode(.inlineLarge)
-                .toolbarRole(.editor)
-                .toolbarColorScheme(.dark, for: .windowToolbar)
 
                 VStack(alignment: .trailing) {
                     Divider()

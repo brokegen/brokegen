@@ -8,7 +8,7 @@ struct PlaceholderContentView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading) {
+        NavigationView {
             Text(self.headerText)
                 .font(.headline)
             Text("content 1 2 3 4 億貳參肆")
