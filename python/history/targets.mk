@@ -19,6 +19,12 @@ server: $(pyinstaller_venv)
 			--onefile --name "brokegen-server" \
 			$(python_root)history/server.py
 
+.PHONY: run-server
+run-server:
+	[ -d data2/ ] || mkdir data2/
+	PYTHONPATH=$(python_root) \
+		python $(python_root)history/server.py --data-dir data2 --log-level debug
+
 
 
 .PHONY: ollama-proxy

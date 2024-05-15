@@ -50,10 +50,9 @@ async def lifespan_for_fastapi(app: FastAPI):
     def install_langchain_routes(app: FastAPI):
         ollama_forwarder = APIRouter()
 
-        # TODO: Either OpenAPI or FastAPI doesn't parse these `{path:path}` directives correctly
-        @ollama_forwarder.get("/ollama-proxy/{path:path}")
-        @ollama_forwarder.head("/ollama-proxy/{path:path}")
-        @ollama_forwarder.post("/ollama-proxy/{path:path}")
+        @ollama_forwarder.get("/ollama-proxy/{path}")
+        @ollama_forwarder.head("/ollama-proxy/{path}")
+        @ollama_forwarder.post("/ollama-proxy/{path}")
         async def do_proxy_get_post(
                 request: Request,
                 ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
@@ -78,8 +77,6 @@ async def lifespan_for_fastapi(app: FastAPI):
 
 @asynccontextmanager
 async def lifespan_logging(app: FastAPI):
-    reconfigure_loglevels()
-
     # Silence the very annoying logs
     logging.getLogger("httpcore.http11").setLevel(logging.INFO)
     logging.getLogger("httpcore.connection").setLevel(logging.INFO)

@@ -52,8 +52,6 @@ async def lifespan_for_fastapi(app: FastAPI):
 
 @asynccontextmanager
 async def lifespan_logging(app: FastAPI):
-    reconfigure_loglevels()
-
     # Silence the very annoying logs
     logging.getLogger("httpcore.http11").setLevel(logging.INFO)
     logging.getLogger("httpcore.connection").setLevel(logging.INFO)
