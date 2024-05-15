@@ -29,21 +29,17 @@ async def do_api_tags(
 ):
     intercept = RequestInterceptor(logger, ratelimits_db)
 
-    urlpath_noprefix = original_request.url.path.removeprefix("/ollama-proxy")
-    logger.debug(f"/ollama-proxy: start handler for {original_request.method} {urlpath_noprefix}")
-
-    proxy_url = httpx.URL(path=urlpath_noprefix,
-                          query=original_request.url.query.encode("utf-8"))
+    logger.debug(f"ollama proxy: start handler for GET /api/tags")
     upstream_request = _real_ollama_client.build_request(
         method=original_request.method,
-        url=proxy_url,
+        url="/api/tags",
         content=intercept.wrap_request_content(original_request.stream()),
         headers=original_request.headers,
         cookies=original_request.cookies,
     )
 
     upstream_response = await _real_ollama_client.send(upstream_request)
-    intercept.build_access_event(upstream_response, api_bucket=f"ollama:{urlpath_noprefix}")
+    intercept.build_access_event(upstream_response, api_bucket=f"ollama:/api/tags")
 
     async def on_done_fetching():
         await upstream_response.aclose()
@@ -51,14 +47,12 @@ async def do_api_tags(
         intercept.update_access_event()
 
         executor_record = build_executor_record(str(_real_ollama_client.base_url), history_db=history_db)
-        models = build_models_from_api_tags(
+        build_models_from_api_tags(
             executor_record,
             intercept.new_access.accessed_at,
             intercept.response_content_as_json(),
             history_db=history_db,
         )
-
-        return models
 
     return StreamingResponse(
         content=intercept.wrap_response_content(upstream_response.aiter_lines()),
@@ -75,21 +69,17 @@ async def do_api_show(
 ):
     intercept = RequestInterceptor(logger, ratelimits_db)
 
-    urlpath_noprefix = original_request.url.path.removeprefix("/ollama-proxy")
-    logger.debug(f"/ollama-proxy: start handler for {original_request.method} {urlpath_noprefix}")
-
-    proxy_url = httpx.URL(path=urlpath_noprefix,
-                          query=original_request.url.query.encode("utf-8"))
+    logger.debug(f"ollama proxy: start handler for POST /api/show")
     upstream_request = _real_ollama_client.build_request(
         method=original_request.method,
-        url=proxy_url,
+        url="/api/show",
         content=intercept.wrap_request_content(original_request.stream()),
         headers=original_request.headers,
         cookies=original_request.cookies,
     )
 
     upstream_response = await _real_ollama_client.send(upstream_request)
-    intercept.build_access_event(upstream_response, api_bucket=f"ollama:{urlpath_noprefix}")
+    intercept.build_access_event(upstream_response, api_bucket=f"ollama:/api/show")
 
     async def on_done_fetching():
         await upstream_response.aclose()
@@ -99,12 +89,12 @@ async def do_api_show(
         # Once we've received all the data we're going to, persist the model info
         request_json = intercept.request_content_as_json()
         if not request_json:
-            logger.info(f"Failed to log request, JSON invalid: {urlpath_noprefix}")
+            logger.info(f"ollama /api/show: Failed to log request, JSON invalid")
             return
 
         human_id = request_json.get('name', "")
         if not human_id:
-            logger.info(f"Failed to log request, JSON incomplete: {urlpath_noprefix}")
+            logger.info(f"ollama /api/show: Failed to log request, JSON incomplete")
             return
 
         executor_record = build_executor_record(str(_real_ollama_client.base_url), history_db=history_db)

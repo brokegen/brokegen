@@ -1,3 +1,6 @@
+import logging
+from contextlib import contextmanager
+
 from fastapi import FastAPI, APIRouter, Depends
 from starlette.requests import Request
 
@@ -6,6 +9,22 @@ from history.database import HistoryDB, get_db as get_history_db
 from history.ollama.chat_routes import do_proxy_generate
 from history.ollama.forward_routes import forward_request_nodetails, forward_request
 from history.ollama.model_routes import do_api_tags, do_api_show
+
+
+@contextmanager
+def disable_info_logs(*logger_names):
+    previous_levels = {}
+
+    for name in logger_names:
+        previous_levels[name] = logging.getLogger(name).level
+        logging.getLogger(name).setLevel(max(previous_levels[name], logging.WARNING))
+
+    try:
+        yield
+
+    finally:
+        for name in logger_names:
+            logging.getLogger(name).setLevel(previous_levels[name])
 
 
 def install_forwards(app: FastAPI):
@@ -43,7 +62,8 @@ def install_forwards(app: FastAPI):
             return await do_api_tags(request, history_db, ratelimits_db)
 
         if ollama_post_path == "api/show":
-            return await do_api_show(request, history_db, ratelimits_db)
+            with disable_info_logs("httpx", "history.ollama.model_routes"):
+                return await do_api_show(request, history_db, ratelimits_db)
 
         return await forward_request(request, ratelimits_db)
 
