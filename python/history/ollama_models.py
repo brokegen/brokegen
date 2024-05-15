@@ -51,14 +51,61 @@ def build_models_from_api_tags(
         response_json,
         do_commit: bool = True,
         history_db: HistoryDB | None = None,
-) -> list[ModelConfigRecord]:
+) -> None:
     if history_db is None:
         history_db = next(get_db())
 
-    for model in response_json:
-        print(json.dumps(model))
+    for model in response_json['models']:
+        sorted_model_json = orjson.loads(
+            orjson.dumps(model, option=orjson.OPT_SORT_KEYS)
+        )
+        modified_at = datetime.fromisoformat(sorted_model_json['modified_at'])
+        # TODO: Verify whether ollama source timestamps are in UTC
+        modified_at = modified_at.replace(tzinfo=None)
 
-    return []
+        # First, check for exact matches.
+        details_match_statement = (
+                func.json_extract(ModelConfigRecord.static_model_info, "$.details")
+                == json.dumps(sorted_model_json['details'], separators=(',', ':'), sort_keys=True)
+        )
+        maybe_model = history_db.execute(
+            select(ModelConfigRecord)
+            .where(
+                ModelConfigRecord.human_id == sorted_model_json['name'],
+                ModelConfigRecord.executor_info == executor_record.executor_info,
+                details_match_statement,
+            )
+            .order_by(ModelConfigRecord.last_seen.desc())
+            .limit(1)
+        ).scalar_one_or_none()
+        if maybe_model is not None:
+            # If we already have a record, check dates to see if we expect modification
+            if modified_at <= maybe_model.last_seen:
+                # Everything's good and matches, just update its static info, which is all we have anyway
+                # TODO: That `modified_at` field would be really nice to have, somewhere else
+                maybe_model.static_model_info = sorted_model_json
+                maybe_model.first_seen_at = min(maybe_model.first_seen_at, accessed_at, modified_at)
+                maybe_model.last_seen = max(maybe_model.last_seen, accessed_at, modified_at)
+
+                history_db.add(maybe_model)
+                if do_commit:
+                    history_db.commit()
+
+                continue
+
+        # Otherwise, what is all this, just add a new thing
+        new_model = ModelConfigRecord(
+            human_id=sorted_model_json['name'],
+            first_seen_at=modified_at,
+            last_seen=max(modified_at, accessed_at),
+            executor_info=executor_record.executor_info,
+            static_model_info=sorted_model_json,
+            default_inference_params={},
+        )
+
+        history_db.add(new_model)
+        if do_commit:
+            history_db.commit()
 
 
 def build_model_from_api_show(
@@ -127,6 +174,8 @@ def build_model_from_api_show(
         return maybe_model
 
     # Next, check for things maybe returned from /api/tags
+    # TODO: This gets weird with writing params here and there;
+    #       need to formalize this with unit tests.
     maybe_api_tags_model = history_db.execute(
         select(ModelConfigRecord)
         .where(
