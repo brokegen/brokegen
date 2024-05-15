@@ -14,6 +14,7 @@ from fastapi import FastAPI
 
 import access.ratelimits
 import history
+import history.ollama
 
 
 def reconfigure_loglevels():
@@ -45,7 +46,7 @@ reconfigure_loglevels()
 
 @asynccontextmanager
 async def lifespan_for_fastapi(app: FastAPI):
-    history.ollama_routes.install_forwards(app)
+    history.ollama.install_forwards(app)
     yield
 
 

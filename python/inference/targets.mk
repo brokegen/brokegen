@@ -5,44 +5,6 @@ socks_proxy_wheel := $(wildcard $(HOME)/Documents/PySocks-1.7.1-py3-none-any.whl
 
 
 
-.PHONY: server
-dist: server
-server: pyinstaller_venv := $(python_root)venv-inference-amd64
-server: $(pyinstaller_venv)
-	source "$(pyinstaller_venv)"/bin/activate \
-		&& arch -x86_64 pyinstaller \
-			--target-architecture x86_64 \
-			--noupx --console \
-			--noconfirm \
-			--hidden-import colorlog \
-			--specpath dist \
-			--onefile --name "brokegen-server" \
-			$(python_root)history/server.py
-
-
-
-.PHONY: ollama-proxy
-dist: ollama-proxy
-ollama-proxy: pyinstaller_venv := $(python_root)venv-inference-amd64
-ollama-proxy: $(pyinstaller_venv)
-	source "$(pyinstaller_venv)"/bin/activate \
-		&& arch -x86_64 pyinstaller \
-			--target-architecture x86_64 \
-			--noupx --console \
-			--noconfirm \
-			--hidden-import colorlog \
-			--specpath dist \
-			--onefile --name "brokegen-ollama-proxy" \
-			$(python_root)inference/_apps/ollama_proxy.py
-
-.PHONY: run-ollama-proxy
-run-ollama-proxy:
-	[ -d data2/ ] || mkdir data2/
-	PYTHONPATH=$(python_root) \
-		python $(python_root)inference/_apps/ollama_proxy.py --data-dir data2/
-
-
-
 .PHONY: rag-proxy
 dist: rag-proxy
 rag-proxy: pyinstaller_venv := $(python_root)venv-inference-amd64

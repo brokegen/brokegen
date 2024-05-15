@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, FastAPI, Request
 from access.ratelimits import init_db as init_ratelimits_db, RatelimitsDB, get_db as get_ratelimits_db
 from inference.embeddings.knowledge import get_knowledge, KnowledgeSingleton, get_knowledge_dependency
 from inference.routes_langchain import do_transparent_rag
-from routes import forward_request, forward_request_nodetails
+from history.ollama.forward_routes import forward_request, forward_request_nodetails
 
 
 def reconfigure_loglevels():

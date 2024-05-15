@@ -4,6 +4,7 @@ if __name__ == '__main__':
     # https://github.com/encode/uvicorn/issues/939
     # https://pyinstaller.org/en/latest/common-issues-and-pitfalls.html
     import multiprocessing
+
     multiprocessing.freeze_support()
 
 import logging
@@ -13,7 +14,7 @@ import click
 from fastapi import APIRouter, Depends, FastAPI, Request
 
 from access.ratelimits import init_db as init_ratelimits_db, RatelimitsDB, get_db as get_ratelimits_db
-from routes import forward_request, forward_request_nodetails
+from history.ollama.forward_routes import forward_request, forward_request_nodetails
 
 
 @asynccontextmanager
