@@ -83,3 +83,15 @@ class ModelConfigRecord(Base):
     These will be important to surface to the user, but that's _because_ they were
     assumed to be changed in response to user actions.
     """
+
+
+class InferenceJob(Base):
+    __tablename__ = 'InferenceJobs'
+
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    raw_prompt = Column(String)
+    "Can be NULL; in which case, we have enough in model_config to reconstruct it"
+
+    model_config = Column(Integer, nullable=False)  # ModelConfigRecord.id
+    overridden_inference_params = Column(JSON)
+    response_stats = Column(JSON)

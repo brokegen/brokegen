@@ -71,7 +71,7 @@ class InferenceJob(BaseModel):
         stop_token: str
         "This is usually specific to a ModelConfig, since different models are trained with different tokens"
 
-    provider_model_config: ProviderModelConfigRecord
+    provider_model_config: ProviderConfigRecord
     model_config: ModelConfigRecord
 
     api_request_content_json: dict[str | Any]

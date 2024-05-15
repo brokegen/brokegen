@@ -45,6 +45,20 @@ def build_executor_record(
     return new_executor
 
 
+def fetch_model_record(
+        executor_record: ExecutorConfigRecord,
+        model_name: str,
+        history_db: HistoryDB,
+) -> ModelConfigRecord | None:
+    return history_db.execute(
+        select(ModelConfigRecord)
+        .where(ModelConfigRecord.executor_info == executor_record.executor_info,
+               ModelConfigRecord.human_id == model_name)
+        .order_by(ModelConfigRecord.last_seen)
+        .limit(1)
+    ).scalar_one_or_none()
+
+
 def build_models_from_api_tags(
         executor_record: ExecutorConfigRecord,
         accessed_at: datetime,

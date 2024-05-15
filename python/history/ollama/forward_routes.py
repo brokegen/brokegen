@@ -72,6 +72,7 @@ async def forward_request_nodetails(
 async def forward_request(
         original_request: Request,
         ratelimits_db: RatelimitsDB,
+        on_done_fn = None,
 ):
     intercept = RequestInterceptor(logger, ratelimits_db)
 
@@ -95,6 +96,9 @@ async def forward_request(
         await upstream_response.aclose()
         intercept.consolidate_json_response()
         intercept.update_access_event()
+
+        if on_done_fn is not None:
+            await on_done_fn(intercept.response_content_as_json())
 
     # TODO: Provide an exception handler that returns an HTTP error to the client,
     #       especially for cases where we KeyboardInterrupt.
