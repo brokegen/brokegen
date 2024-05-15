@@ -3,6 +3,7 @@ import platform
 import uuid
 from datetime import datetime, timezone
 
+import orjson
 from sqlalchemy import select, func
 
 from history.database import HistoryDB, ModelConfigRecord, get_db, ExecutorConfigRecord
@@ -44,6 +45,22 @@ def build_executor_record(
     return new_executor
 
 
+def build_models_from_api_tags(
+        executor_record: ExecutorConfigRecord,
+        accessed_at: datetime,
+        response_json,
+        do_commit: bool = True,
+        history_db: HistoryDB | None = None,
+) -> list[ModelConfigRecord]:
+    if history_db is None:
+        history_db = next(get_db())
+
+    for model in response_json:
+        print(json.dumps(model))
+
+    return []
+
+
 def build_model_from_api_show(
         executor_record: ExecutorConfigRecord,
         human_id: str,
@@ -55,13 +72,31 @@ def build_model_from_api_show(
     if history_db is None:
         history_db = next(get_db())
 
-    static_model_info = {
-        'details': response_json['details'],
-    }
+    sorted_response_json = orjson.loads(
+        orjson.dumps(response_json, option=orjson.OPT_SORT_KEYS)
+    )
+
+    static_model_info = {}
+    default_inference_params = {}
 
     # Copy everything except 'details' into the inference parameters
-    default_inference_params = dict(response_json)
-    del default_inference_params['details']
+    for k, v in sorted_response_json.items():
+        if k == 'details':
+            static_model_info['details'] = v
+            continue
+
+        elif k == 'parameters':
+            # Apparently the list of parameters comes back in random order
+            sorted_params: list[str] = sorted(v.split('\n'))
+            default_inference_params[k] = '\n'.join(sorted_params)
+            continue
+
+        # And actually, the modelfile includes these out-of-order parameters
+        elif k == 'modelfile':
+            default_inference_params[k] = "# no modelfile, ollama can't behave"
+            continue
+
+        default_inference_params[k] = v
 
     # First, check for exact matches.
     #
@@ -69,7 +104,8 @@ def build_model_from_api_show(
     # - Also, note that we sort the fields later on, to ensure consistency
     details_match_statement = (
             func.json_extract(ModelConfigRecord.static_model_info, "$.details")
-            == json.dumps(static_model_info['details'], separators=(',', ':'))
+            # TODO: Figure out how this works with orjson
+            == json.dumps(static_model_info['details'], separators=(',', ':'), sort_keys=True)
     )
     maybe_model = history_db.execute(
         select(ModelConfigRecord)

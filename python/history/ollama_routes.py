@@ -8,7 +8,7 @@ from starlette.responses import StreamingResponse
 from access.ratelimits import RatelimitsDB, RequestInterceptor
 from access.ratelimits import get_db as get_ratelimits_db
 from history.database import HistoryDB, get_db as get_history_db
-from history.ollama_models import build_executor_record, build_model_from_api_show
+from history.ollama_models import build_executor_record, build_model_from_api_show, build_models_from_api_tags
 from inference.routes import forward_request, forward_request_nodetails
 
 _real_ollama_client = httpx.AsyncClient(
@@ -29,7 +29,45 @@ async def do_api_tags(
         history_db: HistoryDB,
         ratelimits_db: RatelimitsDB,
 ):
-    pass
+    intercept = RequestInterceptor(logger, ratelimits_db)
+
+    urlpath_noprefix = original_request.url.path.removeprefix("/ollama-proxy")
+    logger.debug(f"/ollama-proxy: start handler for {original_request.method} {urlpath_noprefix}")
+
+    proxy_url = httpx.URL(path=urlpath_noprefix,
+                          query=original_request.url.query.encode("utf-8"))
+    upstream_request = _real_ollama_client.build_request(
+        method=original_request.method,
+        url=proxy_url,
+        content=intercept.wrap_request_content(original_request.stream()),
+        headers=original_request.headers,
+        cookies=original_request.cookies,
+    )
+
+    upstream_response = await _real_ollama_client.send(upstream_request)
+    intercept.build_access_event(upstream_response, api_bucket=f"ollama:{urlpath_noprefix}")
+
+    async def on_done_fetching():
+        await upstream_response.aclose()
+        intercept.consolidate_json_response()
+        intercept.update_access_event()
+
+        executor_record = build_executor_record(str(_real_ollama_client.base_url), history_db=history_db)
+        models = build_models_from_api_tags(
+            executor_record,
+            intercept.new_access.accessed_at,
+            intercept.response_content_as_json(),
+            history_db=history_db,
+        )
+
+        return models
+
+    return StreamingResponse(
+        content=intercept.wrap_response_content(upstream_response.aiter_lines()),
+        status_code=upstream_response.status_code,
+        headers=upstream_response.headers,
+        background=BackgroundTask(on_done_fetching),
+    )
 
 
 async def do_api_show(
@@ -76,6 +114,7 @@ async def do_api_show(
             executor_record,
             human_id,
             intercept.new_access.accessed_at,
+            # TODO: Figure out a good interface to do this as str
             intercept.response_content_as_json(),
             history_db=history_db,
         )
@@ -110,8 +149,8 @@ def install_forwards(app: FastAPI):
             history_db: HistoryDB = Depends(get_history_db),
             ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
     ):
-        # if request.url.path == "/ollama-proxy/api/tags":
-        #     return await do_api_tags(request, history_db, ratelimits_db)
+        if request.url.path == "/ollama-proxy/api/tags":
+            return await do_api_tags(request, history_db, ratelimits_db)
 
         if request.url.path == "/ollama-proxy/api/show":
             return await do_api_show(request, history_db, ratelimits_db)

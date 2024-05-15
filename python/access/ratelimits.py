@@ -118,14 +118,14 @@ class PlainRequestInterceptor:
             'url': str(upstream_response.request.url),
         }
         if upstream_response.request.headers:
-            request_dict['headers'] = upstream_response.request.headers.multi_items().sort()
+            request_dict['headers'] = upstream_response.request.headers.multi_items()
 
         response_dict = {
             'status_code': upstream_response.status_code,
             'content': "[not recorded yet]",
         }
         if upstream_response.headers:
-            response_dict['headers'] = upstream_response.headers.multi_items().sort()
+            response_dict['headers'] = upstream_response.headers.multi_items()
         if upstream_response.cookies:
             response_dict['cookies'] = upstream_response.cookies.jar.items()
 
@@ -247,12 +247,7 @@ class RequestInterceptor(PlainRequestInterceptor):
                 # In the non-exceptional case, just update with the new value.
                 consolidated_response[k] = v
 
-        # For consistency sake when querying the DB, we sort all the keys.
-        # But, the easiest way to do this appears to be json.loads/dumps with `sortKeys=True`.
-        sosrted_consolidated_response = orjson.loads(
-            orjson.dumps(consolidated_response, option=orjson.OPT_SORT_KEYS),
-        )
-        self.response_content_json = [sosrted_consolidated_response]
+        self.response_content_json = [consolidated_response]
 
     def request_content_as_json(self) -> dict | None:
         content_as_str = self.request_content_as_str('utf-8')
