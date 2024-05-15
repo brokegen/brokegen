@@ -1,16 +1,39 @@
 import logging
-from typing import Tuple
+import re
+from typing import Tuple, Any
 
 import orjson
+from starlette.background import BackgroundTask
 from starlette.requests import Request
+from starlette.responses import StreamingResponse
 
-from access.ratelimits import RatelimitsDB
+from access.ratelimits import RatelimitsDB, PlainRequestInterceptor
 from history.database import HistoryDB, InferenceJob, ModelConfigRecord, ExecutorConfigRecord
-from history.ollama.forward_routes import forward_request, _real_ollama_client
+from history.ollama.forward_routes import _real_ollama_client
 from history.ollama.model_routes import do_api_show
 from history.ollama.models import build_executor_record, fetch_model_record
 
 logger = logging.getLogger(__name__)
+
+
+def safe_get(
+        dict_like: Any | None,
+        *keys: Any,
+) -> Any | dict:
+    """
+    Returns empty dict if any of the keys failed to appear.
+    Only handles dicts, no lists.
+    """
+    if dict_like is None:
+        return {}
+
+    for key in keys:
+        if key in dict_like:
+            dict_like = dict_like[key]
+        else:
+            return {}
+
+    return dict_like
 
 
 async def lookup_model(
@@ -32,15 +55,72 @@ async def lookup_model(
     return model, executor_record
 
 
+async def construct_raw_prompt(
+        plain_prompt: str,
+        model: ModelConfigRecord,
+        inference_job: InferenceJob,
+) -> str | None:
+    system_str = (
+            safe_get(inference_job.overridden_inference_params, 'options', 'system')
+            or safe_get(model.default_inference_params, 'system')
+            or ''
+    )
+
+    template0 = (
+            safe_get(inference_job.overridden_inference_params, 'options', 'template')
+            or safe_get(model.default_inference_params, 'template')
+            or ''
+    )
+
+    # Use the world's most terrible regexes to parse the Ollama template format
+    if_pattern = r'{{-?\s*if\s+(\.[^\s]+)\s*}}(.*?){{-?\s*end\s*}}'
+    matches1 = re.finditer(if_pattern, template0, re.DOTALL)
+
+    template1 = ''
+    for match in matches1:
+        if_match, block = match.groups()
+
+        if system_str and if_match == '.System':
+            substituted_block = block
+        elif plain_prompt and if_match == '.Prompt':
+            substituted_block = block
+        else:
+            substituted_block = ''
+
+        template1 += re.sub(if_pattern, lambda m: substituted_block, template0[match.start():match.end()], re.DOTALL)
+
+    real_pattern = r'({{\s*\.([^\s])+?\s*\}})'
+    matches2 = re.finditer(real_pattern, template1, re.DOTALL)
+
+    template2 = ''
+    for match in matches2:
+        real_match, whole_block = match.groups()
+
+        if system_str and real_match == '.System':
+            substituted_block = system_str
+        elif plain_prompt and real_match == '.Prompt':
+            substituted_block = plain_prompt
+        else:
+            substituted_block = ''
+
+        template2 += re.sub(real_pattern, lambda m: substituted_block, template1[match.start():match.end()], re.DOTALL)
+
+    # Force the result to be None if it's an empty string.
+    # Don't use `strip()` because we might want to preserve newlines in our prompting.
+    return None
+
+
 async def do_proxy_generate(
-        request: Request,
+        original_request: Request,
         history_db: HistoryDB,
         ratelimits_db: RatelimitsDB,
 ):
-    logger.info(f"Intercepting a generate request: {request}")
+    intercept = PlainRequestInterceptor(logger, ratelimits_db)
 
-    request_content_json: dict = orjson.loads(await request.body())
-    model, executor_record = await lookup_model(request, request_content_json['model'], history_db, ratelimits_db)
+    request_content_bytes: bytes = await original_request.body()
+    request_content_json: dict = orjson.loads(request_content_bytes)
+    model, executor_record = await lookup_model(original_request, request_content_json['model'], history_db,
+                                                ratelimits_db)
 
     inference_job = InferenceJob(
         model_config=model.id,
@@ -49,17 +129,50 @@ async def do_proxy_generate(
     history_db.add(inference_job)
     history_db.commit()
 
+    # Tweak the request so we see/add the `raw` prompting info
+    try:
+        constructed_prompt = await construct_raw_prompt(
+            request_content_json['prompt'],
+            model,
+            inference_job,
+        )
+    # If the regexes didn't match, eh
+    except ValueError:
+        constructed_prompt = None
+
+    if constructed_prompt is not None:
+        request_content_json['prompt'] = constructed_prompt
+        request_content_json['raw'] = True
+    else:
+        logger.warning(f"Unable to do manual Ollama template substitution, debug it yourself later: {model.human_id}")
+
+    # content-length header will no longer be correct
+    modified_headers = original_request.headers.mutablecopy()
+    del modified_headers['content-length']
+
+    upstream_request = _real_ollama_client.build_request(
+        method='POST',
+        url="/api/generate",
+        content=orjson.dumps(request_content_json),
+        headers=modified_headers,
+        cookies=original_request.cookies,
+    )
+
+    upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
+    intercept.build_access_event(upstream_response, api_bucket=f"ollama:/api/generate")
+    # NB We have to a do a full dict copy. For some reason.
+    new_request_dict = dict(intercept.new_access.request)
+    new_request_dict['content'] = request_content_json
+    intercept.new_access.request = new_request_dict
+
     async def on_done(consolidated_response_content_json):
         response_stats = dict(consolidated_response_content_json)
         if not response_stats['done']:
             logger.warning(f"/api/generate said it was done, but response is marked incomplete")
 
-        # Ollama /api/generate endpoints sometimes respond with a giant list of ints for "context",
-        # which somewhat removes the need to provide complete chat history.
         if 'context' in response_stats:
             del response_stats['context']
 
-        # The "response" doesn't go in stats.
         del response_stats['response']
 
         merged_job = history_db.merge(inference_job)
@@ -67,6 +180,24 @@ async def do_proxy_generate(
         history_db.add(merged_job)
         history_db.commit()
 
-        # TODO: Now add/create the two messages that happened
+    async def post_forward_cleanup():
+        await upstream_response.aclose()
 
-    return await forward_request(request, ratelimits_db, on_done)
+        as_json = orjson.loads(intercept.response_content_as_str('utf-8'))
+
+        # NB We have to a do a full dict copy. For some reason.
+        new_response_json = dict(intercept.new_access.response)
+        new_response_json['content'] = as_json
+        intercept.new_access.response = new_response_json
+
+        ratelimits_db.add(intercept.new_access)
+        ratelimits_db.commit()
+
+        await on_done(as_json[-1])
+
+    return StreamingResponse(
+        content=intercept.wrap_response_content_raw(upstream_response.aiter_raw()),
+        status_code=upstream_response.status_code,
+        headers=upstream_response.headers,
+        background=BackgroundTask(post_forward_cleanup),
+    )

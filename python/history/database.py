@@ -95,3 +95,14 @@ class InferenceJob(Base):
     model_config = Column(Integer, nullable=False)  # ModelConfigRecord.id
     overridden_inference_params = Column(JSON)
     response_stats = Column(JSON)
+
+
+class Message(Base):
+    __tablename__ = 'Messages'
+
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+
+    role = Column(String, nullable=False)
+    prompt = Column(String, nullable=False)
+
+    inference_job = Column(Integer, nullable=False)

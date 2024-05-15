@@ -97,15 +97,29 @@ class PlainRequestInterceptor:
 
         return merged_request_bytes.decode(*decode_args, **decode_kwargs)
 
-    def response_content_as_str(self, *decode_args, **decode_kwargs) -> str | None:
+    def _response_content_destream(self, *decode_args, **decode_kwargs) -> Generator[str]:
         if not self.response_content_chunks:
-            return None
+            yield from []
+            return
 
-        merged_response_bytes = bytearray(b''.join(self.response_content_chunks))
-        if len(merged_response_bytes) <= 0:
-            return None
+        for chunk in self.response_content_chunks:
+            chunk_str = chunk.decode(*decode_args, **decode_kwargs)
+            if len(chunk_str) > 0:
+                if chunk_str[-1] == '\n':
+                    yield chunk_str[:-1]
+                else:
+                    self.logger.error(f"Parsed JSON blob that doesn't end in a newline, this isn't newline-delimited")
+                    yield chunk_str
 
-        return merged_response_bytes.decode(*decode_args, **decode_kwargs)
+    def response_content_as_str(self, *decode_args, **decode_kwargs) -> str | None:
+        """
+        Return things as an "encoded" array of JSON content
+        """
+        return (
+                '[' +
+                ','.join(self._response_content_destream(*decode_args, **decode_kwargs)) +
+                ']'
+        )
 
     def build_access_event(
             self,
@@ -140,8 +154,6 @@ class PlainRequestInterceptor:
         self.ratelimits_db.add(self.new_access)
         if do_commit:
             self.ratelimits_db.commit()
-            # TODO: How important is this to keep around? Will `ratelimits_db.merge()` obviate it?
-            self.ratelimits_db.refresh(self.new_access)
 
         return self.new_access
 
@@ -273,7 +285,7 @@ class RequestInterceptor(PlainRequestInterceptor):
             self,
             do_commit: bool = True,
     ) -> None:
-        merged_access = self.ratelimits_db.merge(self.new_access)
+        merged_access = self.new_access
 
         request_json = self.request_content_as_json()
         if request_json:
@@ -288,6 +300,3 @@ class RequestInterceptor(PlainRequestInterceptor):
         self.ratelimits_db.add(merged_access)
         if do_commit:
             self.ratelimits_db.commit()
-
-        # Just in case this is a new SQLAlchemy object, but I don't think it is
-        self.new_access = merged_access
