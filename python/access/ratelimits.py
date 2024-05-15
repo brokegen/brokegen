@@ -284,7 +284,7 @@ class RequestInterceptor(PlainRequestInterceptor):
         if request_json:
             merged_access.request['content'] = request_json
 
-        response_json = self.request_content_as_json()
+        response_json = self.response_content_as_json()
         if not response_json:
             del merged_access.response['content']
         else:
