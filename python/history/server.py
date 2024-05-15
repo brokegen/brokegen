@@ -30,7 +30,7 @@ def reconfigure_loglevels():
         colorlog_stdout = logging.StreamHandler()
         colorlog_stdout.setLevel(logging.DEBUG)
         colorlog_stdout.setFormatter(formatter)
-        root_logger.addHandler(colorlog_stdout)
+        root_logger.handlers = [colorlog_stdout]
 
         # https://github.com/tiangolo/fastapi/discussions/7457
         # Convert uvicorn logging to this format also
@@ -52,6 +52,8 @@ async def lifespan_for_fastapi(app: FastAPI):
 
 @asynccontextmanager
 async def lifespan_logging(app: FastAPI):
+    reconfigure_loglevels()
+
     # Silence the very annoying logs
     logging.getLogger("httpcore.http11").setLevel(logging.INFO)
     logging.getLogger("httpcore.connection").setLevel(logging.INFO)
