@@ -182,7 +182,7 @@ def build_model_from_api_show(
             ModelConfigRecord.human_id == human_id,
             ModelConfigRecord.executor_info == executor_record.executor_info,
             details_match_statement,
-            ModelConfigRecord.default_inference_params.is_(None),
+            ModelConfigRecord.default_inference_params.is_({}),
         )
     ).scalar_one_or_none()
     if maybe_api_tags_model is not None:
