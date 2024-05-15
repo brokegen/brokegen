@@ -1,3 +1,11 @@
+If you squint, LLM inference is basically just complex computations.
+I mean, it's literally the GPU casting linear algebra ad infinitum, but
+the way we store the results and rewrite queries ("prompt engineering") gets complicated.
+
+With that in mind, there are several levels of this "computation caching" that we need to consider,
+and our data models have to reflect the machine/human boundaries throughout.
+
+----
 As the simplest example, take the three `User` models used in [FastAPI's tutorial](https://fastapi.tiangolo.com/tutorial/extra-models/):
 
 1. `UserIn` needs to have a password

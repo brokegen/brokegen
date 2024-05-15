@@ -1,21 +1,21 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
+import access.ratelimits
+
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
     # https://pyinstaller.org/en/latest/common-issues-and-pitfalls.html
     import multiprocessing
+
     multiprocessing.freeze_support()
 
 import logging
 from contextlib import asynccontextmanager
 
 import click
-from fastapi import APIRouter, Depends, FastAPI, Request
+from fastapi import FastAPI
 
-from access.ratelimits import init_db as init_ratelimits_db, RatelimitsDB, get_db as get_ratelimits_db
-from inference.embeddings.knowledge import get_knowledge, KnowledgeSingleton, get_knowledge_dependency
-from inference.routes_langchain import do_transparent_rag
-from routes import forward_request, forward_request_nodetails
+import history
 
 
 def reconfigure_loglevels():
@@ -47,32 +47,7 @@ reconfigure_loglevels()
 
 @asynccontextmanager
 async def lifespan_for_fastapi(app: FastAPI):
-    def install_langchain_routes(app: FastAPI):
-        ollama_forwarder = APIRouter()
-
-        # TODO: Either OpenAPI or FastAPI doesn't parse these `{path:path}` directives correctly
-        @ollama_forwarder.get("/ollama-proxy/{path:path}")
-        @ollama_forwarder.head("/ollama-proxy/{path:path}")
-        @ollama_forwarder.post("/ollama-proxy/{path:path}")
-        async def do_proxy_get_post(
-                request: Request,
-                ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
-                knowledge: KnowledgeSingleton = Depends(get_knowledge_dependency),
-        ):
-            if request.url.path == "/ollama-proxy/api/generate":
-                return await do_transparent_rag(request, knowledge)
-
-            if (
-                    request.method == 'HEAD'
-                    or request.url.path == "/ollama-proxy/api/show"
-            ):
-                return await forward_request_nodetails(request, ratelimits_db)
-
-            return await forward_request(request, ratelimits_db)
-
-        app.include_router(ollama_forwarder)
-
-    install_langchain_routes(app)
+    history.routes_ollama.install_forwards(app)
     yield
 
 
@@ -97,7 +72,7 @@ async def lifespan_logging(app: FastAPI):
 
 @click.command()
 @click.option('--data-dir', default='data', help='Filesystem directory to store/read data from')
-@click.option('--bind-port', default=6634, help='uvicorn bind port')
+@click.option('--bind-port', default=6635, help='uvicorn bind port')
 @click.option('--log-level', default='INFO', help='loglevel to pass to Python `logging`')
 def run_proxy(data_dir, bind_port, log_level):
     numeric_log_level = getattr(logging, str(log_level).upper(), None)
@@ -114,8 +89,8 @@ def run_proxy(data_dir, bind_port, log_level):
         lifespan=lifespan_logging,
     )
 
-    init_ratelimits_db(f"{data_dir}/ratelimits.db")
-    get_knowledge().load_shards_from(data_dir)
+    access.ratelimits.init_db(f"{data_dir}/ratelimits.db")
+    history.database.init_db(f"{data_dir}/requests-history.db")
 
     config = uvicorn.Config(app, port=bind_port, log_level="debug", reload=False, workers=1)
     server = uvicorn.Server(config)

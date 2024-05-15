@@ -14,7 +14,7 @@ from typing import Any
 from pydantic import BaseModel
 
 
-class ProviderModelConfigRecord(BaseModel):
+class ProviderConfigRecord(BaseModel):
     executor_hw: dict
     """
     We could probably get by with a string, but sometimes things like the macOS version

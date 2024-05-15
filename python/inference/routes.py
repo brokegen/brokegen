@@ -2,12 +2,11 @@ import logging
 from datetime import datetime, timezone
 
 import httpx
-from fastapi import APIRouter, Depends, FastAPI, Request
+from fastapi import Request
 from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
 
 from access.ratelimits import RatelimitsDB, RequestInterceptor, ApiAccessWithResponse
-from access.ratelimits import get_db as get_ratelimits_db
 
 _real_ollama_client = httpx.AsyncClient(
     base_url="http://localhost:11434",
@@ -106,25 +105,3 @@ async def forward_request(
         headers=upstream_response.headers,
         background=BackgroundTask(post_forward_cleanup),
     )
-
-
-def install_proxy_routes(app: FastAPI):
-    ollama_forwarder = APIRouter()
-
-    # TODO: Either OpenAPI or FastAPI doesn't parse these `{path:path}` directives correctly
-    @ollama_forwarder.get("/ollama-proxy/{path:path}")
-    @ollama_forwarder.head("/ollama-proxy/{path:path}")
-    @ollama_forwarder.post("/ollama-proxy/{path:path}")
-    async def do_proxy_get_post(
-            request: Request,
-            ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
-    ):
-        if (
-                request.method == 'HEAD'
-                or request.url.path == "/ollama-proxy/api/show"
-        ):
-            return await forward_request_nodetails(request, ratelimits_db)
-
-        return await forward_request(request, ratelimits_db)
-
-    app.include_router(ollama_forwarder)

@@ -8,7 +8,7 @@ import logging
 from collections.abc import AsyncIterable, Iterable
 
 import langchain_core.documents
-from fastapi import APIRouter, Depends, FastAPI, Request
+from fastapi import Request
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain_community.llms.ollama import Ollama
@@ -18,10 +18,7 @@ from starlette.background import BackgroundTask
 from starlette.concurrency import iterate_in_threadpool
 from starlette.responses import JSONResponse, StreamingResponse
 
-from access.ratelimits import RatelimitsDB
-from access.ratelimits import get_db as get_ratelimits_db
-from inference.embeddings.knowledge import KnowledgeSingleton, get_knowledge_dependency
-from inference.routes import forward_request, forward_request_nodetails
+from inference.embeddings.knowledge import KnowledgeSingleton
 
 logger = logging.getLogger(__name__)
 
@@ -148,29 +145,3 @@ Question: {input}""",
         # Pretty-print the actual output, since otherwise we'll never know what the True Context was.
         logger.info(json.dumps(langchain_response, indent=2, default=document_encoder))
         return ollama_style_response
-
-
-def install_langchain_routes(app: FastAPI):
-    ollama_forwarder = APIRouter()
-
-    # TODO: Either OpenAPI or FastAPI doesn't parse these `{path:path}` directives correctly
-    @ollama_forwarder.get("/ollama-proxy/{path:path}")
-    @ollama_forwarder.head("/ollama-proxy/{path:path}")
-    @ollama_forwarder.post("/ollama-proxy/{path:path}")
-    async def do_proxy_get_post(
-            request: Request,
-            ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
-            knowledge: KnowledgeSingleton = Depends(get_knowledge_dependency),
-    ):
-        if request.url.path == "/ollama-proxy/api/generate":
-            return await do_transparent_rag(request, knowledge)
-
-        if (
-                request.method == 'HEAD'
-                or request.url.path == "/ollama-proxy/api/show"
-        ):
-            return await forward_request_nodetails(request, ratelimits_db)
-
-        return await forward_request(request, ratelimits_db)
-
-    app.include_router(ollama_forwarder)

@@ -4,21 +4,41 @@ if __name__ == '__main__':
     # https://github.com/encode/uvicorn/issues/939
     # https://pyinstaller.org/en/latest/common-issues-and-pitfalls.html
     import multiprocessing
-
     multiprocessing.freeze_support()
 
 import logging
 from contextlib import asynccontextmanager
 
 import click
-from fastapi import FastAPI
+from fastapi import APIRouter, Depends, FastAPI, Request
 
-from access.ratelimits import init_db as init_ratelimits_db
-from inference.routes import install_proxy_routes
+from access.ratelimits import init_db as init_ratelimits_db, RatelimitsDB, get_db as get_ratelimits_db
+from routes import forward_request, forward_request_nodetails
 
 
 @asynccontextmanager
 async def lifespan_for_fastapi(app: FastAPI):
+    def install_proxy_routes(app: FastAPI):
+        ollama_forwarder = APIRouter()
+
+        # TODO: Either OpenAPI or FastAPI doesn't parse these `{path:path}` directives correctly
+        @ollama_forwarder.get("/ollama-proxy/{path:path}")
+        @ollama_forwarder.head("/ollama-proxy/{path:path}")
+        @ollama_forwarder.post("/ollama-proxy/{path:path}")
+        async def do_proxy_get_post(
+                request: Request,
+                ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
+        ):
+            if (
+                    request.method == 'HEAD'
+                    or request.url.path == "/ollama-proxy/api/show"
+            ):
+                return await forward_request_nodetails(request, ratelimits_db)
+
+            return await forward_request(request, ratelimits_db)
+
+        app.include_router(ollama_forwarder)
+
     install_proxy_routes(app)
     yield
 
