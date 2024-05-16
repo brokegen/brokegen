@@ -16,7 +16,8 @@ from access.ratelimits import RatelimitsDB, ApiAccessWithResponse
 from history.database import HistoryDB, InferenceJob
 from history.ollama.chat_routes import safe_get, lookup_model_offline
 from history.ollama.forward_routes import _real_ollama_client
-from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, JSONRequestInterceptor
+from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, JSONRequestInterceptor, \
+    JSONStreamingResponse
 from history.prompting import apply_llm_template, PromptText, TemplatedPromptText
 from inference.embeddings.knowledge import KnowledgeSingleton
 
@@ -61,6 +62,7 @@ async def do_generate_raw_templated(
     logger.debug(f"Done pre-processing, forwarding request to Ollama: {request_content['prompt'][:280]}")
     upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
     intercept.build_access_event(upstream_response, api_bucket=f"ollama:/api/generate")
+    # TODO: The request_content was available a long time ago, it should have been stored right away.
     intercept._set_or_delete_request_content(request_content)
 
     async def finalize_inference_job(response_content_json: OllamaResponseContentJSON):
@@ -77,11 +79,12 @@ async def do_generate_raw_templated(
 
     async def finalize_intercept() -> OllamaResponseContentJSON:
         await intercept.consolidate_json_response()
+        intercept.new_access = ratelimits_db.merge(intercept.new_access)
+
         # TODO: Consolidate correctly, this isn't loading into the right place.
         as_json: OllamaResponseContentJSON = intercept.response_content_as_json()
         intercept._set_or_delete_response_content(as_json)
 
-        intercept.new_access = ratelimits_db.merge(intercept.new_access)
         ratelimits_db.add(intercept.new_access)
         ratelimits_db.commit()
 
@@ -204,6 +207,7 @@ async def convert_chat_to_generate(
         """
         async for chunk0 in primordial:
             chunk0_json = orjson.loads(chunk0)
+            logger.debug(chunk0_json['response'])
 
             chunk1 = dict(chunk0_json)
             del chunk1['response']
@@ -214,10 +218,17 @@ async def convert_chat_to_generate(
 
             yield orjson.dumps(chunk1)
 
-    return StreamingResponse(
+    # DEBUG: content-length is also still not correct, sometimes?
+    # I would guess this only happens for `stream=false` requests, because otherwise how would this make sense?
+    converted_response_headers = dict(generate_response.headers)
+    for unsupported_field in ['content-length']:
+        if unsupported_field in converted_response_headers:
+            del converted_response_headers[unsupported_field]
+
+    return JSONStreamingResponse(
         content=translate_generate_to_chat(generate_response.body_iterator),
         status_code=generate_response.status_code,
-        headers=generate_response.headers,
+        headers=converted_response_headers,
         background=generate_response.background,
     )
 

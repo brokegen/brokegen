@@ -1,12 +1,22 @@
+import asyncio
 import logging
-from typing import TypeAlias, AsyncIterable, AsyncIterator
+from typing import TypeAlias, AsyncIterable, AsyncIterator, Iterable, Dict, AnyStr, Any, List
 
 import orjson
+import sqlalchemy.exc
+import starlette.datastructures
+from starlette.background import BackgroundTask
+from starlette.concurrency import iterate_in_threadpool
+from starlette.responses import StreamingResponse, JSONResponse
 
 from access.ratelimits import PlainRequestInterceptor, RatelimitsDB, get_db
 
-OllamaRequestContentJSON: TypeAlias = dict
-OllamaResponseContentJSON: TypeAlias = dict
+JSONObject: TypeAlias = Dict[AnyStr, Any]
+JSONArray: TypeAlias = List[Any]
+JSONStructure: TypeAlias = JSONArray | JSONObject
+
+OllamaRequestContentJSON: TypeAlias = JSONObject
+OllamaResponseContentJSON: TypeAlias = JSONObject
 
 logger = logging.getLogger(__name__)
 
@@ -131,10 +141,20 @@ class JSONRequestInterceptor(PlainRequestInterceptor):
             self.response_content_json.append(orjson.loads(line))
 
         # Now that we're done, try committing changes to db
-        if self.new_access:
+        async def commit_task(delay: float) -> None:
+            if delay > 0:
+                await asyncio.sleep(delay)
+
             self.new_access = self.ratelimits_db.merge(self.new_access)
             self.ratelimits_db.add(self.new_access)
             self.ratelimits_db.commit()
+
+        if self.new_access:
+            try:
+                await commit_task(0)
+            except sqlalchemy.exc.OperationalError:
+                self.logger.warning(f"Failed to commit content to db, will retry in 60 seconds")
+                await asyncio.create_task(commit_task(60))
 
     async def consolidate_json_response(self):
         if self.response_content_chunks:
@@ -219,3 +239,29 @@ class JSONRequestInterceptor(PlainRequestInterceptor):
         self.ratelimits_db.add(self.new_access)
         if do_commit:
             self.ratelimits_db.commit()
+
+
+class JSONStreamingResponse(StreamingResponse, JSONResponse):
+    def __init__(
+            self,
+            content: Iterable | AsyncIterable,
+            status_code: int = 200,
+            headers: starlette.datastructures.MutableHeaders | dict[str, str] | None = None,
+            media_type: str | None = None,
+            background: BackgroundTask | None = None,
+    ) -> None:
+        if isinstance(content, AsyncIterable):
+            self._content_iterable: AsyncIterable = content
+        else:
+            self._content_iterable = iterate_in_threadpool(content)
+
+        async def body_iterator() -> AsyncIterable[bytes]:
+            async for content_ in self._content_iterable:
+                yield self.render(content_)
+
+        self.body_iterator = body_iterator()
+        self.status_code = status_code
+        if media_type is not None:
+            self.media_type = media_type
+        self.background = background
+        self.init_headers(headers)

@@ -1,10 +1,10 @@
 import logging
 from contextlib import contextmanager
-from typing import AsyncIterable
+from typing import AsyncIterable, Annotated
 
 import orjson
 import starlette.datastructures
-from fastapi import FastAPI, APIRouter, Depends
+from fastapi import FastAPI, APIRouter, Depends, Query
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
@@ -42,7 +42,14 @@ def install_test_points(app: FastAPI):
     @router.post("/generate.raw-tokens-only")
     async def generate_raw_templated(
             templated_text: TemplatedPromptText,
-            model_name: OllamaModelName = "mistral-7b-instruct:v0.2.Q8_0",
+            model_name: OllamaModelName = "llama3-8b-instruct:Q8_0",
+            num_predict: Annotated[int | None, Query(desc=(
+                    "Ollama model parameter, desc from https://github.com/ollama/ollama/blob/main/docs/api.md:\n"
+                    "Maximum number of tokens to predict when generating text. "
+                    "(Default: 128, -1 = infinite generation, -2 = fill context)\n"
+                    "\n"
+                    "NB Ollama uses `num_predict`, but most executors are llama.cpp-based, and that uses `n_predict`."
+            ))] = None,
             allow_streaming: bool = False,
             history_db: HistoryDB = Depends(get_history_db),
             ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
@@ -54,6 +61,11 @@ def install_test_points(app: FastAPI):
             'raw': True,
             'stream': True,
         }
+        if num_predict is not None:
+            content['options'] = {
+                'num_predict': num_predict,
+            }
+
         headers = starlette.datastructures.MutableHeaders()
         headers['content-type'] = 'application/json'
 
@@ -87,7 +99,7 @@ def install_test_points(app: FastAPI):
             user_message: str,
             system_message: str | None = None,
             assistant_prefix: str | None = None,
-            model_name: OllamaModelName = "mistral-7b-instruct:v0.2.Q8_0",
+            model_name: OllamaModelName = "llama3-8b-instruct:Q8_0",
             history_db: HistoryDB = Depends(get_history_db),
             ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
     ):
