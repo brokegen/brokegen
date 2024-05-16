@@ -73,45 +73,51 @@ async def construct_raw_prompt(
     )
 
     # Use the world's most terrible regexes to parse the Ollama template format
-    if_pattern = r'{{-?\s*if\s+(\.[^\s]+)\s*}}(.*?){{-?\s*end\s*}}'
-    matches1 = re.finditer(if_pattern, template0, re.DOTALL)
-
     template1 = template0
-    for match in matches1:
-        if_match, block = match.groups()
+    try:
+        if_pattern = r'{{-?\s*if\s+(\.[^\s]+)\s*}}(.*?){{-?\s*end\s*}}'
+        while True:
+            match = next(re.finditer(if_pattern, template1, re.DOTALL))
+            if_match, block = match.groups()
 
-        if system_str and if_match == '.System':
-            substituted_block = block
-        elif plain_prompt and if_match == '.Prompt':
-            substituted_block = block
-        else:
-            substituted_block = ''
+            if system_str and if_match == '.System':
+                substituted_block = block
+            elif plain_prompt and if_match == '.Prompt':
+                substituted_block = block
+            else:
+                substituted_block = ''
 
-        template1 = re.sub(if_pattern, lambda m: substituted_block, template1, count=1, flags=re.DOTALL)
+            template1 = re.sub(if_pattern, lambda m: substituted_block, template1, count=1, flags=re.DOTALL)
 
-    real_pattern = r'{{\s*(\.[^\s]+?)\s*\}}'
-    matches2 = re.finditer(real_pattern, template1, re.DOTALL)
+    except StopIteration:
+        pass
 
-    template2 = template1
-    for match in matches2:
-        (real_match,) = match.groups()
+    # And then substitute in the concrete values
+    template3 = template1
+    try:
+        real_pattern = r'{{\s*(\.[^\s]+?)\s*\}}'
+        while True:
+            match = next(re.finditer(real_pattern, template3, re.DOTALL))
+            (real_match,) = match.groups()
 
-        if system_str and real_match == '.System':
-            substituted_block = system_str
-        elif plain_prompt and real_match == '.Prompt':
-            substituted_block = plain_prompt
+            if system_str and real_match == '.System':
+                substituted_block = system_str
+            elif plain_prompt and real_match == '.Prompt':
+                substituted_block = plain_prompt
+            elif real_match == '.Response':
+                # Actually, we should just plain exit right after this match.
+                template3 = template3[:match.start()]
+                break
+            else:
+                substituted_block = ''
 
-            # Actually, we should just plain exit right after this match.
-            template2 = template2[:match.start()]
-            break
+            template3 = re.sub(real_pattern, lambda m: substituted_block, template3, count=1, flags=re.DOTALL)
 
-        else:
-            substituted_block = ''
+    except StopIteration:
+        pass
 
-        template2 = re.sub(real_pattern, lambda m: substituted_block, template2, count=1, flags=re.DOTALL)
-
-    inference_job.raw_prompt = template2
-    return template2
+    inference_job.raw_prompt = template3
+    return template3
 
 
 async def do_proxy_generate(
@@ -176,8 +182,9 @@ async def do_proxy_generate(
 
     async def on_done(consolidated_response_content_json):
         response_stats = dict(consolidated_response_content_json)
-        if safe_get(response_stats, 'done'):
-            logger.warning(f"/api/generate said it was done, but response is marked incomplete")
+        done = safe_get(response_stats, 'done')
+        if not done:
+            logger.warning(f"/api/generate ran out of bytes to process, but Ollama JSON response is {done=}")
 
         if 'context' in response_stats:
             del response_stats['context']
