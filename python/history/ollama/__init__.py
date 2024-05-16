@@ -1,15 +1,18 @@
 import logging
 from contextlib import contextmanager
 
+import starlette.datastructures
 from fastapi import FastAPI, APIRouter, Depends
 from starlette.requests import Request
 
 from access.ratelimits import RatelimitsDB, get_db as get_ratelimits_db
 from history.database import HistoryDB, get_db as get_history_db
-from history.ollama.chat_rag_routes import do_proxy_chat_rag, do_proxy_chat_norag
+from history.ollama.chat_rag_routes import do_proxy_chat_rag, do_proxy_chat_norag, convert_chat_to_generate, \
+    OllamaModelName, do_generate_raw_templated
 from history.ollama.chat_routes import do_proxy_generate
 from history.ollama.forward_routes import forward_request_nodetails, forward_request, forward_request_nolog
 from history.ollama.model_routes import do_api_tags, do_api_show
+from history.prompting import TemplatedPromptText
 from inference.embeddings.knowledge import KnowledgeSingleton, get_knowledge_dependency
 
 
@@ -27,6 +30,46 @@ def disable_info_logs(*logger_names):
     finally:
         for name in logger_names:
             logging.getLogger(name).setLevel(previous_levels[name])
+
+
+def install_test_points(app: FastAPI):
+    router = APIRouter()
+
+    @router.post("/generate.raw-tokens-only")
+    async def generate_raw_templated(
+            templated_text: TemplatedPromptText,
+            model_name: OllamaModelName = "mistral-7b-instruct:v0.2.Q8_0",
+            history_db: HistoryDB = Depends(get_history_db),
+            ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
+    ):
+        content = {
+            'images': [],
+            'model': model_name,
+            'prompt': templated_text,
+            'raw': True,
+            'stream': True,
+        }
+        headers = starlette.datastructures.MutableHeaders()
+        headers['content-type'] = 'application/json'
+
+        return await do_generate_raw_templated(
+            content,
+            headers,
+            None,
+            history_db,
+            ratelimits_db,
+        )
+
+    @router.post("/generate.raw")
+    async def generate_raw(
+            user_message: str,
+            system_message: str = "",
+            assistant_start: str = "",
+    ):
+        # TODO: This should be a 501, but I don't remember how to implement that
+        raise NotImplementedError()
+
+    app.include_router(router, prefix="/ollama")
 
 
 def install_forwards(app: FastAPI, enable_rag: bool):

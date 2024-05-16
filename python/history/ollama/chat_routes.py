@@ -11,7 +11,7 @@ from history.database import HistoryDB, InferenceJob, ModelConfigRecord, Executo
 from history.ollama.forward_routes import _real_ollama_client
 from history.ollama.model_routes import do_api_show
 from history.ollama.models import build_executor_record, fetch_model_record
-from history.prompting import construct_raw
+from history.prompting import apply_llm_template
 
 logger = logging.getLogger(__name__)
 
@@ -36,16 +36,38 @@ def safe_get(
     return dict_like
 
 
+async def lookup_model_offline(
+        model_name: str,
+        history_db: HistoryDB,
+) -> Tuple[ModelConfigRecord, ExecutorConfigRecord]:
+    # TODO: Standardize on verb names, e.g. lookup for offline + fetch for maybe-online
+    executor_record = build_executor_record(
+        str(_real_ollama_client.base_url),
+        history_db=history_db)
+    model = fetch_model_record(
+        executor_record,
+        model_name,
+        history_db)
+    if model is None:
+        raise ValueError(f"Model not in database: {model_name}")
+
+    return model, executor_record
+
+
 async def lookup_model(
         parent_request: Request,
         model_name: str,
         history_db: HistoryDB,
         ratelimits_db: RatelimitsDB,
 ) -> Tuple[ModelConfigRecord, ExecutorConfigRecord]:
-    executor_record = build_executor_record(str(_real_ollama_client.base_url), history_db=history_db)
-    model = fetch_model_record(executor_record, model_name, history_db)
+    try:
+        model, executor_record = lookup_model_offline(model_name, history_db)
 
-    if not model:
+    except ValueError:
+        executor_record = build_executor_record(
+            str(_real_ollama_client.base_url),
+            history_db=history_db)
+
         # TODO: This… wouldn't work, because the request content probably doesn't actually include the model
         await do_api_show(parent_request, history_db, ratelimits_db)
         model = fetch_model_record(executor_record, model_name, history_db)
@@ -89,7 +111,7 @@ async def do_proxy_generate(
     )
 
     try:
-        constructed_prompt = await construct_raw(
+        constructed_prompt = await apply_llm_template(
             model_template,
             system_message,
             safe_get(request_content_json, 'prompt'),

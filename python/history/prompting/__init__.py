@@ -1,13 +1,20 @@
 import re
+from typing import TypeAlias
+
+PromptText: TypeAlias = str
+"Text provided by any agent or RAG, prior to templating"
+
+TemplatedPromptText: TypeAlias = str
+"PromptText after template applied, ready to send to /api/generate as raw=True request"
 
 
-async def construct_raw(
+async def apply_llm_template(
         model_template: str,
-        system_message: str,
-        user_prompt: str,
-        assistant_response: str,
+        system_message: PromptText,
+        user_prompt: PromptText,
+        assistant_response: PromptText,
         break_early_on_response: bool = False,
-) -> str | None:
+) -> TemplatedPromptText:
     # Use the world's most terrible regexes to parse the Ollama template format
     template1 = model_template
     try:

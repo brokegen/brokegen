@@ -133,6 +133,7 @@ class PlainRequestInterceptor:
         request_dict = {
             'method': upstream_response.request.method,
             'url': str(upstream_response.request.url),
+            'content': "[not recorded yet]",
         }
         if upstream_response.request.headers:
             request_dict['headers'] = upstream_response.request.headers.multi_items()
