@@ -53,6 +53,8 @@ async def apply_llm_template(
                 if break_early_on_response:
                     # Actually, we should just plain exit right after this match.
                     template3 = template3[:match.start()]
+                    # But also, prepend the assistant prompt, so the LLM continues to elaborate
+                    template3 += assistant_response
                     break
                 else:
                     substituted_block = assistant_response
