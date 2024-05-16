@@ -7,7 +7,7 @@ from starlette.background import BackgroundTask
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
 
-from access.ratelimits import RatelimitsDB, PlainRequestInterceptor, RequestInterceptor
+from access.ratelimits import RatelimitsDB, RequestInterceptor
 from history.database import HistoryDB, InferenceJob, ModelConfigRecord, ExecutorConfigRecord
 from history.ollama.forward_routes import _real_ollama_client
 from history.ollama.model_routes import do_api_show
@@ -56,33 +56,21 @@ async def lookup_model(
 
 
 async def construct_raw_prompt(
-        plain_prompt: str,
-        model: ModelConfigRecord,
-        inference_job: InferenceJob,
+        model_template: str,
+        system_message: str,
+        user_prompt: str,
 ) -> str | None:
-    system_str = (
-            safe_get(inference_job.overridden_inference_params, 'options', 'system')
-            or safe_get(model.default_inference_params, 'system')
-            or ''
-    )
-
-    template0 = (
-            safe_get(inference_job.overridden_inference_params, 'options', 'template')
-            or safe_get(model.default_inference_params, 'template')
-            or ''
-    )
-
     # Use the world's most terrible regexes to parse the Ollama template format
-    template1 = template0
+    template1 = model_template
     try:
         if_pattern = r'{{-?\s*if\s+(\.[^\s]+)\s*}}(.*?){{-?\s*end\s*}}'
         while True:
             match = next(re.finditer(if_pattern, template1, re.DOTALL))
             if_match, block = match.groups()
 
-            if system_str and if_match == '.System':
+            if system_message and if_match == '.System':
                 substituted_block = block
-            elif plain_prompt and if_match == '.Prompt':
+            elif user_prompt and if_match == '.Prompt':
                 substituted_block = block
             else:
                 substituted_block = ''
@@ -100,10 +88,10 @@ async def construct_raw_prompt(
             match = next(re.finditer(real_pattern, template3, re.DOTALL))
             (real_match,) = match.groups()
 
-            if system_str and real_match == '.System':
-                substituted_block = system_str
-            elif plain_prompt and real_match == '.Prompt':
-                substituted_block = plain_prompt
+            if system_message and real_match == '.System':
+                substituted_block = system_message
+            elif user_prompt and real_match == '.Prompt':
+                substituted_block = user_prompt
             elif real_match == '.Response':
                 # Actually, we should just plain exit right after this match.
                 template3 = template3[:match.start()]
@@ -116,7 +104,6 @@ async def construct_raw_prompt(
     except StopIteration:
         pass
 
-    inference_job.raw_prompt = template3
     return template3
 
 
@@ -140,12 +127,27 @@ async def do_proxy_generate(
     history_db.commit()
 
     # Tweak the request so we see/add the `raw` prompting info
+    model_template = (
+            safe_get(inference_job.overridden_inference_params, 'options', 'template')
+            or safe_get(model.default_inference_params, 'template')
+            or ''
+    )
+
+    system_message = (
+            safe_get(inference_job.overridden_inference_params, 'options', 'system')
+            or safe_get(model.default_inference_params, 'system')
+            or ''
+    )
+
     try:
         constructed_prompt = await construct_raw_prompt(
+            model_template,
+            system_message,
             request_content_json['prompt'],
             model,
             inference_job,
         )
+        inference_job.raw_prompt = constructed_prompt
     # If the regexes didn't match, eh
     except ValueError:
         constructed_prompt = None
