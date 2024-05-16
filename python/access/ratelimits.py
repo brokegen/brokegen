@@ -263,12 +263,25 @@ class RequestInterceptor(PlainRequestInterceptor):
                             f"Received new model name \"{v}\" during streaming response, expected {consolidated_response[k]}")
                         return
 
+                # This tends to be the output from /api/generate
                 elif k == 'response':
                     consolidated_response[k] += v
                     continue
 
+                # And this is /api/chat, which we don't care too much about.
+                # Except as a stopgap, for now.
+                elif k == 'message':
+                    if set(v.keys()) != {'content', 'role'}:
+                        self.logger.warning(f"Received unexpected message content with keys: {v.keys()}")
+                    if v['role'] != 'assistant':
+                        self.logger.warning(f"Received content for unexpected role \"{v['role']}\", continuing anyway")
+
+                    consolidated_response[k]['content'] += v['content']
+                    continue
+
                 else:
-                    self.logger.error(f"Received unidentified JSON pair, {k}={v}")
+                    self.logger.error(f"Received unidentified JSON pair {k}={v}, abandoning consolidation of {len(self.response_content_json)} JSON blobs.\n"
+                                      f"Current consolidated response has keys: {consolidated_response.keys()}")
                     return
 
                 # In the non-exceptional case, just update with the new value.
@@ -292,7 +305,7 @@ class RequestInterceptor(PlainRequestInterceptor):
 
         # Next, check if we need a consolidation
         if len(self.response_content_json) > 1:
-            self.logger.info(f"{len(RequestInterceptor.response_content_json)=}, expected 1 => call consolidate first")
+            self.logger.info(f"RequestInterceptor.response_content_json={len(self.response_content_json)}, expected 1 => call consolidate first")
             return None
 
         return self.response_content_json[0]
