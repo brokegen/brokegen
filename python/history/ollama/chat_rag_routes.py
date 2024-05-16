@@ -204,7 +204,6 @@ async def do_proxy_chat_norag(
         original_request: Request,
         history_db: HistoryDB,
         ratelimits_db: RatelimitsDB,
-        knowledge: KnowledgeSingleton,
 ):
     request_content_bytes: bytes = await original_request.body()
     request_content_json: dict = orjson.loads(request_content_bytes)

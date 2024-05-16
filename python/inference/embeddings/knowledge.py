@@ -67,8 +67,7 @@ class KnowledgeSingleton(_Borg):
 
     def load_shards_from(
             self,
-            data_dir: str,
-            requested_max_shards: int,
+            data_dir: str | None,
             embedder_config: EmbedderConfig = EmbedderConfig.nomic,
     ):
         def _generate_filenames(rootpath: str):
@@ -76,7 +75,7 @@ class KnowledgeSingleton(_Borg):
                 for file in filenames:
                     yield dirpath, file
 
-        def _generate_on_disk_shard_ids(max_shards: int = requested_max_shards):
+        def _generate_on_disk_shard_ids():
             known_pkl = set()
             known_faiss = set()
 
@@ -89,20 +88,18 @@ class KnowledgeSingleton(_Borg):
 
             known_valid = known_pkl.intersection(known_faiss)
             logger.info(f"Identified vectorstore shards {pprint.pformat(known_valid, width=256)}")
-            if max_shards > 0:
-                yield from list(known_valid)[:max_shards]
-            else:
-                yield from known_valid
+            yield from known_valid
 
         if embedder_config not in self.loaded_vectorstores:
             self.loaded_vectorstores[embedder_config] = VectorStoreReadOnly(embedder_config)
 
-        with RAMEstimator(logger.info, f"all shards in {data_dir}", manage_tracemalloc_hooks=True):
-            for parent_dir, shard_id in _generate_on_disk_shard_ids():
-                with RAMEstimator(logger.debug, shard_id):
-                    shard = self.loaded_vectorstores[embedder_config]._load_from(parent_dir, shard_id)
-                    if shard is not None:
-                        self.loaded_vectorstores[embedder_config]._copy_in(shard, destructive=True)
+        if data_dir is not None:
+            with RAMEstimator(logger.info, f"all shards in {data_dir}", manage_tracemalloc_hooks=True):
+                for parent_dir, shard_id in _generate_on_disk_shard_ids():
+                    with RAMEstimator(logger.debug, shard_id):
+                        shard = self.loaded_vectorstores[embedder_config]._load_from(parent_dir, shard_id)
+                        if shard is not None:
+                            self.loaded_vectorstores[embedder_config]._copy_in(shard, destructive=True)
 
     def as_retriever(self, **kwargs):
         if len(self.loaded_vectorstores) > 1:

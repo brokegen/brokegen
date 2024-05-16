@@ -5,12 +5,12 @@ from fastapi import FastAPI, APIRouter, Depends
 from starlette.requests import Request
 
 from access.ratelimits import RatelimitsDB, get_db as get_ratelimits_db
-from embeddings.knowledge import KnowledgeSingleton, get_knowledge_dependency
 from history.database import HistoryDB, get_db as get_history_db
-from history.ollama.chat_rag_routes import do_proxy_chat_rag
+from history.ollama.chat_rag_routes import do_proxy_chat_rag, do_proxy_chat_norag
 from history.ollama.chat_routes import do_proxy_generate
 from history.ollama.forward_routes import forward_request_nodetails, forward_request
 from history.ollama.model_routes import do_api_tags, do_api_show
+from inference.embeddings.knowledge import KnowledgeSingleton, get_knowledge_dependency
 
 
 @contextmanager
@@ -29,7 +29,7 @@ def disable_info_logs(*logger_names):
             logging.getLogger(name).setLevel(previous_levels[name])
 
 
-def install_forwards(app: FastAPI):
+def install_forwards(app: FastAPI, enable_rag: bool):
     ollama_forwarder = APIRouter()
 
     @ollama_forwarder.post("/ollama-proxy/api/generate")
@@ -47,7 +47,10 @@ def install_forwards(app: FastAPI):
             ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
             knowledge: KnowledgeSingleton = Depends(get_knowledge_dependency),
     ):
-        return await do_proxy_chat_rag(request, history_db, ratelimits_db, knowledge)
+        if enable_rag:
+            return await do_proxy_chat_rag(request, history_db, ratelimits_db, knowledge)
+        else:
+            return await do_proxy_chat_norag(request, history_db, ratelimits_db)
 
     # TODO: Using a router prefix breaks this, somehow
     @ollama_forwarder.head("/ollama-proxy/{ollama_head_path:path}")

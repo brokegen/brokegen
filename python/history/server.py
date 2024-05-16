@@ -16,7 +16,7 @@ from fastapi import FastAPI
 import access.ratelimits
 import history
 import history.ollama
-from embeddings.knowledge import get_knowledge
+from inference.embeddings.knowledge import get_knowledge
 
 
 def reconfigure_loglevels():
@@ -47,12 +47,6 @@ reconfigure_loglevels()
 
 
 @asynccontextmanager
-async def lifespan_for_fastapi(app: FastAPI):
-    history.ollama.install_forwards(app)
-    yield
-
-
-@asynccontextmanager
 async def lifespan_logging(app: FastAPI):
     reconfigure_loglevels()
 
@@ -63,8 +57,7 @@ async def lifespan_logging(app: FastAPI):
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
 
-    async with lifespan_for_fastapi(app):
-        yield
+    yield
 
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.WARNING)
@@ -75,8 +68,9 @@ async def lifespan_logging(app: FastAPI):
 @click.option('--data-dir', default='data', help='Filesystem directory to store/read data from')
 @click.option('--bind-port', default=6635, help='uvicorn bind port')
 @click.option('--log-level', default='INFO', help='loglevel to pass to Python `logging`')
-@click.option('--max-shards', default=-1, help='Maximum number of shard files to load, 0 or less means load all')
-def run_proxy(data_dir, bind_port, log_level, max_shards):
+@click.option('--enable-rag', default=False,
+              help='Load FAISS files from --data-dir, and apply them to any /api/chat calls')
+def run_proxy(data_dir, bind_port, log_level, enable_rag):
     numeric_log_level = getattr(logging, str(log_level).upper(), None)
     if not isinstance(numeric_log_level, int):
         print(f"Log level not recognized, ignoring: {log_level}")
@@ -93,7 +87,12 @@ def run_proxy(data_dir, bind_port, log_level, max_shards):
 
     access.ratelimits.init_db(f"{data_dir}/ratelimits.db")
     history.database.init_db(f"{data_dir}/requests-history.db")
-    get_knowledge().load_shards_from(data_dir, max_shards)
+    history.ollama.install_forwards(app, enable_rag)
+
+    if enable_rag:
+        get_knowledge().load_shards_from(data_dir)
+    else:
+        get_knowledge().load_shards_from(None)
 
     config = uvicorn.Config(app, port=bind_port, log_level="debug", reload=False, workers=1)
     server = uvicorn.Server(config)
