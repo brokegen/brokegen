@@ -13,7 +13,8 @@ from starlette.responses import JSONResponse, StreamingResponse
 
 from access.ratelimits import RatelimitsDB, RequestInterceptor
 from history.database import HistoryDB, InferenceJob
-from history.ollama.chat_routes import safe_get, lookup_model, construct_raw_prompt
+from history.ollama.chat_routes import safe_get, lookup_model
+from history.prompting import construct_raw
 from history.ollama.forward_routes import _real_ollama_client
 from inference.embeddings.knowledge import KnowledgeSingleton
 
@@ -101,7 +102,7 @@ async def _generate_raw(
                 and prompt_override is None
         )
 
-        converted = await construct_raw_prompt(
+        converted = await construct_raw(
             model_template,
             system_message if is_first_message else '',
             untemplated['content'] if untemplated['role'] == 'user' else '',
@@ -116,7 +117,7 @@ async def _generate_raw(
         logging.debug(
             f"Existing chat history is {existing_content} chars, adding override with length {len(prompt_override)}")
 
-        converted_prompts.append(await construct_raw_prompt(
+        converted_prompts.append(await construct_raw(
             model_template,
             '',
             prompt_override,
