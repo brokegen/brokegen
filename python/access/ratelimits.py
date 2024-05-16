@@ -108,7 +108,9 @@ class PlainRequestInterceptor:
                 if chunk_str[-1] == '\n':
                     yield chunk_str[:-1]
                 else:
-                    self.logger.error(f"Parsed JSON blob that doesn't end in a newline, this isn't newline-delimited")
+                    # This is only an error if the chunk isn't "done", which happens occasionally.
+                    # Well, once every request, actually.
+                    self.logger.warning(f"Parsed JSON blob that doesn't end in a newline, this isn't newline-delimited")
                     yield chunk_str
 
     def response_content_as_str(self, *decode_args, **decode_kwargs) -> str | None:

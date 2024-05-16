@@ -76,7 +76,7 @@ async def construct_raw_prompt(
     if_pattern = r'{{-?\s*if\s+(\.[^\s]+)\s*}}(.*?){{-?\s*end\s*}}'
     matches1 = re.finditer(if_pattern, template0, re.DOTALL)
 
-    template1 = ''
+    template1 = template0
     for match in matches1:
         if_match, block = match.groups()
 
@@ -87,27 +87,31 @@ async def construct_raw_prompt(
         else:
             substituted_block = ''
 
-        template1 += re.sub(if_pattern, lambda m: substituted_block, template0[match.start():match.end()], re.DOTALL)
+        template1 = re.sub(if_pattern, lambda m: substituted_block, template1, count=1, flags=re.DOTALL)
 
-    real_pattern = r'({{\s*\.([^\s])+?\s*\}})'
+    real_pattern = r'{{\s*(\.[^\s]+?)\s*\}}'
     matches2 = re.finditer(real_pattern, template1, re.DOTALL)
 
-    template2 = ''
+    template2 = template1
     for match in matches2:
-        real_match, whole_block = match.groups()
+        (real_match,) = match.groups()
 
         if system_str and real_match == '.System':
             substituted_block = system_str
         elif plain_prompt and real_match == '.Prompt':
             substituted_block = plain_prompt
+
+            # Actually, we should just plain exit right after this match.
+            template2 = template2[:match.start()]
+            break
+
         else:
             substituted_block = ''
 
-        template2 += re.sub(real_pattern, lambda m: substituted_block, template1[match.start():match.end()], re.DOTALL)
+        template2 = re.sub(real_pattern, lambda m: substituted_block, template2, count=1, flags=re.DOTALL)
 
-    # Force the result to be None if it's an empty string.
-    # Don't use `strip()` because we might want to preserve newlines in our prompting.
-    return None
+    inference_job.raw_prompt = template2
+    return template2
 
 
 async def do_proxy_generate(
@@ -150,6 +154,11 @@ async def do_proxy_generate(
     modified_headers = original_request.headers.mutablecopy()
     del modified_headers['content-length']
 
+    if request_content_json['raw']:
+        for unsupported_field in ['template', 'system', 'context']:
+            if unsupported_field in request_content_json:
+                del request_content_json[unsupported_field]
+
     upstream_request = _real_ollama_client.build_request(
         method='POST',
         url="/api/generate",
@@ -167,13 +176,15 @@ async def do_proxy_generate(
 
     async def on_done(consolidated_response_content_json):
         response_stats = dict(consolidated_response_content_json)
-        if not response_stats['done']:
+        if safe_get(response_stats, 'done'):
             logger.warning(f"/api/generate said it was done, but response is marked incomplete")
 
         if 'context' in response_stats:
             del response_stats['context']
 
-        del response_stats['response']
+        # We need to check for this in case of errors
+        if 'response' in response_stats:
+            del response_stats['response']
 
         merged_job = history_db.merge(inference_job)
         merged_job.response_stats = response_stats
