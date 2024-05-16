@@ -88,6 +88,7 @@ async def _generate_raw(
     )
 
     chat_messages = request_content_json['messages']
+    del request_content_json['messages']
 
     # Convert the first message, and include the system prompt therein.
     # TODO: Figure out what to do with request that overflows context
@@ -110,6 +111,11 @@ async def _generate_raw(
         converted_prompts.append(converted)
 
     if prompt_override is not None:
+        existing_content = sum(map(len, converted_prompts))
+        # TODO: Figure out how/what to truncate
+        logging.debug(
+            f"Existing chat history is {existing_content} chars, adding override with length {len(prompt_override)}")
+
         converted_prompts.append(await construct_raw_prompt(
             model_template,
             '',
@@ -159,17 +165,19 @@ async def _generate_raw(
     async def post_forward_cleanup():
         await upstream_response.aclose()
 
-        as_json = orjson.loads(intercept.response_content_as_str('utf-8'))
+        intercept.consolidate_json_response()
+        # TODO: Consolidate correctly, this isn't loading into the right place.
+        as_json = intercept.response_content_as_json()
         intercept._set_or_delete_response_content(as_json)
 
         intercept.new_access = ratelimits_db.merge(intercept.new_access)
         ratelimits_db.add(intercept.new_access)
         ratelimits_db.commit()
 
-        await on_done(as_json[-1])
+        await on_done(as_json)
 
     async def translate_generate_to_chat() -> AsyncIterator[bytes]:
-        primordial = intercept.wrap_response_content_raw(upstream_response.aiter_raw())
+        primordial = intercept.wrap_response_content(upstream_response.aiter_lines())
         async for chunk0 in primordial:
             # Convert the "response" field to "message { content, role }"
             # TODO: How to deal with ndjson chunks that are split across chunks
@@ -215,16 +223,6 @@ async def do_proxy_chat_rag(
         history_db: HistoryDB,
         ratelimits_db: RatelimitsDB,
         knowledge: KnowledgeSingleton,
-        context_template: str = """\
-Use any sources you can. Some recent context is provided to try and provide newer information:
-
-<context>
-{context}
-</context>
-
-Reasoning: Let's think step by step in order to produce the answer.
-
-Question: {input}""",
 ):
     request_content_bytes: bytes = await original_request.body()
     request_content_json: dict = orjson.loads(request_content_bytes)
@@ -243,7 +241,19 @@ Question: {input}""",
     formatted_docs = '\n\n'.join(
         [d.page_content for d in docs]
     )
-    logger.debug(f"Returned {len(docs)} docs, with {len(formatted_docs)} chars text")
+    if len(formatted_docs) > 20_000:
+        logger.debug(f"Returned {len(docs)} docs, with {len(formatted_docs)} chars text, truncating")
+        while len(formatted_docs) > 20_000:
+            if len(docs) == 1:
+                logger.debug(f"Last remaining RAG doc is {len(docs[0])} chars, truncating")
+                formatted_docs = docs[0][:20_000]
+
+            docs = docs[:-1]
+            formatted_docs = '\n\n'.join(
+                [d.page_content for d in docs]
+            )
+
+    logger.info(f"Final RAG context is {len(docs)} docs, with {len(formatted_docs)} chars")
 
     big_prompt = f"""\
 Use any sources you can. Some recent context is provided to try and provide newer information:
