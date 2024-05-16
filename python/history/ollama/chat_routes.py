@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Tuple, Any
+from typing import Tuple, Any, AsyncIterator
 
 import orjson
 from starlette.background import BackgroundTask
@@ -59,6 +59,8 @@ async def construct_raw_prompt(
         model_template: str,
         system_message: str,
         user_prompt: str,
+        assistant_response: str,
+        break_early_on_response: bool = False,
 ) -> str | None:
     # Use the world's most terrible regexes to parse the Ollama template format
     template1 = model_template
@@ -71,6 +73,8 @@ async def construct_raw_prompt(
             if system_message and if_match == '.System':
                 substituted_block = block
             elif user_prompt and if_match == '.Prompt':
+                substituted_block = block
+            elif assistant_response and if_match == '.Response':
                 substituted_block = block
             else:
                 substituted_block = ''
@@ -93,9 +97,12 @@ async def construct_raw_prompt(
             elif user_prompt and real_match == '.Prompt':
                 substituted_block = user_prompt
             elif real_match == '.Response':
-                # Actually, we should just plain exit right after this match.
-                template3 = template3[:match.start()]
-                break
+                if break_early_on_response:
+                    # Actually, we should just plain exit right after this match.
+                    template3 = template3[:match.start()]
+                    break
+                else:
+                    substituted_block = assistant_response
             else:
                 substituted_block = ''
 
@@ -143,9 +150,8 @@ async def do_proxy_generate(
         constructed_prompt = await construct_raw_prompt(
             model_template,
             system_message,
-            request_content_json['prompt'],
-            model,
-            inference_job,
+            safe_get(request_content_json, 'prompt'),
+            assistant_response='',
         )
         inference_job.raw_prompt = constructed_prompt
     # If the regexes didn't match, eh
