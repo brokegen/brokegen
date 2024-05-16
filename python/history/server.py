@@ -8,6 +8,8 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
 
 import logging
+import os
+import sqlite3
 from contextlib import asynccontextmanager
 
 import click
@@ -17,6 +19,8 @@ import access.ratelimits
 import history
 import history.ollama
 from inference.embeddings.knowledge import get_knowledge
+
+logger = logging.getLogger(__name__)
 
 
 def reconfigure_loglevels():
@@ -65,9 +69,12 @@ async def lifespan_logging(app: FastAPI):
 
 
 @click.command()
-@click.option('--data-dir', default='data', help='Filesystem directory to store/read data from')
+@click.option('--data-dir', default='data/',
+              help='Filesystem directory to store/read data from')
 @click.option('--bind-port', default=6635, help='uvicorn bind port')
-@click.option('--log-level', default='INFO', help='loglevel to pass to Python `logging`')
+@click.option('--log-level', default='DEBUG',
+              type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'FATAL'], case_sensitive=False),
+              help='loglevel to pass to Python `logging`')
 @click.option('--enable-rag', default=False,
               help='Load FAISS files from --data-dir, and apply them to any /api/chat calls')
 def run_proxy(data_dir, bind_port, log_level, enable_rag):
@@ -85,8 +92,17 @@ def run_proxy(data_dir, bind_port, log_level, enable_rag):
         lifespan=lifespan_logging,
     )
 
-    access.ratelimits.init_db(f"{data_dir}/ratelimits.db")
-    history.database.init_db(f"{data_dir}/requests-history.db")
+    try:
+        access.ratelimits.init_db(f"{data_dir}/ratelimits.db")
+        history.database.init_db(f"{data_dir}/requests-history.db")
+
+    except sqlite3.OperationalError:
+        if not os.path.exists(data_dir):
+            logger.fatal(f"Directory does not exist: {data_dir=}")
+        else:
+            logger.exception(f"Failed to initialize app databases")
+        return
+
     history.ollama.install_forwards(app, enable_rag)
 
     if enable_rag:
