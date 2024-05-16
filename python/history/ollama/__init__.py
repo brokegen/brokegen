@@ -73,7 +73,7 @@ def install_forwards(app: FastAPI, enable_rag: bool):
             return await do_api_tags(request, history_db, ratelimits_db)
 
         if ollama_post_path == "api/show":
-            # Remove this once we've switched to a client that doesn't spam /api/show on startup
+            # TODO: Remove this log inhibitor once we've switched to a client that doesn't spam /api/show on startup
             with disable_info_logs("httpx", "history.ollama.model_routes"):
                 return await do_api_show(request, history_db, ratelimits_db)
 
