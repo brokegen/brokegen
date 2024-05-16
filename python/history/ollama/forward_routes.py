@@ -1,12 +1,13 @@
 import logging
-from datetime import datetime, timezone
+from typing import Awaitable, Callable, Any
 
 import httpx
 from fastapi import Request
 from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
+from typing_extensions import deprecated
 
-from access.ratelimits import RatelimitsDB, RequestInterceptor, ApiAccessWithResponse
+from access.ratelimits import RatelimitsDB, RequestInterceptor
 
 _real_ollama_client = httpx.AsyncClient(
     base_url="http://localhost:11434",
@@ -21,58 +22,59 @@ _real_ollama_client = httpx.AsyncClient(
 logger = logging.getLogger(__name__)
 
 
-async def forward_request_nodetails(
+async def forward_request_nolog(
+        endpoint_url: str | httpx.URL,
         original_request: Request,
-        ratelimits_db: RatelimitsDB,
+        on_done_fn: Callable[[], Awaitable[Any]] | None = None,
 ):
     """
     Implements a simple proxy, as stream-y as possible
 
     https://github.com/tiangolo/fastapi/issues/1788#issuecomment-1320916419
-    """
-    urlpath_noprefix = original_request.url.path.removeprefix("/ollama-proxy")
-    logger.debug(f"/ollama-proxy: start nolog handler for {original_request.method} {urlpath_noprefix}")
 
-    proxy_url = httpx.URL(path=urlpath_noprefix,
-                          query=original_request.url.query.encode("utf-8"))
+    NB This doesn't really enable interception of data; it's simple enough, just rewrite it if you need that.
+    """
     upstream_request = _real_ollama_client.build_request(
         method=original_request.method,
-        url=proxy_url,
+        url=endpoint_url,
         content=original_request.stream(),
         headers=original_request.headers,
         cookies=original_request.cookies,
     )
 
     upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
-    new_access = ApiAccessWithResponse(
-        api_bucket=f"ollama:{urlpath_noprefix}",
-        accessed_at=datetime.now(tz=timezone.utc),
-        api_endpoint=str(upstream_response.request.url),
-        request={
-            'method': upstream_response.request.method,
-            'url': str(upstream_response.request.url),
-            'headers': upstream_response.request.headers.multi_items().sort(),
-        },
-        response={
-            'status_code': upstream_response.status_code,
-            'headers': upstream_response.headers.multi_items().sort(),
-        },
-    )
-    ratelimits_db.add(new_access)
-    ratelimits_db.commit()
+
+    async def real_on_done():
+        await upstream_response.aclose()
+        if on_done_fn is not None:
+            await on_done_fn()
 
     return StreamingResponse(
         upstream_response.aiter_raw(),
         status_code=upstream_response.status_code,
         headers=upstream_response.headers,
-        background=BackgroundTask(upstream_response.aclose),
+        background=BackgroundTask(real_on_done),
     )
+
+
+@deprecated("Clients should migrate to `nolog`, which makes behavior changes explicit")
+async def forward_request_nodetails(
+        original_request: Request,
+        _: RatelimitsDB,
+):
+    urlpath_noprefix = original_request.url.path.removeprefix("/ollama-proxy")
+    logger.debug(f"/ollama-proxy: start nodetails handler for {original_request.method} {urlpath_noprefix}")
+
+    proxy_url = httpx.URL(path=urlpath_noprefix,
+                          query=original_request.url.query.encode("utf-8"))
+
+    return await forward_request_nolog(proxy_url, original_request)
 
 
 async def forward_request(
         original_request: Request,
         ratelimits_db: RatelimitsDB,
-        on_done_fn = None,
+        on_done_fn=None,
 ):
     intercept = RequestInterceptor(logger, ratelimits_db)
 
