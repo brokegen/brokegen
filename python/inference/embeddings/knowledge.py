@@ -75,7 +75,7 @@ class KnowledgeSingleton(_Borg):
                 for file in filenames:
                     yield dirpath, file
 
-        def _generate_on_disk_shard_ids():
+        def _generate_on_disk_shard_ids(max_shards: int | None = None):
             known_pkl = set()
             known_faiss = set()
 
@@ -88,7 +88,10 @@ class KnowledgeSingleton(_Borg):
 
             known_valid = known_pkl.intersection(known_faiss)
             logger.info(f"Identified vectorstore shards {pprint.pformat(known_valid, width=256)}")
-            yield from known_valid
+            if max_shards is None:
+                yield from known_valid
+            else:
+                yield from list(known_valid)[:max_shards]
 
         if embedder_config not in self.loaded_vectorstores:
             self.loaded_vectorstores[embedder_config] = VectorStoreReadOnly(embedder_config)

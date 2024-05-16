@@ -4,6 +4,7 @@ if __name__ == '__main__':
     # https://github.com/encode/uvicorn/issues/939
     # https://pyinstaller.org/en/latest/common-issues-and-pitfalls.html
     import multiprocessing
+
     multiprocessing.freeze_support()
 
 import logging
@@ -91,8 +92,7 @@ def run_proxy(data_dir, bind_port, log_level):
 
     access.ratelimits.init_db(f"{data_dir}/ratelimits.db")
     history.database.init_db(f"{data_dir}/requests-history.db")
-    if False:
-        get_knowledge().load_shards_from(data_dir)
+    get_knowledge().load_shards_from(data_dir)
 
     config = uvicorn.Config(app, port=bind_port, log_level="debug", reload=False, workers=1)
     server = uvicorn.Server(config)

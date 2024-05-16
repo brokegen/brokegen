@@ -1,4 +1,3 @@
-import json
 import logging
 from collections.abc import AsyncIterable, Iterable
 from typing import AsyncIterator
@@ -6,10 +5,7 @@ from typing import AsyncIterator
 import langchain_core.documents
 import orjson
 from fastapi import Request
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains.retrieval import create_retrieval_chain
-from langchain_community.llms.ollama import Ollama
-from langchain_core.prompts import PromptTemplate
+from langchain_core.documents import Document
 from pydantic import BaseModel
 from starlette.background import BackgroundTask
 from starlette.concurrency import iterate_in_threadpool
@@ -59,16 +55,15 @@ def document_encoder(obj):
         return obj
 
 
-async def do_proxy_chat_norag(
+async def _generate_raw(
         original_request: Request,
+        request_content_json,
+        prompt_override: str | None,
         history_db: HistoryDB,
         ratelimits_db: RatelimitsDB,
-        knowledge: KnowledgeSingleton,
 ):
     intercept = RequestInterceptor(logger, ratelimits_db)
 
-    request_content_bytes: bytes = await original_request.body()
-    request_content_json: dict = orjson.loads(request_content_bytes)
     model, executor_record = await lookup_model(original_request, request_content_json['model'], history_db,
                                                 ratelimits_db)
 
@@ -100,7 +95,10 @@ async def do_proxy_chat_norag(
     converted_prompts = []
     for count, untemplated in enumerate(chat_messages):
         is_first_message = count == 0
-        is_last_message = count == len(chat_messages) - 1
+        is_last_message = (
+                count == len(chat_messages) - 1
+                and prompt_override is None
+        )
 
         converted = await construct_raw_prompt(
             model_template,
@@ -110,6 +108,15 @@ async def do_proxy_chat_norag(
             is_last_message,
         )
         converted_prompts.append(converted)
+
+    if prompt_override is not None:
+        converted_prompts.append(await construct_raw_prompt(
+            model_template,
+            '',
+            prompt_override,
+            '',
+            True,
+        ))
 
     inference_job.raw_prompt = '\n'.join(converted_prompts)
     request_content_json['prompt'] = '\n'.join(converted_prompts)
@@ -185,17 +192,28 @@ async def do_proxy_chat_norag(
     )
 
 
-async def do_proxy_chat_rag(
+async def do_proxy_chat_norag(
         original_request: Request,
         history_db: HistoryDB,
         ratelimits_db: RatelimitsDB,
         knowledge: KnowledgeSingleton,
 ):
-    return await do_proxy_chat_norag(original_request, history_db, ratelimits_db, knowledge)
+    request_content_bytes: bytes = await original_request.body()
+    request_content_json: dict = orjson.loads(request_content_bytes)
+
+    return await _generate_raw(
+        original_request,
+        request_content_json,
+        None,
+        history_db,
+        ratelimits_db,
+    )
 
 
-async def do_transparent_rag(
-        request: Request,
+async def do_proxy_chat_rag(
+        original_request: Request,
+        history_db: HistoryDB,
+        ratelimits_db: RatelimitsDB,
         knowledge: KnowledgeSingleton,
         context_template: str = """\
 Use any sources you can. Some recent context is provided to try and provide newer information:
@@ -207,20 +225,9 @@ Use any sources you can. Some recent context is provided to try and provide newe
 Reasoning: Let's think step by step in order to produce the answer.
 
 Question: {input}""",
-        print_all_response_data: bool = False,
 ):
-    """
-    This "transparent" proxy works okay for our purposes (not modifying client code), but is horribly brittle.
-
-    TODO: Figure out how to plug in to/modify langchain so we can cache the raw request/response info.
-    """
-    request_content_json = orjson.loads(await request.body())
-    llm = Ollama(
-        model=request_content_json['model'],
-    )
-
-    prompt = PromptTemplate.from_template(context_template)
-    document_chain = create_stuff_documents_chain(llm, prompt)
+    request_content_bytes: bytes = await original_request.body()
+    request_content_json: dict = orjson.loads(request_content_bytes)
 
     retriever = knowledge.as_retriever(
         search_type='similarity',
@@ -228,42 +235,32 @@ Question: {input}""",
             'k': 18,
         },
     )
-    retrieval_chain = create_retrieval_chain(retriever, document_chain)
 
-    async def async_iter():
-        # TODO: Sometimes the astream Chunk is too big
-        async for chunk in retrieval_chain.astream({
-            'input': request_content_json['prompt'],
-        }):
-            if not chunk.get('answer'):
-                logger.debug(
-                    f"Partial `retrieval_chain` response: {json.dumps(chunk, indent=2, default=document_encoder)}")
-                continue
+    last_message = request_content_json['messages'][-1]
+    retrieval_str = last_message['content']
+    docs: list[Document] = await retriever.ainvoke(retrieval_str)
 
-            ollama_style_response = dict()
-            ollama_style_response['model'] = request_content_json['model']
-            ollama_style_response['response'] = chunk['answer']
-            ollama_style_response['done'] = False
+    formatted_docs = '\n\n'.join(
+        [d.page_content for d in docs]
+    )
+    logger.debug(f"Returned {len(docs)} docs, with {len(formatted_docs)} chars text")
 
-            if print_all_response_data:
-                logger.debug(json.dumps(ollama_style_response))
-            yield ollama_style_response
+    big_prompt = f"""\
+Use any sources you can. Some recent context is provided to try and provide newer information:
 
-        yield {
-            'model': request_content_json['model'],
-            'response': '',
-            'done': True,
-        }
+<context>
+{formatted_docs}
+</context>
 
-    try:
-        return JSONStreamingResponse(
-            async_iter(),
-            status_code=200,
-        )
-    except ValueError as e:
-        # TODO: Check how many response chunks we've already tried streaming out;
-        #       it's probably zero, but we should verify that, just in case.
-        if str(e) == "Chunk too big":
-            logger.warning("Failed to stream all this data, starting over in a non-stream mode."
-                           "Hopefully this doesn't mess up the client.")
-            stream = False
+Reasoning: Let's think step by step in order to produce the answer.
+
+Question: {last_message['content']}
+"""
+
+    return await _generate_raw(
+        original_request,
+        request_content_json,
+        big_prompt,
+        history_db,
+        ratelimits_db,
+    )

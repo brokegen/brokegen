@@ -46,6 +46,7 @@ async def lookup_model(
     model = fetch_model_record(executor_record, model_name, history_db)
 
     if not model:
+        # TODO: This… wouldn't work, because the request content probably doesn't actually include the model
         await do_api_show(parent_request, history_db, ratelimits_db)
         model = fetch_model_record(executor_record, model_name, history_db)
 
