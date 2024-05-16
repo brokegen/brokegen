@@ -93,16 +93,15 @@ async def lifespan_logging(app: FastAPI):
 
 
 @click.command()
-@click.option('--data-dir', default='data', help='Filesystem directory to store/read data from')
+@click.option('--data-dir', default='data/',
+              help='Filesystem directory to store/read data from')
 @click.option('--bind-port', default=6634, help='uvicorn bind port')
-@click.option('--log-level', default='INFO', help='loglevel to pass to Python `logging`')
+@click.option('--log-level', default='DEBUG',
+              type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'FATAL'], case_sensitive=False),
+              help='loglevel to pass to Python `logging`')
 def run_proxy(data_dir, bind_port, log_level):
     numeric_log_level = getattr(logging, str(log_level).upper(), None)
-    if not isinstance(numeric_log_level, int):
-        print(f"Log level not recognized, ignoring: {log_level}")
-        logging.getLogger().setLevel(level=logging.INFO)
-    else:
-        logging.getLogger().setLevel(level=numeric_log_level)
+    logging.getLogger().setLevel(level=numeric_log_level)
 
     import asyncio
     import uvicorn

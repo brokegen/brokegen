@@ -79,11 +79,7 @@ async def lifespan_logging(app: FastAPI):
               help='Load FAISS files from --data-dir, and apply them to any /api/chat calls')
 def run_proxy(data_dir, bind_port, log_level, enable_rag):
     numeric_log_level = getattr(logging, str(log_level).upper(), None)
-    if not isinstance(numeric_log_level, int):
-        print(f"Log level not recognized, ignoring: {log_level}")
-        logging.getLogger().setLevel(level=logging.INFO)
-    else:
-        logging.getLogger().setLevel(level=numeric_log_level)
+    logging.getLogger().setLevel(level=numeric_log_level)
 
     import asyncio
     import uvicorn

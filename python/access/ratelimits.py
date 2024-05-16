@@ -51,7 +51,7 @@ class ApiAccessWithResponse(Base):
     accessed_at = Column(DateTime, primary_key=True, nullable=False)
     api_endpoint = Column(String, primary_key=True, nullable=False)
 
-    api_bucket = Column(String, primary_key=True, nullable=False)
+    api_bucket = Column(String)
     request = Column(JSON)
     response = Column(JSON)
 
@@ -132,14 +132,14 @@ class PlainRequestInterceptor:
         request_dict = {
             'method': upstream_response.request.method,
             'url': str(upstream_response.request.url),
-            'content': "[not recorded yet]",
+            'content': "[not recorded yet/interrupted during processing]",
         }
         if upstream_response.request.headers:
             request_dict['headers'] = upstream_response.request.headers.multi_items()
 
         response_dict = {
             'status_code': upstream_response.status_code,
-            'content': "[not recorded yet]",
+            'content': "[not recorded yet/interrupted during processing]",
         }
         if upstream_response.headers:
             response_dict['headers'] = upstream_response.headers.multi_items()
