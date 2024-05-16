@@ -7,7 +7,7 @@ from starlette.background import BackgroundTask
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
 
-from access.ratelimits import RatelimitsDB, PlainRequestInterceptor
+from access.ratelimits import RatelimitsDB, PlainRequestInterceptor, RequestInterceptor
 from history.database import HistoryDB, InferenceJob, ModelConfigRecord, ExecutorConfigRecord
 from history.ollama.forward_routes import _real_ollama_client
 from history.ollama.model_routes import do_api_show
@@ -125,7 +125,7 @@ async def do_proxy_generate(
         history_db: HistoryDB,
         ratelimits_db: RatelimitsDB,
 ):
-    intercept = PlainRequestInterceptor(logger, ratelimits_db)
+    intercept = RequestInterceptor(logger, ratelimits_db)
 
     request_content_bytes: bytes = await original_request.body()
     request_content_json: dict = orjson.loads(request_content_bytes)
@@ -175,10 +175,7 @@ async def do_proxy_generate(
 
     upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
     intercept.build_access_event(upstream_response, api_bucket=f"ollama:/api/generate")
-    # NB We have to a do a full dict copy. For some reason.
-    new_request_dict = dict(intercept.new_access.request)
-    new_request_dict['content'] = request_content_json
-    intercept.new_access.request = new_request_dict
+    intercept._set_or_delete_request_content(request_content_json)
 
     async def on_done(consolidated_response_content_json):
         response_stats = dict(consolidated_response_content_json)
@@ -195,6 +192,7 @@ async def do_proxy_generate(
 
         merged_job = history_db.merge(inference_job)
         merged_job.response_stats = response_stats
+
         history_db.add(merged_job)
         history_db.commit()
 
@@ -202,12 +200,9 @@ async def do_proxy_generate(
         await upstream_response.aclose()
 
         as_json = orjson.loads(intercept.response_content_as_str('utf-8'))
+        intercept._set_or_delete_response_content(as_json)
 
-        # NB We have to a do a full dict copy. For some reason.
-        new_response_json = dict(intercept.new_access.response)
-        new_response_json['content'] = as_json
-        intercept.new_access.response = new_response_json
-
+        intercept.new_access = ratelimits_db.merge(intercept.new_access)
         ratelimits_db.add(intercept.new_access)
         ratelimits_db.commit()
 

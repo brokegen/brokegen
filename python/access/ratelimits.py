@@ -83,6 +83,7 @@ class PlainRequestInterceptor:
             self.request_content_chunks.append(chunk)
 
     async def wrap_response_content_raw(self, response_content_stream: AsyncIterator[bytes]):
+        # TODO: Write this to SQLite every N chunks or bytes or whatever
         async for chunk in response_content_stream:
             yield chunk
             self.response_content_chunks.append(chunk)
@@ -273,7 +274,8 @@ class RequestInterceptor(PlainRequestInterceptor):
     def response_content_as_json(self) -> dict | None:
         # First, check if the parent class is hiding anything in self.response_content_chunks
         content_as_str = self.response_content_as_str('utf-8')
-        if content_as_str:
+        # TODO: The JSON-vs-bytes leaking everywhere is really nasty. Almost like JavaScript.
+        if content_as_str != '[]':
             return orjson.loads(content_as_str)
 
         # Next, check if we need a consolidation
@@ -283,22 +285,43 @@ class RequestInterceptor(PlainRequestInterceptor):
 
         return self.response_content_json[0]
 
+    def _set_or_delete_request_content(self, json_ish):
+        """
+        We need this to be a separate property because SQLAlchemy JSON columns use a lot of caching.
+
+        Rather than doing things correctly, we make a copy of its dict and then update the entire column.
+        TODO: Do things correctly.
+        """
+        new_request_json = dict(self.new_access.request)
+        if json_ish:
+            new_request_json['content'] = json_ish
+        else:
+            if 'content' in new_request_json:
+                del new_request_json['content']
+
+        self.new_access.request = new_request_json
+
+    def _set_or_delete_response_content(self, json_ish):
+        new_response_json = dict(self.new_access.response)
+        if json_ish:
+            new_response_json['content'] = json_ish
+        else:
+            if 'content' in new_response_json:
+                del new_response_json['content']
+
+        self.new_access.response = new_response_json
+
     def update_access_event(
             self,
             do_commit: bool = True,
     ) -> None:
-        merged_access = self.new_access
+        # By this point, the request is almost always done, and we're running in an unrelated BackgroundTask.
+        # `self.new_access` has probably also been committed to db already, but that shouldn't invalidate its contents…
+        self.new_access = self.ratelimits_db.merge(self.new_access)
 
-        request_json = self.request_content_as_json()
-        if request_json:
-            merged_access.request['content'] = request_json
+        self._set_or_delete_request_content(self.request_content_as_json())
+        self._set_or_delete_response_content(self.response_content_as_json())
 
-        response_json = self.response_content_as_json()
-        if not response_json:
-            del merged_access.response['content']
-        else:
-            merged_access.response['content'] = response_json
-
-        self.ratelimits_db.add(merged_access)
+        self.ratelimits_db.add(self.new_access)
         if do_commit:
             self.ratelimits_db.commit()
