@@ -75,7 +75,8 @@ async def lifespan_logging(app: FastAPI):
 @click.option('--data-dir', default='data', help='Filesystem directory to store/read data from')
 @click.option('--bind-port', default=6635, help='uvicorn bind port')
 @click.option('--log-level', default='INFO', help='loglevel to pass to Python `logging`')
-def run_proxy(data_dir, bind_port, log_level):
+@click.option('--max-shards', default=-1, help='Maximum number of shard files to load, 0 or less means load all')
+def run_proxy(data_dir, bind_port, log_level, max_shards):
     numeric_log_level = getattr(logging, str(log_level).upper(), None)
     if not isinstance(numeric_log_level, int):
         print(f"Log level not recognized, ignoring: {log_level}")
@@ -92,7 +93,7 @@ def run_proxy(data_dir, bind_port, log_level):
 
     access.ratelimits.init_db(f"{data_dir}/ratelimits.db")
     history.database.init_db(f"{data_dir}/requests-history.db")
-    get_knowledge().load_shards_from(data_dir)
+    get_knowledge().load_shards_from(data_dir, max_shards)
 
     config = uvicorn.Config(app, port=bind_port, log_level="debug", reload=False, workers=1)
     server = uvicorn.Server(config)
