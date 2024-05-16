@@ -15,6 +15,7 @@ from fastapi import FastAPI
 import access.ratelimits
 import history
 import history.ollama
+from embeddings.knowledge import get_knowledge
 
 
 def reconfigure_loglevels():
@@ -90,6 +91,8 @@ def run_proxy(data_dir, bind_port, log_level):
 
     access.ratelimits.init_db(f"{data_dir}/ratelimits.db")
     history.database.init_db(f"{data_dir}/requests-history.db")
+    if False:
+        get_knowledge().load_shards_from(data_dir)
 
     config = uvicorn.Config(app, port=bind_port, log_level="debug", reload=False, workers=1)
     server = uvicorn.Server(config)
