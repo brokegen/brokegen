@@ -205,6 +205,12 @@ class RequestInterceptor(PlainRequestInterceptor):
         if len(self.request_content_chunks) == 1 and len(self.request_content_chunks[0]) < 80:
             self.logger.debug(f"Intercepted request chunk: {self.request_content_as_str()}")
 
+        # Now that we're done, try committing changes to db
+        if self.new_access:
+            self.new_access = self.ratelimits_db.merge(self.new_access)
+            self.ratelimits_db.add(self.new_access)
+            self.ratelimits_db.commit()
+
     async def wrap_response_content(
             self,
             response_content_stream: AsyncIterator[str],
@@ -217,6 +223,12 @@ class RequestInterceptor(PlainRequestInterceptor):
 
             yield line
             self.response_content_json.append(orjson.loads(line))
+
+        # Now that we're done, try committing changes to db
+        if self.new_access:
+            self.new_access = self.ratelimits_db.merge(self.new_access)
+            self.ratelimits_db.add(self.new_access)
+            self.ratelimits_db.commit()
 
     def consolidate_json_response(self):
         if self.response_content_chunks:
