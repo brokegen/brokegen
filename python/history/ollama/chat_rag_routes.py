@@ -1,68 +1,28 @@
 import logging
-from collections.abc import AsyncIterable, Iterable
+from collections.abc import AsyncIterable
 from datetime import datetime, timezone
 from typing import TypeAlias, Callable, Awaitable, Any
 
 import httpx
-import langchain_core.documents
 import orjson
 import starlette.datastructures
 import starlette.requests
 from fastapi import Request
 from langchain_core.documents import Document
-from pydantic import BaseModel
 from starlette.background import BackgroundTask
-from starlette.concurrency import iterate_in_threadpool
-from starlette.responses import JSONResponse, StreamingResponse
+from starlette.responses import StreamingResponse
 
-from access.ratelimits import RatelimitsDB, RequestInterceptor, ApiAccessWithResponse
+from access.ratelimits import RatelimitsDB, ApiAccessWithResponse
 from history.database import HistoryDB, InferenceJob
 from history.ollama.chat_routes import safe_get, lookup_model_offline
 from history.ollama.forward_routes import _real_ollama_client
+from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, JSONRequestInterceptor
 from history.prompting import apply_llm_template, PromptText, TemplatedPromptText
 from inference.embeddings.knowledge import KnowledgeSingleton
 
 logger = logging.getLogger(__name__)
 
-OllamaRequestContentJSON: TypeAlias = dict
-OllamaResponseContentJSON: TypeAlias = dict
-
 OllamaModelName: TypeAlias = str
-
-
-class JSONStreamingResponse(StreamingResponse, JSONResponse):
-    def __init__(
-            self,
-            content: Iterable | AsyncIterable,
-            status_code: int = 200,
-            headers: dict[str, str] | None = None,
-            media_type: str | None = None,
-            background: BackgroundTask | None = None,
-    ) -> None:
-        if isinstance(content, AsyncIterable):
-            self._content_iterable: AsyncIterable = content
-        else:
-            self._content_iterable = iterate_in_threadpool(content)
-
-        async def body_iterator() -> AsyncIterable[bytes]:
-            async for content_ in self._content_iterable:
-                if isinstance(content_, BaseModel):
-                    content_ = content_.model_dump()
-                yield self.render(content_)
-
-        self.body_iterator = body_iterator()
-        self.status_code = status_code
-        if media_type is not None:
-            self.media_type = media_type
-        self.background = background
-        self.init_headers(headers)
-
-
-def document_encoder(obj):
-    if isinstance(obj, langchain_core.documents.Document):
-        return obj.to_json()
-    else:
-        return obj
 
 
 async def do_generate_raw_templated(
@@ -73,7 +33,7 @@ async def do_generate_raw_templated(
         ratelimits_db: RatelimitsDB,
         on_done_fn: Callable[[OllamaResponseContentJSON], Awaitable[Any]] | None = None,
 ):
-    intercept = RequestInterceptor(logger, ratelimits_db)
+    intercept = JSONRequestInterceptor(logger, ratelimits_db)
 
     model, executor_record = await lookup_model_offline(
         request_content['model'],
@@ -96,6 +56,9 @@ async def do_generate_raw_templated(
         cookies=request_cookies,
     )
 
+    # TODO: We should have real timing and instrumentation calls,
+    #  but the timestamps for this will suffice, for our single-threaded purposes.
+    logger.debug(f"Done pre-processing, forwarding request to Ollama")
     upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
     intercept.build_access_event(upstream_response, api_bucket=f"ollama:/api/generate")
     intercept._set_or_delete_request_content(request_content)
@@ -113,7 +76,7 @@ async def do_generate_raw_templated(
         history_db.commit()
 
     async def finalize_intercept() -> OllamaResponseContentJSON:
-        intercept.consolidate_json_response()
+        await intercept.consolidate_json_response()
         # TODO: Consolidate correctly, this isn't loading into the right place.
         as_json: OllamaResponseContentJSON = intercept.response_content_as_json()
         intercept._set_or_delete_response_content(as_json)
@@ -264,6 +227,8 @@ async def do_proxy_chat_norag(
         history_db: HistoryDB,
         ratelimits_db: RatelimitsDB,
 ):
+    logger.debug(f"Received /api/chat request, starting processing")
+
     request_content_bytes: bytes = await original_request.body()
     request_content_json: dict = orjson.loads(request_content_bytes)
 
@@ -301,7 +266,7 @@ async def do_proxy_chat_rag(
         knowledge: KnowledgeSingleton,
 ):
     request_content_bytes: bytes = await original_request.body()
-    request_content_json: dict = orjson.loads(request_content_bytes)
+    request_content_json: OllamaRequestContentJSON = orjson.loads(request_content_bytes)
 
     retriever = knowledge.as_retriever(
         search_type='similarity',
@@ -321,8 +286,9 @@ async def do_proxy_chat_rag(
         logger.debug(f"Returned {len(docs)} docs, with {len(formatted_docs)} chars text, truncating")
         while len(formatted_docs) > 20_000:
             if len(docs) == 1:
-                logger.debug(f"Last remaining RAG doc is {len(docs[0])} chars, truncating")
+                logger.debug(f"Last remaining RAG doc is {len(docs[0].page_content)} chars, truncating")
                 formatted_docs = docs[0][:20_000]
+                break
 
             docs = docs[:-1]
             formatted_docs = '\n\n'.join(

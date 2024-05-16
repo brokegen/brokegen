@@ -6,7 +6,8 @@ from starlette.background import BackgroundTask
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
 
-from access.ratelimits import RatelimitsDB, RequestInterceptor
+from access.ratelimits import RatelimitsDB
+from history.ollama.json import JSONRequestInterceptor
 from history.database import HistoryDB, InferenceJob, ModelConfigRecord, ExecutorConfigRecord
 from history.ollama.forward_routes import _real_ollama_client
 from history.ollama.model_routes import do_api_show
@@ -83,7 +84,7 @@ async def do_proxy_generate(
         history_db: HistoryDB,
         ratelimits_db: RatelimitsDB,
 ):
-    intercept = RequestInterceptor(logger, ratelimits_db)
+    intercept = JSONRequestInterceptor(logger, ratelimits_db)
 
     request_content_bytes: bytes = await original_request.body()
     request_content_json: dict = orjson.loads(request_content_bytes)

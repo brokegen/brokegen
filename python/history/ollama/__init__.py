@@ -1,9 +1,12 @@
 import logging
 from contextlib import contextmanager
+from typing import AsyncIterable
 
+import orjson
 import starlette.datastructures
 from fastapi import FastAPI, APIRouter, Depends
 from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from access.ratelimits import RatelimitsDB, get_db as get_ratelimits_db
 from history.database import HistoryDB, get_db as get_history_db
@@ -11,6 +14,7 @@ from history.ollama.chat_rag_routes import do_proxy_chat_rag, do_proxy_chat_nora
     OllamaModelName, do_generate_raw_templated
 from history.ollama.chat_routes import do_proxy_generate
 from history.ollama.forward_routes import forward_request_nodetails, forward_request, forward_request_nolog
+from history.ollama.json import consolidate_stream, OllamaResponseContentJSON
 from history.ollama.model_routes import do_api_tags, do_api_show
 from history.prompting import TemplatedPromptText
 from inference.embeddings.knowledge import KnowledgeSingleton, get_knowledge_dependency
@@ -39,6 +43,7 @@ def install_test_points(app: FastAPI):
     async def generate_raw_templated(
             templated_text: TemplatedPromptText,
             model_name: OllamaModelName = "mistral-7b-instruct:v0.2.Q8_0",
+            allow_streaming: bool = False,
             history_db: HistoryDB = Depends(get_history_db),
             ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
     ):
@@ -52,13 +57,30 @@ def install_test_points(app: FastAPI):
         headers = starlette.datastructures.MutableHeaders()
         headers['content-type'] = 'application/json'
 
-        return await do_generate_raw_templated(
+        streaming_response = await do_generate_raw_templated(
             content,
             headers,
             None,
             history_db,
             ratelimits_db,
         )
+
+        if allow_streaming:
+            return streaming_response
+        else:
+            async def content_to_json_adapter() -> OllamaResponseContentJSON:
+                async def jsonner() -> AsyncIterable[OllamaResponseContentJSON]:
+                    async for chunk in streaming_response.body_iterator:
+                        yield orjson.loads(chunk)
+
+                return await consolidate_stream(jsonner())
+
+            return JSONResponse(
+                content=await content_to_json_adapter(),
+                status_code=streaming_response.status_code,
+                headers=streaming_response.headers,
+                background=streaming_response.background,
+            )
 
     @router.post("/generate.raw")
     async def generate_raw(

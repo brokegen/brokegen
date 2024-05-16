@@ -5,7 +5,8 @@ from fastapi import Request
 from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
 
-from access.ratelimits import RatelimitsDB, RequestInterceptor
+from access.ratelimits import RatelimitsDB
+from history.ollama.json import JSONRequestInterceptor
 from history.database import HistoryDB
 from history.ollama.models import build_executor_record, build_model_from_api_show, build_models_from_api_tags
 
@@ -27,7 +28,7 @@ async def do_api_tags(
         history_db: HistoryDB,
         ratelimits_db: RatelimitsDB,
 ):
-    intercept = RequestInterceptor(logger, ratelimits_db)
+    intercept = JSONRequestInterceptor(logger, ratelimits_db)
 
     logger.debug(f"ollama proxy: start handler for GET /api/tags")
     upstream_request = _real_ollama_client.build_request(
@@ -43,7 +44,7 @@ async def do_api_tags(
 
     async def on_done_fetching():
         await upstream_response.aclose()
-        intercept.consolidate_json_response()
+        await intercept.consolidate_json_response()
         intercept.update_access_event()
 
         executor_record = build_executor_record(str(_real_ollama_client.base_url), history_db=history_db)
@@ -67,7 +68,7 @@ async def do_api_show(
         history_db: HistoryDB,
         ratelimits_db: RatelimitsDB,
 ):
-    intercept = RequestInterceptor(logger, ratelimits_db)
+    intercept = JSONRequestInterceptor(logger, ratelimits_db)
 
     logger.debug(f"ollama proxy: start handler for POST /api/show")
     upstream_request = _real_ollama_client.build_request(
@@ -83,7 +84,7 @@ async def do_api_show(
 
     async def on_done_fetching():
         await upstream_response.aclose()
-        intercept.consolidate_json_response()
+        await intercept.consolidate_json_response()
         intercept.update_access_event()
 
         # Once we've received all the data we're going to, persist the model info

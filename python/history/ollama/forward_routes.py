@@ -7,7 +7,8 @@ from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
 from typing_extensions import deprecated
 
-from access.ratelimits import RatelimitsDB, RequestInterceptor
+from access.ratelimits import RatelimitsDB
+from history.ollama.json import JSONRequestInterceptor
 
 _real_ollama_client = httpx.AsyncClient(
     base_url="http://localhost:11434",
@@ -76,7 +77,7 @@ async def forward_request(
         ratelimits_db: RatelimitsDB,
         on_done_fn=None,
 ):
-    intercept = RequestInterceptor(logger, ratelimits_db)
+    intercept = JSONRequestInterceptor(logger, ratelimits_db)
 
     urlpath_noprefix = original_request.url.path.removeprefix("/ollama-proxy")
     logger.debug(f"/ollama-proxy: start handler for {original_request.method} {urlpath_noprefix}")
@@ -96,7 +97,7 @@ async def forward_request(
 
     async def post_forward_cleanup():
         await upstream_response.aclose()
-        intercept.consolidate_json_response()
+        await intercept.consolidate_json_response()
         intercept.update_access_event()
 
         if on_done_fn is not None:
