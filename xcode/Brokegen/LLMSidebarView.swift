@@ -5,6 +5,14 @@ struct LLMSidebarView: View {
         NavigationView {
             VStack {
                 List {
+                    NavigationLink(destination: SystemInfoView()) {
+                        Text("System Info")
+                            .font(.title2)
+                    }
+                    .padding(6)
+
+                    Divider()
+
                     // Generic chats
                     Text("Chats")
                         .font(.title3)
@@ -31,9 +39,9 @@ struct LLMSidebarView: View {
 
                     VStack(alignment: .trailing) {
                         NavigationLink(destination: NavigationView {
-                            PlaceholderContentView()
-                            PlaceholderContentView()
-                        }
+                                PlaceholderContentView()
+                                PlaceholderContentView()
+                            }
                             .toolbar{
                                 ToolbarItem(placement: .navigation) {
                                     Label("Settings", systemImage: "gear")
@@ -66,6 +74,15 @@ struct LLMSidebarView: View {
                     })
 
                     Spacer()
+
+                    // Non-chatlike completions
+                    Text("Prompt Engineering")
+
+                    Text("Pure raw")
+                    Text("Template-provided raw")
+                    NavigationLink(destination: SystemInfoView()) {
+                        Text("Augmented Raw Prompts")
+                    }
                 }
                 .listStyle(.sidebar)
                 .frame(minWidth: 300, idealWidth: 400, maxHeight: .infinity)
@@ -113,7 +130,10 @@ struct LLMSidebarView: View {
                 }
             }
 
-            PlaceholderContentView()
+            VStack {
+                BigToolbar()
+                PlaceholderContentView()
+            }
         }
     }
 }
