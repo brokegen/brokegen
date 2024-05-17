@@ -8,11 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		CE6D8A7F2BF6DF1800A7934D /* BigToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6D8A7E2BF6DF1800A7934D /* BigToolbar.swift */; };
+		CE8229AF2BF7306000029DC2 /* ManagedProcessService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8229AE2BF7306000029DC2 /* ManagedProcessService.swift */; };
 		CE9867512BF4047C008D6C41 /* BrokegenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867502BF4047C008D6C41 /* BrokegenApp.swift */; };
 		CE9867532BF4047C008D6C41 /* ProcessOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867522BF4047C008D6C41 /* ProcessOutputView.swift */; };
 		CE9867552BF4047E008D6C41 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE9867542BF4047E008D6C41 /* Assets.xcassets */; };
 		CE9867592BF4047E008D6C41 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE9867582BF4047E008D6C41 /* Preview Assets.xcassets */; };
-		CE9867612BF414B3008D6C41 /* ProxyProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867602BF414B3008D6C41 /* ProxyProcess.swift */; };
+		CE9867612BF414B3008D6C41 /* ManagedProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867602BF414B3008D6C41 /* ManagedProcess.swift */; };
 		CE9867632BF41954008D6C41 /* LLMSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867622BF41954008D6C41 /* LLMSidebarView.swift */; };
 		CE9867652BF41A3E008D6C41 /* PlaceholderContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867642BF41A3E008D6C41 /* PlaceholderContentView.swift */; };
 		CECA47A82BF6D5B8007A28F2 /* System.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECA47A72BF6D5B8007A28F2 /* System.swift */; };
@@ -21,12 +22,13 @@
 
 /* Begin PBXFileReference section */
 		CE6D8A7E2BF6DF1800A7934D /* BigToolbar.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BigToolbar.swift; sourceTree = "<group>"; };
+		CE8229AE2BF7306000029DC2 /* ManagedProcessService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagedProcessService.swift; sourceTree = "<group>"; };
 		CE98674D2BF4047C008D6C41 /* Brokegen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Brokegen.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE9867502BF4047C008D6C41 /* BrokegenApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrokegenApp.swift; sourceTree = "<group>"; };
 		CE9867522BF4047C008D6C41 /* ProcessOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessOutputView.swift; sourceTree = "<group>"; };
 		CE9867542BF4047E008D6C41 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CE9867582BF4047E008D6C41 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		CE9867602BF414B3008D6C41 /* ProxyProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProxyProcess.swift; sourceTree = "<group>"; };
+		CE9867602BF414B3008D6C41 /* ManagedProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagedProcess.swift; sourceTree = "<group>"; };
 		CE9867622BF41954008D6C41 /* LLMSidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMSidebarView.swift; sourceTree = "<group>"; };
 		CE9867642BF41A3E008D6C41 /* PlaceholderContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceholderContentView.swift; sourceTree = "<group>"; };
 		CECA47A72BF6D5B8007A28F2 /* System.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = System.swift; sourceTree = "<group>"; };
@@ -64,7 +66,7 @@
 			isa = PBXGroup;
 			children = (
 				CECA47A62BF6D59A007A28F2 /* Performance */,
-				CE98675F2BF4149F008D6C41 /* Utils */,
+				CE98675F2BF4149F008D6C41 /* Processes */,
 				CE9867502BF4047C008D6C41 /* BrokegenApp.swift */,
 				CE6D8A7E2BF6DF1800A7934D /* BigToolbar.swift */,
 				CE9867622BF41954008D6C41 /* LLMSidebarView.swift */,
@@ -83,13 +85,14 @@
 			path = "Preview Content";
 			sourceTree = "<group>";
 		};
-		CE98675F2BF4149F008D6C41 /* Utils */ = {
+		CE98675F2BF4149F008D6C41 /* Processes */ = {
 			isa = PBXGroup;
 			children = (
-				CE9867602BF414B3008D6C41 /* ProxyProcess.swift */,
 				CE9867522BF4047C008D6C41 /* ProcessOutputView.swift */,
+				CE9867602BF414B3008D6C41 /* ManagedProcess.swift */,
+				CE8229AE2BF7306000029DC2 /* ManagedProcessService.swift */,
 			);
-			path = Utils;
+			path = Processes;
 			sourceTree = "<group>";
 		};
 		CECA47A62BF6D59A007A28F2 /* Performance */ = {
@@ -176,9 +179,10 @@
 				CE9867532BF4047C008D6C41 /* ProcessOutputView.swift in Sources */,
 				CE9867632BF41954008D6C41 /* LLMSidebarView.swift in Sources */,
 				CE9867652BF41A3E008D6C41 /* PlaceholderContentView.swift in Sources */,
+				CE8229AF2BF7306000029DC2 /* ManagedProcessService.swift in Sources */,
 				CE9867512BF4047C008D6C41 /* BrokegenApp.swift in Sources */,
 				CECA47A82BF6D5B8007A28F2 /* System.swift in Sources */,
-				CE9867612BF414B3008D6C41 /* ProxyProcess.swift in Sources */,
+				CE9867612BF414B3008D6C41 /* ManagedProcess.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

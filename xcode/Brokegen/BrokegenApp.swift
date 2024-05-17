@@ -3,17 +3,16 @@ import SwiftUI
 
 @main
 struct BrokegenApp: App {
-    private var proxyProcess: ProxyProcess
-    @State private var proxyOutput: String
+    @State private var managedProcessService: ManagedProcessService
 
     init() {
-        self.proxyProcess = ProxyProcess(["/usr/sbin/ioreg", "-c", "IOPlatformExpertDevice", "-d", "2"])
-        self._proxyOutput = State(initialValue: "[waiting for process to start]")
+        self._managedProcessService = State(initialValue: ManagedProcessService())
     }
 
     var body: some Scene {
         WindowGroup {
             LLMSidebarView()
+                .environment(managedProcessService)
         }
     }
 }

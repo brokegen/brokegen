@@ -1,8 +1,8 @@
 import Foundation
 
-struct ProxyProcess {
-    private var executableURL: URL
-    private var arguments: [String]
+struct ManagedProcess {
+    let executableURL: URL
+    let arguments: [String]
 
     init(from shellString: String) {
         self.executableURL = URL(fileURLWithPath: "/bin/sh")
@@ -12,6 +12,11 @@ struct ProxyProcess {
     init(_ directArgs: [String]) {
         self.executableURL = URL(fileURLWithPath: directArgs[0])
         self.arguments = Array(directArgs.dropFirst())
+    }
+
+    init(_ executableURL: URL, argv: [String]) {
+        self.executableURL = executableURL
+        self.arguments = argv
     }
 
     /// Runs the specified tool as a child process, supplying `stdin` and capturing `stdout`.
@@ -110,7 +115,7 @@ struct ProxyProcess {
             group.enter()
             let writeIO = DispatchIO(type: .stream, fileDescriptor: inputPipe.fileHandleForWriting.fileDescriptor, queue: .main) { _ in
                 // `FileHandle` will automatically close the underlying file
-                // descriptor when you release the last reference to it.  By holidng
+                // descriptor when you release the last reference to it.  By holding
                 // on to `inputPipe` until here, we ensure that doesn’t happen. And
                 // as we have to hold a reference anyway, we might as well close it
                 // explicitly.

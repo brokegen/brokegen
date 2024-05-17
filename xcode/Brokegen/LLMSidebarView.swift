@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct LLMSidebarView: View {
+    @Environment(ManagedProcessService.self) private var managedProcessService
+
     var body: some View {
         NavigationView {
             VStack {
@@ -12,6 +14,19 @@ struct LLMSidebarView: View {
                     .padding(6)
 
                     Divider()
+
+                    Section(header:
+                        Text("Processes")
+                            .font(.title2)
+                            .foregroundStyle(.primary)
+                    ) {
+                        ForEach(managedProcessService.knownJobs) { job in
+                            NavigationLink(destination: ProcessOutputView(job)) {
+                                Text(job.makeTitle())
+                                    .font(.title2)
+                            }
+                        }
+                    }
 
                     // Generic chats
                     Text("Chats")
@@ -131,7 +146,7 @@ struct LLMSidebarView: View {
             }
 
             VStack {
-                BigToolbar()
+                BigToolbar("[faux toolbar]")
                 PlaceholderContentView()
             }
         }

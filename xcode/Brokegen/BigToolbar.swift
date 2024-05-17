@@ -1,33 +1,27 @@
 import AppKit
 import SwiftUI
 
-//struct Toolbar: NSViewRepresentable {
-//    let toolbar = NSToolbar()
-//
-//    func makeNSView(context: Context) -> NSToolbar {
-//        return self.toolbar
-//    }
-//
-//    func updateNSView(_ nsView: NSToolbar, context: Context) {
-//        // Update the toolbar items or styles here
-//    }
-//}
-
 struct BigToolbar: View {
+    let bigText: String
+
+    init(_ bigText: String?) {
+        self.bigText = bigText ?? "🥺🥺"
+    }
+
     var body: some View {
-        // Real toolbar, to do things by default:
         HStack {
-            Label("futureproof this", systemImage: "gear")
+            Text(bigText)
+                .font(.largeTitle)
         }
         .frame(maxWidth: .infinity)
-        .frame(minHeight: 200)
-//        .background(Color.accentColor)
+        .frame(minHeight: 100)
+        .padding(24)
     }
 }
 
 #Preview {
     VStack {
-        BigToolbar()
+        BigToolbar("faux")
         NavigationView {
             Text("empty")
         }
