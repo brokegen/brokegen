@@ -58,11 +58,12 @@ async def do_generate_raw_templated(
     )
 
     # TODO: We should have real timing and instrumentation calls,
-    #  but the timestamps for this will suffice, for our single-threaded purposes.
+    #       but the timestamps for this will suffice, for our single-threaded purposes.
     logger.debug(f"Done pre-processing, forwarding request to Ollama: {request_content['prompt'][:280]}")
     upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
     intercept.build_access_event(upstream_response, api_bucket=f"ollama:/api/generate")
     # TODO: The request_content was available a long time ago, it should have been stored right away.
+    # Would it be easier to review all usages of this, or check httpx/starlette for proper middleware support?
     intercept._set_or_delete_request_content(request_content)
 
     async def finalize_inference_job(response_content_json: OllamaResponseContentJSON):

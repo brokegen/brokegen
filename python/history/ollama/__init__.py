@@ -58,7 +58,7 @@ Note that these will override anything set in the model templates!
             templated_text: TemplatedPromptText,
             model_name: OllamaModelName = "llama3-8b-instruct:Q8_0",
             options_json: Annotated[str, Query(description=ollama_api_options_str)] \
-                    = """{"num_predict":-1, "temperature": 1.2}""",
+                    = """{"num_predict":8192, "top_k": 80, "num_ctx": 16384}""",
             allow_streaming: bool = False,
             history_db: HistoryDB = Depends(get_history_db),
             ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
@@ -88,7 +88,7 @@ Note that these will override anything set in the model templates!
         if allow_streaming:
             logging_aiter = chunk_and_log_output(
                 streaming_response.body_iterator,
-                lambda s: print("/generate.raw-tokens-only: " + s),
+                lambda s: print("/generate.raw-templated: " + s),
             )
             streaming_response.body_iterator = logging_aiter
             return streaming_response
@@ -117,7 +117,7 @@ which bypasses censoring for most models.""")
             assistant_prefix: str | None = None,
             model_name: OllamaModelName = "llama3-8b-instruct:Q8_0",
             options_json: Annotated[str, Query(description=ollama_api_options_str)] \
-                    = """{"num_predict":2048, "temperature": 2.0}""",
+                    = """{"num_predict":8192, "top_k": 80, "num_ctx": 16384}""",
             history_db: HistoryDB = Depends(get_history_db),
             ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
     ):
