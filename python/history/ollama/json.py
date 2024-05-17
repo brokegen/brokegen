@@ -161,7 +161,7 @@ class JSONRequestInterceptor(PlainRequestInterceptor):
             self.logger.warning(f"Called RequestInterceptor.consolidate_json_response(), but we have raw bytes data")
 
         try:
-            # TODO: Hacky way to convert to async; we _probably_ do not need an async consolidationo routine,
+            # TODO: Hacky way to convert to async; we _probably_ do not need an async consolidation routine,
             #       as any data we'd need or want should be gathered by then.
             async def json_aiter():
                 for chunk in self.response_content_json:
@@ -257,7 +257,10 @@ class JSONStreamingResponse(StreamingResponse, JSONResponse):
 
         async def body_iterator() -> AsyncIterable[bytes]:
             async for content_ in self._content_iterable:
-                yield self.render(content_)
+                if isinstance(content_, bytes):
+                    yield content_
+                else:
+                    yield self.render(content_)
 
         self.body_iterator = body_iterator()
         self.status_code = status_code
