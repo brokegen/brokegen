@@ -67,7 +67,7 @@ class CustomRetrievalPolicy(RetrievalPolicy):
         self.retriever = knowledge.as_retriever(
             search_type='similarity',
             search_kwargs={
-                'k': 18,
+                'k': 8,
             },
         )
 
