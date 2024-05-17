@@ -25,7 +25,7 @@ venv:
 	python3 -m venv "$@"
 ifneq (,$(socks_proxy_wheel))
 	source "$@"/bin/activate \
-		&& pip install --no-deps $(socks_proxy_wheel)
+		&& pip install --no-deps $(socks_proxy_wheel) \
 		&& pip install "httpx[socks]"
 endif
 	source "$@"/bin/activate \
