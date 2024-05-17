@@ -38,11 +38,6 @@ class SimpleJob: ObservableObject, Identifiable {
             self.processDone = Date.now
         }
     }
-
-    func output() -> AnyPublisher<String, Never> {
-        return Just("[not implemented]")
-            .eraseToAnyPublisher()
-    }
 }
 
 @Observable
@@ -50,10 +45,30 @@ class ManagedProcessService {
     var knownJobs: [SimpleJob] = []
 
     init() {
-//        _ = addProcess(["/usr/bin/pmset", "-g", "rawlog"])
         _ = addProcess(["/bin/date"])
         _ = addProcess(["/sbin/ifconfig"])
         _ = addProcess(["/usr/bin/man", "man"])
+
+//        let task = Process()
+//        task.launchPath = "/usr/bin/pmset"
+//        task.arguments = ["-g", "rawlog"]
+//
+//        let pipe = Pipe()
+//        task.standardOutput = pipe
+//
+//        pipe.fileHandleForReading.readabilityHandler = { handle in
+//            let data = handle.availableData
+//            if data.count > 0 {
+//                print(String(data: data, encoding: .utf8) ?? "[invalid data]")
+//            }
+//        }
+//
+//        do {
+//            try task.run()
+//        }
+//        catch {}
+//        task.waitUntilExit()
+//        task.terminate()
     }
 
     func addProcess(_ argv: [String]) -> SimpleJob {
