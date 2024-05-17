@@ -59,10 +59,10 @@ Note that these will override anything set in the model templates!
     @router.post("/generate.raw-templated")
     async def generate_raw_templated(
             templated_text: TemplatedPromptText,
-            model_name: OllamaModelName = "llama3-8b-instruct:Q8_0",
+            model_name: OllamaModelName = "llama3-gradient:latest",
             options_json: Annotated[str, Query(description=ollama_api_options_str)] \
-                    = """{"num_predict":8192, "top_k": 80, "num_ctx": 16384}""",
-            allow_streaming: bool = False,
+                    = """{"num_predict": 128, "top_k": 80, "num_ctx": 16384}""",
+            allow_streaming: bool = True,
             history_db: HistoryDB = Depends(get_history_db),
             ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
     ):
@@ -113,14 +113,14 @@ Note that these will override anything set in the model templates!
 
     @router.post("/generate.raw", description="""\
 This allows for easy-ish overriding of the assistant prompt,
-which bypasses censoring for most models.""")
+which bypasses censoring for tested models.""")
     async def generate_raw(
             user_message: str | None = None,
             system_message: str | None = None,
             assistant_prefix: str | None = None,
-            model_name: OllamaModelName = "llama3-8b-instruct:Q8_0",
+            model_name: OllamaModelName = "llama3-gradient:latest",
             options_json: Annotated[str, Query(description=ollama_api_options_str)] \
-                    = """{"num_predict":8192, "top_k": 80, "num_ctx": 16384}""",
+                    = """{"num_predict": 8192, "top_k": 80, "num_ctx": 16384}""",
             history_db: HistoryDB = Depends(get_history_db),
             ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
     ):
