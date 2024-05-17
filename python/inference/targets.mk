@@ -38,7 +38,7 @@ endif
 	source "$@"/bin/activate \
 		&& cd "$(python_root)" \
 		&& arch -x86_64 python -m pip \
-			install --editable ".[inference]"
+			install --editable ".[inference,testing]"
 
 .PHONY: clean-inference
 clean: clean-inference

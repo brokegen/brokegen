@@ -37,7 +37,7 @@ endif
 	source "$@"/bin/activate \
 		&& cd "$(python_root)" \
 		&& arch -x86_64 python -m pip \
-			install --editable ".[ingest]"
+			install --editable ".[ingest,testing]"
 
 .PHONY: clean-ingest
 clean: clean-ingest
