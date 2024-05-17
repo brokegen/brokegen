@@ -1,17 +1,21 @@
 import Foundation
 
-struct ManagedProcess {
+class ManagedProcess {
     let executableURL: URL
     let arguments: [String]
 
-    init(from shellString: String) {
-        self.executableURL = URL(fileURLWithPath: "/bin/sh")
-        self.arguments = ["-c", shellString]
+    convenience init(from shellString: String) {
+        self.init(
+            URL(fileURLWithPath: "/bin/sh"),
+            argv: ["-c", shellString]
+        )
     }
 
-    init(_ directArgs: [String]) {
-        self.executableURL = URL(fileURLWithPath: directArgs[0])
-        self.arguments = Array(directArgs.dropFirst())
+    convenience init(_ directArgs: [String]) {
+        self.init(
+            URL(fileURLWithPath: directArgs[0]),
+            argv: Array(directArgs.dropFirst())
+        )
     }
 
     init(_ executableURL: URL, argv: [String]) {
@@ -37,8 +41,6 @@ struct ManagedProcess {
         dispatchPrecondition(condition: .onQueue(.main))
 
         let group = DispatchGroup()
-        let inputPipe = Pipe()
-        let outputPipe = Pipe()
 
         var errorQ: Error? = nil
         var output = Data()
@@ -46,8 +48,13 @@ struct ManagedProcess {
         let proc = Process()
         proc.executableURL = self.executableURL
         proc.arguments = self.arguments
+
+        let inputPipe = Pipe()
+        let outputPipe = Pipe()
+
         proc.standardInput = inputPipe
         proc.standardOutput = outputPipe
+
         group.enter()
         proc.terminationHandler = { _ in
             // This bounce to the main queue is important; read the comment near the

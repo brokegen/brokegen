@@ -50,7 +50,7 @@ class ManagedProcessService {
     var knownJobs: [SimpleJob] = []
 
     init() {
-        _ = addProcess(["/usr/bin/pmset", "-g", "rawlog"])
+//        _ = addProcess(["/usr/bin/pmset", "-g", "rawlog"])
         _ = addProcess(["/bin/date"])
         _ = addProcess(["/sbin/ifconfig"])
         _ = addProcess(["/usr/bin/man", "man"])
