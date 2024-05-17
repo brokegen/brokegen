@@ -11,13 +11,13 @@ from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
 
 from access.ratelimits import RatelimitsDB, ApiAccessWithResponse
-from embeddings.retrieval import RetrievalPolicy
 from history.database import HistoryDB, InferenceJob
 from history.ollama.chat_routes import lookup_model_offline
 from history.ollama.forward_routes import _real_ollama_client
 from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, JSONRequestInterceptor, \
     JSONStreamingResponse, chunk_and_log_output, JSONArray
 from history.ollama.json import safe_get
+from inference.embeddings.retrieval import RetrievalPolicy
 from inference.prompting.templating import apply_llm_template, PromptText, TemplatedPromptText
 
 logger = logging.getLogger(__name__)

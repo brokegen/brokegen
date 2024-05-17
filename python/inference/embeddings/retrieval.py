@@ -5,7 +5,7 @@ from typing import List, Callable, Awaitable
 
 from langchain_core.documents import Document
 
-from embeddings.knowledge import KnowledgeSingleton
+from inference.embeddings.knowledge import KnowledgeSingleton
 from inference.prompting.models import ChatMessage, PromptText
 
 logger = logging.getLogger(__name__)
@@ -138,7 +138,8 @@ in a way relevant to the original query:
                     matching_docs2 = matching_docs2[:-1]
 
                 if len(matching_docs2) == 0:
-                    logger.debug(f"Last remaining RAG doc is {len(matching_docs1[0].page_content)} chars, truncating it")
+                    logger.debug(
+                        f"Last remaining RAG doc is {len(matching_docs1[0].page_content)} chars, truncating it")
                     formatted_docs = matching_docs1[0][:20_000]
 
                 else:
