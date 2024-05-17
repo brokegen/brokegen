@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import TypeAlias, AsyncIterable, AsyncIterator, Iterable, Dict, AnyStr, Any, List
+from typing import TypeAlias, AsyncIterable, AsyncIterator, Iterable, Dict, AnyStr, Any, List, Callable
 
 import orjson
 import sqlalchemy.exc
@@ -81,6 +81,40 @@ async def consolidate_stream(
             consolidated_response[k] = v
 
     return consolidated_response
+
+
+async def chunk_and_log_output(
+        primordial: AsyncIterable[bytes],
+        log_fn: Callable[[str], Any],
+        min_chunk_length: int = 120,
+):
+    buffered_chunks = ''
+
+    async for chunk0 in primordial:
+        yield chunk0
+
+        # NB This is very wasteful re-decoding, but don't prematurely optimize.
+        try:
+            chunk0_json = orjson.loads(chunk0)
+            if 'response' not in chunk0_json:
+                continue
+
+            if buffered_chunks is None:
+                buffered_chunks = chunk0_json['response']
+            elif len(buffered_chunks) >= min_chunk_length:
+                log_fn(buffered_chunks)
+                buffered_chunks = chunk0_json['response']
+            else:
+                buffered_chunks += chunk0_json['response']
+
+        # Eat all exceptions, since this wrapper should be silent and unintrusive.
+        except Exception as e:
+            log_fn(f"[ERROR] during `chunk_and_log_output`: {e}")
+            # Disable the log function, so we don't see more suffering
+            log_fn = lambda *args: args
+
+    if buffered_chunks:
+        log_fn(buffered_chunks)
 
 
 class JSONRequestInterceptor(PlainRequestInterceptor):

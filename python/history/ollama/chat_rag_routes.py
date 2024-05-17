@@ -17,7 +17,7 @@ from history.database import HistoryDB, InferenceJob
 from history.ollama.chat_routes import safe_get, lookup_model_offline
 from history.ollama.forward_routes import _real_ollama_client
 from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, JSONRequestInterceptor, \
-    JSONStreamingResponse
+    JSONStreamingResponse, chunk_and_log_output
 from history.prompting import apply_llm_template, PromptText, TemplatedPromptText
 from inference.embeddings.knowledge import KnowledgeSingleton
 
@@ -207,7 +207,6 @@ async def convert_chat_to_generate(
         """
         async for chunk0 in primordial:
             chunk0_json = orjson.loads(chunk0)
-            logger.debug(chunk0_json['response'])
 
             chunk1 = dict(chunk0_json)
             del chunk1['response']
@@ -226,7 +225,10 @@ async def convert_chat_to_generate(
             del converted_response_headers[unsupported_field]
 
     return JSONStreamingResponse(
-        content=translate_generate_to_chat(generate_response.body_iterator),
+        content=chunk_and_log_output(
+            translate_generate_to_chat(generate_response.body_iterator),
+            lambda s: logger.debug(f"/api/chat: " + s),
+        ),
         status_code=generate_response.status_code,
         headers=converted_response_headers,
         background=generate_response.background,

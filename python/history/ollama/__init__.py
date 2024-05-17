@@ -14,7 +14,7 @@ from history.ollama.chat_rag_routes import do_proxy_chat_rag, do_proxy_chat_nora
     OllamaModelName, do_generate_raw_templated
 from history.ollama.chat_routes import do_proxy_generate, lookup_model_offline, safe_get
 from history.ollama.forward_routes import forward_request_nodetails, forward_request, forward_request_nolog
-from history.ollama.json import consolidate_stream, OllamaResponseContentJSON
+from history.ollama.json import consolidate_stream, OllamaResponseContentJSON, chunk_and_log_output
 from history.ollama.model_routes import do_api_tags, do_api_show
 from history.prompting import TemplatedPromptText, apply_llm_template
 from inference.embeddings.knowledge import KnowledgeSingleton, get_knowledge_dependency
@@ -39,17 +39,26 @@ def disable_info_logs(*logger_names):
 def install_test_points(app: FastAPI):
     router = APIRouter()
 
-    @router.post("/generate.raw-tokens-only")
+    ollama_api_options_str = """\
+Ollama API parameters, desc from <https://github.com/ollama/ollama/blob/main/docs/api.md>.  
+Note that these will override anything set in the model templates!
+
+- `num_predict`: Maximum number of tokens to predict when generating text.
+  NB Ollama uses "num_predict", but most executors are llama.cpp-based, and that uses "n_predict".
+  - Default: **128**
+  - -1 = infinite generation
+  - -2 = fill context)
+
+- `num_ctx`: Sets the size of the context window used to generate the next token.
+  - Default: **2048**
+"""
+
+    @router.post("/generate.raw-templated")
     async def generate_raw_templated(
             templated_text: TemplatedPromptText,
             model_name: OllamaModelName = "llama3-8b-instruct:Q8_0",
-            num_predict: Annotated[int | None, Query(desc=(
-                    "Ollama model parameter, desc from https://github.com/ollama/ollama/blob/main/docs/api.md:\n"
-                    "Maximum number of tokens to predict when generating text. "
-                    "(Default: 128, -1 = infinite generation, -2 = fill context)\n"
-                    "\n"
-                    "NB Ollama uses `num_predict`, but most executors are llama.cpp-based, and that uses `n_predict`."
-            ))] = None,
+            options_json: Annotated[str, Query(description=ollama_api_options_str)] \
+                    = """{"num_predict":-1, "temperature": 1.2}""",
             allow_streaming: bool = False,
             history_db: HistoryDB = Depends(get_history_db),
             ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
@@ -60,11 +69,10 @@ def install_test_points(app: FastAPI):
             'prompt': templated_text,
             'raw': True,
             'stream': True,
+            # TODO: These options should be stored in the ModelConfigRecord,
+            #       that was the whole point of that class.
+            'options': orjson.loads(options_json),
         }
-        if num_predict is not None:
-            content['options'] = {
-                'num_predict': num_predict,
-            }
 
         headers = starlette.datastructures.MutableHeaders()
         headers['content-type'] = 'application/json'
@@ -78,7 +86,13 @@ def install_test_points(app: FastAPI):
         )
 
         if allow_streaming:
+            logging_aiter = chunk_and_log_output(
+                streaming_response.body_iterator,
+                lambda s: print("/generate.raw-tokens-only: " + s),
+            )
+            streaming_response.body_iterator = logging_aiter
             return streaming_response
+
         else:
             async def content_to_json_adapter() -> OllamaResponseContentJSON:
                 async def jsonner() -> AsyncIterable[OllamaResponseContentJSON]:
@@ -94,12 +108,16 @@ def install_test_points(app: FastAPI):
                 background=streaming_response.background,
             )
 
-    @router.post("/generate.raw")
+    @router.post("/generate.raw", description="""\
+This allows for easy-ish overriding of the assistant prompt,
+which bypasses censoring for most models.""")
     async def generate_raw(
-            user_message: str,
+            user_message: str | None = None,
             system_message: str | None = None,
             assistant_prefix: str | None = None,
             model_name: OllamaModelName = "llama3-8b-instruct:Q8_0",
+            options_json: Annotated[str, Query(description=ollama_api_options_str)] \
+                    = """{"num_predict":2048, "temperature": 2.0}""",
             history_db: HistoryDB = Depends(get_history_db),
             ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
     ):
@@ -125,6 +143,7 @@ def install_test_points(app: FastAPI):
             'prompt': templated_text,
             'raw': True,
             'stream': False,
+            'options': orjson.loads(options_json),
         }
         headers = starlette.datastructures.MutableHeaders()
         headers['content-type'] = 'application/json'
