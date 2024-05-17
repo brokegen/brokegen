@@ -130,9 +130,9 @@ class PlainRequestInterceptor:
             do_commit: bool = True,
     ) -> ApiAccessWithResponse:
         request_dict = {
+            'content': "[not recorded yet/interrupted during processing]",
             'method': upstream_response.request.method,
             'url': str(upstream_response.request.url),
-            'content': "[not recorded yet/interrupted during processing]",
         }
         if upstream_response.request.headers:
             request_dict['headers'] = upstream_response.request.headers.multi_items()

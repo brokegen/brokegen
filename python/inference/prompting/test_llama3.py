@@ -1,6 +1,6 @@
 import pytest
 
-from history.prompting import apply_llm_template
+from inference.prompting import apply_llm_template
 
 template = """\
 {{ if .System }}<|start_header_id|>system<|end_header_id|>

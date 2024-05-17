@@ -11,12 +11,16 @@ from starlette.responses import StreamingResponse, JSONResponse
 
 from access.ratelimits import PlainRequestInterceptor, RatelimitsDB, get_db
 
-JSONObject: TypeAlias = Dict[AnyStr, Any]
-JSONArray: TypeAlias = List[Any]
-JSONStructure: TypeAlias = JSONArray | JSONObject
+# These aren't strictly defined recursive because they're recursive
+# (can contain themselves/each other/JSONValue).
+JSONObject: TypeAlias = Any
 
-OllamaRequestContentJSON: TypeAlias = JSONObject
-OllamaResponseContentJSON: TypeAlias = JSONObject
+JSONDictKey: TypeAlias = AnyStr
+JSONDict: TypeAlias = Dict[JSONDictKey, JSONObject]
+JSONArray: TypeAlias = List[JSONObject]
+
+OllamaRequestContentJSON: TypeAlias = JSONDict
+OllamaResponseContentJSON: TypeAlias = JSONDict
 
 logger = logging.getLogger(__name__)
 
@@ -302,3 +306,25 @@ class JSONStreamingResponse(StreamingResponse, JSONResponse):
             self.media_type = media_type
         self.background = background
         self.init_headers(headers)
+
+
+def safe_get(
+        parent_json_ish: JSONDict | JSONArray | None,
+        *keys: JSONDictKey,
+) -> JSONObject | None:
+    """
+    Returns None if any of the intermediate keys failed to appear.
+
+    Only handles dicts, no lists.
+    """
+    if not parent_json_ish:
+        return None
+
+    next_json_ish = parent_json_ish
+    for key in keys:
+        if key in next_json_ish:
+            next_json_ish = next_json_ish[key]
+        else:
+            return None
+
+    return next_json_ish

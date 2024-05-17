@@ -1,18 +1,13 @@
 import re
-from typing import TypeAlias
 
-PromptText: TypeAlias = str
-"Text provided by any agent or RAG, prior to templating"
-
-TemplatedPromptText: TypeAlias = str
-"PromptText after template applied, ready to send to /api/generate as raw=True request"
+from inference.prompting.models import PromptText, TemplatedPromptText
 
 
 async def apply_llm_template(
         model_template: str,
-        system_message: PromptText,
-        user_prompt: PromptText,
-        assistant_response: PromptText,
+        system_message: PromptText | None,
+        user_prompt: PromptText | None,
+        assistant_response: PromptText | None,
         break_early_on_response: bool = False,
 ) -> TemplatedPromptText:
     # Use the world's most terrible regexes to parse the Ollama template format
@@ -54,10 +49,10 @@ async def apply_llm_template(
                     # Actually, we should just plain exit right after this match.
                     template3 = template3[:match.start()]
                     # But also, prepend the assistant prompt, so the LLM continues to elaborate
-                    template3 += assistant_response
+                    template3 += assistant_response or ''
                     break
                 else:
-                    substituted_block = assistant_response
+                    substituted_block = assistant_response or ''
             else:
                 substituted_block = ''
 

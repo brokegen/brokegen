@@ -1,5 +1,5 @@
 import logging
-from typing import Tuple, Any
+from typing import Tuple
 
 import orjson
 from starlette.background import BackgroundTask
@@ -7,34 +7,14 @@ from starlette.requests import Request
 from starlette.responses import StreamingResponse
 
 from access.ratelimits import RatelimitsDB
-from history.ollama.json import JSONRequestInterceptor
 from history.database import HistoryDB, InferenceJob, ModelConfigRecord, ExecutorConfigRecord
 from history.ollama.forward_routes import _real_ollama_client
+from history.ollama.json import JSONRequestInterceptor, safe_get
 from history.ollama.model_routes import do_api_show
 from history.ollama.models import build_executor_record, fetch_model_record
-from history.prompting import apply_llm_template
+from inference.prompting.templating import apply_llm_template
 
 logger = logging.getLogger(__name__)
-
-
-def safe_get(
-        dict_like: Any | None,
-        *keys: Any,
-) -> Any | dict:
-    """
-    Returns empty dict if any of the keys failed to appear.
-    Only handles dicts, no lists.
-    """
-    if dict_like is None:
-        return {}
-
-    for key in keys:
-        if key in dict_like:
-            dict_like = dict_like[key]
-        else:
-            return {}
-
-    return dict_like
 
 
 async def lookup_model_offline(

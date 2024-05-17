@@ -75,7 +75,7 @@ async def lifespan_logging(app: FastAPI):
 @click.option('--log-level', default='DEBUG',
               type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'FATAL'], case_sensitive=False),
               help='loglevel to pass to Python `logging`')
-@click.option('--enable-rag', default=False,
+@click.option('--enable-rag', default=True,
               help='Load FAISS files from --data-dir, and apply them to any /api/chat calls')
 def run_proxy(data_dir, bind_port, log_level, enable_rag):
     numeric_log_level = getattr(logging, str(log_level).upper(), None)

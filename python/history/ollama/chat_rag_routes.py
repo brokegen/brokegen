@@ -7,19 +7,18 @@ import httpx
 import orjson
 import starlette.datastructures
 import starlette.requests
-from fastapi import Request
-from langchain_core.documents import Document
 from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
 
 from access.ratelimits import RatelimitsDB, ApiAccessWithResponse
+from embeddings.retrieval import RetrievalPolicy
 from history.database import HistoryDB, InferenceJob
-from history.ollama.chat_routes import safe_get, lookup_model_offline
+from history.ollama.chat_routes import lookup_model_offline
 from history.ollama.forward_routes import _real_ollama_client
 from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, JSONRequestInterceptor, \
-    JSONStreamingResponse, chunk_and_log_output
-from history.prompting import apply_llm_template, PromptText, TemplatedPromptText
-from inference.embeddings.knowledge import KnowledgeSingleton
+    JSONStreamingResponse, chunk_and_log_output, JSONArray
+from history.ollama.json import safe_get
+from inference.prompting.templating import apply_llm_template, PromptText, TemplatedPromptText
 
 logger = logging.getLogger(__name__)
 
@@ -236,97 +235,96 @@ async def convert_chat_to_generate(
     )
 
 
-async def do_proxy_chat_norag(
-        original_request: Request,
+async def do_proxy_chat_rag(
+        original_request: starlette.requests.Request,
+        retrieval_policy: RetrievalPolicy,
         history_db: HistoryDB,
         ratelimits_db: RatelimitsDB,
 ):
-    logger.debug(f"Received /api/chat request, starting processing")
-
     request_content_bytes: bytes = await original_request.body()
-    request_content_json: dict = orjson.loads(request_content_bytes)
+    request_content_json: OllamaRequestContentJSON = orjson.loads(request_content_bytes)
 
-    ollama_response = await convert_chat_to_generate(
-        original_request,
-        request_content_json,
-        None,
-        history_db,
-        ratelimits_db,
-    )
+    # For now, everything we could possibly retrieve is from intercepting an Ollama /api/chat,
+    # so there's no need to check for /api/generate's 'content' field.
+    chat_messages: JSONArray | None = safe_get(request_content_json, 'messages')
+    if not chat_messages:
+        raise RuntimeError("No 'messages' provided in call to /api/chat")
 
-    # TODO: This/these should really be middleware.
+    async def generate_retrieval_str(retrieval_query: PromptText) -> PromptText:
+        response0 = await do_generate_raw_templated(
+            request_content={
+                'model': request_content_json['model'],
+                'prompt': retrieval_query,
+                'raw': False,
+                'stream': False,
+            },
+            request_headers=starlette.datastructures.Headers(),
+            request_cookies=None,
+            history_db=history_db,
+            ratelimits_db=ratelimits_db,
+        )
+
+        content_chunks = []
+        async for chunk in response0.body_iterator:
+            content_chunks.append(chunk)
+
+        response0_json = orjson.loads(''.join(content_chunks))
+        return response0_json['response']
+
+    prompt_override = await retrieval_policy.parse_chat_history(chat_messages, generate_retrieval_str)
+
     new_access = ApiAccessWithResponse(
-        api_bucket="self:do_proxy_chat_norag()",
+        api_bucket=f"self:do_proxy_chat_rag({retrieval_policy.__class__.__name__})",
         accessed_at=datetime.now(tz=timezone.utc),
         api_endpoint=str(original_request.url),
         request={
-            "note": "not done implementing",
             "content": request_content_json,
+            "headers": original_request.headers.items(),
+            "method": original_request.method,
+            "url": str(original_request.url),
         },
         response={
-            "note": "not done implementing either",
+            "content": "[not recorded yet/interrupted during processing]",
         },
     )
     ratelimits_db.add(new_access)
     ratelimits_db.commit()
 
-    return ollama_response
-
-
-async def do_proxy_chat_rag(
-        original_request: Request,
-        history_db: HistoryDB,
-        ratelimits_db: RatelimitsDB,
-        knowledge: KnowledgeSingleton,
-):
-    request_content_bytes: bytes = await original_request.body()
-    request_content_json: OllamaRequestContentJSON = orjson.loads(request_content_bytes)
-
-    retriever = knowledge.as_retriever(
-        search_type='similarity',
-        search_kwargs={
-            'k': 18,
-        },
-    )
-
-    last_message = request_content_json['messages'][-1]
-    retrieval_str = last_message['content']
-    docs: list[Document] = await retriever.ainvoke(retrieval_str)
-
-    formatted_docs = '\n\n'.join(
-        [d.page_content for d in docs]
-    )
-    if len(formatted_docs) > 20_000:
-        logger.debug(f"Returned {len(docs)} docs, with {len(formatted_docs)} chars text, truncating")
-        while len(formatted_docs) > 20_000:
-            if len(docs) == 1:
-                logger.debug(f"Last remaining RAG doc is {len(docs[0].page_content)} chars, truncating")
-                formatted_docs = docs[0][:20_000]
-                break
-
-            docs = docs[:-1]
-            formatted_docs = '\n\n'.join(
-                [d.page_content for d in docs]
-            )
-
-    logger.info(f"Final RAG context is {len(docs)} docs, with {len(formatted_docs)} chars")
-
-    big_prompt = f"""\
-Use any sources you can. Some recent context is provided to try and provide newer information:
-
-<context>
-{formatted_docs}
-</context>
-
-Reasoning: Let's think step by step in order to produce the answer.
-
-Question: {last_message['content']}
-"""
-
-    return await convert_chat_to_generate(
+    ollama_response = await convert_chat_to_generate(
         original_request,
         request_content_json,
-        big_prompt,
+        prompt_override,
         history_db,
         ratelimits_db,
     )
+
+    # TODO: This/these should really be middleware.
+    # TODO: This should be a RequestInterceptor, at least.
+    async def wrap_response(
+            access: ApiAccessWithResponse,
+            upstream_response: JSONStreamingResponse,
+            log_output: bool = True,
+    ) -> JSONStreamingResponse:
+        response_json = {
+            'status_code': upstream_response.status_code,
+            'headers': upstream_response.headers.items(),
+            'cookies': "[where are these]",
+            'content': "[not implemented, either]",
+        }
+
+        merged_access = ratelimits_db.merge(access)
+        merged_access.response = response_json
+
+        ratelimits_db.add(merged_access)
+        ratelimits_db.commit()
+
+        if log_output:
+            upstream_response.body_iterator = chunk_and_log_output(
+                upstream_response.body_iterator,
+                lambda s: logger.debug(f"chat_rag: " + s),
+            )
+
+        return upstream_response
+
+    # return wrap_response(new_access, ollama_response)
+    return ollama_response
