@@ -8,7 +8,7 @@ socks_proxy_wheel := $(wildcard $(HOME)/Documents/PySocks-1.7.1-py3-none-any.whl
 
 .PHONY: run-ingest
 run-ingest:
-	python $(python_root)ingest_cli.py $(python_root)
+	python $(python_root)ingest/ingest_cli.py $(python_root)
 
 # Leave this a permanent .PHONY because pyinstaller will take care of rebuild checks.
 .PHONY: ingest-cli
@@ -22,7 +22,7 @@ ingest-cli: $(pyinstaller_venv)
 			--noconfirm \
 			--specpath dist \
 			--onefile --name "brokegen-ingest-cli" \
-			$(python_root)ingest_cli.py
+			$(python_root)ingest/ingest_cli.py
 
 
 
@@ -37,7 +37,7 @@ endif
 	source "$@"/bin/activate \
 		&& cd "$(python_root)" \
 		&& arch -x86_64 python -m pip \
-			install --editable ".[ingest,testing]"
+			install --editable ".[ingest]"
 
 .PHONY: clean-ingest
 clean: clean-ingest
