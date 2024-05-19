@@ -12,6 +12,8 @@
 		CE4634E22BF97A180063142E /* JobOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634E12BF97A180063142E /* JobOutputView.swift */; };
 		CE4634E52BFA5F890063142E /* SimpleProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634E42BFA5F890063142E /* SimpleProcess.swift */; };
 		CE4634E72BFA6A050063142E /* JobsSidebarItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634E62BFA6A050063142E /* JobsSidebarItem.swift */; };
+		CE4634E92BFA71E10063142E /* brokegen-ollama-proxy in Resources */ = {isa = PBXBuildFile; fileRef = CE4634E82BFA71E10063142E /* brokegen-ollama-proxy */; };
+		CE4634EB2BFA71E70063142E /* brokegen-server in Resources */ = {isa = PBXBuildFile; fileRef = CE4634EA2BFA71E70063142E /* brokegen-server */; };
 		CE6D8A7F2BF6DF1800A7934D /* RibbonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */; };
 		CE8229AF2BF7306000029DC2 /* JobsManagerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8229AE2BF7306000029DC2 /* JobsManagerService.swift */; };
 		CE9867512BF4047C008D6C41 /* BrokegenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867502BF4047C008D6C41 /* BrokegenApp.swift */; };
@@ -30,6 +32,8 @@
 		CE4634E12BF97A180063142E /* JobOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobOutputView.swift; sourceTree = "<group>"; };
 		CE4634E42BFA5F890063142E /* SimpleProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleProcess.swift; sourceTree = "<group>"; };
 		CE4634E62BFA6A050063142E /* JobsSidebarItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsSidebarItem.swift; sourceTree = "<group>"; };
+		CE4634E82BFA71E10063142E /* brokegen-ollama-proxy */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = "brokegen-ollama-proxy"; path = "../dist/brokegen-ollama-proxy"; sourceTree = "<group>"; };
+		CE4634EA2BFA71E70063142E /* brokegen-server */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = "brokegen-server"; path = "../dist/brokegen-server"; sourceTree = "<group>"; };
 		CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RibbonView.swift; sourceTree = "<group>"; };
 		CE8229AE2BF7306000029DC2 /* JobsManagerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsManagerService.swift; sourceTree = "<group>"; };
 		CE98674D2BF4047C008D6C41 /* Brokegen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Brokegen.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -76,6 +80,8 @@
 		CE9867442BF4047C008D6C41 = {
 			isa = PBXGroup;
 			children = (
+				CE4634E82BFA71E10063142E /* brokegen-ollama-proxy */,
+				CE4634EA2BFA71E70063142E /* brokegen-server */,
 				CE98674F2BF4047C008D6C41 /* Brokegen */,
 				CE98674E2BF4047C008D6C41 /* Products */,
 			);
@@ -190,6 +196,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CE4634EB2BFA71E70063142E /* brokegen-server in Resources */,
+				CE4634E92BFA71E10063142E /* brokegen-ollama-proxy in Resources */,
 				CE9867592BF4047E008D6C41 /* Preview Assets.xcassets in Resources */,
 				CE9867552BF4047E008D6C41 /* Assets.xcassets in Resources */,
 			);

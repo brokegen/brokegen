@@ -6,7 +6,7 @@ import SwiftUI
 /// Which means that in error conditions, we're very likely to leave handles and memory leaks everywhere.
 class SimpleProcess: Job {
     var task: Process?
-    var displayStatusUpdates: AnyCancellable? = nil
+    var displayedStatusUpdater: AnyCancellable? = nil
 
     convenience init(_ pathAndArguments: [String]) {
         // TODO: Decide what to actually do in impossible cases
@@ -18,20 +18,25 @@ class SimpleProcess: Job {
         }
     }
 
-    init(_ launchPath: String, _ arguments: [String] = []) {
+    convenience init(_ launchPath: String, _ arguments: [String] = []) {
+        self.init(URL(fileURLWithPath: launchPath), arguments)
+    }
+
+    init(_ launchURL: URL, _ arguments: [String] = []) {
         task = Process()
-        task!.launchPath = launchPath
+        task!.executableURL = launchURL
         task!.arguments = arguments
 
         super.init()
 
-        sidebarTitle = task!.executableURL?.lastPathComponent ?? launchPath
-        ribbonText = "\(launchPath)"
+        sidebarTitle = launchURL.lastPathComponent
+        ribbonText = "\(launchURL.path(percentEncoded: false))"
         if arguments.count > 0 {
             ribbonText += "\n\(arguments)"
         }
 
-        displayStatusUpdates = self.$status
+        displayedStatus = ""
+        displayedStatusUpdater = self.$status
             .sink { newStatus in
                 if self.status != newStatus {
                     self.displayedStatus += "\(Date.now): updated to \(String(describing: newStatus))\n"
@@ -56,6 +61,7 @@ class SimpleProcess: Job {
 
         let pipe = Pipe()
         task!.standardOutput = pipe
+        task!.standardError = pipe
 
         pipe.fileHandleForReading.readabilityHandler = { handle in
             let data = handle.availableData
