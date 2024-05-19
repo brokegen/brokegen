@@ -1,7 +1,68 @@
 import SwiftUI
 
+struct JobsSidebarItem: View {
+    @ObservedObject var job: Job
+
+    init(job: Job) {
+        self.job = job
+    }
+
+    var body: some View {
+        HStack {
+            Text(job.sidebarTitle)
+                .font(.title2)
+                .lineLimit(3)
+
+            Spacer()
+
+            switch job.status {
+            case .notStarted:
+                Image(systemName: "play")
+                    .onTapGesture {
+                        job.launch()
+                    }
+
+            case .requestedStart:
+                ProgressView()
+                    .progressViewStyle(.linear)
+                    .frame(maxWidth: 80)
+
+            case .startedNoOutput:
+                ProgressView()
+                    .progressViewStyle(.linear)
+                    .frame(maxWidth: 80)
+                Image(systemName: "stop")
+                    .onTapGesture {
+                        job.terminatePatiently()
+                    }
+
+            case .startedWithOutput:
+                Image(systemName: "stop")
+                    .onTapGesture {
+                        job.terminatePatiently()
+                    }
+
+            case .requestedStop:
+                ProgressView()
+                    .frame(maxWidth: 80)
+                Image(systemName: "stop.fill")
+                    .onTapGesture {
+                        job.terminate()
+                    }
+
+            case .stopped, .error:
+                Image(systemName: "arrow.clockwise")
+                    .onTapGesture {
+                        job.launch()
+                    }
+            }
+        }
+        .frame(minHeight: 32)
+    }
+}
+
 struct JobsManagerSidebarView: View {
-    @StateObject var service = JobsManagerService()
+    @Environment(JobsManagerService.self) private var jobsService
 
     var body: some View {
         Section(header: Text("Jobs")
@@ -9,26 +70,9 @@ struct JobsManagerSidebarView: View {
             .foregroundStyle(.primary)
             .padding(6)
         ) {
-//            ForEach(managedProcessService.knownJobs) { job in
-//                NavigationLink(destination: JobOutputView(job)) {
-//                    HStack {
-//                        Text(job.makeTitle())
-//                            .font(.title2)
-//                            .monospaced()
-//
-//                        Spacer()
-//                        ProgressView().progressViewStyle(.linear)
-//                    }
-//                }
-//            }
-
-            ForEach(service.renderableJobs) { job in
+            ForEach(jobsService.renderableJobs) { job in
                 NavigationLink(destination: JobOutputView(job: job)) {
-                    HStack {
-                        Text(String(describing: job.status))
-                            .font(.title2)
-                            .monospaced()
-                    }
+                    JobsSidebarItem(job: job)
                 }
             }
         }
@@ -36,14 +80,19 @@ struct JobsManagerSidebarView: View {
 }
 
 #Preview {
-    NavigationLink(destination: Text("fake dest")) {
-        HStack {
-            Text("X2")
-                .font(.title2)
-                .monospaced()
-
-            Spacer()
-            ProgressView().progressViewStyle(.linear)
+    VStack {
+        Section(header: Text("Starting")) {
+            JobsSidebarItem(job: TimeJob("notStarted").status(.notStarted))
+            Divider()
+            JobsSidebarItem(job: TimeJob("requestedStart").status(.requestedStart))
+        }
+        Section(header: Text("Started")) {
+            JobsSidebarItem(job: TimeJob("startedNoOutput").status(.startedNoOutput))
+            JobsSidebarItem(job: TimeJob("startedWithOutput").status(.startedWithOutput))
+            JobsSidebarItem(job: TimeJob("requestedStop").status(.requestedStop))
+            Divider()
+            JobsSidebarItem(job: TimeJob("stopped").status(.stopped))
+            JobsSidebarItem(job: TimeJob("error").status(.error))
         }
     }
     .padding(12)

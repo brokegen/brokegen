@@ -43,7 +43,7 @@ class SimpleJob: ObservableObject, Identifiable {
     }
 }
 
-class JobsManagerService: ObservableObject {
+class JobsManagerService: Observable, ObservableObject {
     @Published var renderableJobs: [Job]
 
     // Deprecated
@@ -51,13 +51,10 @@ class JobsManagerService: ObservableObject {
 
     init() {
         renderableJobs = [
-            TimeJob(0.5, maxTimesFired: 6)
+            TimeJob("quick timer", timeInterval: 0.5, maxTimesFired: 6),
+            TimeJob("infinite", maxTimesFired: -1),
         ]
 
-        // DEBUG: start jobs right away, until we can get a button
-        for job in renderableJobs {
-            job.launch()
-        }
 //
 //        _ = addProcess(["/bin/date"])
 //        _ = addProcess(["/sbin/ifconfig"])

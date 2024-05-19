@@ -5,12 +5,12 @@ struct JobOutputView: View {
 
     var body: some View {
         ScrollViewReader { scrollViewProxy in
-            RibbonView(String(describing: job.$status))
+            RibbonView(String(describing: job.status))
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
 
             List {
-                Text(String(describing: job.$status))
+                Text(String(describing: job.status))
                     .monospaced()
                     .font(.title2)
 
@@ -27,12 +27,9 @@ struct JobOutputView: View {
 }
 
 #Preview {
-    ProcessOutputView(SimpleJob(
-        URL(fileURLWithPath: "invalid--all-invalid, don't write this"),
-        arguments: []
-    ))
+    JobOutputView(job: TimeJob("Xcode preview"))
     .fixedSize()
-    .frame(height: 1200)
+    .frame(minHeight: 400)
 }
 
 #Preview {
