@@ -5,7 +5,7 @@ struct LLMSidebarView: View {
         NavigationView {
             VStack {
                 List {
-                    JobsSidebar()
+                    JobsSidebar(nestedNavLimit: 12)
 
                     NavigationLink(destination: SystemInfoView()) {
                         Text("System Info")

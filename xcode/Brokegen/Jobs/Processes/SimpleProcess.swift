@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import SwiftUI
 
@@ -5,6 +6,7 @@ import SwiftUI
 /// Which means that in error conditions, we're very likely to leave handles and memory leaks everywhere.
 class SimpleProcess: Job {
     var task: Process?
+    var displayStatusUpdates: AnyCancellable? = nil
 
     convenience init(_ pathAndArguments: [String]) {
         // TODO: Decide what to actually do in impossible cases
@@ -22,7 +24,19 @@ class SimpleProcess: Job {
         task!.arguments = arguments
 
         super.init()
+
         sidebarTitle = task!.executableURL?.lastPathComponent ?? launchPath
+        ribbonText = "\(launchPath)"
+        if arguments.count > 0 {
+            ribbonText += "\n\(arguments)"
+        }
+
+        displayStatusUpdates = self.$status
+            .sink { newStatus in
+                if self.status != newStatus {
+                    self.displayedStatus += "\(Date.now): updated to \(String(describing: newStatus))\n"
+                }
+            }
         displayedOutput = ""
     }
 

@@ -5,12 +5,12 @@ struct JobOutputView: View {
 
     var body: some View {
         ScrollViewReader { scrollViewProxy in
-            RibbonView(String(describing: job.status))
+            RibbonView(job.ribbonText)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
 
             List {
-                Text(String(describing: job.status))
+                Text(job.displayedStatus)
                     .monospaced()
                     .font(.title2)
 

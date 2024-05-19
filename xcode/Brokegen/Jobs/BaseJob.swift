@@ -18,22 +18,24 @@ class Job: ObservableObject, Identifiable {
     @Published var status: JobStatus
     @Published var sidebarTitle: String
 
-    var ribbonText: String = "[ribbonText]"
+    @Published var ribbonText: String
 
     /// Additional text describing Job status, intended to be the header area of a View.
     /// Should describe broad context, like whether the job is running, when it was last updated, etc.
-    var displayedStatus: String = ""
+    @Published var displayedStatus: String
     @Published var displayedOutput: String
 
     init() {
         status = .notStarted
         sidebarTitle = "[sidebarTitle]"
+        ribbonText = "[ribbonText]"
+        displayedStatus = "[displayedStatus]"
         displayedOutput = "[base Job, not initialized]\n"
     }
 
     func launch() {
         status = .error
-        displayedOutput += "[base Job launched, but this should be overridden]\n"
+        displayedOutput += "[base Job launched, but this should have been overridden]\n"
     }
 
     func terminate() {
@@ -55,7 +57,6 @@ extension Job {
 /// Simplest job type, runs a Timer to print some text.
 /// Moste useful for quick testing.
 class TimeJob: Job {
-    let label: String
     let timeInterval: TimeInterval
     let maxTimesFired: Int
 
@@ -65,18 +66,20 @@ class TimeJob: Job {
     var timer: Timer? = nil
 
     init(_ label: String, timeInterval: TimeInterval = 5, maxTimesFired: Int = 24) {
-        self.label = label
         self.timeInterval = timeInterval
         self.maxTimesFired = maxTimesFired
 
         super.init()
 
-        self.displayedOutput = ""
+        sidebarTitle = label
+        ribbonText = label
 
         displayStatusUpdates = self.$status
             .sink { newStatus in
-                self.sidebarTitle = "\(self.label) — \(String(describing: newStatus))"
+                self.displayedStatus = "\(label) — \(String(describing: newStatus))"
             }
+
+        displayedOutput = ""
     }
 
     override func launch() {

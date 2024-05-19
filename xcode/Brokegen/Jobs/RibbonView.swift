@@ -13,10 +13,11 @@ struct RibbonView: View {
             Text(bigText)
                 .font(.largeTitle)
                 .lineLimit(6)
+            Spacer()
         }
+        .padding(24)
         .frame(maxWidth: .infinity)
         .frame(idealHeight: 120)
-        .padding(24)
     }
 }
 
