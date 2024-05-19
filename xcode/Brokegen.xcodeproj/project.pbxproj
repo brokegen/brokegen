@@ -7,14 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		CE4634DB2BF936DD0063142E /* OllamaStreamingResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634DA2BF936DD0063142E /* OllamaStreamingResponse.swift */; };
 		CE4634DE2BF937320063142E /* JobsManagerSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634DD2BF937320063142E /* JobsManagerSidebarView.swift */; };
 		CE4634E02BF963210063142E /* BaseJob.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634DF2BF963210063142E /* BaseJob.swift */; };
 		CE4634E22BF97A180063142E /* JobOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634E12BF97A180063142E /* JobOutputView.swift */; };
+		CE4634E52BFA5F890063142E /* SimpleProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634E42BFA5F890063142E /* SimpleProcess.swift */; };
 		CE6D8A7F2BF6DF1800A7934D /* RibbonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */; };
 		CE8229AF2BF7306000029DC2 /* JobsManagerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8229AE2BF7306000029DC2 /* JobsManagerService.swift */; };
 		CE9867512BF4047C008D6C41 /* BrokegenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867502BF4047C008D6C41 /* BrokegenApp.swift */; };
-		CE9867532BF4047C008D6C41 /* ProcessOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867522BF4047C008D6C41 /* ProcessOutputView.swift */; };
 		CE9867552BF4047E008D6C41 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE9867542BF4047E008D6C41 /* Assets.xcassets */; };
 		CE9867592BF4047E008D6C41 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE9867582BF4047E008D6C41 /* Preview Assets.xcassets */; };
 		CE9867612BF414B3008D6C41 /* ManagedProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867602BF414B3008D6C41 /* ManagedProcess.swift */; };
@@ -25,15 +24,14 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		CE4634DA2BF936DD0063142E /* OllamaStreamingResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OllamaStreamingResponse.swift; sourceTree = "<group>"; };
 		CE4634DD2BF937320063142E /* JobsManagerSidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsManagerSidebarView.swift; sourceTree = "<group>"; };
 		CE4634DF2BF963210063142E /* BaseJob.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseJob.swift; sourceTree = "<group>"; };
 		CE4634E12BF97A180063142E /* JobOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobOutputView.swift; sourceTree = "<group>"; };
+		CE4634E42BFA5F890063142E /* SimpleProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleProcess.swift; sourceTree = "<group>"; };
 		CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RibbonView.swift; sourceTree = "<group>"; };
 		CE8229AE2BF7306000029DC2 /* JobsManagerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsManagerService.swift; sourceTree = "<group>"; };
 		CE98674D2BF4047C008D6C41 /* Brokegen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Brokegen.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE9867502BF4047C008D6C41 /* BrokegenApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrokegenApp.swift; sourceTree = "<group>"; };
-		CE9867522BF4047C008D6C41 /* ProcessOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessOutputView.swift; sourceTree = "<group>"; };
 		CE9867542BF4047E008D6C41 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CE9867582BF4047E008D6C41 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		CE9867602BF414B3008D6C41 /* ManagedProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagedProcess.swift; sourceTree = "<group>"; };
@@ -63,6 +61,15 @@
 			path = JobsManager;
 			sourceTree = "<group>";
 		};
+		CE4634E32BFA5EE10063142E /* Processes */ = {
+			isa = PBXGroup;
+			children = (
+				CE4634E42BFA5F890063142E /* SimpleProcess.swift */,
+				CE9867602BF414B3008D6C41 /* ManagedProcess.swift */,
+			);
+			path = Processes;
+			sourceTree = "<group>";
+		};
 		CE9867442BF4047C008D6C41 = {
 			isa = PBXGroup;
 			children = (
@@ -86,7 +93,6 @@
 				CE4634DC2BF937020063142E /* JobsManager */,
 				CECA47A62BF6D59A007A28F2 /* Performance */,
 				CE9867502BF4047C008D6C41 /* BrokegenApp.swift */,
-				CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */,
 				CE9867622BF41954008D6C41 /* LLMSidebarView.swift */,
 				CE9867642BF41A3E008D6C41 /* PlaceholderContentView.swift */,
 				CE9867542BF4047E008D6C41 /* Assets.xcassets */,
@@ -108,9 +114,8 @@
 			children = (
 				CE4634DF2BF963210063142E /* BaseJob.swift */,
 				CE4634E12BF97A180063142E /* JobOutputView.swift */,
-				CE9867522BF4047C008D6C41 /* ProcessOutputView.swift */,
-				CE9867602BF414B3008D6C41 /* ManagedProcess.swift */,
-				CE4634DA2BF936DD0063142E /* OllamaStreamingResponse.swift */,
+				CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */,
+				CE4634E32BFA5EE10063142E /* Processes */,
 			);
 			path = Jobs;
 			sourceTree = "<group>";
@@ -197,7 +202,6 @@
 				CE6D8A7F2BF6DF1800A7934D /* RibbonView.swift in Sources */,
 				CECA47AA2BF6D62E007A28F2 /* SystemInfoView.swift in Sources */,
 				CE4634DE2BF937320063142E /* JobsManagerSidebarView.swift in Sources */,
-				CE9867532BF4047C008D6C41 /* ProcessOutputView.swift in Sources */,
 				CE9867632BF41954008D6C41 /* LLMSidebarView.swift in Sources */,
 				CE9867652BF41A3E008D6C41 /* PlaceholderContentView.swift in Sources */,
 				CE8229AF2BF7306000029DC2 /* JobsManagerService.swift in Sources */,
@@ -205,8 +209,8 @@
 				CECA47A82BF6D5B8007A28F2 /* System.swift in Sources */,
 				CE4634E22BF97A180063142E /* JobOutputView.swift in Sources */,
 				CE9867612BF414B3008D6C41 /* ManagedProcess.swift in Sources */,
+				CE4634E52BFA5F890063142E /* SimpleProcess.swift in Sources */,
 				CE4634E02BF963210063142E /* BaseJob.swift in Sources */,
-				CE4634DB2BF936DD0063142E /* OllamaStreamingResponse.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

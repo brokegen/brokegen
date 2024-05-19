@@ -22,9 +22,9 @@ struct RibbonView: View {
 
 #Preview {
     VStack {
-        RibbonView("faux")
+        RibbonView(nil)
         NavigationView {
-            Text("empty")
+            EmptyView()
         }
     }
 }

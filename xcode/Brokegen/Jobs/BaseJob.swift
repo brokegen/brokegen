@@ -52,7 +52,8 @@ extension Job {
     }
 }
 
-
+/// Simplest job type, runs a Timer to print some text.
+/// Moste useful for quick testing.
 class TimeJob: Job {
     let label: String
     let timeInterval: TimeInterval
