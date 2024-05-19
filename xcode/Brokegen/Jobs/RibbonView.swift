@@ -13,6 +13,7 @@ struct RibbonView: View {
             Text(bigText)
                 .font(.largeTitle)
                 .lineLimit(6)
+                .monospaced()
             Spacer()
         }
         .padding(24)
