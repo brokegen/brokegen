@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-struct BigToolbar: View {
+struct RibbonView: View {
     let bigText: String
 
     init(_ bigText: String?) {
@@ -12,16 +12,17 @@ struct BigToolbar: View {
         HStack {
             Text(bigText)
                 .font(.largeTitle)
+                .lineLimit(6)
         }
         .frame(maxWidth: .infinity)
-        .frame(minHeight: 100)
+        .frame(idealHeight: 120)
         .padding(24)
     }
 }
 
 #Preview {
     VStack {
-        BigToolbar("faux")
+        RibbonView("faux")
         NavigationView {
             Text("empty")
         }

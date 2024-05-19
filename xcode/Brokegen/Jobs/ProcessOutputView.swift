@@ -4,33 +4,55 @@ struct ProcessOutputView: View {
     // TODO: This seems bad, but, what should we do instead?
     @StateObject var job: SimpleJob
 
+    var sidebarTitle: String = "[sidebar]"
+
+    var ribbonText: String =
+        "[ribbon identifier]\n" +
+        "\(Date.now) yeah yeah"
+
+    var displayedStatus: String = "job terminated 7 seconds ago"
+    var displayedOutput: String =
+    """
+    [lots of console output]
+
+    …
+
+    well, eventually.
+    """
+
+    @State private var keepScrollAtBottom = true
+
     init(_ job: SimpleJob) {
         _job = StateObject(wrappedValue: job)
         self.job.launch()
     }
 
     var body: some View {
-        VStack(alignment: .leading) {
-            BigToolbar(job.makeTitle())
+        ScrollViewReader { scrollViewProxy in
+            RibbonView(job.makeTitle())
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(12)
 
-            Text(job.makeTitle())
-                .monospaced()
-                .font(.title2)
+            List {
+                Text(displayedStatus)
+                    .monospaced()
+                    .font(.title2)
 
-            Text(job.entireCapturedOutput)
-                .monospaced()
-                .font(.title2)
+                Divider()
+
+                Text(job.entireCapturedOutput)
+                    .monospaced()
+                    .font(.title2)
+            }
 
             Spacer()
         }
-        .padding(24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
 #Preview {
     ProcessOutputView(SimpleJob(
-        URL(fileURLWithPath: "invalid, all invalid, don't write this"),
+        URL(fileURLWithPath: "invalid--all-invalid, don't write this"),
         arguments: []
     ))
     .fixedSize()

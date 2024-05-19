@@ -21,9 +21,12 @@ class SimpleJob: ObservableObject, Identifiable {
     }
 
     func makeTitle() -> String {
-        var title = executableURL.lastPathComponent
+        var title = executableURL.path()
+        if self.arguments.count > 0 {
+            title = "\(title)\n\(self.arguments)"
+        }
         if self.processDone != nil {
-            title = "\(title) -- terminated \(self.processDone!)"
+            title = "\(title)\nterminated at \(self.processDone!)"
         }
 
         return title
@@ -40,14 +43,25 @@ class SimpleJob: ObservableObject, Identifiable {
     }
 }
 
-@Observable
-class ManagedProcessService {
+class JobsManagerService: ObservableObject {
+    @Published var renderableJobs: [Job]
+
+    // Deprecated
     var knownJobs: [SimpleJob] = []
 
     init() {
-        _ = addProcess(["/bin/date"])
-        _ = addProcess(["/sbin/ifconfig"])
-        _ = addProcess(["/usr/bin/man", "man"])
+        renderableJobs = [
+            TimeJob(0.5, maxTimesFired: 6)
+        ]
+
+        // DEBUG: start jobs right away, until we can get a button
+        for job in renderableJobs {
+            job.launch()
+        }
+//
+//        _ = addProcess(["/bin/date"])
+//        _ = addProcess(["/sbin/ifconfig"])
+//        _ = addProcess(["/usr/bin/man", "man"])
 
 //        let task = Process()
 //        task.launchPath = "/usr/bin/pmset"
