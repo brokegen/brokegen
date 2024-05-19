@@ -27,13 +27,13 @@ logger = logging.getLogger(__name__)
 
 async def consolidate_stream(
         primordial: AsyncIterable[OllamaResponseContentJSON],
-        override_logger: logging.Logger = logger,
+        override_warn_fn = logger.warning,
 ) -> OllamaResponseContentJSON:
     """
     Code is mostly specific to streaming Ollama responses,
     but useful enough we can use it in several places.
     """
-    consolidated_response: OllamaResponseContentJSON = None
+    consolidated_response: OllamaResponseContentJSON | None = None
 
     async for decoded_line in primordial:
         if consolidated_response is None:
@@ -53,7 +53,7 @@ async def consolidate_stream(
 
             elif k == 'done':
                 if consolidated_response[k]:
-                    override_logger.warning(f"Received additional JSON after streaming indicated we were {k}={v}")
+                    override_warn_fn(f"Received additional JSON after streaming indicated we were {k}={v}")
 
             elif k == 'model':
                 if consolidated_response[k] != v:
@@ -69,9 +69,9 @@ async def consolidate_stream(
             # Except as a stopgap, for now.
             elif k == 'message':
                 if set(v.keys()) != {'content', 'role'}:
-                    override_logger.warning(f"Received unexpected message content with keys: {v.keys()}")
+                    override_warn_fn(f"Received unexpected message content with keys: {v.keys()}")
                 if v['role'] != 'assistant':
-                    override_logger.warning(f"Received content for unexpected role \"{v['role']}\", continuing anyway")
+                    override_warn_fn(f"Received content for unexpected role \"{v['role']}\", continuing anyway")
 
                 consolidated_response[k]['content'] += v['content']
                 continue
@@ -90,8 +90,11 @@ async def consolidate_stream(
 async def chunk_and_log_output(
         primordial: AsyncIterable[bytes],
         log_fn: Callable[[str], Any],
+        # 'response' is the field for /api/generate, which is what we generally use,
+        # but /api/chat uses 'content'.
+        target_field: AnyStr = 'response',
         min_chunk_length: int = 120,
-):
+) -> AsyncIterable[bytes]:
     buffered_chunks = ''
 
     async for chunk0 in primordial:
@@ -100,16 +103,16 @@ async def chunk_and_log_output(
         # NB This is very wasteful re-decoding, but don't prematurely optimize.
         try:
             chunk0_json = orjson.loads(chunk0)
-            if 'response' not in chunk0_json:
+            if target_field not in chunk0_json:
                 continue
 
             if buffered_chunks is None:
-                buffered_chunks = chunk0_json['response']
+                buffered_chunks = chunk0_json[target_field]
             elif len(buffered_chunks) >= min_chunk_length:
                 log_fn(buffered_chunks)
-                buffered_chunks = chunk0_json['response']
+                buffered_chunks = chunk0_json[target_field]
             else:
-                buffered_chunks += chunk0_json['response']
+                buffered_chunks += chunk0_json[target_field]
 
         # Eat all exceptions, since this wrapper should be silent and unintrusive.
         except Exception as e:
@@ -207,7 +210,7 @@ class JSONRequestInterceptor(PlainRequestInterceptor):
 
             consolidated_response = await consolidate_stream(
                 json_aiter(),
-                self.logger,
+                self.logger.warning,
             )
 
             self.response_content_json = [consolidated_response]
@@ -256,6 +259,10 @@ class JSONRequestInterceptor(PlainRequestInterceptor):
     def _set_or_delete_response_content(self, json_ish):
         new_response_json = dict(self.new_access.response)
         if json_ish:
+            # Remove that Ollama vector chunk that pseudo-embeds history
+            if 'context' in json_ish:
+                del json_ish['context']
+
             new_response_json['content'] = json_ish
         else:
             if 'content' in new_response_json:

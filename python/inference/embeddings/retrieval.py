@@ -77,12 +77,18 @@ class CustomRetrievalPolicy(RetrievalPolicy):
             generate_retrieval_str_fn: Callable[[PromptText], Awaitable[PromptText]] | None,
     ) -> PromptText | None:
         latest_message_content = messages[-1]['content']
-        retrieval_str: PromptText = await generate_retrieval_str_fn(f"""\
+        retrieval_str: PromptText = latest_message_content
+        if len(retrieval_str) > 1_000:
+            # Only summarize the query if it's real long
+            retrieval_str = await generate_retrieval_str_fn(f"""\
 Summarize the important terms in the following query, in one or two sentences,
 to allow for rapid RAG retrieval of related content:
 
 {latest_message_content}
 """)
+            # If the summary is blank or shorter than a tweet, skip.
+            if not retrieval_str.strip() or len(retrieval_str) < 140:
+                retrieval_str = latest_message_content
 
         matching_docs0: List[Document] = await self.retriever.ainvoke(retrieval_str)
         if len(matching_docs0) == 0:
@@ -116,9 +122,13 @@ in a way relevant to the original query:
 {matching_docs0[n].page_content}
 </document>
 """)
-                matching_docs0[n].page_content = summarized_doc
-                matching_docs1.append(matching_docs0[n])
+                # If the summary is blank or shorter than a tweet, skip.
+                if not summarized_doc.strip() or len(summarized_doc) < 140:
+                    pass
+                else:
+                    matching_docs0[n].page_content = summarized_doc
 
+                matching_docs1.append(matching_docs0[n])
                 if total_doc_length(matching_docs1) > 20_000:
                     logger.debug(f"Already failed to truncate docs, AI-mediated summaries are still too long")
                     break

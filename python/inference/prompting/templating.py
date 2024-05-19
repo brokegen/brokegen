@@ -10,7 +10,11 @@ async def apply_llm_template(
         assistant_response: PromptText | None,
         break_early_on_response: bool = False,
 ) -> TemplatedPromptText:
-    # Use the world's most terrible regexes to parse the Ollama template format
+    """
+    Use the world's most terrible regexes to parse the Ollama template format
+
+    TODO: Use pip `transformers` library to build from templates/etc
+    """
     template1 = model_template
     try:
         if_pattern = r'{{-?\s*if\s+(\.[^\s]+)\s*}}(.*?){{-?\s*end\s*}}'

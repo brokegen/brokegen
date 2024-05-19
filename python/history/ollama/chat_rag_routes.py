@@ -1,7 +1,9 @@
+import asyncio
+import itertools
 import logging
 from collections.abc import AsyncIterable
 from datetime import datetime, timezone
-from typing import TypeAlias, Callable, Awaitable, Any
+from typing import TypeAlias, Callable, Awaitable, Any, AsyncIterator, Tuple, AsyncGenerator
 
 import httpx
 import orjson
@@ -15,7 +17,7 @@ from history.database import HistoryDB, InferenceJob
 from history.ollama.chat_routes import lookup_model_offline
 from history.ollama.forward_routes import _real_ollama_client
 from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, JSONRequestInterceptor, \
-    JSONStreamingResponse, chunk_and_log_output, JSONArray
+    JSONStreamingResponse, chunk_and_log_output, JSONArray, consolidate_stream
 from history.ollama.json import safe_get
 from inference.embeddings.retrieval import RetrievalPolicy
 from inference.prompting.templating import apply_llm_template, PromptText, TemplatedPromptText
@@ -91,8 +93,9 @@ async def do_generate_raw_templated(
 
         return as_json
 
-    async def post_forward_cleanup():
-        await upstream_response.aclose()
+    async def iteration_wrapper():
+        async for chunk0 in intercept.wrap_response_content(upstream_response.aiter_lines()):
+            yield chunk0
 
         as_json = await finalize_intercept()
         await finalize_inference_job(as_json)
@@ -100,10 +103,10 @@ async def do_generate_raw_templated(
             await on_done_fn(as_json)
 
     return StreamingResponse(
-        content=intercept.wrap_response_content(upstream_response.aiter_lines()),
+        content=iteration_wrapper(),
         status_code=upstream_response.status_code,
         headers=upstream_response.headers,
-        background=BackgroundTask(post_forward_cleanup),
+        background=BackgroundTask(upstream_response.aclose),
     )
 
 
@@ -135,7 +138,10 @@ async def convert_chat_to_generate(
     templated_messages: list[TemplatedPromptText] = []
 
     # TODO: Figure out what to do with request that overflows context
-    # TODO: Use pip `transformers` library to build from templates/etc
+    #
+    # TODO: Due to how Ollama templating is implemented, we basically need to bundle user/assistant requests together.
+    #       Rather than doing this, just expect the user to have overridden the default templates, for now.
+    #       Otherwise, we can check what happens with a null-every string message vs a non-null-assistant message.
     for count, message in enumerate(ollama_chat_messages):
         is_first_message = count == 0
         is_last_message = (
@@ -145,9 +151,9 @@ async def convert_chat_to_generate(
 
         converted = await apply_llm_template(
             model_template,
-            system_message if is_first_message else '',
-            message['content'] if message['role'] == 'user' else '',
-            message['content'] if message['role'] == 'assistant' else '',
+            system_message if is_first_message else None,
+            message['content'] if message['role'] == 'user' else None,
+            message['content'] if message['role'] == 'assistant' else None,
             is_last_message,
         )
         templated_messages.append(converted)
@@ -275,7 +281,7 @@ async def do_proxy_chat_rag(
     prompt_override = await retrieval_policy.parse_chat_history(chat_messages, generate_retrieval_str)
 
     new_access = ApiAccessWithResponse(
-        api_bucket=f"self:do_proxy_chat_rag({retrieval_policy.__class__.__name__})",
+        api_bucket=f"do_proxy_chat_rag({retrieval_policy.__class__.__name__})",
         accessed_at=datetime.now(tz=timezone.utc),
         api_endpoint=str(original_request.url),
         request={
@@ -304,7 +310,7 @@ async def do_proxy_chat_rag(
     async def wrap_response(
             access: ApiAccessWithResponse,
             upstream_response: JSONStreamingResponse,
-            log_output: bool = True,
+            log_output: bool = False,
     ) -> JSONStreamingResponse:
         response_json = {
             'status_code': upstream_response.status_code,
@@ -319,13 +325,49 @@ async def do_proxy_chat_rag(
         ratelimits_db.add(merged_access)
         ratelimits_db.commit()
 
+        async def identity_proxy(primordial):
+            """This mostly exists for regression testing/checking, unfortunately"""
+            async for chunk in primordial:
+                yield chunk
+
+        upstream_response._content_iterable = identity_proxy(upstream_response._content_iterable)
+        upstream_response._content_iterable = identity_proxy(upstream_response._content_iterable)
+        upstream_response._content_iterable = identity_proxy(upstream_response._content_iterable)
+        upstream_response._content_iterable = identity_proxy(upstream_response._content_iterable)
+
+        if not log_output:
+            return upstream_response
+
         if log_output:
-            upstream_response.body_iterator = chunk_and_log_output(
-                upstream_response.body_iterator,
-                lambda s: logger.debug(f"chat_rag: " + s),
-            )
+            async def _atee(it: AsyncIterator, link) -> AsyncGenerator:
+                try:
+                    while True:
+                        if link[1] is None:
+                            link[0] = await it.__anext__()
+                            link[1] = [None, None]
 
-        return upstream_response
+                        value, link = link
+                        yield value
+                except StopAsyncIteration:
+                    return
 
-    # return wrap_response(new_access, ollama_response)
-    return ollama_response
+            async def atee(primo: AsyncIterable, n=3) -> tuple[AsyncGenerator, ...]:
+                it: AsyncIterator = aiter(primo)
+                shared_link = [None, None]
+                return tuple(_atee(it, shared_link) for _ in range(n))
+
+            async def to_json(primo: AsyncIterable) -> AsyncIterable[OllamaResponseContentJSON]:
+                async for chunk in primo:
+                    yield orjson.loads(chunk)
+
+            final_iteration, jsonable = await atee(upstream_response._content_iterable, n=2)
+            j_aiter1, j_aiter2 = await atee(to_json(jsonable), n=2)
+
+            async for _ in chunk_and_log_output(j_aiter1, lambda s: s, 'content'):
+                pass
+            _ = await consolidate_stream(j_aiter2, logger.warning)
+
+            upstream_response._content_iterable = final_iteration
+            return upstream_response
+
+    return await wrap_response(new_access, ollama_response)
