@@ -7,10 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		CE4634DE2BF937320063142E /* JobsManagerSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634DD2BF937320063142E /* JobsManagerSidebarView.swift */; };
+		CE4634DE2BF937320063142E /* JobsSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634DD2BF937320063142E /* JobsSidebar.swift */; };
 		CE4634E02BF963210063142E /* BaseJob.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634DF2BF963210063142E /* BaseJob.swift */; };
 		CE4634E22BF97A180063142E /* JobOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634E12BF97A180063142E /* JobOutputView.swift */; };
 		CE4634E52BFA5F890063142E /* SimpleProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634E42BFA5F890063142E /* SimpleProcess.swift */; };
+		CE4634E72BFA6A050063142E /* JobsSidebarItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634E62BFA6A050063142E /* JobsSidebarItem.swift */; };
 		CE6D8A7F2BF6DF1800A7934D /* RibbonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */; };
 		CE8229AF2BF7306000029DC2 /* JobsManagerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8229AE2BF7306000029DC2 /* JobsManagerService.swift */; };
 		CE9867512BF4047C008D6C41 /* BrokegenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867502BF4047C008D6C41 /* BrokegenApp.swift */; };
@@ -24,10 +25,11 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		CE4634DD2BF937320063142E /* JobsManagerSidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsManagerSidebarView.swift; sourceTree = "<group>"; };
+		CE4634DD2BF937320063142E /* JobsSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsSidebar.swift; sourceTree = "<group>"; };
 		CE4634DF2BF963210063142E /* BaseJob.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseJob.swift; sourceTree = "<group>"; };
 		CE4634E12BF97A180063142E /* JobOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobOutputView.swift; sourceTree = "<group>"; };
 		CE4634E42BFA5F890063142E /* SimpleProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleProcess.swift; sourceTree = "<group>"; };
+		CE4634E62BFA6A050063142E /* JobsSidebarItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsSidebarItem.swift; sourceTree = "<group>"; };
 		CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RibbonView.swift; sourceTree = "<group>"; };
 		CE8229AE2BF7306000029DC2 /* JobsManagerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsManagerService.swift; sourceTree = "<group>"; };
 		CE98674D2BF4047C008D6C41 /* Brokegen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Brokegen.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -56,7 +58,8 @@
 			isa = PBXGroup;
 			children = (
 				CE8229AE2BF7306000029DC2 /* JobsManagerService.swift */,
-				CE4634DD2BF937320063142E /* JobsManagerSidebarView.swift */,
+				CE4634DD2BF937320063142E /* JobsSidebar.swift */,
+				CE4634E62BFA6A050063142E /* JobsSidebarItem.swift */,
 			);
 			path = JobsManager;
 			sourceTree = "<group>";
@@ -199,9 +202,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CE4634E72BFA6A050063142E /* JobsSidebarItem.swift in Sources */,
 				CE6D8A7F2BF6DF1800A7934D /* RibbonView.swift in Sources */,
 				CECA47AA2BF6D62E007A28F2 /* SystemInfoView.swift in Sources */,
-				CE4634DE2BF937320063142E /* JobsManagerSidebarView.swift in Sources */,
+				CE4634DE2BF937320063142E /* JobsSidebar.swift in Sources */,
 				CE9867632BF41954008D6C41 /* LLMSidebarView.swift in Sources */,
 				CE9867652BF41A3E008D6C41 /* PlaceholderContentView.swift in Sources */,
 				CE8229AF2BF7306000029DC2 /* JobsManagerService.swift in Sources */,

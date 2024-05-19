@@ -89,24 +89,6 @@ struct JobsSidebarItem: View {
     }
 }
 
-struct JobsManagerSidebarView: View {
-    @Environment(JobsManagerService.self) private var jobsService
-
-    var body: some View {
-        Section(header: Text("Jobs")
-            .font(.title2)
-            .foregroundStyle(.primary)
-            .padding(6)
-        ) {
-            ForEach(jobsService.renderableJobs) { job in
-                NavigationLink(destination: JobOutputView(job: job)) {
-                    JobsSidebarItem(job: job)
-                }
-            }
-        }
-    }
-}
-
 #Preview(traits: .fixedLayout(width: 384, height: 512)) {
     VStack(alignment: .leading) {
         Section(header: Text("Starting")
