@@ -115,7 +115,7 @@ struct JobsSidebarItem: View {
             JobsSidebarItem(job: TimeJob("row4").status(.requestedStop))
             Divider()
             JobsSidebarItem(job: TimeJob("row5").status(.stopped))
-            JobsSidebarItem(job: TimeJob("row6").status(.error))
+            JobsSidebarItem(job: TimeJob("row6").status(.error("sidebar, eh")))
         }
     }
     .frame(maxHeight: .infinity)

@@ -17,6 +17,7 @@ class JobsManagerService: Observable, ObservableObject {
             SimpleProcess("/sbin/ifconfig"),
             SimpleProcess("/bin/date"),
             SimpleProcess("/usr/bin/man", ["man"]),
+            StayAwakeService(),
         ]
 
         let fileManager = FileManager.default
@@ -47,19 +48,19 @@ class JobsManagerService: Observable, ObservableObject {
             [
                 "--data-dir",
                 directoryPath.path(percentEncoded: false),
-                "--enable-rag",
-                "false",
+                "--enable-rag=false",
+                "--bind-port=6636",
             ]
         )
         renderableJobs.insert(serverNoRag, at: 1)
 
-        let server = SimpleProcess(
+        let server = RestartableProcess(
             Bundle.main.url(forResource: "brokegen-server", withExtension: nil)!,
             [
                 "--data-dir",
                 directoryPath.path(percentEncoded: false),
-                "--enable-rag",
-                "true",
+                "--enable-rag=true",
+                "--bind-port=6637",
             ]
         )
         renderableJobs.insert(server, at: 2)

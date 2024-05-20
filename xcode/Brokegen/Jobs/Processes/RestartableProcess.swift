@@ -2,29 +2,14 @@ import Combine
 import Foundation
 import SwiftUI
 
-/// This is very simple code for launching an external process, with virtually no testing or validation.
-/// Which means that in error conditions, we're very likely to leave handles and memory leaks everywhere.
-class SimpleProcess: Job {
-    var task: Process?
-
-    convenience init(_ pathAndArguments: [String]) {
-        // TODO: Decide what to actually do in impossible cases
-        if pathAndArguments.isEmpty {
-            self.init("/usr/bin/false", ["no arguments provided"])
-        }
-        else {
-            self.init(pathAndArguments.first!, Array(pathAndArguments.dropFirst()))
-        }
-    }
-
-    convenience init(_ launchPath: String, _ arguments: [String] = []) {
-        self.init(URL(fileURLWithPath: launchPath), arguments)
-    }
+class RestartableProcess: Job {
+    var processes: [Process] = []
+    let executableURL: URL
+    let arguments: [String]
 
     init(_ launchURL: URL, _ arguments: [String] = []) {
-        task = Process()
-        task!.executableURL = launchURL
-        task!.arguments = arguments
+        self.executableURL = launchURL
+        self.arguments = arguments
 
         super.init()
 
@@ -36,22 +21,28 @@ class SimpleProcess: Job {
     }
 
     override func launch() {
-        status = .requestedStart
-        guard task != nil else {
-            status = .error("task already started once")
+        guard processes.isEmpty else {
             return
         }
 
-        task!.terminationHandler = { _ in
+        status = .requestedStart
+
+        let currentProcess = Process()
+        currentProcess.executableURL = executableURL
+        currentProcess.arguments = arguments
+
+        currentProcess.terminationHandler = { _ in
             DispatchQueue.main.async {
-                self.task = nil
+                if let index = self.processes.firstIndex(of: currentProcess) {
+                    self.processes.remove(at: index)
+                }
                 self.status = .stopped
             }
         }
 
         let pipe = Pipe()
-        task!.standardOutput = pipe
-        task!.standardError = pipe
+        currentProcess.standardOutput = pipe
+        currentProcess.standardError = pipe
 
         pipe.fileHandleForReading.readabilityHandler = { handle in
             let data = handle.availableData
@@ -68,23 +59,26 @@ class SimpleProcess: Job {
         }
 
         do {
-            try task!.run()
+            try currentProcess.run()
+            processes.append(currentProcess)
             status = .startedNoOutput
         }
         catch {
-            status = .error("failed to start task")
+            status = .error("failed to launch process")
         }
     }
 
     override func terminate() {
-        task?.terminate()
-        task = nil
+        for process in processes {
+            process.terminate()
+        }
+        processes.removeAll()
 
         status = .stopped
     }
 
     override func terminatePatiently() {
-        guard task != nil else {
+        guard !processes.isEmpty else {
             status = .stopped
             return
         }
@@ -93,8 +87,10 @@ class SimpleProcess: Job {
 
         Task {
             await withCheckedContinuation { continuation in
-                task?.waitUntilExit()
-                task = nil
+                for process in processes {
+                    process.waitUntilExit()
+                }
+                processes.removeAll()
 
                 DispatchQueue.main.async {
                     self.status = .stopped

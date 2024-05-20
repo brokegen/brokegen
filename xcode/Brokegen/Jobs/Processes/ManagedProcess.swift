@@ -4,20 +4,6 @@ class ManagedProcess {
     let executableURL: URL
     let arguments: [String]
 
-    convenience init(from shellString: String) {
-        self.init(
-            URL(fileURLWithPath: "/bin/sh"),
-            argv: ["-c", shellString]
-        )
-    }
-
-    convenience init(_ directArgs: [String]) {
-        self.init(
-            URL(fileURLWithPath: directArgs[0]),
-            argv: Array(directArgs.dropFirst())
-        )
-    }
-
     init(_ executableURL: URL, argv: [String]) {
         self.executableURL = executableURL
         self.arguments = argv
