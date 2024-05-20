@@ -6,7 +6,7 @@ from typing import List, Callable, Awaitable
 from langchain_core.documents import Document
 
 from inference.embeddings.knowledge import KnowledgeSingleton
-from inference.prompting.models import ChatMessage, PromptText
+from inference.prompting.models import ChatMessage, PromptText, TemplatedPromptText
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -17,7 +17,8 @@ class RetrievalPolicy:
     async def parse_chat_history(
             self,
             messages: List[ChatMessage],
-            generate_retrieval_str_fn: Callable[[PromptText], Awaitable[PromptText]] | None,
+            generate_helper_fn: Callable[[PromptText, PromptText], Awaitable[PromptText]],
+            generate_retrieval_str_fn: Callable[[TemplatedPromptText], Awaitable[PromptText]] | None,
     ) -> PromptText | None:
         raise NotImplementedError()
 
@@ -26,7 +27,8 @@ class SkipRetrievalPolicy(RetrievalPolicy):
     async def parse_chat_history(
             self,
             messages: List[ChatMessage],
-            generate_retrieval_str_fn: Callable[[PromptText], Awaitable[PromptText]] | None,
+            generate_helper_fn: Callable[[PromptText, PromptText], Awaitable[PromptText]],
+            generate_retrieval_str_fn: Callable[[TemplatedPromptText], Awaitable[PromptText]] | None,
     ) -> PromptText | None:
         return None
 
@@ -38,7 +40,8 @@ class DefaultRetrievalPolicy(RetrievalPolicy):
     async def parse_chat_history(
             self,
             messages: List[ChatMessage],
-            generate_retrieval_str_fn: Callable[[PromptText], Awaitable[PromptText]] | None,
+            generate_helper_fn: Callable[[PromptText, PromptText], Awaitable[PromptText]],
+            generate_retrieval_str_fn: Callable[[TemplatedPromptText], Awaitable[PromptText]] | None,
     ) -> PromptText | None:
         latest_message_content = messages[-1]['content']
         retrieval_str = latest_message_content
@@ -49,7 +52,7 @@ class DefaultRetrievalPolicy(RetrievalPolicy):
         )
 
         big_prompt = f"""\
-Use any sources you can. Some recent context is provided to try and provide newer information:
+Use context where you can, but don't rely on it overmuch:
 
 <context>
 {formatted_docs}
@@ -67,30 +70,49 @@ class CustomRetrievalPolicy(RetrievalPolicy):
         self.retriever = knowledge.as_retriever(
             search_type='similarity',
             search_kwargs={
-                'k': 8,
+                'k': 18,
             },
         )
 
     async def parse_chat_history(
             self,
             messages: List[ChatMessage],
-            generate_retrieval_str_fn: Callable[[PromptText], Awaitable[PromptText]] | None,
+            generate_helper_fn: Callable[[PromptText, PromptText], Awaitable[PromptText]],
+            _: Callable[[TemplatedPromptText], Awaitable[PromptText]] | None,
     ) -> PromptText | None:
         latest_message_content = messages[-1]['content']
-        retrieval_str: PromptText = latest_message_content
-        if len(retrieval_str) > 1_000:
+
+        async def summarize_query():
+            retrieval_str: PromptText = latest_message_content
+
+            # If the query is exceptionally short, include recent messages
+            # (but ONLY for the sake of retrieving docs)
+            if len(retrieval_str) < 200:
+                retrieval_str = ''
+                for message in messages[::-1]:
+                    if len(retrieval_str) > 4_000:
+                        break
+
+                    retrieval_str += message['content']
+                    retrieval_str += '\n\n'
+
             # Only summarize the query if it's real long
-            retrieval_str = await generate_retrieval_str_fn(f"""\
-Summarize the important terms in the following query, in one or two sentences,
-to allow for rapid RAG retrieval of related content:
+            if len(retrieval_str) > 4_000:
+                retrieval_str = await generate_helper_fn(
+                    system_message="Summarize the most important and unique terms in the following query",
+                    user_message=latest_message_content,
+                )
+                # If the summary is blank or shorter than a tweet, skip.
+                if not retrieval_str.strip() or len(retrieval_str) < 140:
+                    retrieval_str = latest_message_content
+                else:
+                    logger.info(f"Summary of the provided query: {retrieval_str[:500]}")
 
-{latest_message_content}
-""")
-            # If the summary is blank or shorter than a tweet, skip.
-            if not retrieval_str.strip() or len(retrieval_str) < 140:
-                retrieval_str = latest_message_content
+            return retrieval_str
 
-        matching_docs0: List[Document] = await self.retriever.ainvoke(retrieval_str)
+        final_retrieval_str = await summarize_query()
+
+        matching_docs0: List[Document] = await self.retriever.ainvoke(final_retrieval_str)
         if len(matching_docs0) == 0:
             return None
 
@@ -101,7 +123,7 @@ to allow for rapid RAG retrieval of related content:
                         docs)))
 
         # Truncation part 1: AI-mediated reduction.
-        if total_doc_length(matching_docs0) < 20_000:
+        if total_doc_length(matching_docs0) < 40_000:
             formatted_docs = "\n\n".join([d.page_content for d in matching_docs0])
 
         else:
@@ -110,47 +132,48 @@ to allow for rapid RAG retrieval of related content:
 
             matching_docs1 = []
             for n in range(len(matching_docs0)):
-                summarized_doc = await generate_retrieval_str_fn(f"""\
-Summarize the important parts of the following document,
-in a way relevant to the original query:
-
+                summarized_doc = await generate_helper_fn(
+                    system_message="""\
+Provide a concise summary of the provided passage. Call out any sections that seem closely related to the original query.""",
+                    user_message=f"""\
 <query>
 {latest_message_content}
 </query>
 
 <document>
 {matching_docs0[n].page_content}
-</document>
-""")
+</document>""",
+                )
                 # If the summary is blank or shorter than a tweet, skip.
                 if not summarized_doc.strip() or len(summarized_doc) < 140:
                     pass
                 else:
+                    logger.info(f"Summary of the returned document: {summarized_doc[:500]}")
                     matching_docs0[n].page_content = summarized_doc
 
                 matching_docs1.append(matching_docs0[n])
-                if total_doc_length(matching_docs1) > 20_000:
+                if total_doc_length(matching_docs1) > 40_000:
                     logger.debug(f"Already failed to truncate docs, AI-mediated summaries are still too long")
                     break
 
                 # Otherwise, check if our reduction was actually successful, and it's time to stop
-                if total_doc_length(matching_docs0) < 20_000:
+                if total_doc_length(matching_docs0) < 40_000:
                     matching_docs1 = matching_docs0
                     break
 
             # Truncation part 2: sheer length
-            if total_doc_length(matching_docs1) < 20_000:
+            if total_doc_length(matching_docs1) < 40_000:
                 formatted_docs = "\n\n".join([d.page_content for d in matching_docs1])
 
             else:
                 matching_docs2 = list(matching_docs1)
-                while total_doc_length(matching_docs2) > 20_000:
+                while total_doc_length(matching_docs2) > 40_000:
                     matching_docs2 = matching_docs2[:-1]
 
                 if len(matching_docs2) == 0:
                     logger.debug(
                         f"Last remaining RAG doc is {len(matching_docs1[0].page_content)} chars, truncating it")
-                    formatted_docs = matching_docs1[0][:20_000]
+                    formatted_docs = matching_docs1[0][:40_000]
 
                 else:
                     formatted_docs = "\n\n".join(
@@ -158,7 +181,7 @@ in a way relevant to the original query:
                     )
 
         big_prompt = f"""\
-Use any sources you can. Some recent context is provided to try and provide newer information:
+Use context where you can, but don't rely on it overmuch:
 
 <context>
 {formatted_docs}

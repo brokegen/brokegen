@@ -56,10 +56,6 @@ async def do_generate_raw_templated(
         cookies=request_cookies,
     )
 
-    # TODO: We should have real timing and instrumentation calls,
-    #       but the timestamps for this will suffice, for our single-threaded purposes.
-    logger.debug(
-        f"Done pre-processing, forwarding request to Ollama `{model.human_id}`: {request_content['prompt'][:280]}")
     upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
     intercept.build_access_event(upstream_response, api_bucket=f"ollama:/api/generate")
     # TODO: The request_content was available a long time ago, it should have been stored right away.
@@ -255,7 +251,7 @@ async def do_proxy_chat_rag(
     if not chat_messages:
         raise RuntimeError("No 'messages' provided in call to /api/chat")
 
-    async def generate_retrieval_str(retrieval_query: PromptText) -> PromptText:
+    async def generate_retrieval_str(retrieval_query: TemplatedPromptText) -> PromptText:
         response0 = await do_generate_raw_templated(
             request_content={
                 'model': request_content_json['model'],
@@ -276,7 +272,52 @@ async def do_proxy_chat_rag(
         response0_json = orjson.loads(''.join(content_chunks))
         return response0_json['response']
 
-    prompt_override = await retrieval_policy.parse_chat_history(chat_messages, generate_retrieval_str)
+    async def generate_helper_fn(system_message: PromptText, user_message: PromptText) -> PromptText:
+        model, executor_record = await lookup_model_offline(
+            request_content_json['model'],
+            history_db,
+        )
+
+        model_template = (
+                safe_get(request_content_json, 'options', 'template')
+                or safe_get(model.default_inference_params, 'template')
+                or ''
+        )
+
+        final_system_message = (
+                system_message
+                or safe_get(request_content_json, 'options', 'system')
+                or safe_get(model.default_inference_params, 'system')
+                or None
+        )
+
+        templated_query = await apply_llm_template(model_template,
+                                                   final_system_message,
+                                                   user_message,
+                                                   assistant_response=None,
+                                                   break_early_on_response=True)
+        response0 = await do_generate_raw_templated(
+            request_content={
+                'model': request_content_json['model'],
+                'prompt': templated_query,
+                'raw': False,
+                'stream': False,
+            },
+            request_headers=starlette.datastructures.Headers(),
+            request_cookies=None,
+            history_db=history_db,
+            ratelimits_db=ratelimits_db,
+        )
+
+        content_chunks = []
+        async for chunk in response0.body_iterator:
+            content_chunks.append(chunk)
+
+        response0_json = orjson.loads(''.join(content_chunks))
+        return response0_json['response']
+
+    prompt_override = await retrieval_policy.parse_chat_history(chat_messages, generate_helper_fn,
+                                                                generate_retrieval_str)
 
     new_access = ApiAccessWithResponse(
         api_bucket=f"do_proxy_chat_rag({retrieval_policy.__class__.__name__})",
