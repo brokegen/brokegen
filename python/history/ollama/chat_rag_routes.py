@@ -1,9 +1,7 @@
-import asyncio
-import itertools
 import logging
 from collections.abc import AsyncIterable
 from datetime import datetime, timezone
-from typing import TypeAlias, Callable, Awaitable, Any, AsyncIterator, Tuple, AsyncGenerator
+from typing import TypeAlias, Callable, Awaitable, Any, AsyncIterator
 
 import httpx
 import orjson
@@ -305,12 +303,10 @@ async def do_proxy_chat_rag(
         ratelimits_db,
     )
 
-    # TODO: This/these should really be middleware.
-    # TODO: This should be a RequestInterceptor, at least.
     async def wrap_response(
             access: ApiAccessWithResponse,
             upstream_response: JSONStreamingResponse,
-            log_output: bool = False,
+            log_output: bool = True,
     ) -> JSONStreamingResponse:
         response_json = {
             'status_code': upstream_response.status_code,
@@ -339,35 +335,42 @@ async def do_proxy_chat_rag(
             return upstream_response
 
         if log_output:
-            async def _atee(it: AsyncIterator, link) -> AsyncGenerator:
-                try:
-                    while True:
-                        if link[1] is None:
-                            link[0] = await it.__anext__()
-                            link[1] = [None, None]
+            # TODO: Make sure this doesn't block execution, or whatever.
+            # TODO: Figure out how to trigger two AsyncIterators at once, but we've already burned a day on it.
+            async def big_fake_tee(primordial: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
+                stored_chunks = []
+                buffered_text = ''
 
-                        value, link = link
-                        yield value
-                except StopAsyncIteration:
-                    return
+                async for chunk0 in primordial:
+                    yield chunk0
+                    stored_chunks.append(chunk0)
 
-            async def atee(primo: AsyncIterable, n=3) -> tuple[AsyncGenerator, ...]:
-                it: AsyncIterator = aiter(primo)
-                shared_link = [None, None]
-                return tuple(_atee(it, shared_link) for _ in range(n))
+                    chunk0_json = orjson.loads(chunk0)
+                    if len(buffered_text) >= 120:
+                        logger.debug(f"pcr: {buffered_text}")
+                        buffered_text = safe_get(chunk0_json, 'message', 'content')
+                    else:
+                        buffered_text += safe_get(chunk0_json, 'message', 'content')
 
-            async def to_json(primo: AsyncIterable) -> AsyncIterable[OllamaResponseContentJSON]:
-                async for chunk in primo:
-                    yield orjson.loads(chunk)
+                if buffered_text:
+                    logger.debug(f"pcr: {buffered_text}")
+                    buffered_text = ''
 
-            final_iteration, jsonable = await atee(upstream_response._content_iterable, n=2)
-            j_aiter1, j_aiter2 = await atee(to_json(jsonable), n=2)
+                async def replay_chunks():
+                    for chunk in stored_chunks:
+                        yield chunk
 
-            async for _ in chunk_and_log_output(j_aiter1, lambda s: s, 'content'):
-                pass
-            _ = await consolidate_stream(j_aiter2, logger.warning)
+                async def to_json(primo: AsyncIterable) -> AsyncIterable[OllamaResponseContentJSON]:
+                    async for chunk in primo:
+                        yield orjson.loads(chunk)
 
-            upstream_response._content_iterable = final_iteration
+                consolidated = await consolidate_stream(to_json(replay_chunks()))
+                merged_access = ratelimits_db.merge(access)
+                merged_access.response = consolidated
+                ratelimits_db.add(merged_access)
+                ratelimits_db.commit()
+
+            upstream_response._content_iterable = big_fake_tee(upstream_response._content_iterable)
             return upstream_response
 
     return await wrap_response(new_access, ollama_response)

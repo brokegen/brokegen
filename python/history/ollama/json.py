@@ -90,9 +90,6 @@ async def consolidate_stream(
 async def chunk_and_log_output(
         primordial: AsyncIterable[bytes],
         log_fn: Callable[[str], Any],
-        # 'response' is the field for /api/generate, which is what we generally use,
-        # but /api/chat uses 'content'.
-        target_field: AnyStr = 'response',
         min_chunk_length: int = 120,
 ) -> AsyncIterable[bytes]:
     buffered_chunks = ''
@@ -103,16 +100,16 @@ async def chunk_and_log_output(
         # NB This is very wasteful re-decoding, but don't prematurely optimize.
         try:
             chunk0_json = orjson.loads(chunk0)
-            if target_field not in chunk0_json:
+            if 'response' not in chunk0_json:
                 continue
 
             if buffered_chunks is None:
-                buffered_chunks = chunk0_json[target_field]
+                buffered_chunks = chunk0_json['response']
             elif len(buffered_chunks) >= min_chunk_length:
                 log_fn(buffered_chunks)
-                buffered_chunks = chunk0_json[target_field]
+                buffered_chunks = chunk0_json['response']
             else:
-                buffered_chunks += chunk0_json[target_field]
+                buffered_chunks += chunk0_json['response']
 
         # Eat all exceptions, since this wrapper should be silent and unintrusive.
         except Exception as e:
