@@ -115,7 +115,7 @@ Note that these will override anything set in the model templates!
 This allows for easy-ish overriding of the assistant prompt,
 which bypasses censoring for tested models.""")
     async def generate_raw(
-            user_message: str | None = None,
+            user_prompt: str | None = None,
             system_message: str | None = None,
             assistant_prefix: str | None = None,
             model_name: OllamaModelName = "llama3-gradient:latest",
@@ -133,11 +133,11 @@ which bypasses censoring for tested models.""")
         default_system_message = safe_get(model.default_inference_params, 'system') or ''
 
         templated_text = await apply_llm_template(
-            model_template,
-            system_message or default_system_message,
-            user_message,
-            assistant_prefix or '',
-            assistant_prefix is not None,
+            model_template=model_template,
+            system_message=system_message or default_system_message,
+            user_prompt=user_prompt,
+            assistant_response=assistant_prefix or '',
+            break_early_on_response=assistant_prefix is not None,
         )
 
         content = {

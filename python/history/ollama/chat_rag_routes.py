@@ -272,7 +272,11 @@ async def do_proxy_chat_rag(
         response0_json = orjson.loads(''.join(content_chunks))
         return response0_json['response']
 
-    async def generate_helper_fn(system_message: PromptText, user_message: PromptText) -> PromptText:
+    async def generate_helper_fn(
+            system_message: PromptText | None,
+            user_prompt: PromptText | None,
+            assistant_response: PromptText | None = None,
+    ) -> PromptText:
         model, executor_record = await lookup_model_offline(
             request_content_json['model'],
             history_db,
@@ -291,11 +295,12 @@ async def do_proxy_chat_rag(
                 or None
         )
 
-        templated_query = await apply_llm_template(model_template,
-                                                   final_system_message,
-                                                   user_message,
-                                                   assistant_response=None,
-                                                   break_early_on_response=True)
+        templated_query = await apply_llm_template(
+            model_template=model_template,
+            system_message=final_system_message,
+            user_prompt=user_prompt,
+            assistant_response=assistant_response,
+            break_early_on_response=True)
         response0 = await do_generate_raw_templated(
             request_content={
                 'model': request_content_json['model'],
@@ -388,13 +393,13 @@ async def do_proxy_chat_rag(
 
                     chunk0_json = orjson.loads(chunk0)
                     if len(buffered_text) >= 120:
-                        logger.debug(f"pcr: {buffered_text}")
+                        print(buffered_text)
                         buffered_text = safe_get(chunk0_json, 'message', 'content')
                     else:
                         buffered_text += safe_get(chunk0_json, 'message', 'content')
 
                 if buffered_text:
-                    logger.debug(f"pcr: {buffered_text}")
+                    print(buffered_text)
                     buffered_text = ''
 
                 async def replay_chunks():

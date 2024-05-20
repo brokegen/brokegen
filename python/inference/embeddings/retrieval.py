@@ -3,6 +3,7 @@ import operator
 from abc import abstractmethod
 from typing import List, Callable, Awaitable
 
+import orjson
 from langchain_core.documents import Document
 
 from inference.embeddings.knowledge import KnowledgeSingleton
@@ -17,7 +18,7 @@ class RetrievalPolicy:
     async def parse_chat_history(
             self,
             messages: List[ChatMessage],
-            generate_helper_fn: Callable[[PromptText, PromptText], Awaitable[PromptText]],
+            _: Callable[[PromptText, PromptText, PromptText], Awaitable[PromptText]],
             generate_retrieval_str_fn: Callable[[TemplatedPromptText], Awaitable[PromptText]] | None,
     ) -> PromptText | None:
         raise NotImplementedError()
@@ -27,7 +28,7 @@ class SkipRetrievalPolicy(RetrievalPolicy):
     async def parse_chat_history(
             self,
             messages: List[ChatMessage],
-            generate_helper_fn: Callable[[PromptText, PromptText], Awaitable[PromptText]],
+            _: Callable[[PromptText, PromptText, PromptText], Awaitable[PromptText]],
             generate_retrieval_str_fn: Callable[[TemplatedPromptText], Awaitable[PromptText]] | None,
     ) -> PromptText | None:
         return None
@@ -40,7 +41,7 @@ class DefaultRetrievalPolicy(RetrievalPolicy):
     async def parse_chat_history(
             self,
             messages: List[ChatMessage],
-            generate_helper_fn: Callable[[PromptText, PromptText], Awaitable[PromptText]],
+            _: Callable[[PromptText, PromptText, PromptText], Awaitable[PromptText]],
             generate_retrieval_str_fn: Callable[[TemplatedPromptText], Awaitable[PromptText]] | None,
     ) -> PromptText | None:
         latest_message_content = messages[-1]['content']
@@ -66,18 +67,22 @@ Question: {latest_message_content}"""
 
 
 class CustomRetrievalPolicy(RetrievalPolicy):
-    def __init__(self, knowledge: KnowledgeSingleton):
+    def __init__(
+            self,
+            knowledge: KnowledgeSingleton,
+            # For thoroughness, this should be 18, but we haven't figured out prompt size/tuning yet.
+            # More specifically, how to configure it in a reasonable way.
+            search_args_json: str = """{"k":12}""",
+    ):
         self.retriever = knowledge.as_retriever(
             search_type='similarity',
-            search_kwargs={
-                'k': 18,
-            },
+            search_kwargs=orjson.loads(search_args_json),
         )
 
     async def parse_chat_history(
             self,
             messages: List[ChatMessage],
-            generate_helper_fn: Callable[[PromptText, PromptText], Awaitable[PromptText]],
+            generate_helper_fn: Callable[[PromptText, PromptText, PromptText], Awaitable[PromptText]],
             _: Callable[[TemplatedPromptText], Awaitable[PromptText]] | None,
     ) -> PromptText | None:
         latest_message_content = messages[-1]['content']
@@ -100,7 +105,7 @@ class CustomRetrievalPolicy(RetrievalPolicy):
             if len(retrieval_str) > 4_000:
                 retrieval_str = await generate_helper_fn(
                     system_message="Summarize the most important and unique terms in the following query",
-                    user_message=latest_message_content,
+                    user_prompt=latest_message_content,
                 )
                 # If the summary is blank or shorter than a tweet, skip.
                 if not retrieval_str.strip() or len(retrieval_str) < 140:
@@ -134,8 +139,8 @@ class CustomRetrievalPolicy(RetrievalPolicy):
             for n in range(len(matching_docs0)):
                 summarized_doc = await generate_helper_fn(
                     system_message="""\
-Provide a concise summary of the provided passage. Call out any sections that seem closely related to the original query.""",
-                    user_message=f"""\
+Provide a concise summary of the provided document. Call out any sections that seem closely related to the original query.""",
+                    user_prompt=f"""\
 <query>
 {latest_message_content}
 </query>
@@ -143,12 +148,14 @@ Provide a concise summary of the provided passage. Call out any sections that se
 <document>
 {matching_docs0[n].page_content}
 </document>""",
+                    assistant_response="Summary of the returned document: ",
                 )
                 # If the summary is blank or shorter than a tweet, skip.
                 if not summarized_doc.strip() or len(summarized_doc) < 140:
                     pass
                 else:
-                    logger.info(f"Summary of the returned document: {summarized_doc[:500]}")
+                    logger.info(f"Summarized, {len(matching_docs0[n].page_content)} => {len(summarized_doc)} chars: "
+                                f"{summarized_doc[:500]}")
                     matching_docs0[n].page_content = summarized_doc
 
                 matching_docs1.append(matching_docs0[n])
