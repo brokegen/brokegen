@@ -28,7 +28,7 @@ def install_routes(app: FastAPI):
     router = fastapi.routing.APIRouter()
 
     @router.post(
-        "/messages/",
+        "/messages",
         response_model=MessageID,
     )
     async def create_message(
