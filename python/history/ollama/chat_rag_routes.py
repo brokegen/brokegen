@@ -11,7 +11,7 @@ from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
 
 from access.ratelimits import RatelimitsDB, ApiAccessWithResponse
-from history.database import HistoryDB, InferenceJob
+from history.shared.database import HistoryDB, InferenceJob
 from history.ollama.chat_routes import lookup_model_offline
 from history.ollama.forward_routes import _real_ollama_client
 from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, JSONRequestInterceptor, \

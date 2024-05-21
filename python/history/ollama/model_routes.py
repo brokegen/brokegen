@@ -7,7 +7,7 @@ from starlette.responses import StreamingResponse
 
 from access.ratelimits import RatelimitsDB
 from history.ollama.json import JSONRequestInterceptor
-from history.database import HistoryDB
+from history.shared.database import HistoryDB
 from history.ollama.models import build_executor_record, build_model_from_api_show, build_models_from_api_tags
 
 _real_ollama_client = httpx.AsyncClient(

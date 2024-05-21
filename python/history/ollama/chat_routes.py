@@ -7,7 +7,7 @@ from starlette.requests import Request
 from starlette.responses import StreamingResponse
 
 from access.ratelimits import RatelimitsDB
-from history.database import HistoryDB, InferenceJob, ModelConfigRecord, ExecutorConfigRecord
+from history.shared.database import HistoryDB, InferenceJob, ModelConfigRecord, ExecutorConfigRecord
 from history.ollama.forward_routes import _real_ollama_client
 from history.ollama.json import JSONRequestInterceptor, safe_get
 from history.ollama.model_routes import do_api_show

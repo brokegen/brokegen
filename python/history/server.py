@@ -4,7 +4,6 @@ if __name__ == '__main__':
     # https://github.com/encode/uvicorn/issues/939
     # https://pyinstaller.org/en/latest/common-issues-and-pitfalls.html
     import multiprocessing
-
     multiprocessing.freeze_support()
 
 import logging
@@ -90,7 +89,7 @@ def run_proxy(data_dir, bind_port, log_level, enable_rag):
 
     try:
         access.ratelimits.init_db(f"{data_dir}/ratelimits.db")
-        history.database.load_models(f"{data_dir}/requests-history.db")
+        history.shared.database.load_models(f"{data_dir}/requests-history.db")
 
     except sqlite3.OperationalError:
         if not os.path.exists(data_dir):
@@ -102,6 +101,7 @@ def run_proxy(data_dir, bind_port, log_level, enable_rag):
     history.ollama.install_forwards(app, enable_rag)
     history.ollama.install_test_points(app)
     history.chat.routes.install_routes(app)
+    history.shared.routes.install_routes(app)
 
     if enable_rag:
         get_knowledge().load_shards_from(data_dir)

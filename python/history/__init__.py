@@ -1,1 +1,2 @@
-from . import chat, database, ollama
+from . import chat, ollama
+from .shared import database

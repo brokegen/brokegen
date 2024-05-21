@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 import orjson
 from sqlalchemy import select, func
 
-from history.database import HistoryDB, ModelConfigRecord, get_db, ExecutorConfigRecord
+from history.shared.database import HistoryDB, ModelConfigRecord, get_db, ExecutorConfigRecord
 
 
 def build_executor_record(

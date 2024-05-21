@@ -6,7 +6,7 @@ import pytest
 from starlette.testclient import TestClient
 
 import history.chat.routes
-from history.database import HistoryDB
+from history.shared.database import HistoryDB
 
 
 @pytest.fixture(scope='session')
@@ -24,9 +24,9 @@ def test_client(chat_test_app):
 
 @pytest.fixture(scope="function", autouse=True)
 def history_db() -> HistoryDB:
-    history.database.load_models_pytest()
-    yield history.database.get_db()
-    history.database.SessionLocal = None
+    history.shared.database.load_models_pytest()
+    yield history.shared.database.get_db()
+    history.shared.database.SessionLocal = None
 
 
 def test_early_read(test_client):

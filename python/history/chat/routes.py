@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from history.chat.database import MessageID, Message
-from history.database import HistoryDB, get_db as get_history_db
+from history.shared.database import HistoryDB, get_db as get_history_db
 from history.ollama.json import JSONDict
 from prompting.models import RoleName, PromptText
 
@@ -14,6 +14,11 @@ from prompting.models import RoleName, PromptText
 class MessageIn(BaseModel):
     role: RoleName
     content: PromptText
+
+
+class MessageAddResponse(BaseModel):
+    messageID: MessageID
+    createdNew: bool
 
 
 class MessageOut(BaseModel):
@@ -29,13 +34,13 @@ def install_routes(app: FastAPI):
 
     @router.post(
         "/messages",
-        response_model=MessageID,
+        response_model=MessageAddResponse,
     )
     async def create_message(
             message: MessageIn,
             allow_duplicates: bool = False,
             history_db: HistoryDB = Depends(get_history_db),
-    ) -> MessageID:
+    ) -> MessageAddResponse:
         if not allow_duplicates:
             maybe_message_id = history_db.execute(
                 select(Message.id)
@@ -43,19 +48,25 @@ def install_routes(app: FastAPI):
                 .limit(1)
             ).scalar_one_or_none()
             if maybe_message_id:
-                return maybe_message_id
+                return MessageAddResponse(
+                    messageID=maybe_message_id,
+                    createdNew=False,
+                )
 
         new_object = Message(role=message.role, content=message.content)
         history_db.add(new_object)
         history_db.commit()
 
-        return new_object.id
+        return MessageAddResponse(
+            messageID=new_object.id,
+            createdNew=True,
+        )
 
     @router.get(
         "/messages/{id:int}",
         response_model=MessageOut,
     )
-    def get_chat(
+    def get_message(
             id: MessageID,
             request_token_count: bool = True,
             request_generation_info: bool = True,

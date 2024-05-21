@@ -9,7 +9,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from access.ratelimits import RatelimitsDB, get_db as get_ratelimits_db
-from history.database import HistoryDB, get_db as get_history_db
+from history.shared.database import HistoryDB, get_db as get_history_db
 from history.ollama.chat_rag_routes import do_proxy_chat_rag, convert_chat_to_generate, \
     OllamaModelName, do_generate_raw_templated
 from history.ollama.chat_routes import do_proxy_generate, lookup_model_offline
