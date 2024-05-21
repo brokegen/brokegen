@@ -6,8 +6,8 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from history.chat.database import MessageID, Message
-from history.shared.database import HistoryDB, get_db as get_history_db
 from history.ollama.json import JSONDict
+from history.shared.database import HistoryDB, get_db as get_history_db
 from prompting.models import RoleName, PromptText
 
 
@@ -17,8 +17,8 @@ class MessageIn(BaseModel):
 
 
 class MessageAddResponse(BaseModel):
-    messageID: MessageID
-    createdNew: bool
+    message_id: MessageID
+    just_created: bool
 
 
 class MessageOut(BaseModel):
@@ -36,7 +36,7 @@ def install_routes(app: FastAPI):
         "/messages",
         response_model=MessageAddResponse,
     )
-    async def create_message(
+    def create_message(
             message: MessageIn,
             allow_duplicates: bool = False,
             history_db: HistoryDB = Depends(get_history_db),
@@ -49,8 +49,8 @@ def install_routes(app: FastAPI):
             ).scalar_one_or_none()
             if maybe_message_id:
                 return MessageAddResponse(
-                    messageID=maybe_message_id,
-                    createdNew=False,
+                    message_id=maybe_message_id,
+                    just_created=False,
                 )
 
         new_object = Message(role=message.role, content=message.content)
@@ -58,8 +58,8 @@ def install_routes(app: FastAPI):
         history_db.commit()
 
         return MessageAddResponse(
-            messageID=new_object.id,
-            createdNew=True,
+            message_id=new_object.id,
+            just_created=True,
         )
 
     @router.get(

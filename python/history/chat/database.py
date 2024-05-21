@@ -21,6 +21,7 @@ class ChatSequence(Base):
     __tablename__ = 'ChatSequence'
 
     id: ChatSequenceID = Column(String, primary_key=True, nullable=False)
+    ui_desc = Column(String)
 
     current_message: MessageID = Column(Integer)
     parent_sequence: ChatSequenceID = Column(Integer)

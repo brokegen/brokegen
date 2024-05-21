@@ -19,6 +19,8 @@ Base = declarative_base()
 
 HistoryDB: TypeAlias = Session
 
+ModelConfigID: TypeAlias = int
+
 
 def load_models(db_path: str) -> None:
     engine = create_engine(
@@ -76,9 +78,9 @@ class ExecutorConfigRecord(Base):
 class ModelConfigRecord(Base):
     __tablename__ = 'ModelConfigRecords'
 
-    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-
+    id: ModelConfigID = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     human_id = Column(String, nullable=False)
+
     first_seen_at = Column(DateTime)
     last_seen = Column(DateTime)
 
@@ -113,6 +115,6 @@ class InferenceJob(Base):
     raw_prompt = Column(String)
     "Can be NULL; in which case, we have enough in model_config to reconstruct it"
 
-    model_config = Column(Integer, nullable=False)  # ModelConfigRecord.id
+    model_config: ModelConfigID = Column(Integer, nullable=False)  # ModelConfigRecord.id
     overridden_inference_params = Column(JSON)
     response_stats = Column(JSON)
