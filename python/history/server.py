@@ -90,7 +90,7 @@ def run_proxy(data_dir, bind_port, log_level, enable_rag):
 
     try:
         access.ratelimits.init_db(f"{data_dir}/ratelimits.db")
-        history.database.init_db(f"{data_dir}/requests-history.db")
+        history.database.load_models(f"{data_dir}/requests-history.db")
 
     except sqlite3.OperationalError:
         if not os.path.exists(data_dir):

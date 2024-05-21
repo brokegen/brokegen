@@ -8,25 +8,28 @@ try:
 except ImportError:
     import json
 
-from collections.abc import Callable, Generator
+from collections.abc import Generator
 from typing import TypeAlias
 
-from sqlalchemy import create_engine, Column, String, DateTime, JSON, Integer
+from sqlalchemy import create_engine, Column, String, DateTime, JSON, Integer, NullPool, StaticPool
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
-SessionLocal: Callable = None
+SessionLocal: sessionmaker | None = None
 Base = declarative_base()
 
 HistoryDB: TypeAlias = Session
 
 
-def init_db(db_path: str) -> None:
+def load_models(db_path: str) -> None:
     engine = create_engine(
         'sqlite:///' + db_path,
         connect_args={
             "check_same_thread": False,
             "timeout": 1,
-        })
+        },
+        # NB This breaks pytests.
+        poolclass=NullPool,
+    )
 
     Base.metadata.create_all(bind=engine)
 
@@ -34,8 +37,26 @@ def init_db(db_path: str) -> None:
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
+def load_models_pytest():
+    engine = create_engine(
+        'sqlite:///',
+        # Can also be done with `logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)`
+        echo=True,
+        connect_args={
+            "check_same_thread": False,
+        },
+        # https://stackoverflow.com/questions/74536228/sqlalchemy-doesnt-correctly-create-in-memory-database
+        # Must be used, since in-memory database only exists in scope of connection
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(bind=engine)
+
+    global SessionLocal
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
 def get_db() -> Generator[HistoryDB]:
-    db = SessionLocal()
+    db: HistoryDB = SessionLocal()
     try:
         yield db
     finally:
@@ -95,14 +116,3 @@ class InferenceJob(Base):
     model_config = Column(Integer, nullable=False)  # ModelConfigRecord.id
     overridden_inference_params = Column(JSON)
     response_stats = Column(JSON)
-
-
-class Message(Base):
-    __tablename__ = 'Messages'
-
-    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-
-    role = Column(String, nullable=False)
-    prompt = Column(String, nullable=False)
-
-    inference_job = Column(Integer, nullable=False)
