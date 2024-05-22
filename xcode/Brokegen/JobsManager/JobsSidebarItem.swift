@@ -1,13 +1,13 @@
 import SwiftUI
 
 struct JobsSidebarItem: View {
-    @ObservedObject var job: Job
+    @ObservedObject var job: BaseJob
 
     static let LEADING_MARGIN: CGFloat = 24
     static let PROGRESS_WIDTH: CGFloat = 80
     static let BUTTON_WIDTH: CGFloat = 32
 
-    init(job: Job) {
+    init(job: BaseJob) {
         self.job = job
     }
 

@@ -60,7 +60,7 @@ struct SettingsBlob: View {
             }
             .padding(12)
         }
-        .frame(width: 480)
+        .frame(width: 380)
     }
 
     var bodyDisabled: some View {
@@ -101,19 +101,17 @@ struct SettingsBlob: View {
     }
 }
 
-struct AppSidebarView: View {
+struct AppSidebar: View {
     var body: some View {
         NavigationView {
             VStack {
                 List {
-                    ChatsSidebar()
-
+                    JobsSidebar()
                     Divider()
-
-                    JobsSidebar(nestedNavLimit: 4)
+                    ChatsSidebar()
                 }
                 .listStyle(.sidebar)
-                .frame(minWidth: 300, idealWidth: 400, maxHeight: .infinity)
+                .frame(minWidth: 200, idealWidth: 400, maxHeight: .infinity)
                 .toolbar {
                     ToolbarItemGroup(placement: .navigation) {
                         Button(action: toggleSidebar, label: {
@@ -147,5 +145,5 @@ func toggleSidebar() {
 }
 
 #Preview(traits: .fixedLayout(width: 1024, height: 1024)) {
-    AppSidebarView()
+    AppSidebar()
 }

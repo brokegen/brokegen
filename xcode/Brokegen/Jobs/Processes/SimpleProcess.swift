@@ -35,11 +35,11 @@ class SimpleProcess: Job {
         }
     }
 
-    override func launch() {
+    override func launch() -> SimpleProcess {
         status = .requestedStart
         guard task != nil else {
             status = .error("task already started once")
-            return
+            return self
         }
 
         task!.terminationHandler = { _ in
@@ -74,19 +74,22 @@ class SimpleProcess: Job {
         catch {
             status = .error("failed to start task")
         }
+
+        return self
     }
 
-    override func terminate() {
+    override func terminate() -> SimpleProcess {
         task?.terminate()
         task = nil
 
         status = .stopped
+        return self
     }
 
-    override func terminatePatiently() {
+    override func terminatePatiently() -> SimpleProcess {
         guard task != nil else {
             status = .stopped
-            return
+            return self
         }
 
         status = .requestedStop
@@ -102,6 +105,8 @@ class SimpleProcess: Job {
                 continuation.resume()
             }
         }
+
+        return self
     }
 }
 

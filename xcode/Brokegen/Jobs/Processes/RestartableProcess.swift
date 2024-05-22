@@ -20,9 +20,9 @@ class RestartableProcess: Job {
         }
     }
 
-    override func launch() {
+    override func launch() -> RestartableProcess {
         guard processes.isEmpty else {
-            return
+            return self
         }
 
         status = .requestedStart
@@ -66,21 +66,24 @@ class RestartableProcess: Job {
         catch {
             status = .error("failed to launch process")
         }
+
+        return self
     }
 
-    override func terminate() {
+    override func terminate() -> RestartableProcess {
         for process in processes {
             process.terminate()
         }
         processes.removeAll()
 
         status = .stopped
+        return self
     }
 
-    override func terminatePatiently() {
+    override func terminatePatiently()  -> RestartableProcess{
         guard !processes.isEmpty else {
             status = .stopped
-            return
+            return self
         }
 
         status = .requestedStop
@@ -98,6 +101,8 @@ class RestartableProcess: Job {
                 continuation.resume()
             }
         }
+
+        return self
     }
 }
 

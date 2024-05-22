@@ -13,7 +13,7 @@ struct BrokegenApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AppSidebarView()
+            AppSidebar()
                 .environment(chatService)
                 .environment(jobsService)
         }

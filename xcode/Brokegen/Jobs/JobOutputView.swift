@@ -3,7 +3,7 @@ import SwiftTerm
 import AppKit
 
 struct JobOutputView: View {
-    @ObservedObject var job: Job
+    @ObservedObject var job: BaseJob
 
     var body: some View {
         ScrollViewReader { scrollViewProxy in

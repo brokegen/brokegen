@@ -7,17 +7,21 @@ class JobsManagerService: Observable, ObservableObject {
     @Published var renderableJobs: [Job]
 
     init() {
-        let infinitimer = TimeJob("infinitimer", maxTimesFired: -1)
-        infinitimer.launch()
-
         renderableJobs = [
-            infinitimer,
+            // Use prime numbers for these, because we can
+            SimplePing("ping ollama", "http://localhost:11434", timeInterval: 13).launch(),
+            SimplePing("ping rag-proxy", "http://localhost:6635", timeInterval: 17).launch(),
+            SimplePing("ping brokegen-server", "http://localhost:6635", timeInterval: 5).launch(),
+            SimplePing("ping brokegen-server:norag", "http://localhost:6636", timeInterval: 7).launch(),
+            SimplePing("ping brokegen-server+rag", "http://localhost:6637", timeInterval: 11).launch(),
+            TimeJob("infinitimer", maxTimesFired: -1).launch(),
+            StayAwakeService(),
             TimeJob("quick timer", timeInterval: 0.2, maxTimesFired: 48),
+            SimplePing("ping ollama-proxy", "http://localhost:6633", timeInterval: 19),
             SimpleProcess("/usr/bin/pmset", ["-g", "rawlog"]),
             SimpleProcess("/sbin/ifconfig"),
             SimpleProcess("/bin/date"),
             SimpleProcess("/usr/bin/man", ["man"]),
-            StayAwakeService(),
         ]
 
         let fileManager = FileManager.default
@@ -41,7 +45,7 @@ class JobsManagerService: Observable, ObservableObject {
                 directoryPath.path(percentEncoded: false),
             ]
         )
-        renderableJobs.insert(ollamaProxy, at: 0)
+        renderableJobs.insert(ollamaProxy, at: 8)
 
         let serverNoRag = SimpleProcess(
             Bundle.main.url(forResource: "brokegen-server", withExtension: nil)!,
@@ -52,7 +56,7 @@ class JobsManagerService: Observable, ObservableObject {
                 "--bind-port=6636",
             ]
         )
-        renderableJobs.insert(serverNoRag, at: 1)
+        renderableJobs.insert(serverNoRag, at: 5)
 
         let server = RestartableProcess(
             Bundle.main.url(forResource: "brokegen-server", withExtension: nil)!,
@@ -63,6 +67,6 @@ class JobsManagerService: Observable, ObservableObject {
                 "--bind-port=6637",
             ]
         )
-        renderableJobs.insert(server, at: 2)
+        renderableJobs.insert(server, at: 6)
     }
 }

@@ -59,8 +59,8 @@ class StayAwakeService: Job {
         displayedOutput = ""
     }
 
-    override func launch() {
-        guard stayAwake == nil else { return }
+    override func launch() -> StayAwakeService {
+        guard stayAwake == nil else { return self }
 
         status = .requestedStart
 
@@ -80,14 +80,16 @@ class StayAwakeService: Job {
         status = .startedWithOutput
         displayedStatus = "\(Date.now): Started OK"
         displayedOutput += "\(Date.now): Started OK\n"
+        return self
     }
 
-    override func terminatePatiently() {
+    override func terminatePatiently() -> StayAwakeService {
         status = .requestedStop
         _ = stayAwake?.destroyAssertion()
         stayAwake = nil
         status = .stopped
         displayedStatus = "\(Date.now): Stopped"
         displayedOutput += "\(Date.now): Stopped\n"
+        return self
     }
 }

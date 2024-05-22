@@ -1,10 +1,28 @@
 import SwiftUI
 
+struct AllJobs: View {
+    let jobs: [BaseJob]
+
+    init(_ jobs: [BaseJob]) {
+        self.jobs = jobs
+    }
+
+    var body: some View {
+        RadialLayout {
+            ForEach(jobs) { job in
+                NavigationLink(destination: JobOutputView(job: job)) {
+                    JobsSidebarItem(job: job)
+                }
+            }
+        }
+    }
+}
+
 struct JobsSidebar: View {
     @Environment(JobsManagerService.self) private var jobsService: JobsManagerService
     let nestedNavLimit: Int?
 
-    init(nestedNavLimit: Int? = 3) {
+    init(nestedNavLimit: Int? = 10) {
         self.nestedNavLimit = nestedNavLimit
     }
 
@@ -21,11 +39,8 @@ struct JobsSidebar: View {
                     }
                 }
 
-                NavigationLink(destination: NavigationSplitView {
-                        JobsSidebar(nestedNavLimit: nil)
-                    } detail: {
-                        EmptyView()
-                    }
+                NavigationLink(destination: AllJobs(jobsService.renderableJobs)
+                    .padding(32)
                 ) {
                     Text("[See all jobs]")
                         .font(.title2)
