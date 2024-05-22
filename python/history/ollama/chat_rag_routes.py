@@ -1,21 +1,19 @@
 import logging
 from collections.abc import AsyncIterable
-from datetime import datetime, timezone
 from typing import TypeAlias, Callable, Awaitable, Any, AsyncIterator
 
 import httpx
 import orjson
 import starlette.datastructures
 import starlette.requests
-from starlette.background import BackgroundTask
-from starlette.responses import StreamingResponse
 
-from audit.http import AuditDB, HttpEvent
-from history.shared.database import HistoryDB, InferenceJob
+from audit.http import AuditDB
+from audit.http_raw import HttpxLogger
 from history.ollama.chat_routes import lookup_model_offline
 from history.ollama.forward_routes import _real_ollama_client
-from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, JSONRequestInterceptor, \
-    chunk_and_log_output, consolidate_stream, OllamaEventBuilder
+from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, \
+    consolidate_stream, OllamaEventBuilder
+from history.shared.database import HistoryDB, InferenceJob
 from history.shared.json import JSONStreamingResponse, safe_get, JSONArray
 from inference.embeddings.retrieval import RetrievalPolicy
 from inference.prompting.templating import apply_llm_template, PromptText, TemplatedPromptText
@@ -67,8 +65,10 @@ async def do_generate_raw_templated(
         history_db.add(merged_job)
         history_db.commit()
 
-    upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
-    return await intercept.wrap_entire_streaming_response(upstream_response, finalize_inference_job)
+    with HttpxLogger(_real_ollama_client, audit_db):
+        upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
+
+    return await intercept.wrap_entire_streaming_response(upstream_response, finalize_inference_job, on_done_fn)
 
 
 async def convert_chat_to_generate(

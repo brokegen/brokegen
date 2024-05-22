@@ -103,6 +103,9 @@ def run_proxy(data_dir, bind_port, log_level, enable_rag):
 
     history.ollama.install_forwards(app, enable_rag)
     history.ollama.install_test_points(app)
+
+    # Disable these for now, because the middleware records bulk imports
+    # TODO: Re-enable after migrations are done
     history.chat.routes.install_routes(app)
     history.shared.routes.install_routes(app)
 

@@ -6,8 +6,9 @@ but this will work for the small scale we have (one user, no automation of LLM r
 """
 import logging
 from datetime import timezone, datetime
-from typing import AsyncIterable, Sequence
+from typing import AsyncIterable, Sequence, AsyncIterator
 
+import httpx
 import sqlalchemy.exc
 from fastapi import FastAPI
 from sqlalchemy import Column, String, DateTime, JSON, LargeBinary, Integer, inspect
@@ -119,3 +120,72 @@ class SqlLoggingMiddleware(BaseHTTPMiddleware):
                 self.audit_db.rollback()
 
         return response
+
+
+class HttpxLogger:
+    def __init__(
+            self,
+            client: httpx.AsyncClient,
+            audit_db: AuditDB,
+    ):
+        self.client = client
+        self.audit_db = audit_db
+
+        self.event = RawHttpEvent()
+
+    def request_logger(self, request: httpx.Request):
+        self.event.accessed_at = datetime.now(tz=timezone.utc)
+        self.event.request_url = str(request.url)
+        self.event.request_method = request.method
+        self.event.request_headers = dict(request.headers.items())
+        self.event.request_cookies = None
+
+        self.event.request_content = request.content
+
+    async def response_logger(self, response: httpx.Response):
+        self.event.response_status_code = response.status_code
+        self.event.response_headers = dict(response.headers.items())
+
+        async def post_response_wrapper(
+                joined_chunks: bytes,
+        ):
+            self.event.response_content = joined_chunks
+
+            try:
+                self.audit_db.add(self.event)
+                self.audit_db.commit()
+            except sqlalchemy.exc.SQLAlchemyError:
+                logger.exception("Failed to commit intercepted httpx traffic")
+                self.audit_db.rollback()
+
+        async def response_wrapper(
+                primordial: AsyncIterator[bytes],
+        ) -> AsyncIterator[bytes]:
+            all_chunks = []
+
+            async for chunk0 in primordial:
+                yield chunk0
+                all_chunks.append(chunk0)
+
+            await post_response_wrapper(b''.join(all_chunks))
+
+        # TODO: This reaches in to monkeypatch internals, and assumes no callers will call aiter_raw()
+        response.aiter_bytes = lambda: response_wrapper(response.aiter_bytes())
+
+        await post_response_wrapper(b'')
+
+    def __enter__(self):
+        async def req_fn(request: httpx.Request):
+            return self.request_logger(request)
+
+        async def resp_fn(response: httpx.Response):
+            return await self.response_logger(response)
+
+        self.original_event_hooks = self.client.event_hooks
+        self.client.event_hooks = {
+            'request': [req_fn],
+            'response': [resp_fn],
+        }
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.client.event_hooks = self.original_event_hooks
