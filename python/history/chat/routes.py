@@ -1,23 +1,22 @@
 from datetime import datetime
 from http.client import HTTPException
+from typing import Optional
 
 import fastapi.routing
-import starlette
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 from sqlalchemy import select
-from starlette.requests import Request
 
 from history.chat.database import MessageID, Message
-from history.shared.json import JSONDict
 from history.shared.database import HistoryDB, get_db as get_history_db
+from history.shared.json import JSONDict
 from inference.prompting.models import RoleName, PromptText
 
 
 class MessageIn(BaseModel):
     role: RoleName
     content: PromptText
-    created_at: datetime | None
+    created_at: Optional[datetime] = None
 
 
 class MessageAddResponse(BaseModel):
@@ -28,10 +27,10 @@ class MessageAddResponse(BaseModel):
 class MessageOut(BaseModel):
     role: RoleName
     content: PromptText
-    created_at: datetime | None
+    created_at: Optional[datetime] = None
 
-    token_count: int | None
-    generation_info: JSONDict | None
+    token_count: Optional[int] = None
+    generation_info: Optional[JSONDict] = None
 
 
 def install_routes(app: FastAPI):
@@ -42,7 +41,6 @@ def install_routes(app: FastAPI):
         response_model=MessageAddResponse,
     )
     async def create_message(
-            request: starlette.requests.Request,
             message: MessageIn,
             allow_duplicates: bool = False,
             history_db: HistoryDB = Depends(get_history_db),

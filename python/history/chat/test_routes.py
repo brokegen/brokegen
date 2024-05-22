@@ -40,7 +40,8 @@ def test_unchecked_write(test_client, history_db):
         "content": "test_write_read() is great content",
     }))
 
-    new_id: int = response0.json()
+    assert response0.status_code == 200
+    new_id: int = response0.json()['message_id']
     assert new_id > 0
 
 
@@ -53,7 +54,8 @@ def test_write_read(test_client):
         "content": test_content,
     }))
 
-    new_id: int = response0.json()
+    assert response0.status_code == 200
+    new_id: int = response0.json()['message_id']
     assert new_id > 0
 
     response1 = test_client.get(f"/messages/{new_id}")
