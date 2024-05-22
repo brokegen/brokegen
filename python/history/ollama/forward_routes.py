@@ -104,8 +104,6 @@ async def forward_request(
         if on_done_fn is not None:
             await on_done_fn(intercept.response_content_as_json())
 
-    # TODO: Provide an exception handler that returns an HTTP error to the client,
-    #       especially for cases where we KeyboardInterrupt.
     return StreamingResponse(
         # content=intercept.wrap_response_content_raw(upstream_response.aiter_raw()),
         content=intercept.wrap_response_content(upstream_response.aiter_lines()),

@@ -6,7 +6,6 @@ if __name__ == '__main__':
     # https://github.com/encode/uvicorn/issues/939
     # https://pyinstaller.org/en/latest/common-issues-and-pitfalls.html
     import multiprocessing
-
     multiprocessing.freeze_support()
 
 import logging
@@ -39,11 +38,6 @@ def install_proxy_routes(app: FastAPI):
 
     app.include_router(ollama_forwarder)
 
-    app.add_middleware(
-        SqlLoggingMiddleware,
-        audit_db=next(get_audit_db()),
-    )
-
 
 def try_install_timing_middleware(app: FastAPI):
     try:
@@ -61,6 +55,13 @@ def try_install_timing_middleware(app: FastAPI):
         TimingMiddleware,
         client=PrintTimings(),
         metric_namer=StarletteScopeToName(prefix="simple-proxy", starlette_app=app)
+    )
+
+
+def try_install_logging_middleware(app: FastAPI):
+    app.add_middleware(
+        SqlLoggingMiddleware,
+        audit_db=next(get_audit_db()),
     )
 
 
@@ -112,12 +113,24 @@ app: FastAPI = FastAPI(
 @click.option(
     '--data-dir',
     default='data',
+    show_default=True,
     help='Filesystem directory to store/read data from',
     type=click.Path(exists=True, writable=True, file_okay=False),
 )
+@click.option(
+    '--install-timing-middleware',
+    default=False,
+    show_default=True,
+)
+@click.option(
+    '--install-logging-middleware',
+    default=True,
+    show_default=True,
+)
 def run_proxy(
         data_dir,
-        install_timing_middleware: bool = False,
+        install_timing_middleware: bool,
+        install_logging_middleware: bool,
 ):
     import asyncio
     import uvicorn
@@ -126,6 +139,8 @@ def run_proxy(
     install_proxy_routes(app)
     if install_timing_middleware:
         try_install_timing_middleware(app)
+    if install_logging_middleware:
+        try_install_logging_middleware(app)
 
     # NB Forget it, no multiprocess'd workers, I can't figure out what to do with them from within PyInstaller
     config = uvicorn.Config(app, port=6633, log_level="debug", reload=False, workers=1)
