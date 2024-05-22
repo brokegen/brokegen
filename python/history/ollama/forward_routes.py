@@ -9,7 +9,7 @@ from starlette.responses import StreamingResponse
 from typing_extensions import deprecated
 
 from audit.http import AuditDB
-from history.ollama.json import JSONRequestInterceptor
+from history.ollama.json import OllamaEventBuilder
 
 _real_ollama_client = httpx.AsyncClient(
     base_url="http://localhost:11434",
@@ -52,7 +52,7 @@ async def forward_request_nolog(
             await on_done_fn()
 
     return StreamingResponse(
-        upstream_response.aiter_raw(),
+        content=upstream_response.aiter_raw(),
         status_code=upstream_response.status_code,
         headers=upstream_response.headers,
         background=BackgroundTask(real_on_done),
@@ -77,37 +77,21 @@ async def forward_request(
         original_request: starlette.requests.Request,
         audit_db: AuditDB,
         on_done_fn=None,
-):
-    intercept = JSONRequestInterceptor(logger, audit_db)
-
+) -> starlette.responses.StreamingResponse:
     urlpath_noprefix = original_request.url.path.removeprefix("/ollama-proxy")
     logger.debug(f"/ollama-proxy: start handler for {original_request.method} {urlpath_noprefix}")
 
-    proxy_url = httpx.URL(path=urlpath_noprefix,
-                          query=original_request.url.query.encode("utf-8"))
+    intercept = OllamaEventBuilder(f"ollama:{urlpath_noprefix}", audit_db)
+    if original_request.url.query:
+        raise NotImplementedError(f"Haven't implemented anything to handle query args in {original_request}")
+
     upstream_request = _real_ollama_client.build_request(
         method=original_request.method,
-        url=proxy_url,
-        content=intercept.wrap_request_content(original_request.stream()),
+        url=urlpath_noprefix,
+        content=intercept.wrap_req(original_request.stream()),
         headers=original_request.headers,
         cookies=original_request.cookies,
     )
 
-    upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
-    intercept.build_access_event(upstream_response, api_bucket=f"ollama:{urlpath_noprefix}")
-
-    async def post_forward_cleanup():
-        await upstream_response.aclose()
-        await intercept.consolidate_json_response()
-        intercept.update_access_event()
-
-        if on_done_fn is not None:
-            await on_done_fn(intercept.response_content_as_json())
-
-    return StreamingResponse(
-        # content=intercept.wrap_response_content_raw(upstream_response.aiter_raw()),
-        content=intercept.wrap_response_content(upstream_response.aiter_lines()),
-        status_code=upstream_response.status_code,
-        headers=upstream_response.headers,
-        background=BackgroundTask(post_forward_cleanup),
-    )
+    upstream_response: httpx.Response = await _real_ollama_client.send(upstream_request, stream=True)
+    return await intercept.wrap_entire_response(upstream_response, on_done_fn)
