@@ -13,9 +13,10 @@ struct BrokegenApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AppSidebar()
+            AppView()
                 .environment(chatService)
                 .environment(jobsService)
         }
+        .windowStyle(.hiddenTitleBar)
     }
 }

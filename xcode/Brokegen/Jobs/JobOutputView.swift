@@ -10,6 +10,8 @@ struct JobOutputView: View {
             RibbonView(job.ribbonText)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
+                .padding(.top, -20)
+                .frame(maxHeight: 200)
 
             List {
                 Text(job.displayedStatus)
@@ -24,6 +26,37 @@ struct JobOutputView: View {
             Spacer()
         }
     }
+}
+
+#Preview(traits: .fixedLayout(width: 800, height: 800)) {
+    struct OutputTest: View {
+        let job: BaseJob
+
+        init() {
+            job = BaseJob()
+            job.ribbonText = "XCODE PRÉVU"
+            job.displayedStatus = "loaded small words"
+            job.displayedOutput = """
+loaded many words
+beaucoup, beaucoup de mots, tu sais
+
+c'est un peu
+euh
+
+i have eaten all the plums
+"""
+        }
+
+        var body: some View {
+            NavigationView {
+                EmptyView()
+
+                JobOutputView(job: job)
+            }
+        }
+    }
+
+    return OutputTest()
 }
 
 #Preview {

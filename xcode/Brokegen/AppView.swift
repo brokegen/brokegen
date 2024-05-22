@@ -101,9 +101,9 @@ struct SettingsBlob: View {
     }
 }
 
-struct AppSidebar: View {
+struct AppView: View {
     var body: some View {
-        NavigationView {
+        NavigationSplitView(sidebar: {
             VStack {
                 List {
                     JobsSidebar()
@@ -112,6 +112,7 @@ struct AppSidebar: View {
                 }
                 .listStyle(.sidebar)
                 .frame(minWidth: 200, idealWidth: 400, maxHeight: .infinity)
+                // TODO: Remove any toolbar code, once we're sure it's useless
                 .toolbar {
                     ToolbarItemGroup(placement: .navigation) {
                         Button(action: toggleSidebar, label: {
@@ -126,12 +127,14 @@ struct AppSidebar: View {
                         .frame(alignment: .trailing)
                     }
                 }
+                .toolbar(.hidden)
 
                 SettingsBlob()
             }
-
+        }, detail: {
             ChatView()
-        }
+        })
+        .navigationTitle("")
     }
 }
 
@@ -145,5 +148,5 @@ func toggleSidebar() {
 }
 
 #Preview(traits: .fixedLayout(width: 1024, height: 1024)) {
-    AppSidebar()
+    AppView()
 }

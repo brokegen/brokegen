@@ -4,10 +4,14 @@ import SwiftUI
 struct RibbonView: View {
     let bigText: String
 
-    @State var expandView: Bool = false
+    @State var expandView: Bool
+    @State var currentCenter: CGPoint
 
     init(_ bigText: String?) {
         self.bigText = bigText ?? "🥺🥺"
+
+        _expandView = .init(initialValue: false)
+        _currentCenter = .init(initialValue: .zero)
     }
 
     var body: some View {
@@ -42,6 +46,16 @@ struct RibbonView: View {
 //                }
 //            }
         }
+//        .position(currentCenter)
+//        .gesture(DragGesture()
+//            .onChanged { value in
+//                print("drag-x: \(currentCenter.x) + \(value.translation.width)")
+//                print("")
+//            }
+//            .onEnded { value in
+//                print("end of drag")
+//            }
+//        )
     }
 
     func expandView(_ expandView: Bool) -> RibbonView {
@@ -51,7 +65,7 @@ struct RibbonView: View {
     }
 }
 
-#Preview {
+#Preview(traits: .fixedLayout(width: 800, height: 800)) {
     VStack {
         RibbonView(
             "/System/Volumes/Data/Library\n" +
@@ -60,16 +74,8 @@ struct RibbonView: View {
         )
         .expandView(false)
 
-        List {
-            Text("1\n2\n3\n4\n5\n")
-            Spacer()
-        }
-    }
-    .frame(height: 200)
-}
+        Divider()
 
-#Preview {
-    VStack {
         RibbonView(
             "/System/Volumes/Data/Library\n" +
             "inappropriately long string, split across multiple lines\n" +

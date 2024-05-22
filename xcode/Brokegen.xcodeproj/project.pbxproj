@@ -25,13 +25,14 @@
 		CE9867552BF4047E008D6C41 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE9867542BF4047E008D6C41 /* Assets.xcassets */; };
 		CE9867592BF4047E008D6C41 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE9867582BF4047E008D6C41 /* Preview Assets.xcassets */; };
 		CE9867612BF414B3008D6C41 /* ManagedProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867602BF414B3008D6C41 /* ManagedProcess.swift */; };
-		CE9867632BF41954008D6C41 /* AppSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867622BF41954008D6C41 /* AppSidebar.swift */; };
+		CE9867632BF41954008D6C41 /* AppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867622BF41954008D6C41 /* AppView.swift */; };
 		CE9867652BF41A3E008D6C41 /* PlaceholderContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867642BF41A3E008D6C41 /* PlaceholderContentView.swift */; };
 		CECA47A82BF6D5B8007A28F2 /* System.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECA47A72BF6D5B8007A28F2 /* System.swift */; };
 		CECA47AA2BF6D62E007A28F2 /* SystemInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECA47A92BF6D62E007A28F2 /* SystemInfoView.swift */; };
 		CEFEB4762BFDA67400334522 /* SimplePing.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFEB4752BFDA67400334522 /* SimplePing.swift */; };
 		CEFEB4782BFDA6C900334522 /* TimeJob.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFEB4772BFDA6C900334522 /* TimeJob.swift */; };
 		CEFEB47B2BFDAABC00334522 /* AlamofireDynamic in Frameworks */ = {isa = PBXBuildFile; productRef = CEFEB47A2BFDAABC00334522 /* AlamofireDynamic */; };
+		CEFEB47E2BFE399500334522 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = CEFEB47D2BFE399500334522 /* SwiftTerm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -54,7 +55,7 @@
 		CE9867542BF4047E008D6C41 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CE9867582BF4047E008D6C41 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		CE9867602BF414B3008D6C41 /* ManagedProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagedProcess.swift; sourceTree = "<group>"; };
-		CE9867622BF41954008D6C41 /* AppSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSidebar.swift; sourceTree = "<group>"; };
+		CE9867622BF41954008D6C41 /* AppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppView.swift; sourceTree = "<group>"; };
 		CE9867642BF41A3E008D6C41 /* PlaceholderContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceholderContentView.swift; sourceTree = "<group>"; };
 		CECA47A72BF6D5B8007A28F2 /* System.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = System.swift; sourceTree = "<group>"; };
 		CECA47A92BF6D62E007A28F2 /* SystemInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemInfoView.swift; sourceTree = "<group>"; };
@@ -67,6 +68,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CEFEB47E2BFE399500334522 /* SwiftTerm in Frameworks */,
 				CEFEB47B2BFDAABC00334522 /* AlamofireDynamic in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -130,7 +132,7 @@
 				CE4634DC2BF937020063142E /* JobsManager */,
 				CECA47A62BF6D59A007A28F2 /* Performance */,
 				CE9867502BF4047C008D6C41 /* BrokegenApp.swift */,
-				CE9867622BF41954008D6C41 /* AppSidebar.swift */,
+				CE9867622BF41954008D6C41 /* AppView.swift */,
 				CE9867642BF41A3E008D6C41 /* PlaceholderContentView.swift */,
 				CE9867542BF4047E008D6C41 /* Assets.xcassets */,
 				CE9867572BF4047E008D6C41 /* Preview Content */,
@@ -195,6 +197,7 @@
 			name = Brokegen;
 			packageProductDependencies = (
 				CEFEB47A2BFDAABC00334522 /* AlamofireDynamic */,
+				CEFEB47D2BFE399500334522 /* SwiftTerm */,
 			);
 			productName = Brokegen;
 			productReference = CE98674D2BF4047C008D6C41 /* Brokegen.app */;
@@ -226,6 +229,7 @@
 			mainGroup = CE9867442BF4047C008D6C41;
 			packageReferences = (
 				CEFEB4792BFDAABC00334522 /* XCRemoteSwiftPackageReference "Alamofire" */,
+				CEFEB47C2BFE399500334522 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
 			);
 			productRefGroup = CE98674E2BF4047C008D6C41 /* Products */;
 			projectDirPath = "";
@@ -261,7 +265,7 @@
 				CEFEB4762BFDA67400334522 /* SimplePing.swift in Sources */,
 				CE4634DE2BF937320063142E /* JobsSidebar.swift in Sources */,
 				CE4634F22BFBB4730063142E /* ChatView.swift in Sources */,
-				CE9867632BF41954008D6C41 /* AppSidebar.swift in Sources */,
+				CE9867632BF41954008D6C41 /* AppView.swift in Sources */,
 				CE4634F62BFBB4D00063142E /* ChatsSidebar.swift in Sources */,
 				CE9867652BF41A3E008D6C41 /* PlaceholderContentView.swift in Sources */,
 				CE8229AF2BF7306000029DC2 /* JobsManagerService.swift in Sources */,
@@ -505,6 +509,14 @@
 				minimumVersion = 5.9.1;
 			};
 		};
+		CEFEB47C2BFE399500334522 /* XCRemoteSwiftPackageReference "SwiftTerm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/migueldeicaza/SwiftTerm";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.5;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -512,6 +524,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = CEFEB4792BFDAABC00334522 /* XCRemoteSwiftPackageReference "Alamofire" */;
 			productName = AlamofireDynamic;
+		};
+		CEFEB47D2BFE399500334522 /* SwiftTerm */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CEFEB47C2BFE399500334522 /* XCRemoteSwiftPackageReference "SwiftTerm" */;
+			productName = SwiftTerm;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

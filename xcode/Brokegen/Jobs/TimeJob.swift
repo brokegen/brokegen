@@ -35,13 +35,13 @@ class TimeJob: Job {
         timer = Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: true) { timer in
             if self.maxTimesFired > 0 {
                 if self.currentTimesFired >= self.maxTimesFired {
-                    self.terminate(because: "exceeded max timer incidents")
+                    _ = self.terminate(because: "exceeded max timer incidents")
                     return
                 }
             }
 
             if self.status == .requestedStop {
-                self.terminate(because: "finally detected stop request")
+                _ = self.terminate(because: "finally detected stop request")
                 return
             }
 
