@@ -1,10 +1,3 @@
-"""
-For potential debugging and caching purposes, offer infrastructure for every network request we make.
-
-Ideally, we would use something like `structlog` or `logging.handlers.HTTPHandler` to send logs elsewhere,
-but this will work for the small scale we have (one user, no automation of LLM requests).
-"""
-
 import logging
 from collections.abc import Callable, Generator
 from datetime import datetime, timezone
@@ -42,11 +35,6 @@ def get_db() -> Generator[AuditDB]:
         yield db
     finally:
         db.close()
-
-
-class RawHttpEvent(Base):
-    __tablename__ = 'RawHttpEvents'
-    __bind_key__ = 'access'
 
 
 class HttpEvent(Base):

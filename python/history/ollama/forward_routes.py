@@ -2,6 +2,7 @@ import logging
 from typing import Awaitable, Callable, Any
 
 import httpx
+import starlette.requests
 from fastapi import Request
 from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
@@ -73,7 +74,7 @@ async def forward_request_nodetails(
 
 
 async def forward_request(
-        original_request: Request,
+        original_request: starlette.requests.Request,
         audit_db: AuditDB,
         on_done_fn=None,
 ):

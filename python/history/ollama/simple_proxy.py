@@ -1,9 +1,12 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
+from audit.http_raw import SqlLoggingMiddleware
+
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
     # https://pyinstaller.org/en/latest/common-issues-and-pitfalls.html
     import multiprocessing
+
     multiprocessing.freeze_support()
 
 import logging
@@ -35,6 +38,11 @@ def install_proxy_routes(app: FastAPI):
         return await forward_request(request, audit_db)
 
     app.include_router(ollama_forwarder)
+
+    app.add_middleware(
+        SqlLoggingMiddleware,
+        audit_db=next(get_audit_db()),
+    )
 
 
 def try_install_timing_middleware(app: FastAPI):
@@ -107,13 +115,17 @@ app: FastAPI = FastAPI(
     help='Filesystem directory to store/read data from',
     type=click.Path(exists=True, writable=True, file_okay=False),
 )
-def run_proxy(data_dir):
+def run_proxy(
+        data_dir,
+        install_timing_middleware: bool = False,
+):
     import asyncio
     import uvicorn
 
     init_audit_db(f"{data_dir}/audit.db")
     install_proxy_routes(app)
-    try_install_timing_middleware(app)
+    if install_timing_middleware:
+        try_install_timing_middleware(app)
 
     # NB Forget it, no multiprocess'd workers, I can't figure out what to do with them from within PyInstaller
     config = uvicorn.Config(app, port=6633, log_level="debug", reload=False, workers=1)
