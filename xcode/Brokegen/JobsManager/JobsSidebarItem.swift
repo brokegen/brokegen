@@ -41,7 +41,7 @@ struct JobsSidebarItem: View {
                 Image(systemName: "play")
                     .frame(width: JobsSidebarItem.BUTTON_WIDTH)
                     .onTapGesture {
-                        job.launch()
+                        _ = job.launch()
                     }
 
             case .requestedStart:
@@ -57,14 +57,14 @@ struct JobsSidebarItem: View {
                 Image(systemName: "stop")
                     .frame(width: JobsSidebarItem.BUTTON_WIDTH)
                     .onTapGesture {
-                        job.terminatePatiently()
+                        _ = job.terminatePatiently()
                     }
 
             case .startedWithOutput:
                 Image(systemName: "stop")
                     .frame(width: JobsSidebarItem.BUTTON_WIDTH)
                     .onTapGesture {
-                        job.terminatePatiently()
+                        _ = job.terminatePatiently()
                     }
 
             case .requestedStop:
@@ -74,14 +74,14 @@ struct JobsSidebarItem: View {
                 Image(systemName: "stop.fill")
                     .frame(width: JobsSidebarItem.BUTTON_WIDTH)
                     .onTapGesture {
-                        job.terminate()
+                        _ = job.terminate()
                     }
 
             case .stopped, .error:
                 Image(systemName: "arrow.clockwise")
                     .frame(width: JobsSidebarItem.BUTTON_WIDTH)
                     .onTapGesture {
-                        job.launch()
+                        _ = job.launch()
                     }
             }
         }
