@@ -11,7 +11,7 @@ from starlette.requests import Request
 from history.chat.database import MessageID, Message
 from history.ollama.json import JSONDict
 from history.shared.database import HistoryDB, get_db as get_history_db
-from prompting.models import RoleName, PromptText
+from inference.prompting.models import RoleName, PromptText
 
 
 class MessageIn(BaseModel):

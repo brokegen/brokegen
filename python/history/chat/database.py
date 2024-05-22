@@ -3,7 +3,7 @@ from typing import TypeAlias
 from sqlalchemy import Column, String, DateTime, Integer, Boolean
 
 from history.shared.database import Base
-from prompting.models import RoleName, PromptText
+from inference.prompting.models import RoleName, PromptText
 
 MessageID: TypeAlias = int
 ChatSequenceID: TypeAlias = int

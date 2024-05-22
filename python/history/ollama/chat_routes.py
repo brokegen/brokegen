@@ -6,7 +6,7 @@ from starlette.background import BackgroundTask
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
 
-from access.audit import AuditDB
+from audit.http import AuditDB
 from history.shared.database import HistoryDB, InferenceJob, ModelConfigRecord, ExecutorConfigRecord
 from history.ollama.forward_routes import _real_ollama_client
 from history.ollama.json import JSONRequestInterceptor, safe_get
