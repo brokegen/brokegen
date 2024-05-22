@@ -1,6 +1,4 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
-from audit.http_raw import SqlLoggingMiddleware
-
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
@@ -15,6 +13,7 @@ import click
 from fastapi import APIRouter, Depends, FastAPI, Request
 
 from audit.http import init_db as init_audit_db, AuditDB, get_db as get_audit_db
+from audit.http_raw import SqlLoggingMiddleware
 from history.ollama.forward_routes import forward_request, forward_request_nodetails
 
 

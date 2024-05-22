@@ -2,17 +2,15 @@ import logging
 from typing import Tuple
 
 import orjson
-from starlette.background import BackgroundTask
 from starlette.requests import Request
-from starlette.responses import StreamingResponse
 
 from audit.http import AuditDB
-from history.shared.database import HistoryDB, InferenceJob, ModelConfigRecord, ExecutorConfigRecord
 from history.ollama.forward_routes import _real_ollama_client
-from history.ollama.json import JSONRequestInterceptor
-from history.shared.json import safe_get
+from history.ollama.json import OllamaEventBuilder
 from history.ollama.model_routes import do_api_show
 from history.ollama.models import build_executor_record, fetch_model_record
+from history.shared.database import HistoryDB, InferenceJob, ModelConfigRecord, ExecutorConfigRecord
+from history.shared.json import safe_get
 from inference.prompting.templating import apply_llm_template
 
 logger = logging.getLogger(__name__)
@@ -65,10 +63,13 @@ async def do_proxy_generate(
         history_db: HistoryDB,
         audit_db: AuditDB,
 ):
-    intercept = JSONRequestInterceptor(logger, audit_db)
+    intercept = OllamaEventBuilder("ollama:/api/generate", audit_db)
 
     request_content_bytes: bytes = await original_request.body()
     request_content_json: dict = orjson.loads(request_content_bytes)
+    intercept.wrapped_event.request_info = request_content_json
+    intercept._try_commit()
+
     model, executor_record = await lookup_model(original_request, request_content_json['model'], history_db,
                                                 audit_db)
 
@@ -128,43 +129,4 @@ async def do_proxy_generate(
     )
 
     upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
-    intercept.build_access_event(upstream_response, api_bucket=f"ollama:/api/generate")
-    intercept._set_or_delete_request_content(request_content_json)
-
-    async def on_done(consolidated_response_content_json):
-        response_stats = dict(consolidated_response_content_json)
-        done = safe_get(response_stats, 'done')
-        if not done:
-            logger.warning(f"/api/generate ran out of bytes to process, but Ollama JSON response is {done=}")
-
-        if 'context' in response_stats:
-            del response_stats['context']
-
-        # We need to check for this in case of errors
-        if 'response' in response_stats:
-            del response_stats['response']
-
-        merged_job = history_db.merge(inference_job)
-        merged_job.response_stats = response_stats
-
-        history_db.add(merged_job)
-        history_db.commit()
-
-    async def post_forward_cleanup():
-        await upstream_response.aclose()
-
-        as_json = orjson.loads(intercept.response_content_as_str('utf-8'))
-        intercept._set_or_delete_response_content(as_json)
-
-        intercept.new_access = audit_db.merge(intercept.new_access)
-        audit_db.add(intercept.new_access)
-        audit_db.comit()
-
-        await on_done(as_json[-1])
-
-    return StreamingResponse(
-        content=intercept.wrap_response_content_raw(upstream_response.aiter_raw()),
-        status_code=upstream_response.status_code,
-        headers=upstream_response.headers,
-        background=BackgroundTask(post_forward_cleanup),
-    )
+    return intercept.wrap_entire_streaming_response(upstream_response)

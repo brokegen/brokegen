@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import orjson
 from sqlalchemy import select, func
 
+from history.ollama.json import OllamaResponseContentJSON
 from history.shared.database import HistoryDB, ModelConfigRecord, get_db, ExecutorConfigRecord
 
 
@@ -126,7 +127,7 @@ def build_model_from_api_show(
         executor_record: ExecutorConfigRecord,
         human_id: str,
         accessed_at: datetime,
-        response_json,
+        response_json: OllamaResponseContentJSON,
         do_commit: bool = True,
         history_db: HistoryDB | None = None,
 ) -> ModelConfigRecord:

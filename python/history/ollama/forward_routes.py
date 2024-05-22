@@ -9,7 +9,7 @@ from starlette.responses import StreamingResponse
 from typing_extensions import deprecated
 
 from audit.http import AuditDB
-from history.ollama.json import OllamaEventBuilder
+from history.ollama.json import OllamaEventBuilder, OllamaResponseContentJSON
 
 _real_ollama_client = httpx.AsyncClient(
     base_url="http://localhost:11434",
@@ -65,7 +65,7 @@ async def forward_request_nodetails(
         _: AuditDB,
 ):
     urlpath_noprefix = original_request.url.path.removeprefix("/ollama-proxy")
-    logger.debug(f"/ollama-proxy: start nodetails handler for {original_request.method} {urlpath_noprefix}")
+    logger.debug(f"ollama proxy: start nodetails handler for {original_request.method} {urlpath_noprefix}")
 
     proxy_url = httpx.URL(path=urlpath_noprefix,
                           query=original_request.url.query.encode("utf-8"))
@@ -76,10 +76,10 @@ async def forward_request_nodetails(
 async def forward_request(
         original_request: starlette.requests.Request,
         audit_db: AuditDB,
-        on_done_fn=None,
+        on_done_fn: Callable[[OllamaResponseContentJSON], Awaitable[Any]] | None = None,
 ) -> starlette.responses.StreamingResponse:
     urlpath_noprefix = original_request.url.path.removeprefix("/ollama-proxy")
-    logger.debug(f"/ollama-proxy: start handler for {original_request.method} {urlpath_noprefix}")
+    logger.debug(f"ollama proxy: start handler for {original_request.method} {urlpath_noprefix}")
 
     intercept = OllamaEventBuilder(f"ollama:{urlpath_noprefix}", audit_db)
     if original_request.url.query:
@@ -94,4 +94,4 @@ async def forward_request(
     )
 
     upstream_response: httpx.Response = await _real_ollama_client.send(upstream_request, stream=True)
-    return await intercept.wrap_entire_response(upstream_response, on_done_fn)
+    return await intercept.wrap_entire_streaming_response(upstream_response, on_done_fn)

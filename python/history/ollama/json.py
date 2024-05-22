@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import TypeAlias, AsyncIterable, AsyncIterator, Any, Callable, Awaitable, Iterator, Iterable
+from typing import TypeAlias, AsyncIterable, AsyncIterator, Any, Callable, Awaitable, Iterable
 
 import httpx
 import orjson
@@ -11,7 +11,7 @@ from starlette.background import BackgroundTask
 from typing_extensions import deprecated
 
 from audit.http import AuditDB, get_db, HttpEvent
-from history.shared.json import JSONDict
+from history.shared.json import JSONDict, safe_get
 
 OllamaRequestContentJSON: TypeAlias = JSONDict
 OllamaResponseContentJSON: TypeAlias = JSONDict
@@ -78,6 +78,13 @@ async def consolidate_stream(
             # In the non-exceptional case, just update with the new value.
             consolidated_response[k] = v
 
+    done = safe_get(consolidated_response, 'done')
+    if not done:
+        logger.warning(f"Ollama response is {done=}, but we already ran out of bytes to process")
+
+    if 'context' in consolidated_response:
+        del consolidated_response['context']
+
     return consolidated_response
 
 
@@ -94,16 +101,21 @@ async def chunk_and_log_output(
         # NB This is very wasteful re-decoding, but don't prematurely optimize.
         try:
             chunk0_json = orjson.loads(chunk0)
-            if 'response' not in chunk0_json:
+
+            # /api/generate returns in the first form
+            # /api/chat returns the second form, with 'role': 'user'
+            message_only = safe_get(chunk0_json, 'response') \
+                           or safe_get(chunk0_json, 'message', 'content')
+            if not message_only:
                 continue
 
             if buffered_chunks is None:
-                buffered_chunks = chunk0_json['response']
+                buffered_chunks = message_only
             elif len(buffered_chunks) >= min_chunk_length:
                 log_fn(buffered_chunks)
-                buffered_chunks = chunk0_json['response']
+                buffered_chunks = message_only
             else:
-                buffered_chunks += chunk0_json['response']
+                buffered_chunks += message_only
 
         # Eat all exceptions, since this wrapper should be silent and unintrusive.
         except Exception as e:
@@ -425,7 +437,29 @@ class OllamaEventBuilder:
         # Do a preliminary commit, because partial info is what we'd need for debugging
         self._try_commit()
 
-    async def wrap_entire_response(
+    async def wrap_response(
+            self,
+            upstream_response: httpx.Response,
+            *on_done_fns: Callable[[OllamaResponseContentJSON], Awaitable[Any]],
+    ) -> starlette.responses.Response:
+        content = upstream_response.content
+        self.response_content_json = orjson.loads(content)
+        self.wrapped_event.response_content = self.response_content_json
+        self._try_commit()
+
+        async def post_forward_cleanup():
+            for on_done_fn in on_done_fns:
+                if on_done_fn is not None:
+                    await on_done_fn(self.response_content_json or {})
+
+        return starlette.responses.Response(
+            content=content,
+            status_code=upstream_response.status_code,
+            headers=upstream_response.headers,
+            background=BackgroundTask(post_forward_cleanup),
+        )
+
+    async def wrap_entire_streaming_response(
             self,
             upstream_response: httpx.Response,
             *on_done_fns: Callable[[OllamaResponseContentJSON], Awaitable[Any]],
@@ -439,8 +473,10 @@ class OllamaEventBuilder:
 
         async def _wrapper(
                 primordial: AsyncIterator[bytes | str],
-                enable_logging: bool = True,
+                enable_logging: bool = False,
         ) -> AsyncIterator[bytes | str]:
+            logger.debug("Starting OllamaEventBuilder's response wrapper")
+
             primordial1 = primordial
             if enable_logging:
                 primordial1 = chunk_and_log_output(primordial, print)
@@ -449,6 +485,8 @@ class OllamaEventBuilder:
             async for chunk0 in primordial1:
                 yield chunk0
                 all_chunks.append(chunk0)
+
+            logger.debug("Finished OllamaEventBuilder's response wrapper")
 
             self.response_content_json = await consolidate_stream(reconsolidate(all_chunks))
             if upstream_response.is_success and self.response_content_json:
@@ -473,7 +511,7 @@ class OllamaEventBuilder:
             content=_wrapper(upstream_response.aiter_raw()),
             status_code=upstream_response.status_code,
             headers=upstream_response.headers,
-            background=BackgroundTask(post_forward_cleanup)
+            background=BackgroundTask(post_forward_cleanup),
         )
 
     def _try_commit(self):

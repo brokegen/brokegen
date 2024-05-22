@@ -15,7 +15,7 @@ from history.shared.database import HistoryDB, InferenceJob
 from history.ollama.chat_routes import lookup_model_offline
 from history.ollama.forward_routes import _real_ollama_client
 from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, JSONRequestInterceptor, \
-    chunk_and_log_output, consolidate_stream
+    chunk_and_log_output, consolidate_stream, OllamaEventBuilder
 from history.shared.json import JSONStreamingResponse, safe_get, JSONArray
 from inference.embeddings.retrieval import RetrievalPolicy
 from inference.prompting.templating import apply_llm_template, PromptText, TemplatedPromptText
@@ -33,7 +33,9 @@ async def do_generate_raw_templated(
         audit_db: AuditDB,
         on_done_fn: Callable[[OllamaResponseContentJSON], Awaitable[Any]] | None = None,
 ):
-    intercept = JSONRequestInterceptor(logger, audit_db)
+    intercept = OllamaEventBuilder("ollama:/api/generate", audit_db)
+    intercept.wrapped_event.request_info = request_content
+    intercept._try_commit()
 
     model, executor_record = await lookup_model_offline(
         request_content['model'],
@@ -56,17 +58,8 @@ async def do_generate_raw_templated(
         cookies=request_cookies,
     )
 
-    upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
-    intercept.build_access_event(upstream_response, api_bucket=f"ollama:/api/generate")
-    # TODO: The request_content was available a long time ago, it should have been stored right away.
-    # Would it be easier to review all usages of this, or check httpx/starlette for proper middleware support?
-    intercept._set_or_delete_request_content(request_content)
-
     async def finalize_inference_job(response_content_json: OllamaResponseContentJSON):
         response_stats = dict(response_content_json)
-        done = safe_get(response_stats, 'done')
-        if not done:
-            logger.warning(f"/api/generate ran out of bytes to process, but Ollama JSON response is {done=}")
 
         merged_job = history_db.merge(inference_job)
         merged_job.response_stats = response_stats
@@ -74,34 +67,8 @@ async def do_generate_raw_templated(
         history_db.add(merged_job)
         history_db.commit()
 
-    async def finalize_intercept() -> OllamaResponseContentJSON:
-        await intercept.consolidate_json_response()
-        intercept.new_access = audit_db.merge(intercept.new_access)
-
-        # TODO: Consolidate correctly, this isn't loading into the right place.
-        as_json: OllamaResponseContentJSON = intercept.response_content_as_json()
-        intercept._set_or_delete_response_content(as_json)
-
-        audit_db.add(intercept.new_access)
-        audit_db.commit()
-
-        return as_json
-
-    async def iteration_wrapper():
-        async for chunk0 in intercept.wrap_response_content(upstream_response.aiter_lines()):
-            yield chunk0
-
-        as_json = await finalize_intercept()
-        await finalize_inference_job(as_json)
-        if on_done_fn is not None:
-            await on_done_fn(as_json)
-
-    return StreamingResponse(
-        content=iteration_wrapper(),
-        status_code=upstream_response.status_code,
-        headers=upstream_response.headers,
-        background=BackgroundTask(upstream_response.aclose),
-    )
+    upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
+    return await intercept.wrap_entire_streaming_response(upstream_response, finalize_inference_job)
 
 
 async def convert_chat_to_generate(
@@ -228,10 +195,7 @@ async def convert_chat_to_generate(
             del converted_response_headers[unsupported_field]
 
     return JSONStreamingResponse(
-        content=chunk_and_log_output(
-            translate_generate_to_chat(generate_response.body_iterator),
-            lambda s: logger.debug(f"/api/chat: " + s),
-        ),
+        content=translate_generate_to_chat(generate_response.body_iterator),
         status_code=generate_response.status_code,
         headers=converted_response_headers,
         background=generate_response.background,
@@ -326,22 +290,22 @@ async def do_proxy_chat_rag(
     prompt_override = await retrieval_policy.parse_chat_history(chat_messages, generate_helper_fn,
                                                                 generate_retrieval_str)
 
-    new_access = AccessEvent(
-        api_bucket=f"do_proxy_chat_rag({retrieval_policy.__class__.__name__})",
-        accessed_at=datetime.now(tz=timezone.utc),
-        api_endpoint=str(original_request.url),
-        request={
-            "content": request_content_json,
-            "headers": original_request.headers.items(),
-            "method": original_request.method,
-            "url": str(original_request.url),
-        },
-        response={
-            "content": "[not recorded yet/interrupted during processing]",
-        },
-    )
-    audit_db.add(new_access)
-    audit_db.commit()
+    # new_access = AccessEvent(
+    #     api_bucket=f"do_proxy_chat_rag({retrieval_policy.__class__.__name__})",
+    #     accessed_at=datetime.now(tz=timezone.utc),
+    #     api_endpoint=str(original_request.url),
+    #     request={
+    #         "content": request_content_json,
+    #         "headers": original_request.headers.items(),
+    #         "method": original_request.method,
+    #         "url": str(original_request.url),
+    #     },
+    #     response={
+    #         "content": "[not recorded yet/interrupted during processing]",
+    #     },
+    # )
+    # audit_db.add(new_access)
+    # audit_db.commit()
 
     ollama_response = await convert_chat_to_generate(
         original_request,
@@ -352,7 +316,7 @@ async def do_proxy_chat_rag(
     )
 
     async def wrap_response(
-            access: AccessEvent,
+            # access: AccessEvent,
             upstream_response: JSONStreamingResponse,
             log_output: bool = True,
     ) -> JSONStreamingResponse:
@@ -363,11 +327,11 @@ async def do_proxy_chat_rag(
             'content': "[not implemented, either]",
         }
 
-        merged_access = audit_db.merge(access)
-        merged_access.response = response_json
-
-        audit_db.add(merged_access)
-        audit_db.commit()
+        # merged_access = audit_db.merge(access)
+        # merged_access.response = response_json
+        #
+        # audit_db.add(merged_access)
+        # audit_db.commit()
 
         async def identity_proxy(primordial):
             """This mostly exists for regression testing/checking, unfortunately"""
@@ -413,12 +377,12 @@ async def do_proxy_chat_rag(
                         yield orjson.loads(chunk)
 
                 consolidated = await consolidate_stream(to_json(replay_chunks()))
-                merged_access = audit_db.merge(access)
-                merged_access.response = consolidated
-                audit_db.add(merged_access)
-                audit_db.commit()
+                # merged_access = audit_db.merge(access)
+                # merged_access.response = consolidated
+                # audit_db.add(merged_access)
+                # audit_db.commit()
 
             upstream_response._content_iterable = big_fake_tee(upstream_response._content_iterable)
             return upstream_response
 
-    return await wrap_response(new_access, ollama_response)
+    return await wrap_response(ollama_response)
