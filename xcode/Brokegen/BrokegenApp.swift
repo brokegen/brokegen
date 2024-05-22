@@ -9,6 +9,10 @@ struct BrokegenApp: App {
     init() {
         self.chatService = ChatSyncService()
         self.jobsService = JobsManagerService()
+
+        for n in 1...15 {
+            self.chatService.fetchMessage(id: n)
+        }
     }
 
     var body: some Scene {
