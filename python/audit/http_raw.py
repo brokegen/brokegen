@@ -4,8 +4,11 @@ For potential debugging and caching purposes, offer infrastructure for every net
 Ideally, we would use something like `structlog` or `logging.handlers.HTTPHandler` to send logs elsewhere,
 but this will work for the small scale we have (one user, no automation of LLM requests).
 """
+import logging
+from datetime import timezone, datetime
 from typing import AsyncIterable, Sequence
 
+import sqlalchemy.exc
 from fastapi import FastAPI
 from sqlalchemy import Column, String, DateTime, JSON, LargeBinary, Integer, inspect
 from sqlalchemy.orm import AttributeState
@@ -13,6 +16,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import StreamingResponse
 
 from audit.http import Base, AuditDB
+
+logger = logging.getLogger(__name__)
 
 
 class RawHttpEvent(Base):
@@ -27,7 +32,7 @@ class RawHttpEvent(Base):
     request_content = Column(LargeBinary)
 
     response_status_code = Column(Integer)
-    response_raw_headers = Column(JSON)
+    response_headers = Column(JSON)
     response_content = Column(LargeBinary)
     """
     This is generally expected to be NDJSON, streamed from the server.
@@ -55,6 +60,7 @@ class RawHttpEvent(Base):
     async def wrap_response_content_stream(
             self,
             primordial: AsyncIterable[str | bytes],
+            audit_db: AuditDB | None,
     ) -> AsyncIterable[str | bytes]:
         self.response_content = b''
         async for chunk0 in primordial:
@@ -63,7 +69,14 @@ class RawHttpEvent(Base):
             # Add a newline to delineate the data, since all JSON (NDJSON) content should have escaped newlines anyway
             self.response_content += b'\n'
 
-        print(self)
+        try:
+            if audit_db is not None:
+                audit_db.add(self)
+                audit_db.commit()
+        except sqlalchemy.exc.SQLAlchemyError:
+            logger.exception(f"Failed to commit StreamingResponse, {len(self.response_content)=}")
+            if audit_db is not None:
+                audit_db.rollback()
 
 
 class SqlLoggingMiddleware(BaseHTTPMiddleware):
@@ -78,9 +91,10 @@ class SqlLoggingMiddleware(BaseHTTPMiddleware):
     ):
         event = RawHttpEvent()
         # Query params are expected to remain encoded here
-        event.request_url = request.url
+        event.accessed_at = datetime.now(tz=timezone.utc)
+        event.request_url = str(request.url)
         event.request_method = request.method
-        event.request_headers = request.headers
+        event.request_headers = request.headers.items()
         event.request_cookies = request.cookies
 
         # NB This is fine because Starlette calls Middleware with starlette.middleware.base._CachedRequest,
@@ -89,13 +103,19 @@ class SqlLoggingMiddleware(BaseHTTPMiddleware):
 
         response = await call_next(request)
         event.response_status_code = response.status_code
-        event.response_raw_headers = response.raw_headers
+        event.response_headers = response.headers.items()
 
         event.response_content = b"[not read yet]"
         if isinstance(response, StreamingResponse):
             response.body_iterator = \
-                event.wrap_response_content_stream(response.body_iterator)
+                event.wrap_response_content_stream(response.body_iterator, self.audit_db)
         else:
             event.response_content = response.body()
+            try:
+                self.audit_db.add(event)
+                self.audit_db.commit()
+            except sqlalchemy.exc.SQLAlchemyError:
+                logger.exception("Failed to commit non-StreamingResponse HTTP response")
+                self.audit_db.rollback()
 
         return response
