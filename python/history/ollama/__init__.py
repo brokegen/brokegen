@@ -9,6 +9,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from audit.http import AuditDB, get_db as get_audit_db
+from audit.http_raw import SqlLoggingMiddleware
 from history.ollama.chat_rag_routes import do_proxy_chat_rag, convert_chat_to_generate, OllamaModelName, \
     do_generate_raw_templated
 from history.ollama.chat_routes import do_proxy_generate, lookup_model_offline

@@ -133,14 +133,15 @@ class HttpxLogger:
 
         self.event = RawHttpEvent()
 
-    def request_logger(self, request: httpx.Request):
+    async def request_logger(self, request: httpx.Request):
         self.event.accessed_at = datetime.now(tz=timezone.utc)
         self.event.request_url = str(request.url)
         self.event.request_method = request.method
         self.event.request_headers = dict(request.headers.items())
         self.event.request_cookies = None
 
-        self.event.request_content = request.content
+        # TODO: This will be a very long, slow call. Is it worth reading _here_?
+        self.event.request_content = await request.aread()
 
     async def response_logger(self, response: httpx.Response):
         self.event.response_status_code = response.status_code
@@ -176,7 +177,7 @@ class HttpxLogger:
 
     def __enter__(self):
         async def req_fn(request: httpx.Request):
-            return self.request_logger(request)
+            return await self.request_logger(request)
 
         async def resp_fn(response: httpx.Response):
             return await self.response_logger(response)

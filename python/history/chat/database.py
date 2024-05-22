@@ -26,12 +26,20 @@ class Message(Base):
 
 
 class ChatSequence(Base):
+    """
+    Represents a linked list node for Message sequences.
+    """
     __tablename__ = 'ChatSequence'
 
     id: ChatSequenceID = Column(String, primary_key=True, nullable=False)
-    ui_desc = Column(String)
+    human_desc = Column(String)
+    user_pinned = Column(Boolean)
+    """
+    Marks the messages we want to show in the main view.
+    Double duty as top-of-thread and also regular-branching-point.
+    """
 
-    current_message: MessageID = Column(Integer)
+    current_message: MessageID = Column(Integer, nullable=False)
     parent_sequence: ChatSequenceID = Column(Integer)
 
     generated_at = Column(DateTime)

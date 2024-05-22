@@ -10,7 +10,7 @@ import logging
 from contextlib import asynccontextmanager
 
 import click
-from fastapi import APIRouter, Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 
 from audit.http import init_db as init_audit_db, AuditDB, get_db as get_audit_db
 from audit.http_raw import SqlLoggingMiddleware
@@ -18,11 +18,15 @@ from history.ollama.forward_routes import forward_request, forward_request_nodet
 
 
 def install_proxy_routes(app: FastAPI):
-    ollama_forwarder = APIRouter()
+    proxy_app = FastAPI()
+    proxy_app.add_middleware(
+        SqlLoggingMiddleware,
+        audit_db=next(get_audit_db()),
+    )
 
-    @ollama_forwarder.get("/ollama-proxy/{path:path}")
-    @ollama_forwarder.head("/ollama-proxy/{path:path}")
-    @ollama_forwarder.post("/ollama-proxy/{path:path}")
+    @proxy_app.get("/{path:path}")
+    @proxy_app.head("/{path:path}")
+    @proxy_app.post("/{path:path}")
     async def do_proxy_all(
             request: Request,
             audit_db: AuditDB = Depends(get_audit_db),
@@ -30,12 +34,12 @@ def install_proxy_routes(app: FastAPI):
         if request.method == 'HEAD':
             return await forward_request_nodetails(request, audit_db)
 
-        if request.url.path == "/ollama-proxy/api/show":
+        if request.url.path == "/api/show":
             return await forward_request_nodetails(request, audit_db)
 
         return await forward_request(request, audit_db)
 
-    app.include_router(ollama_forwarder)
+    app.mount("/ollama-proxy", proxy_app)
 
 
 def try_install_timing_middleware(app: FastAPI):
@@ -58,10 +62,7 @@ def try_install_timing_middleware(app: FastAPI):
 
 
 def try_install_logging_middleware(app: FastAPI):
-    app.add_middleware(
-        SqlLoggingMiddleware,
-        audit_db=next(get_audit_db()),
-    )
+    pass
 
 
 @asynccontextmanager

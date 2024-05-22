@@ -94,7 +94,7 @@ async def forward_request(
         cookies=original_request.cookies,
     )
 
-    with HttpxLogger(_real_ollama_client, audit_db):
-        upstream_response: httpx.Response = await _real_ollama_client.send(upstream_request, stream=True)
-
+    # TODO: Without SqlLoggingMiddleware, we end up consuming the stream???
+    # with HttpxLogger(_real_ollama_client, audit_db):
+    upstream_response: httpx.Response = await _real_ollama_client.send(upstream_request, stream=True)
     return await intercept.wrap_entire_streaming_response(upstream_response, on_done_fn)
