@@ -68,7 +68,6 @@ Note that these will override anything set in the model templates!
             audit_db: AuditDB = Depends(get_audit_db),
     ):
         content = {
-            'images': [],
             'model': model_name,
             'prompt': templated_text,
             'raw': True,
@@ -142,7 +141,6 @@ which bypasses censoring for tested models.""")
         )
 
         content = {
-            'images': [],
             'model': model_name,
             'prompt': templated_text,
             'raw': True,

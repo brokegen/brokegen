@@ -37,6 +37,7 @@ async def apply_llm_template(
         pass
 
     # And then substitute in the concrete values
+    response_used_once: bool = False
     template3 = template1
     try:
         real_pattern = r'{{\s*(\.[^\s]+?)\s*\}}'
@@ -54,9 +55,11 @@ async def apply_llm_template(
                     template3 = template3[:match.start()]
                     # But also, prepend the assistant prompt, so the LLM continues to elaborate
                     template3 += assistant_response or ''
+                    response_used_once = True
                     break
                 else:
                     substituted_block = assistant_response or ''
+                    response_used_once = True
             else:
                 substituted_block = ''
 
@@ -64,5 +67,12 @@ async def apply_llm_template(
 
     except StopIteration:
         pass
+
+    # For some model templates (mistral), `.Response` doesn't even show up in the template.
+    # Add it, if needed.
+    if not response_used_once:
+        if assistant_response:
+            template3 += '\n'
+            template3 += assistant_response
 
     return template3
