@@ -6,7 +6,7 @@ from starlette.background import BackgroundTask
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
 
-from access.ratelimits import RatelimitsDB
+from access.audit import AuditDB
 from history.shared.database import HistoryDB, InferenceJob, ModelConfigRecord, ExecutorConfigRecord
 from history.ollama.forward_routes import _real_ollama_client
 from history.ollama.json import JSONRequestInterceptor, safe_get
@@ -39,7 +39,7 @@ async def lookup_model(
         parent_request: Request,
         model_name: str,
         history_db: HistoryDB,
-        ratelimits_db: RatelimitsDB,
+        audit_db: AuditDB,
 ) -> Tuple[ModelConfigRecord, ExecutorConfigRecord]:
     try:
         model, executor_record = lookup_model_offline(model_name, history_db)
@@ -50,7 +50,7 @@ async def lookup_model(
             history_db=history_db)
 
         # TODO: This… wouldn't work, because the request content probably doesn't actually include the model
-        await do_api_show(parent_request, history_db, ratelimits_db)
+        await do_api_show(parent_request, history_db, audit_db)
         model = fetch_model_record(executor_record, model_name, history_db)
 
         if not model:
@@ -62,14 +62,14 @@ async def lookup_model(
 async def do_proxy_generate(
         original_request: Request,
         history_db: HistoryDB,
-        ratelimits_db: RatelimitsDB,
+        audit_db: AuditDB,
 ):
-    intercept = JSONRequestInterceptor(logger, ratelimits_db)
+    intercept = JSONRequestInterceptor(logger, audit_db)
 
     request_content_bytes: bytes = await original_request.body()
     request_content_json: dict = orjson.loads(request_content_bytes)
     model, executor_record = await lookup_model(original_request, request_content_json['model'], history_db,
-                                                ratelimits_db)
+                                                audit_db)
 
     inference_job = InferenceJob(
         model_config=model.id,
@@ -155,9 +155,9 @@ async def do_proxy_generate(
         as_json = orjson.loads(intercept.response_content_as_str('utf-8'))
         intercept._set_or_delete_response_content(as_json)
 
-        intercept.new_access = ratelimits_db.merge(intercept.new_access)
-        ratelimits_db.add(intercept.new_access)
-        ratelimits_db.commit()
+        intercept.new_access = audit_db.merge(intercept.new_access)
+        audit_db.add(intercept.new_access)
+        audit_db.comit()
 
         await on_done(as_json[-1])
 

@@ -5,7 +5,7 @@ from fastapi import Request
 from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
 
-from access.ratelimits import RatelimitsDB
+from audit.http import AuditDB
 from history.ollama.json import JSONRequestInterceptor
 from history.shared.database import HistoryDB
 from history.ollama.models import build_executor_record, build_model_from_api_show, build_models_from_api_tags
@@ -26,9 +26,9 @@ logger = logging.getLogger(__name__)
 async def do_api_tags(
         original_request: Request,
         history_db: HistoryDB,
-        ratelimits_db: RatelimitsDB,
+        audit_db: AuditDB,
 ):
-    intercept = JSONRequestInterceptor(logger, ratelimits_db)
+    intercept = JSONRequestInterceptor(logger, audit_db)
 
     logger.debug(f"ollama proxy: start handler for GET /api/tags")
     upstream_request = _real_ollama_client.build_request(
@@ -66,9 +66,9 @@ async def do_api_tags(
 async def do_api_show(
         original_request: Request,
         history_db: HistoryDB,
-        ratelimits_db: RatelimitsDB,
+        audit_db: AuditDB,
 ):
-    intercept = JSONRequestInterceptor(logger, ratelimits_db)
+    intercept = JSONRequestInterceptor(logger, audit_db)
 
     logger.debug(f"ollama proxy: start handler for POST /api/show")
     upstream_request = _real_ollama_client.build_request(

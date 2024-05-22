@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 import click
 from fastapi import APIRouter, Depends, FastAPI, Request
 
-from access.ratelimits import init_db as init_ratelimits_db, RatelimitsDB, get_db as get_ratelimits_db
+from audit.http import init_db as init_audit_db, AuditDB, get_db as get_audit_db
 from history.ollama.forward_routes import forward_request, forward_request_nodetails
 
 
@@ -26,15 +26,15 @@ async def lifespan_for_fastapi(app: FastAPI):
         @ollama_forwarder.post("/ollama-proxy/{path}")
         async def do_proxy_all(
                 request: Request,
-                ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
+                audit_db: AuditDB = Depends(get_audit_db),
         ):
             if request.method == 'HEAD':
-                return await forward_request_nodetails(request, ratelimits_db)
+                return await forward_request_nodetails(request, audit_db)
 
             if request.url.path == "/ollama-proxy/api/show":
-                return await forward_request_nodetails(request, ratelimits_db)
+                return await forward_request_nodetails(request, audit_db)
 
-            return await forward_request(request, ratelimits_db)
+            return await forward_request(request, audit_db)
 
         app.include_router(ollama_forwarder)
 
@@ -93,7 +93,7 @@ def run_proxy(data_dir):
     import asyncio
     import uvicorn
 
-    init_ratelimits_db(f"{data_dir}/ratelimits.db")
+    init_audit_db(f"{data_dir}/audit.db")
 
     # NB Forget it, no multiprocess'd workers, I can't figure out what to do with them from within PyInstaller
     config = uvicorn.Config(app, port=6633, log_level="debug", reload=False, workers=1)

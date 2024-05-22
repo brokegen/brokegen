@@ -9,7 +9,7 @@ from starlette.background import BackgroundTask
 from starlette.concurrency import iterate_in_threadpool
 from starlette.responses import StreamingResponse, JSONResponse
 
-from access.ratelimits import PlainRequestInterceptor, RatelimitsDB, get_db
+from audit.http import PlainRequestInterceptor, AuditDB, get_db
 
 # These aren't strictly defined recursive because they're recursive
 # (can contain themselves/each other/JSONValue).
@@ -139,12 +139,12 @@ class JSONRequestInterceptor(PlainRequestInterceptor):
     def __init__(
             self,
             logger: logging.Logger,
-            ratelimits_db: RatelimitsDB | None = None,
+            audit_db: AuditDB | None = None,
     ):
-        if ratelimits_db is None:
-            ratelimits_db = next(get_db())
+        if audit_db is None:
+            audit_db = next(get_db())
 
-        super().__init__(logger, ratelimits_db)
+        super().__init__(logger, audit_db)
 
         self.response_content_json = []
 
@@ -161,9 +161,9 @@ class JSONRequestInterceptor(PlainRequestInterceptor):
 
         # Now that we're done, try committing changes to db
         if self.new_access:
-            self.new_access = self.ratelimits_db.merge(self.new_access)
-            self.ratelimits_db.add(self.new_access)
-            self.ratelimits_db.commit()
+            self.new_access = self.audit_db.merge(self.new_access)
+            self.audit_db.add(self.new_access)
+            self.audit_db.commit()
 
     async def wrap_response_content(
             self,
@@ -183,9 +183,9 @@ class JSONRequestInterceptor(PlainRequestInterceptor):
             if delay > 0:
                 await asyncio.sleep(delay)
 
-            self.new_access = self.ratelimits_db.merge(self.new_access)
-            self.ratelimits_db.add(self.new_access)
-            self.ratelimits_db.commit()
+            self.new_access = self.audit_db.merge(self.new_access)
+            self.audit_db.add(self.new_access)
+            self.audit_db.commit()
 
         if self.new_access:
             try:
@@ -273,14 +273,14 @@ class JSONRequestInterceptor(PlainRequestInterceptor):
     ) -> None:
         # By this point, the request is almost always done, and we're running in an unrelated BackgroundTask.
         # `self.new_access` has probably also been committed to db already, but that shouldn't invalidate its contents…
-        self.new_access = self.ratelimits_db.merge(self.new_access)
+        self.new_access = self.audit_db.merge(self.new_access)
 
         self._set_or_delete_request_content(self.request_content_as_json())
         self._set_or_delete_response_content(self.response_content_as_json())
 
-        self.ratelimits_db.add(self.new_access)
+        self.audit_db.add(self.new_access)
         if do_commit:
-            self.ratelimits_db.commit()
+            self.audit_db.commit()
 
 
 class JSONStreamingResponse(StreamingResponse, JSONResponse):

@@ -14,7 +14,7 @@ from contextlib import asynccontextmanager
 import click
 from fastapi import FastAPI
 
-import access.ratelimits
+import audit
 import history
 import history.ollama
 from inference.embeddings.knowledge import get_knowledge
@@ -88,7 +88,7 @@ def run_proxy(data_dir, bind_port, log_level, enable_rag):
     )
 
     try:
-        access.ratelimits.init_db(f"{data_dir}/ratelimits.db")
+        audit.http.init_db(f"{data_dir}/audit.db")
         history.shared.database.load_models(f"{data_dir}/requests-history.db")
 
     except sqlite3.OperationalError:

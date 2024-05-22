@@ -10,7 +10,7 @@ import starlette.requests
 from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
 
-from access.ratelimits import RatelimitsDB, ApiAccessWithResponse
+from audit.http import AuditDB, HttpEvent
 from history.shared.database import HistoryDB, InferenceJob
 from history.ollama.chat_routes import lookup_model_offline
 from history.ollama.forward_routes import _real_ollama_client
@@ -30,10 +30,10 @@ async def do_generate_raw_templated(
         request_headers: starlette.datastructures.Headers,
         request_cookies: httpx.Cookies | None,
         history_db: HistoryDB,
-        ratelimits_db: RatelimitsDB,
+        audit_db: AuditDB,
         on_done_fn: Callable[[OllamaResponseContentJSON], Awaitable[Any]] | None = None,
 ):
-    intercept = JSONRequestInterceptor(logger, ratelimits_db)
+    intercept = JSONRequestInterceptor(logger, audit_db)
 
     model, executor_record = await lookup_model_offline(
         request_content['model'],
@@ -76,14 +76,14 @@ async def do_generate_raw_templated(
 
     async def finalize_intercept() -> OllamaResponseContentJSON:
         await intercept.consolidate_json_response()
-        intercept.new_access = ratelimits_db.merge(intercept.new_access)
+        intercept.new_access = audit_db.merge(intercept.new_access)
 
         # TODO: Consolidate correctly, this isn't loading into the right place.
         as_json: OllamaResponseContentJSON = intercept.response_content_as_json()
         intercept._set_or_delete_response_content(as_json)
 
-        ratelimits_db.add(intercept.new_access)
-        ratelimits_db.commit()
+        audit_db.add(intercept.new_access)
+        audit_db.commit()
 
         return as_json
 
@@ -109,7 +109,7 @@ async def convert_chat_to_generate(
         chat_request_content: OllamaRequestContentJSON,
         prompt_override: PromptText | None,
         history_db: HistoryDB,
-        ratelimits_db: RatelimitsDB,
+        audit_db: AuditDB,
 ):
     model, executor_record = await lookup_model_offline(
         chat_request_content['model'],
@@ -196,7 +196,7 @@ async def convert_chat_to_generate(
         modified_headers,
         httpx.Cookies(original_request.cookies),
         history_db,
-        ratelimits_db,
+        audit_db,
     )
 
     async def translate_generate_to_chat(
@@ -242,7 +242,7 @@ async def do_proxy_chat_rag(
         original_request: starlette.requests.Request,
         retrieval_policy: RetrievalPolicy,
         history_db: HistoryDB,
-        ratelimits_db: RatelimitsDB,
+        audit_db: AuditDB,
 ):
     request_content_bytes: bytes = await original_request.body()
     request_content_json: OllamaRequestContentJSON = orjson.loads(request_content_bytes)
@@ -264,7 +264,7 @@ async def do_proxy_chat_rag(
             request_headers=starlette.datastructures.Headers(),
             request_cookies=None,
             history_db=history_db,
-            ratelimits_db=ratelimits_db,
+            audit_db=audit_db,
         )
 
         content_chunks = []
@@ -313,7 +313,7 @@ async def do_proxy_chat_rag(
             request_headers=starlette.datastructures.Headers(),
             request_cookies=None,
             history_db=history_db,
-            ratelimits_db=ratelimits_db,
+            audit_db=audit_db,
         )
 
         content_chunks = []
@@ -326,7 +326,7 @@ async def do_proxy_chat_rag(
     prompt_override = await retrieval_policy.parse_chat_history(chat_messages, generate_helper_fn,
                                                                 generate_retrieval_str)
 
-    new_access = ApiAccessWithResponse(
+    new_access = AccessEvent(
         api_bucket=f"do_proxy_chat_rag({retrieval_policy.__class__.__name__})",
         accessed_at=datetime.now(tz=timezone.utc),
         api_endpoint=str(original_request.url),
@@ -340,19 +340,19 @@ async def do_proxy_chat_rag(
             "content": "[not recorded yet/interrupted during processing]",
         },
     )
-    ratelimits_db.add(new_access)
-    ratelimits_db.commit()
+    audit_db.add(new_access)
+    audit_db.commit()
 
     ollama_response = await convert_chat_to_generate(
         original_request,
         request_content_json,
         prompt_override,
         history_db,
-        ratelimits_db,
+        audit_db,
     )
 
     async def wrap_response(
-            access: ApiAccessWithResponse,
+            access: AccessEvent,
             upstream_response: JSONStreamingResponse,
             log_output: bool = True,
     ) -> JSONStreamingResponse:
@@ -363,11 +363,11 @@ async def do_proxy_chat_rag(
             'content': "[not implemented, either]",
         }
 
-        merged_access = ratelimits_db.merge(access)
+        merged_access = audit_db.merge(access)
         merged_access.response = response_json
 
-        ratelimits_db.add(merged_access)
-        ratelimits_db.commit()
+        audit_db.add(merged_access)
+        audit_db.commit()
 
         async def identity_proxy(primordial):
             """This mostly exists for regression testing/checking, unfortunately"""
@@ -413,10 +413,10 @@ async def do_proxy_chat_rag(
                         yield orjson.loads(chunk)
 
                 consolidated = await consolidate_stream(to_json(replay_chunks()))
-                merged_access = ratelimits_db.merge(access)
+                merged_access = audit_db.merge(access)
                 merged_access.response = consolidated
-                ratelimits_db.add(merged_access)
-                ratelimits_db.commit()
+                audit_db.add(merged_access)
+                audit_db.commit()
 
             upstream_response._content_iterable = big_fake_tee(upstream_response._content_iterable)
             return upstream_response

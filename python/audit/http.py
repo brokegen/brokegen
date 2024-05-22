@@ -18,7 +18,7 @@ engine = None
 SessionLocal: Callable = None
 Base = declarative_base()
 
-RatelimitsDB: TypeAlias = Session
+AuditDB: TypeAlias = Session
 
 
 def init_db(db_path: str) -> None:
@@ -36,7 +36,7 @@ def init_db(db_path: str) -> None:
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-def get_db() -> Generator[RatelimitsDB]:
+def get_db() -> Generator[AuditDB]:
     db = SessionLocal()
     try:
         yield db
@@ -44,9 +44,17 @@ def get_db() -> Generator[RatelimitsDB]:
         db.close()
 
 
-class ApiAccessWithResponse(Base):
-    __tablename__ = 'ApiAccessesWithResponse'
-    __bind_key__ = 'ratelimits'
+class RawHttpEvent(Base):
+    __tablename__ = 'RawHttpEvents'
+    __bind_key__ = 'access'
+
+
+class HttpEvent(Base):
+    """
+    Modified version of RawHttpEvent with more human-readable fields
+    """
+    __tablename__ = 'HttpEvents'
+    __bind_key__ = 'access'
 
     accessed_at = Column(DateTime, primary_key=True, nullable=False)
     api_endpoint = Column(String, primary_key=True, nullable=False)
@@ -67,11 +75,11 @@ class PlainRequestInterceptor:
     def __init__(
             self,
             logger: logging.Logger,
-            ratelimits_db: RatelimitsDB,
+            audit_db: AuditDB,
     ):
         self.logger = logger
-        self.ratelimits_db = ratelimits_db
-        self.new_access: ApiAccessWithResponse | None = None
+        self.audit_db = audit_db
+        self.new_access: HttpEvent | None = None
 
         self.request_content_chunks: list[bytes] = []
         self.response_content_chunks: list[bytes] = []
@@ -128,7 +136,7 @@ class PlainRequestInterceptor:
             upstream_response: httpx.Response,
             api_bucket: str,
             do_commit: bool = True,
-    ) -> ApiAccessWithResponse:
+    ) -> HttpEvent:
         request_dict = {
             'content': "[not recorded yet/interrupted during processing]",
             'method': upstream_response.request.method,
@@ -146,7 +154,7 @@ class PlainRequestInterceptor:
         if upstream_response.cookies:
             response_dict['cookies'] = upstream_response.cookies.jar.items()
 
-        self.new_access = ApiAccessWithResponse(
+        self.new_access = HttpEvent(
             api_bucket=api_bucket,
             accessed_at=datetime.now(tz=timezone.utc),
             api_endpoint=str(upstream_response.request.url),
@@ -154,9 +162,9 @@ class PlainRequestInterceptor:
             response=response_dict,
         )
 
-        self.ratelimits_db.add(self.new_access)
+        self.audit_db.add(self.new_access)
         if do_commit:
-            self.ratelimits_db.commit()
+            self.audit_db.commit()
 
         return self.new_access
 

@@ -12,10 +12,10 @@ from contextlib import asynccontextmanager
 import click
 from fastapi import APIRouter, Depends, FastAPI, Request
 
-from access.ratelimits import init_db as init_ratelimits_db, RatelimitsDB, get_db as get_ratelimits_db
+from audit.http import init_db as init_audit_db, AuditDB, get_db as get_audit_db
+from history.ollama.forward_routes import forward_request, forward_request_nodetails
 from inference.embeddings.knowledge import get_knowledge, KnowledgeSingleton, get_knowledge_dependency
 from inference.routes_langchain import do_transparent_rag
-from history.ollama.forward_routes import forward_request, forward_request_nodetails
 
 
 def reconfigure_loglevels():
@@ -55,7 +55,7 @@ async def lifespan_for_fastapi(app: FastAPI):
         @ollama_forwarder.post("/ollama-proxy/{path}")
         async def do_proxy_get_post(
                 request: Request,
-                ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
+                audit_db: AuditDB = Depends(get_audit_db),
                 knowledge: KnowledgeSingleton = Depends(get_knowledge_dependency),
         ):
             if request.url.path == "/ollama-proxy/api/generate":
@@ -65,9 +65,9 @@ async def lifespan_for_fastapi(app: FastAPI):
                     request.method == 'HEAD'
                     or request.url.path == "/ollama-proxy/api/show"
             ):
-                return await forward_request_nodetails(request, ratelimits_db)
+                return await forward_request_nodetails(request, audit_db)
 
-            return await forward_request(request, ratelimits_db)
+            return await forward_request(request, audit_db)
 
         app.include_router(ollama_forwarder)
 
@@ -110,7 +110,7 @@ def run_proxy(data_dir, bind_port, log_level):
         lifespan=lifespan_logging,
     )
 
-    init_ratelimits_db(f"{data_dir}/ratelimits.db")
+    init_audit_db(f"{data_dir}/audit.db")
     get_knowledge().load_shards_from(data_dir)
 
     config = uvicorn.Config(app, port=bind_port, log_level="debug", reload=False, workers=1)

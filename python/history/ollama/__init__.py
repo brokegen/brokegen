@@ -8,7 +8,7 @@ from fastapi import FastAPI, APIRouter, Depends, Query
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from access.ratelimits import RatelimitsDB, get_db as get_ratelimits_db
+from audit.http import AuditDB, get_db as get_audit_db
 from history.shared.database import HistoryDB, get_db as get_history_db
 from history.ollama.chat_rag_routes import do_proxy_chat_rag, convert_chat_to_generate, \
     OllamaModelName, do_generate_raw_templated
@@ -64,7 +64,7 @@ Note that these will override anything set in the model templates!
                     = """{"num_predict": 128, "top_k": 80, "num_ctx": 16384}""",
             allow_streaming: bool = True,
             history_db: HistoryDB = Depends(get_history_db),
-            ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
+            audit_db: AuditDB = Depends(get_audit_db),
     ):
         content = {
             'images': [],
@@ -85,7 +85,7 @@ Note that these will override anything set in the model templates!
             headers,
             None,
             history_db,
-            ratelimits_db,
+            audit_db,
         )
 
         if allow_streaming:
@@ -122,7 +122,7 @@ which bypasses censoring for tested models.""")
             options_json: Annotated[str, Query(description=ollama_api_options_str)] \
                     = """{"num_predict": 8192, "top_k": 80, "num_ctx": 16384}""",
             history_db: HistoryDB = Depends(get_history_db),
-            ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
+            audit_db: AuditDB = Depends(get_audit_db),
     ):
         model, executor_record = await lookup_model_offline(
             model_name,
@@ -156,7 +156,7 @@ which bypasses censoring for tested models.""")
             headers,
             None,
             history_db,
-            ratelimits_db,
+            audit_db,
         )
 
     app.include_router(router, prefix="/ollama")
@@ -169,15 +169,15 @@ def install_forwards(app: FastAPI, enable_rag: bool):
     async def proxy_generate(
             request: Request,
             history_db: HistoryDB = Depends(get_history_db),
-            ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
+            audit_db: AuditDB = Depends(get_audit_db),
     ):
-        return await do_proxy_generate(request, history_db, ratelimits_db)
+        return await do_proxy_generate(request, history_db, audit_db)
 
     @ollama_forwarder.post("/ollama-proxy/api/chat")
     async def proxy_chat_rag(
             request: Request,
             history_db: HistoryDB = Depends(get_history_db),
-            ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
+            audit_db: AuditDB = Depends(get_audit_db),
             knowledge: KnowledgeSingleton = Depends(get_knowledge_dependency),
     ):
         logger.debug(f"Received /api/chat request, starting processing")
@@ -186,7 +186,7 @@ def install_forwards(app: FastAPI, enable_rag: bool):
         if enable_rag:
             retrieval_policy = CustomRetrievalPolicy(knowledge)
 
-        return await do_proxy_chat_rag(request, retrieval_policy, history_db, ratelimits_db)
+        return await do_proxy_chat_rag(request, retrieval_policy, history_db, audit_db)
 
     # TODO: Using a router prefix breaks this, somehow
     @ollama_forwarder.head("/ollama-proxy/{ollama_head_path:path}")
@@ -203,16 +203,16 @@ def install_forwards(app: FastAPI, enable_rag: bool):
             ollama_get_path: str | None = None,
             ollama_post_path: str | None = None,
             history_db: HistoryDB = Depends(get_history_db),
-            ratelimits_db: RatelimitsDB = Depends(get_ratelimits_db),
+            audit_db: AuditDB = Depends(get_audit_db),
     ):
         if ollama_get_path == "api/tags":
-            return await do_api_tags(request, history_db, ratelimits_db)
+            return await do_api_tags(request, history_db, audit_db)
 
         if ollama_post_path == "api/show":
             # TODO: Remove this log inhibitor once we've switched to a client that doesn't spam /api/show on startup
             with disable_info_logs("httpx", "history.ollama.model_routes"):
-                return await do_api_show(request, history_db, ratelimits_db)
+                return await do_api_show(request, history_db, audit_db)
 
-        return await forward_request(request, ratelimits_db)
+        return await forward_request(request, audit_db)
 
     app.include_router(ollama_forwarder)

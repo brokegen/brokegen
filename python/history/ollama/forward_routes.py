@@ -7,7 +7,7 @@ from starlette.background import BackgroundTask
 from starlette.responses import StreamingResponse
 from typing_extensions import deprecated
 
-from access.ratelimits import RatelimitsDB
+from audit.http import AuditDB
 from history.ollama.json import JSONRequestInterceptor
 
 _real_ollama_client = httpx.AsyncClient(
@@ -61,7 +61,7 @@ async def forward_request_nolog(
 @deprecated("Clients should migrate to `nolog`, which makes behavior changes explicit")
 async def forward_request_nodetails(
         original_request: Request,
-        _: RatelimitsDB,
+        _: AuditDB,
 ):
     urlpath_noprefix = original_request.url.path.removeprefix("/ollama-proxy")
     logger.debug(f"/ollama-proxy: start nodetails handler for {original_request.method} {urlpath_noprefix}")
@@ -74,10 +74,10 @@ async def forward_request_nodetails(
 
 async def forward_request(
         original_request: Request,
-        ratelimits_db: RatelimitsDB,
+        audit_db: AuditDB,
         on_done_fn=None,
 ):
-    intercept = JSONRequestInterceptor(logger, ratelimits_db)
+    intercept = JSONRequestInterceptor(logger, audit_db)
 
     urlpath_noprefix = original_request.url.path.removeprefix("/ollama-proxy")
     logger.debug(f"/ollama-proxy: start handler for {original_request.method} {urlpath_noprefix}")
