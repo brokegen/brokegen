@@ -22,13 +22,14 @@ inference = [
     'httpx[http2]',
     'langchain',
     'langchain_experimental',
+    'orjson',
     'simsimd==3.7.7',
     'SQLAlchemy',
     'tqdm',
     'uvicorn',
     # "Optional" dependencies
     'colorlog',
-    'orjson',
+    'timing-asgi',
 ]
 ingest = [
     'filelock',

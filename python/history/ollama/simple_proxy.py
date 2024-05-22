@@ -16,30 +16,44 @@ from audit.http import init_db as init_audit_db, AuditDB, get_db as get_audit_db
 from history.ollama.forward_routes import forward_request, forward_request_nodetails
 
 
-@asynccontextmanager
-async def lifespan_for_fastapi(app: FastAPI):
-    def install_proxy_routes(app: FastAPI):
-        ollama_forwarder = APIRouter()
+def install_proxy_routes(app: FastAPI):
+    ollama_forwarder = APIRouter()
 
-        @ollama_forwarder.get("/ollama-proxy/{path}")
-        @ollama_forwarder.head("/ollama-proxy/{path}")
-        @ollama_forwarder.post("/ollama-proxy/{path}")
-        async def do_proxy_all(
-                request: Request,
-                audit_db: AuditDB = Depends(get_audit_db),
-        ):
-            if request.method == 'HEAD':
-                return await forward_request_nodetails(request, audit_db)
+    @ollama_forwarder.get("/ollama-proxy/{path:path}")
+    @ollama_forwarder.head("/ollama-proxy/{path:path}")
+    @ollama_forwarder.post("/ollama-proxy/{path:path}")
+    async def do_proxy_all(
+            request: Request,
+            audit_db: AuditDB = Depends(get_audit_db),
+    ):
+        if request.method == 'HEAD':
+            return await forward_request_nodetails(request, audit_db)
 
-            if request.url.path == "/ollama-proxy/api/show":
-                return await forward_request_nodetails(request, audit_db)
+        if request.url.path == "/ollama-proxy/api/show":
+            return await forward_request_nodetails(request, audit_db)
 
-            return await forward_request(request, audit_db)
+        return await forward_request(request, audit_db)
 
-        app.include_router(ollama_forwarder)
+    app.include_router(ollama_forwarder)
 
-    install_proxy_routes(app)
-    yield
+
+def try_install_timing_middleware(app: FastAPI):
+    try:
+        from timing_asgi import TimingMiddleware, TimingClient
+        from timing_asgi.integrations import StarletteScopeToName
+    except ImportError:
+        print("Failed to import timing-asgi")
+        return
+
+    class PrintTimings(TimingClient):
+        def timing(self, metric_name, timing, tags):
+            print(metric_name, f"{timing * 1000:.3f} msec", tags)
+
+    app.add_middleware(
+        TimingMiddleware,
+        client=PrintTimings(),
+        metric_namer=StarletteScopeToName(prefix="simple-proxy", starlette_app=app)
+    )
 
 
 @asynccontextmanager
@@ -73,8 +87,7 @@ async def lifespan_logging(app: FastAPI):
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
 
-    async with lifespan_for_fastapi(app):
-        yield
+    yield
 
     root_logger.setLevel(logging.WARNING)
     root_logger.handlers = []
@@ -99,6 +112,8 @@ def run_proxy(data_dir):
     import uvicorn
 
     init_audit_db(f"{data_dir}/audit.db")
+    install_proxy_routes(app)
+    try_install_timing_middleware(app)
 
     # NB Forget it, no multiprocess'd workers, I can't figure out what to do with them from within PyInstaller
     config = uvicorn.Config(app, port=6633, log_level="debug", reload=False, workers=1)
