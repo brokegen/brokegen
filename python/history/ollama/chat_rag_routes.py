@@ -15,8 +15,8 @@ from history.shared.database import HistoryDB, InferenceJob
 from history.ollama.chat_routes import lookup_model_offline
 from history.ollama.forward_routes import _real_ollama_client
 from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, JSONRequestInterceptor, \
-    JSONStreamingResponse, chunk_and_log_output, JSONArray, consolidate_stream
-from history.ollama.json import safe_get
+    chunk_and_log_output, consolidate_stream
+from history.shared.json import JSONStreamingResponse, safe_get, JSONArray
 from inference.embeddings.retrieval import RetrievalPolicy
 from inference.prompting.templating import apply_llm_template, PromptText, TemplatedPromptText
 
