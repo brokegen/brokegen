@@ -16,6 +16,13 @@ class Message(Base):
     role: RoleName = Column(String, nullable=False)
     content: PromptText = Column(String, nullable=False)
 
+    created_at = Column(DateTime)
+    """
+    This is really a vanity field, for the sake of making browsing raw SQLite data less boring.
+
+    The rest of the data structures are… too brittle and unstructured, though.
+    """
+
 
 class ChatSequence(Base):
     __tablename__ = 'ChatSequence'

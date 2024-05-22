@@ -109,6 +109,10 @@ class ModelConfigRecord(Base):
 
 
 class InferenceJob(Base):
+    """
+    These records _should_ be most useful for things like estimating tokens/second,
+    or extrapolating time/money costs for having a different provider do the inference.
+    """
     __tablename__ = 'InferenceJobs'
 
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
