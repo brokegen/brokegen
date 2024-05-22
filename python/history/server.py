@@ -69,7 +69,8 @@ async def lifespan_logging(app: FastAPI):
 
 @click.command()
 @click.option('--data-dir', default='data/',
-              help='Filesystem directory to store/read data from')
+              help='Filesystem directory to store/read data from',
+              type=click.Path(exists=True, writable=True, file_okay=False))
 @click.option('--bind-port', default=6635, help='uvicorn bind port')
 @click.option('--log-level', default='DEBUG',
               type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'FATAL'], case_sensitive=False),

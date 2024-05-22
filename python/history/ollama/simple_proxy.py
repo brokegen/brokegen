@@ -88,7 +88,12 @@ app: FastAPI = FastAPI(
 
 
 @click.command()
-@click.option('--data-dir', default='data', help='Filesystem directory to store/read data from')
+@click.option(
+    '--data-dir',
+    default='data',
+    help='Filesystem directory to store/read data from',
+    type=click.Path(exists=True, writable=True, file_okay=False),
+)
 def run_proxy(data_dir):
     import asyncio
     import uvicorn
