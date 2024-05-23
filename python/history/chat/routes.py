@@ -46,6 +46,11 @@ class SequenceIn(BaseModel):
     inference_error: Optional[str] = None
 
 
+class SequenceAddResponse(BaseModel):
+    sequence_id: ChatSequenceID
+    just_created: bool
+
+
 def install_routes(app: FastAPI):
     router = fastapi.routing.APIRouter()
 
@@ -112,7 +117,7 @@ def install_routes(app: FastAPI):
     async def post_sequence(
             seq_in: SequenceIn,
             history_db: HistoryDB = Depends(get_history_db),
-    ):
+    ) -> SequenceAddResponse:
         maybe_sequence_id = history_db.execute(
             select(ChatSequence.id)
             .filter_by(
@@ -122,7 +127,10 @@ def install_routes(app: FastAPI):
             .limit(1)
         ).scalar_one_or_none()
         if maybe_sequence_id:
-            raise HTTPException(400, "Sequence already exists")
+            return SequenceAddResponse(
+                sequence_id=maybe_sequence_id,
+                just_created=False,
+            )
 
         new_object = ChatSequence(
             human_desc=seq_in.human_desc,
@@ -137,7 +145,10 @@ def install_routes(app: FastAPI):
         history_db.add(new_object)
         history_db.commit()
 
-        return new_object.id
+        return SequenceAddResponse(
+            sequence_id=new_object.id,
+            just_created=True,
+        )
 
     @router.get("/sequences/{id:int}")
     def get_sequence(

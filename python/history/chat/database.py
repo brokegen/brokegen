@@ -7,7 +7,7 @@ from history.shared.database import Base
 from inference.prompting.models import RoleName, PromptText
 
 MessageID: TypeAlias = pydantic.PositiveInt
-ChatSequenceID: TypeAlias = int
+ChatSequenceID: TypeAlias = pydantic.PositiveInt
 
 
 class Message(Base):
@@ -31,7 +31,7 @@ class ChatSequence(Base):
     """
     __tablename__ = 'ChatSequence'
 
-    id: ChatSequenceID = Column(String, primary_key=True, nullable=False)
+    id: ChatSequenceID = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     human_desc = Column(String)
     user_pinned = Column(Boolean)
     """
