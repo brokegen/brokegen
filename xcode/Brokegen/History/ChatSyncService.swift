@@ -107,6 +107,7 @@ class ChatSequence: Identifiable {
             )
             newMessage.serverId = messageJson["id"] as? Int
 
+            print("[DEBUG] Added message \(newMessage.serverId!) to Sequence#\(self.serverId!)")
             messages.append(newMessage)
         }
     }
@@ -144,7 +145,6 @@ class ChatSyncService: Observable, ObservableObject {
         let data = await getData(endpoint)
         do {
             let jsonDict = try JSONSerialization.jsonObject(with: data!, options: []) as! [String : Any]
-            print("GET \(endpoint): \(jsonDict)")
             return jsonDict
         }
         catch {

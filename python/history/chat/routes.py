@@ -166,7 +166,7 @@ def install_routes(app: FastAPI):
             raise HTTPException(400, "No matching object")
 
         messages_list = []
-        sequence_id: ChatSequenceID = match_object.parent_sequence
+        sequence_id: ChatSequenceID = id
         while sequence_id is not None:
             logger.debug(f"Checking for sequence {id} => ancestor {sequence_id}")
             message_row = history_db.execute(

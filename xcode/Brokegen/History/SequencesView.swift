@@ -13,7 +13,7 @@ struct SequencesView: View {
             ForEach(chatService.loadedSequences.filter {seq in
                 !seq.messages.isEmpty
             }) { sequence in
-                NavigationLink(destination: MessagesView(sequence.messages)) {
+                NavigationLink(destination: MultiMessageView(sequence.messages)) {
                     Text(
                         sequence.humanDesc ??
                         "ChatSequence #\(sequence.serverId)")
