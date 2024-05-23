@@ -55,9 +55,7 @@ struct SettingsBlob: View {
                     .font(.title3)
             }
 
-            Button(action: toggleSidebar) {
-                Text("Agents")
-            }
+            Text("Agents")
             .padding(12)
         }
         .frame(width: 380)
@@ -91,9 +89,7 @@ struct SettingsBlob: View {
                         .font(.title3)
                 }
 
-                Button(action: toggleSidebar) {
-                    Text("Agents")
-                }
+                Text("Agents")
                 .padding(12)
             }
             .padding(6)
@@ -106,41 +102,19 @@ struct AppView: View {
         NavigationSplitView(sidebar: {
             VStack {
                 List {
-                    JobsSidebar()
-                    Divider()
                     ChatsSidebar()
+                    Divider()
+                    MiniJobsSidebar()
                 }
                 .listStyle(.sidebar)
                 .frame(minWidth: 200, idealWidth: 400, maxHeight: .infinity)
-                // TODO: Remove any toolbar code, once we're sure it's useless
-                .toolbar {
-                    ToolbarItemGroup(placement: .navigation) {
-                        Button(action: toggleSidebar, label: {
-                            Image(systemName: "sidebar.left")
-                        })
-
-                        Button("New Chat", systemImage: "square.and.pencil") {
-                            toggleSidebar()
-                        }
-                        .buttonStyle(.accessoryBar)
-                        .help("New Chat (⌘ + N)")
-                        .frame(alignment: .trailing)
-                    }
-                }
                 .toolbar(.hidden)
-
-                SettingsBlob()
             }
         }, detail: {
             ChatView()
         })
         .navigationTitle("")
     }
-}
-
-// Toggle Sidebar Function
-func toggleSidebar() {
-        NSApp.keyWindow?.firstResponder?.tryToPerform(#selector(NSSplitViewController.toggleSidebar(_:)), with: nil)
 }
 
 #Preview(traits: .fixedLayout(width: 1024, height: 400)) {

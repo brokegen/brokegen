@@ -18,50 +18,64 @@ struct AllJobs: View {
     }
 }
 
-struct JobsSidebar: View {
+struct MiniJobsSidebar: View {
     @Environment(JobsManagerService.self) private var jobsService: JobsManagerService
-    let nestedNavLimit: Int?
+    let navLimit: Int
 
-    init(nestedNavLimit: Int? = 10) {
-        self.nestedNavLimit = nestedNavLimit
+    init(navLimit: Int = 10) {
+        self.navLimit = navLimit
     }
 
     var body: some View {
-        if nestedNavLimit != nil && jobsService.renderableJobs.count > nestedNavLimit! {
-            Section(header: Text("Jobs")
+        let bigLink = NavigationLink(
+            destination: NavigationSplitView(sidebar: {
+                TallJobsSidebar()
+            }, detail:{
+                AllJobs(jobsService.renderableJobs)
+            }
+        )) {
+            Text("Some Jobs")
                 .font(.title2)
                 .foregroundStyle(.primary)
                 .padding(6)
-            ) {
-                ForEach(jobsService.renderableJobs.prefix(nestedNavLimit!)) { job in
-                    NavigationLink(destination: JobOutputView(job: job)) {
-                        JobsSidebarItem(job: job)
-                    }
-                }
-
-                NavigationLink(destination: AllJobs(jobsService.renderableJobs)
-                    .padding(32)
-                ) {
-                    Text("[See all jobs]")
-                        .font(.title2)
-                        .frame(alignment: .trailing)
-                }
-            }
+                .padding(.top, 18)
         }
-        else {
-            Section(header: Text("Jobs")
-                .font(.title2)
-                .foregroundStyle(.primary)
-                .padding(6)
-            ) {
-                ForEach(jobsService.renderableJobs) { job in
-                    NavigationLink(destination: JobOutputView(job: job)) {
-                        JobsSidebarItem(job: job)
-                    }
+            .selectionDisabled(false)
+
+        Section(header: bigLink) {
+            ForEach(jobsService.renderableJobs.prefix(navLimit)) { job in
+                NavigationLink(destination: JobOutputView(job: job)) {
+                    JobsSidebarItem(job: job)
                 }
             }
 
-            Spacer()
+            NavigationLink(destination: AllJobs(jobsService.renderableJobs)
+                .padding(32)
+            ) {
+                Text("[See all jobs]")
+                    .font(.title2)
+                    .frame(alignment: .trailing)
+            }
         }
+    }
+}
+
+struct TallJobsSidebar: View {
+    @Environment(JobsManagerService.self) private var jobsService: JobsManagerService
+
+    var body: some View {
+        Section(header: Text("ALL JOBS")
+            .font(.title2)
+            .foregroundStyle(.primary)
+            .padding(6)
+        ) {
+            ForEach(jobsService.renderableJobs) { job in
+                NavigationLink(destination: JobOutputView(job: job)) {
+                    JobsSidebarItem(job: job)
+                }
+            }
+        }
+
+        Spacer()
     }
 }

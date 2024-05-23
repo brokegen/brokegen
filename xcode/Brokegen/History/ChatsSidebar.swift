@@ -96,9 +96,7 @@ struct ChatsSidebar: View {
             Text("IRC for lonely hearts")
         }
 
-        Button(action: toggleSidebar, label: {
-            Label("Customize", systemImage: "slider.horizontal.3")
-        })
+        Label("Customize", systemImage: "slider.horizontal.3")
 
         Spacer()
 
