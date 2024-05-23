@@ -13,23 +13,11 @@ struct SequencesView: View {
             ForEach(chatService.loadedSequences.filter {seq in
                 !seq.messages.isEmpty
             }) { sequence in
-                Text("Sequence \(sequence.id)")
-
-                let message = sequence.messages.last!
-
-//                Text("ChatSequence")
-//                    .font(.title2)
-//                    .color(.accentColor)
-
-                VStack(alignment: .leading) {
-                    Text(message.createdAt != nil
-                         ? String(describing: message.createdAt!) : "")
-                        .monospaced()
-                        .opacity(message.createdAt != nil ? 1 : 0)
-                    Spacer()
-                    Text(message.content)
+                NavigationLink(destination: MessagesView(sequence.messages)) {
+                    Text(
+                        sequence.humanDesc ??
+                        "ChatSequence #\(sequence.serverId)")
                 }
-                .frame(maxWidth: .infinity)
             }
             .padding(8)
         }
