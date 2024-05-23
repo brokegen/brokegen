@@ -116,7 +116,7 @@ def install_routes(app: FastAPI):
         maybe_sequence_id = history_db.execute(
             select(ChatSequence.id)
             .filter_by(
-                current_message=seq_in.message,
+                current_message=seq_in.current_message,
                 parent_sequence=seq_in.parent_sequence,
             )
             .limit(1)
