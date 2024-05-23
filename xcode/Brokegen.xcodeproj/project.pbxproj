@@ -16,7 +16,7 @@
 		CE4634EB2BFA71E70063142E /* brokegen-server in Resources */ = {isa = PBXBuildFile; fileRef = CE4634EA2BFA71E70063142E /* brokegen-server */; };
 		CE4634ED2BFAE3020063142E /* RestartableProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634EC2BFAE3020063142E /* RestartableProcess.swift */; };
 		CE4634EF2BFAFA340063142E /* StayAwakeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634EE2BFAFA340063142E /* StayAwakeService.swift */; };
-		CE4634F22BFBB4730063142E /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634F12BFBB4730063142E /* ChatView.swift */; };
+		CE4634F22BFBB4730063142E /* SequencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634F12BFBB4730063142E /* SequencesView.swift */; };
 		CE4634F42BFBB4900063142E /* ChatSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634F32BFBB4900063142E /* ChatSyncService.swift */; };
 		CE4634F62BFBB4D00063142E /* ChatsSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634F52BFBB4D00063142E /* ChatsSidebar.swift */; };
 		CE6D8A7F2BF6DF1800A7934D /* RibbonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */; };
@@ -45,7 +45,7 @@
 		CE4634EA2BFA71E70063142E /* brokegen-server */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = "brokegen-server"; path = "../dist/brokegen-server"; sourceTree = "<group>"; };
 		CE4634EC2BFAE3020063142E /* RestartableProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestartableProcess.swift; sourceTree = "<group>"; };
 		CE4634EE2BFAFA340063142E /* StayAwakeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StayAwakeService.swift; sourceTree = "<group>"; };
-		CE4634F12BFBB4730063142E /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
+		CE4634F12BFBB4730063142E /* SequencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequencesView.swift; sourceTree = "<group>"; };
 		CE4634F32BFBB4900063142E /* ChatSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSyncService.swift; sourceTree = "<group>"; };
 		CE4634F52BFBB4D00063142E /* ChatsSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatsSidebar.swift; sourceTree = "<group>"; };
 		CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RibbonView.swift; sourceTree = "<group>"; };
@@ -100,7 +100,7 @@
 			isa = PBXGroup;
 			children = (
 				CE4634F32BFBB4900063142E /* ChatSyncService.swift */,
-				CE4634F12BFBB4730063142E /* ChatView.swift */,
+				CE4634F12BFBB4730063142E /* SequencesView.swift */,
 				CE4634F52BFBB4D00063142E /* ChatsSidebar.swift */,
 			);
 			path = History;
@@ -264,7 +264,7 @@
 				CECA47AA2BF6D62E007A28F2 /* SystemInfoView.swift in Sources */,
 				CEFEB4762BFDA67400334522 /* SimplePing.swift in Sources */,
 				CE4634DE2BF937320063142E /* JobsSidebar.swift in Sources */,
-				CE4634F22BFBB4730063142E /* ChatView.swift in Sources */,
+				CE4634F22BFBB4730063142E /* SequencesView.swift in Sources */,
 				CE9867632BF41954008D6C41 /* AppView.swift in Sources */,
 				CE4634F62BFBB4D00063142E /* ChatsSidebar.swift in Sources */,
 				CE9867652BF41A3E008D6C41 /* PlaceholderContentView.swift in Sources */,

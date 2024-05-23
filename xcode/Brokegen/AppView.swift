@@ -111,7 +111,7 @@ struct AppView: View {
                 .toolbar(.hidden)
             }
         }, detail: {
-            ChatView()
+            SequencesView()
         })
         .navigationTitle("")
     }

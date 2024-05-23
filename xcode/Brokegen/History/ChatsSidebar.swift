@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ChatsView: View {
+struct MessagesView: View {
     var messages: [Message]
 
     init(_ messages: [Message]) {
@@ -44,7 +44,7 @@ Your input will help me generate more targeted and valuable responses. Let's col
 """, createdAt: Date(timeIntervalSinceNow: +5))
     ]
 
-    return ChatsView(messages)
+    return MessagesView(messages)
 }
 
 struct ChatsSidebar: View {
@@ -75,9 +75,15 @@ struct ChatsSidebar: View {
             Text("Last quarter: Lakers")
         }
 
-        NavigationLink(destination: ChatsView(chatService.loadedMessages)) {
-            Text("[Load more…]")
-                .font(.footnote)
+        NavigationLink(destination: MessagesView(chatService.loadedMessages)) {
+            Spacer()
+            Label("Messages", systemImage: "slider.horizontal.3")
+        }
+        .frame(maxWidth: .infinity)
+
+        NavigationLink(destination: SequencesView()) {
+            Spacer()
+            Label("Sequences", systemImage: "slider.horizontal.3")
         }
         .frame(maxWidth: .infinity)
 
@@ -95,8 +101,6 @@ struct ChatsSidebar: View {
             }
             Text("IRC for lonely hearts")
         }
-
-        Label("Customize", systemImage: "slider.horizontal.3")
 
         Spacer()
 

@@ -82,31 +82,106 @@ extension Message: Hashable {
     }
 }
 
+class ChatSequence: Identifiable {
+    let id: UUID = UUID()
+    var serverId: Int?
+
+    let humanDesc: String?
+    let userPinned: Bool
+
+    var messages: [Message] = []
+
+    init(_ serverId: Int? = nil, data: Data) throws {
+        self.serverId = serverId
+
+        let jsonDict = try JSONSerialization.jsonObject(with: data, options: []) as! [String : Any]
+        humanDesc = jsonDict["human_desc"] as? String
+        userPinned = jsonDict["user_pinned"] != nil
+
+        let messagesJsonList = jsonDict["messages"] as? [[String : Any]]
+        for messageJson in messagesJsonList! {
+            var newMessage = Message(
+                role: messageJson["role"] as? String ?? "[invalid]",
+                content: messageJson["content"] as? String ?? "",
+                createdAt: messageJson["created_at"] as? Date
+            )
+            newMessage.serverId = messageJson["id"] as? Int
+
+            messages.append(newMessage)
+        }
+    }
+}
+
 @Observable
 class ChatSyncService: Observable, ObservableObject {
+    var serverBaseURL: String = "http://127.0.0.1:6635"
+
+    private func getData(_ endpoint: String) async -> Data? {
+        do {
+            return try await withCheckedThrowingContinuation { continuation in
+                AF.request(
+                    serverBaseURL + endpoint,
+                    method: .get
+                )
+                .response { r in
+                    switch r.result {
+                    case .success(let data):
+                        continuation.resume(returning: data)
+                    case .failure(let error):
+                        print("GET \(endpoint) failed: " + error.localizedDescription)
+                        continuation.resume(returning: nil)
+                    }
+                }
+            }
+        }
+        catch {
+            print("GET \(endpoint) failed: exception thrown")
+            return nil
+        }
+    }
+
+    private func getDataAsJson(_ endpoint: String) async -> [String : Any]? {
+        let data = await getData(endpoint)
+        do {
+            let jsonDict = try JSONSerialization.jsonObject(with: data!, options: []) as! [String : Any]
+            print("GET \(endpoint): \(jsonDict)")
+            return jsonDict
+        }
+        catch {
+            print("GET \(endpoint) decoding failed: \(String(describing: data))")
+            return nil
+        }
+    }
+
     var loadedMessages: [Message] = []
 
     func fetchMessage(id: Int) {
-        AF.request(
-            "http://127.0.0.1:6635/messages/\(id)",
-            method: .get
-        )
-        .response { r in
-            switch r.result {
-            case .success(let data):
+        Task.init {
+            if let data = await getData("/messages/\(id)") {
+                let message = try Message(id, data: data)
+                self.loadedMessages.append(message)
+            }
+        }
+    }
+
+    var loadedSequences: [ChatSequence] = []
+
+    func fetchPinnedSequences() {
+        Task.init {
+            let jsonDict = await getDataAsJson("/sequences/pinned")
+            guard jsonDict != nil else { return }
+
+            let sequenceIds: [Int] = jsonDict!["sequence_ids"] as? [Int] ?? []
+            for seqId in sequenceIds {
                 do {
-                    if data != nil {
-                        let message = try Message(id, data: data!)
-                        self.loadedMessages.append(message)
-                        print("GET /messages/\(id): \(message)")
+                    if let entireSequence = await getData("/sequences/\(seqId)") {
+                        let newSeq = try ChatSequence(seqId, data: entireSequence)
+                        self.loadedSequences.append(newSeq)
                     }
                 }
                 catch {
-                    print("GET /messages/\(id) failed")
+                    print("[ERROR] Failed to get sequence data for \(seqId)")
                 }
-            case .failure(let error):
-                print("GET /messages/\(id) failed, " + error.localizedDescription)
-                return
             }
         }
     }

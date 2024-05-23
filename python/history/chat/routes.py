@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from http.client import HTTPException
 from typing import Optional
@@ -11,6 +12,8 @@ from history.chat.database import MessageID, Message, ChatSequenceID, ChatSequen
 from history.shared.database import HistoryDB, get_db as get_history_db
 from history.shared.json import JSONDict
 from inference.prompting.models import RoleName, PromptText
+
+logger = logging.getLogger(__name__)
 
 
 class MessageIn(BaseModel):
@@ -162,6 +165,37 @@ def install_routes(app: FastAPI):
         if match_object is None:
             raise HTTPException(400, "No matching object")
 
+        messages_list = []
+        sequence_id: ChatSequenceID = match_object.parent_sequence
+        while sequence_id is not None:
+            logger.debug(f"Checking for sequence {id} => ancestor {sequence_id}")
+            message_row = history_db.execute(
+                select(Message, ChatSequence.parent_sequence)
+                .join(Message, Message.id == ChatSequence.current_message)
+                .where(ChatSequence.id == sequence_id)
+            ).one_or_none()
+            if message_row is None:
+                break
+
+            message, parent_id = message_row
+            messages_list.append(message)
+            sequence_id = parent_id
+
+        match_object.messages = messages_list[::-1]
         return match_object
+
+    @router.get("/sequences/pinned")
+    def get_pinned_sequences(
+            limit: int = 20,
+            history_db: HistoryDB = Depends(get_history_db),
+    ):
+        pinned = history_db.execute(
+            select(ChatSequence.id)
+            .filter_by(user_pinned=True)
+            .order_by(ChatSequence.generated_at.desc())
+            .limit(limit)
+        ).scalars()
+
+        return {"sequence_ids": list(pinned)}
 
     app.include_router(router)
