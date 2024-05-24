@@ -26,7 +26,7 @@ struct OneMessageView: View {
 
     init(_ message: Message) {
         self.message = message
-        self._expandDetails = State(initialValue: true)
+        self._expandDetails = State(initialValue: false)
     }
 
     var body: some View {
@@ -39,16 +39,21 @@ struct OneMessageView: View {
 
                 Spacer()
 
-                PrettyDate(message.createdAt)
-                    .opacity(expandDetails ? 1 : 0)
-
                 Button(action: { expandDetails = !expandDetails }) {
-                    Image(systemName: expandDetails ? "chevron.left" : "chevron.down")
+                    Image(systemName: expandDetails ? "chevron.down" : "chevron.left")
                 }
                     .buttonStyle(.accessoryBar)
                     .help("Expand Details")
                     .foregroundColor(.accentColor)
                     .frame(minWidth: 32)
+            }
+
+            // Second line-block
+            if expandDetails {
+                HStack {
+                    Spacer()
+                    PrettyDate(message.createdAt)
+                }
             }
 
             Text(message.content)

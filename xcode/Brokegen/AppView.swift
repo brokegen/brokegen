@@ -98,18 +98,39 @@ struct SettingsBlob: View {
 }
 
 struct AppView: View {
+    @Environment(ChatSyncService.self) private var chatService
+
     var body: some View {
         NavigationSplitView(sidebar: {
-            VStack {
-                List {
-                    ChatsSidebar()
-                    Divider()
-                    MiniJobsSidebar()
+            List {
+                Section(header: Text("Chats")
+                    .font(.title2)
+                    .foregroundStyle(.primary)
+                    .padding(6)
+                ) {
+                    NavigationLink(destination: SequencesView()) {
+                        Spacer()
+                        Label("[All Chats]", systemImage: "slider.horizontal.3")
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    NavigationLink(destination: SequencesView()) {
+                        Spacer()
+                        Label("Import", systemImage: "paperplane")
+                            .onAppear {
+                                chatService.fetchPinnedSequences()
+                            }
+                    }
+                    .frame(maxWidth: .infinity)
                 }
-                .listStyle(.sidebar)
-                .frame(minWidth: 200, idealWidth: 400, maxHeight: .infinity)
-                .toolbar(.hidden)
+                .padding(12)
+
+                Divider()
+                MiniJobsSidebar()
             }
+            .listStyle(.sidebar)
+            .frame(minWidth: 200, idealWidth: 400, maxHeight: .infinity)
+            .toolbar(.hidden)
         }, detail: {
             SequencesView()
         })

@@ -34,13 +34,11 @@ struct MiniJobsSidebar: View {
                 AllJobs(jobsService.renderableJobs)
             }
         )) {
-            Text("Some Jobs")
+            Text("Active Jobs")
                 .font(.title2)
                 .foregroundStyle(.primary)
                 .padding(6)
-                .padding(.top, 18)
         }
-            .selectionDisabled(false)
 
         Section(header: bigLink) {
             ForEach(jobsService.renderableJobs.prefix(navLimit)) { job in
@@ -48,13 +46,17 @@ struct MiniJobsSidebar: View {
                     JobsSidebarItem(job: job)
                 }
             }
+        }
 
-            NavigationLink(destination: AllJobs(jobsService.renderableJobs)
-                .padding(32)
-            ) {
-                Text("[See all jobs]")
+        Divider()
+
+        NavigationLink(destination: AllJobs(jobsService.renderableJobs)
+            .padding(32)
+        ) {
+            HStack {
+                Text("[All Jobs]")
                     .font(.title2)
-                    .frame(alignment: .trailing)
+                    .padding(6)
             }
         }
     }

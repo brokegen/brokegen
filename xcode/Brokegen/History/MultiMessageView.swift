@@ -17,12 +17,10 @@ struct MultiMessageView: View {
                     .padding(.top, 16)
             }
 
-            TextField("Enter your message", text: $messageInEdit)
-                .multilineTextAlignment(.leading)
+            TextField("Enter your message", text: $messageInEdit, axis: .vertical)
                 .textFieldStyle(.plain)
-                .frame(maxWidth: .infinity)
-                .frame(height: 100)
-                .frame(alignment: .leading)
+                .lineSpacing(140)
+                .border(.blue)
                 .padding(24)
         }
     }
