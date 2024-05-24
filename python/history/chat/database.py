@@ -46,3 +46,15 @@ class ChatSequence(Base):
     generation_complete = Column(Boolean)
     inference_job_id = Column(Integer)
     inference_error = Column(String)
+
+
+class VisibleSequence(Base):
+    """
+    Represents a more user-visible concept of message chains.
+
+    In particular, having the summary of prior messages + possible token estimates.
+    """
+    __tablename__ = 'ChatSequences'
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    top_node: ChatSequenceID
