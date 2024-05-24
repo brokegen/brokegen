@@ -1,17 +1,29 @@
 import SwiftUI
 
 struct MultiMessageView: View {
-    var messages: [Message]
+    let messages: [Message]
+    @State var messageInEdit: String
 
     init(_ messages: [Message]) {
         self.messages = messages
+        self._messageInEdit = State(initialValue: "")
     }
 
     var body: some View {
         List {
             ForEach(self.messages) { message in
                 OneMessageView(message)
+                    .padding(24)
+                    .padding(.top, 16)
             }
+
+            TextField("Enter your message", text: $messageInEdit)
+                .multilineTextAlignment(.leading)
+                .textFieldStyle(.plain)
+                .frame(maxWidth: .infinity)
+                .frame(height: 100)
+                .frame(alignment: .leading)
+                .padding(24)
         }
     }
 }

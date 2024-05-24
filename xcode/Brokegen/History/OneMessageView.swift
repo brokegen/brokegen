@@ -1,22 +1,66 @@
 import SwiftUI
 
-struct OneMessageView: View {
-    var message: Message
+struct PrettyDate: View {
+    let date: Date?
+    let dateStr: String
 
-    init(_ message: Message) {
-        self.message = message
+    init(_ date: Date?) {
+        self.date = date
+        if self.date != nil {
+            self.dateStr = String(describing: date!)
+        }
+        else {
+            self.dateStr = ""
+        }
     }
 
     var body: some View {
-        VStack(alignment: .leading) {
-            Text(message.createdAt != nil
-                 ? String(describing: message.createdAt!) : "")
-                .monospaced()
-                .opacity(message.createdAt != nil ? 1 : 0)
+        Text(self.dateStr)
+            .monospaced()
+    }
+}
+
+struct OneMessageView: View {
+    var message: Message
+    @State var expandDetails: Bool
+
+    init(_ message: Message) {
+        self.message = message
+        self._expandDetails = State(initialValue: true)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // "Header" for the message
+            HStack(alignment: .center, spacing: 8) {
+                Text(message.role)
+                    .font(.title3.weight(.semibold))
+                    .foregroundColor(.accentColor)
+
+                Spacer()
+
+                PrettyDate(message.createdAt)
+                    .opacity(expandDetails ? 1 : 0)
+
+                Button(action: { expandDetails = !expandDetails }) {
+                    Image(systemName: expandDetails ? "chevron.left" : "chevron.down")
+                }
+                    .buttonStyle(.accessoryBar)
+                    .help("Expand Details")
+                    .foregroundColor(.accentColor)
+                    .frame(minWidth: 32)
+            }
+
             Text(message.content)
         }
         .frame(maxWidth: .infinity)
-        .padding(8)
+    }
+
+    public func expandDetails(_ expandDetails: Bool) -> OneMessageView{
+        var view = self
+        view.expandDetails = expandDetails
+
+        return view
     }
 }
 
@@ -25,9 +69,11 @@ struct OneMessageView: View {
     VStack {
         OneMessageView(
             Message(role: "user", content: "Hello this is a prompt", createdAt: Date(timeIntervalSinceNow: -604_800)))
+            .expandDetails(false)
 
         OneMessageView(
             Message(role: "clown", content: "Hello! How can I help you today with your prompt? Please provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now))
+            .expandDetails(true)
 
         OneMessageView(
             Message(role: "user", content: """
