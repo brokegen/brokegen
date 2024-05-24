@@ -48,7 +48,7 @@ class ChatSequence(Base):
     inference_error = Column(String)
 
 
-class VisibleSequence(Base):
+class VisibleSequence:
     """
     Represents a more user-visible concept of message chains.
 
