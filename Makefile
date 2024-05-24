@@ -52,12 +52,13 @@ venv-clean:
 # https://github.com/Mozilla-Ocho/llamafile
 # Use Mozilla Ocho `llamafile` binaries as the simplest-to-setup inference server
 #
-build: llava-v1.5-7b-q4.llamafile
-llava-v1.5-7b-q4.llamafile:
-	curl -L -O https://huggingface.co/Mozilla/llava-v1.5-7b-llamafile/resolve/main/llava-v1.5-7b-q4.llamafile?download=true
+build: dist/llava-v1.5-7b-q4.llamafile
+dist/llava-v1.5-7b-q4.llamafile:
+	cd "$(dirname $@)" \
+		&& curl -L -O https://huggingface.co/Mozilla/llava-v1.5-7b-llamafile/resolve/main/llava-v1.5-7b-q4.llamafile?download=true
 	chmod +x "$@"
 
-mistral-7b-instruct-v0.2.Q8_0.llamafile:
-	curl -L -O https://huggingface.co/Mozilla/Mistral-7B-Instruct-v0.2-llamafile/resolve/main/mistral-7b-instruct-v0.2.Q8_0.llamafile?download=true
+dist/mistral-7b-instruct-v0.2.Q8_0.llamafile:
+	cd dist && curl -L -O https://huggingface.co/Mozilla/Mistral-7B-Instruct-v0.2-llamafile/resolve/main/mistral-7b-instruct-v0.2.Q8_0.llamafile?download=true
 	chmod +x "$@"
 
