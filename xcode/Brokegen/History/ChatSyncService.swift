@@ -144,8 +144,13 @@ class ChatSyncService: Observable, ObservableObject {
     private func getDataAsJson(_ endpoint: String) async -> [String : Any]? {
         let data = await getData(endpoint)
         do {
-            let jsonDict = try JSONSerialization.jsonObject(with: data!, options: []) as! [String : Any]
-            return jsonDict
+            if data != nil {
+                let jsonDict = try JSONSerialization.jsonObject(with: data!, options: []) as! [String : Any]
+                return jsonDict
+            }
+            else {
+                return nil
+            }
         }
         catch {
             print("GET \(endpoint) decoding failed: \(String(describing: data))")

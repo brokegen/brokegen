@@ -5,6 +5,7 @@ import SwiftUI
 
 class JobsManagerService: Observable, ObservableObject {
     @Published var renderableJobs: [Job]
+    @Published var specialJobs: [Job]
 
     init() {
         renderableJobs = [
@@ -23,6 +24,8 @@ class JobsManagerService: Observable, ObservableObject {
             SimpleProcess("/bin/date"),
             SimpleProcess("/usr/bin/man", ["man"]),
         ]
+
+        specialJobs = []
 
         let fileManager = FileManager.default
         let applicationSupportDirectory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -47,7 +50,7 @@ class JobsManagerService: Observable, ObservableObject {
         )
         renderableJobs.insert(ollamaProxy, at: 8)
 
-        let serverNoRag = SimpleProcess(
+        let serverNoRag = RestartableProcess(
             Bundle.main.url(forResource: "brokegen-server", withExtension: nil)!,
             [
                 "--data-dir",
@@ -56,7 +59,7 @@ class JobsManagerService: Observable, ObservableObject {
                 "--bind-port=6636",
             ]
         )
-        renderableJobs.insert(serverNoRag, at: 5)
+        specialJobs.append(serverNoRag)
 
         let server = RestartableProcess(
             Bundle.main.url(forResource: "brokegen-server", withExtension: nil)!,
@@ -67,6 +70,6 @@ class JobsManagerService: Observable, ObservableObject {
                 "--bind-port=6637",
             ]
         )
-        renderableJobs.insert(server, at: 6)
+        specialJobs.append(server)
     }
 }

@@ -40,6 +40,12 @@ struct MiniJobsSidebar: View {
                 .padding(6)
         }
 
+        ForEach(jobsService.specialJobs) { job in
+            NavigationLink(destination: InteractiveJobOutputView(job: job)) {
+                JobsSidebarItem(job: job)
+            }
+        }
+
         Section(header: bigLink) {
             ForEach(jobsService.renderableJobs.prefix(navLimit)) { job in
                 NavigationLink(destination: JobOutputView(job: job)) {
@@ -73,6 +79,12 @@ struct TallJobsSidebar: View {
         ) {
             ForEach(jobsService.renderableJobs) { job in
                 NavigationLink(destination: JobOutputView(job: job)) {
+                    JobsSidebarItem(job: job)
+                }
+            }
+
+            ForEach(jobsService.specialJobs) { job in
+                NavigationLink(destination: InteractiveJobOutputView(job: job)) {
                     JobsSidebarItem(job: job)
                 }
             }

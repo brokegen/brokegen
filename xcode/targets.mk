@@ -20,7 +20,7 @@ build-xcode: server ollama-proxy
 build-xcode:
 	xcodebuild archive \
 		-project xcode/Brokegen.xcodeproj \
-		-scheme Brokegen \
+		-scheme Release \
 		-config Release \
 		-sdk macosx \
 		-archivePath build/"macOS App.xcarchive" \

@@ -27,15 +27,29 @@
 		CE9867612BF414B3008D6C41 /* ManagedProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867602BF414B3008D6C41 /* ManagedProcess.swift */; };
 		CE9867632BF41954008D6C41 /* AppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867622BF41954008D6C41 /* AppView.swift */; };
 		CE9867652BF41A3E008D6C41 /* PlaceholderContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867642BF41A3E008D6C41 /* PlaceholderContentView.swift */; };
+		CEB773232C0160530051F41C /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = CEB773222C0160530051F41C /* Alamofire */; };
+		CEBAA28C2C003F4B00D43E22 /* InteractiveJobOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEBAA28B2C003F4B00D43E22 /* InteractiveJobOutputView.swift */; };
 		CECA47A82BF6D5B8007A28F2 /* System.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECA47A72BF6D5B8007A28F2 /* System.swift */; };
 		CECA47AA2BF6D62E007A28F2 /* SystemInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECA47A92BF6D62E007A28F2 /* SystemInfoView.swift */; };
 		CEDCF2AB2BFFD623006ABBA9 /* OneMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */; };
 		CEDCF2AD2BFFD63A006ABBA9 /* MultiMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDCF2AC2BFFD63A006ABBA9 /* MultiMessageView.swift */; };
 		CEFEB4762BFDA67400334522 /* SimplePing.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFEB4752BFDA67400334522 /* SimplePing.swift */; };
 		CEFEB4782BFDA6C900334522 /* TimeJob.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFEB4772BFDA6C900334522 /* TimeJob.swift */; };
-		CEFEB47B2BFDAABC00334522 /* AlamofireDynamic in Frameworks */ = {isa = PBXBuildFile; productRef = CEFEB47A2BFDAABC00334522 /* AlamofireDynamic */; };
 		CEFEB47E2BFE399500334522 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = CEFEB47D2BFE399500334522 /* SwiftTerm */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		CEB773212C015F950051F41C /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		CE4634DD2BF937320063142E /* JobsSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsSidebar.swift; sourceTree = "<group>"; };
@@ -59,6 +73,7 @@
 		CE9867602BF414B3008D6C41 /* ManagedProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagedProcess.swift; sourceTree = "<group>"; };
 		CE9867622BF41954008D6C41 /* AppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppView.swift; sourceTree = "<group>"; };
 		CE9867642BF41A3E008D6C41 /* PlaceholderContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceholderContentView.swift; sourceTree = "<group>"; };
+		CEBAA28B2C003F4B00D43E22 /* InteractiveJobOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractiveJobOutputView.swift; sourceTree = "<group>"; };
 		CECA47A72BF6D5B8007A28F2 /* System.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = System.swift; sourceTree = "<group>"; };
 		CECA47A92BF6D62E007A28F2 /* SystemInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemInfoView.swift; sourceTree = "<group>"; };
 		CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneMessageView.swift; sourceTree = "<group>"; };
@@ -72,8 +87,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CEB773232C0160530051F41C /* Alamofire in Frameworks */,
 				CEFEB47E2BFE399500334522 /* SwiftTerm in Frameworks */,
-				CEFEB47B2BFDAABC00334522 /* AlamofireDynamic in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -103,11 +118,11 @@
 		CE4634F02BFBB4560063142E /* History */ = {
 			isa = PBXGroup;
 			children = (
-				CE4634F52BFBB4D00063142E /* ChatsSidebar.swift */,
-				CE4634F32BFBB4900063142E /* ChatSyncService.swift */,
 				CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */,
 				CEDCF2AC2BFFD63A006ABBA9 /* MultiMessageView.swift */,
 				CE4634F12BFBB4730063142E /* SequencesView.swift */,
+				CE4634F52BFBB4D00063142E /* ChatsSidebar.swift */,
+				CE4634F32BFBB4900063142E /* ChatSyncService.swift */,
 			);
 			path = History;
 			sourceTree = "<group>";
@@ -119,6 +134,7 @@
 				CE4634EA2BFA71E70063142E /* brokegen-server */,
 				CE98674F2BF4047C008D6C41 /* Brokegen */,
 				CE98674E2BF4047C008D6C41 /* Products */,
+				CEB7731D2C015F850051F41C /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -164,8 +180,16 @@
 				CEFEB4742BFDA5FB00334522 /* Monitors */,
 				CE4634EE2BFAFA340063142E /* StayAwakeService.swift */,
 				CEFEB4772BFDA6C900334522 /* TimeJob.swift */,
+				CEBAA28B2C003F4B00D43E22 /* InteractiveJobOutputView.swift */,
 			);
 			path = Jobs;
+			sourceTree = "<group>";
+		};
+		CEB7731D2C015F850051F41C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		CECA47A62BF6D59A007A28F2 /* Performance */ = {
@@ -195,6 +219,7 @@
 				CE9867492BF4047C008D6C41 /* Sources */,
 				CE98674A2BF4047C008D6C41 /* Frameworks */,
 				CE98674B2BF4047C008D6C41 /* Resources */,
+				CEB773212C015F950051F41C /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -202,8 +227,8 @@
 			);
 			name = Brokegen;
 			packageProductDependencies = (
-				CEFEB47A2BFDAABC00334522 /* AlamofireDynamic */,
 				CEFEB47D2BFE399500334522 /* SwiftTerm */,
+				CEB773222C0160530051F41C /* Alamofire */,
 			);
 			productName = Brokegen;
 			productReference = CE98674D2BF4047C008D6C41 /* Brokegen.app */;
@@ -287,6 +312,7 @@
 				CE9867612BF414B3008D6C41 /* ManagedProcess.swift in Sources */,
 				CE4634E52BFA5F890063142E /* SimpleProcess.swift in Sources */,
 				CE4634E02BF963210063142E /* BaseJob.swift in Sources */,
+				CEBAA28C2C003F4B00D43E22 /* InteractiveJobOutputView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -528,10 +554,10 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		CEFEB47A2BFDAABC00334522 /* AlamofireDynamic */ = {
+		CEB773222C0160530051F41C /* Alamofire */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = CEFEB4792BFDAABC00334522 /* XCRemoteSwiftPackageReference "Alamofire" */;
-			productName = AlamofireDynamic;
+			productName = Alamofire;
 		};
 		CEFEB47D2BFE399500334522 /* SwiftTerm */ = {
 			isa = XCSwiftPackageProductDependency;

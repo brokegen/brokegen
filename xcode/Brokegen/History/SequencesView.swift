@@ -16,7 +16,7 @@ struct SequencesView: View {
                 NavigationLink(destination: MultiMessageView(sequence.messages)) {
                     Text(
                         sequence.humanDesc ??
-                        "ChatSequence #\(sequence.serverId)")
+                        "ChatSequence #\(sequence.serverId!)")
                 }
             }
             .padding(8)
