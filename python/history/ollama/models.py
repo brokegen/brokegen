@@ -27,6 +27,7 @@ def build_executor_record(
         # thing is that the ProviderConfigRecord differs when the setup might give different results.
         'node_id': uuid.getnode(),
     }
+    executor_info = dict(sorted(executor_info.items()))
 
     maybe_executor = history_db.execute(
         select(ExecutorConfigRecord)

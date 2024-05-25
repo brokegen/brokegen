@@ -32,14 +32,10 @@ class ModelAddResponse(BaseModel):
 
 
 def construct_executor(
-        executor_info: JSONDict,
+        sorted_executor_info: JSONDict,
         created_at: datetime | None,
 ) -> ExecutorConfigRecord:
     history_db: HistoryDB = next(get_history_db())
-    sorted_executor_info: JSONDict = orjson.loads(
-        orjson.dumps(executor_info, option=orjson.OPT_SORT_KEYS)
-    )
-
     maybe_executor = history_db.execute(
         select(ExecutorConfigRecord)
         .where(ExecutorConfigRecord.executor_info == sorted_executor_info)
@@ -71,13 +67,16 @@ def install_routes(app: FastAPI):
         if model_info.executor_info is None:
             raise HTTPException(400, "Must populate `executor_info` field")
 
-        sorted_executor = construct_executor(model_info.executor_info, model_info.seen_at)
+        sorted_executor_info: JSONDict = orjson.loads(
+            orjson.dumps(model_info.executor_info, option=orjson.OPT_SORT_KEYS)
+        )
+        construct_executor(sorted_executor_info, model_info.seen_at)
 
         # TODO: Deduplicate this against history.ollama.models.fetch_model_record
         maybe_model = history_db.execute(
             select(ModelConfigRecord)
             # NB We must use the new executor info because `sorted_`
-            .where(ModelConfigRecord.executor_info == sorted_executor.executor_info,
+            .where(ModelConfigRecord.executor_info == sorted_executor_info,
                    ModelConfigRecord.human_id == model_info.human_id)
             .order_by(ModelConfigRecord.last_seen)
             .limit(1)
@@ -99,7 +98,7 @@ def install_routes(app: FastAPI):
             human_id=model_info.human_id,
             first_seen_at=model_info.seen_at,
             last_seen=model_info.seen_at,
-            executor_info=model_info.executor_info,
+            executor_info=sorted_executor_info,
             static_model_info=model_info.static_model_info,
         )
 
