@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime
 from http.client import HTTPException
@@ -6,11 +7,10 @@ from typing import Optional
 import fastapi.routing
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, Row
 
 from history.chat.database import MessageID, Message, ChatSequenceID, ChatSequence
-from history.shared.database import HistoryDB, get_db as get_history_db
-from history.shared.json import JSONDict
+from history.shared.database import HistoryDB, get_db as get_history_db, ModelConfigRecord, InferenceJob
 from inference.prompting.models import RoleName, PromptText
 
 logger = logging.getLogger(__name__)
@@ -32,6 +32,61 @@ class SequenceIn(BaseModel):
 class SequenceAddResponse(BaseModel):
     sequence_id: ChatSequenceID
     just_created: bool
+
+
+class InfoMessageOut(BaseModel):
+    """
+    This class is a bridge between "real" user/assistant messages,
+    and ModelConfigRecord changes.
+
+    TODO: Once we've written client support to render config changes,
+          remove this and replace with a real config change.
+    """
+    role: RoleName = 'model info'
+    content: PromptText
+
+
+def fetch_model_info(ij_id) -> ModelConfigRecord | None:
+    if ij_id is None:
+        return None
+
+    # NB Usually, running a query during iteration would need a second SQLAlchemy cursor-session-thing.
+    history_db = next(get_history_db())
+    return history_db.execute(
+        select(ModelConfigRecord)
+        .join(InferenceJob, InferenceJob.model_config == ModelConfigRecord.id)
+        .where(InferenceJob.id == ij_id)
+        .limit(1)
+    ).scalar_one_or_none()
+
+
+def translate_model_info(model0: ModelConfigRecord | None) -> Message:
+    if model0 is None:
+        return Message(
+            role='model config',
+            content="no info available",
+        )
+
+    return Message(
+        role='model config',
+        content=f"ModelConfigRecord: {json.dumps(model0.__dict__, indent=2)}"
+    )
+
+
+def translate_model_diff(
+        model0: ModelConfigRecord | None,
+        model1: ModelConfigRecord,
+) -> Message:
+    if model0 is None:
+        return translate_model_info(model1)
+
+    return Message(
+        role='model config',
+        # TODO: pip install jsondiff would make this simpler, and also dumber
+        content=f"ModelRecordConfigs changed:\n"
+                f"{json.dumps(model0, indent=2)}\n"
+                f"{json.dumps(model1, indent=2)}"
+    )
 
 
 def install_routes(app: FastAPI):
@@ -87,20 +142,34 @@ def install_routes(app: FastAPI):
             raise HTTPException(400, "No matching object")
 
         messages_list = []
+
+        last_seen_model: ModelConfigRecord | None = None
         sequence_id: ChatSequenceID = id
         while sequence_id is not None:
             logger.debug(f"Checking for sequence {id} => ancestor {sequence_id}")
+            message_row: Row[Message, ChatSequenceID | None, int] | None
             message_row = history_db.execute(
-                select(Message, ChatSequence.parent_sequence)
+                select(Message, ChatSequence.parent_sequence, ChatSequence.inference_job_id)
                 .join(Message, Message.id == ChatSequence.current_message)
                 .where(ChatSequence.id == sequence_id)
             ).one_or_none()
             if message_row is None:
                 break
 
-            message, parent_id = message_row
+            message, parent_id, _ = message_row
             messages_list.append(message)
             sequence_id = parent_id
+
+            if message_row[2] is not None:
+                this_model = fetch_model_info(message_row[2])
+                if last_seen_model is not None:
+                    # Since we're iterating in child-to-parent order, dump diffs backwards if something changed.
+                    messages_list.append(translate_model_diff(last_seen_model, this_model))
+
+                last_seen_model = this_model
+
+        # End of iteration, populate "initial" model info, if needed
+        messages_list.append(translate_model_info(last_seen_model))
 
         match_object.messages = messages_list[::-1]
         return match_object

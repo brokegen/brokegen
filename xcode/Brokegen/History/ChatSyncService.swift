@@ -107,7 +107,7 @@ class ChatSequence: Identifiable {
             )
             newMessage.serverId = messageJson["id"] as? Int
 
-            print("[DEBUG] Added message \(newMessage.serverId!) to Sequence#\(self.serverId!)")
+            print("[DEBUG] Added message \(newMessage.serverId ?? -1) to Sequence#\(self.serverId!)")
             messages.append(newMessage)
         }
     }

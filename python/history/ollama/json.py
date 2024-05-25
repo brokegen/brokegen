@@ -149,6 +149,10 @@ class OllamaEventBuilder:
             self,
             primordial: AsyncIterator[bytes],
     ) -> AsyncIterator[bytes]:
+        """
+        TODO: On unexpected client disconnect, an error is thrown somewhere here.
+        Catch the `starlette.requests.ClientDisconnect` in the caller.
+        """
         all_chunks = []
         async for chunk0 in primordial:
             yield chunk0

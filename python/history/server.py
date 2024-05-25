@@ -103,7 +103,8 @@ def run_proxy(data_dir, bind_port, log_level, enable_rag):
 
     history.ollama.install_forwards(app, enable_rag)
     history.ollama.install_test_points(app)
-    history.chat.routes.install_routes(app)
+    history.chat.routes_message.install_routes(app)
+    history.chat.routes_sequence.install_routes(app)
     history.shared.routes.install_routes(app)
 
     if enable_rag:

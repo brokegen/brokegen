@@ -5,7 +5,7 @@ import fastapi
 import pytest
 from starlette.testclient import TestClient
 
-import history.chat.routes
+import history.chat.routes_message
 from history.shared.database import HistoryDB
 
 
