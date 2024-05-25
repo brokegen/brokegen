@@ -179,7 +179,11 @@ class OllamaEventBuilder:
         async def post_forward_cleanup():
             for on_done_fn in on_done_fns:
                 if on_done_fn is not None:
-                    await on_done_fn(self.response_content_json or {})
+                    try:
+                        await on_done_fn(self.response_content_json or {})
+                    except RuntimeError:
+                        logger.exception(f"Failed to complete post_forward_cleanup(): {on_done_fn}")
+                        continue
 
         return starlette.responses.Response(
             content=content,

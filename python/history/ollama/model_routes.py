@@ -66,16 +66,18 @@ async def do_api_show(
         cookies=original_request.cookies,
     )
 
+    # Stash the model name, since we bothered to intercept it
+    model_name = safe_get(intercept.wrapped_event.request_info, 'name')
+
     async def on_done_fetching(response_content_json):
-        human_id = safe_get(await original_request.json(), 'name')
-        if not human_id:
+        if not model_name:
             logger.info(f"ollama /api/show: Failed to log request, JSON incomplete")
             return
 
         executor_record = build_executor_record(str(_real_ollama_client.base_url), history_db=history_db)
         model = build_model_from_api_show(
             executor_record,
-            human_id,
+            model_name,
             intercept.wrapped_event.accessed_at,
             response_content_json,
             history_db=history_db,
