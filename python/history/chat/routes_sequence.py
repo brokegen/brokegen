@@ -195,7 +195,9 @@ def install_routes(app: FastAPI):
                 this_model = fetch_model_info(message_row[2])
                 if last_seen_model is not None:
                     # Since we're iterating in child-to-parent order, dump diffs backwards if something changed.
-                    messages_list.append(translate_model_info_diff(last_seen_model, this_model))
+                    mdiff = translate_model_info_diff(last_seen_model, this_model)
+                    if mdiff is not None:
+                        messages_list.append(mdiff)
 
                 last_seen_model = this_model
 

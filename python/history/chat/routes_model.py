@@ -46,21 +46,27 @@ def translate_model_info(model0: ModelConfigRecord | None) -> Message:
 
     return Message(
         role='model config',
-        content=f"ModelConfigRecord: {json.dumps(model0.__dict__, indent=2)}"
+        content=f"ModelConfigRecord: {json.dumps(model0.as_json(), indent=2)}"
     )
 
 
 def translate_model_info_diff(
         model0: ModelConfigRecord | None,
         model1: ModelConfigRecord,
-) -> InfoMessageOut:
+) -> InfoMessageOut | None:
     if model0 is None:
         return translate_model_info(model1)
+
+    if model0 == model1:
+        return None
+
+    if model0.as_json() == model1.as_json():
+        return None
 
     return Message(
         role='model config',
         # TODO: pip install jsondiff would make this simpler, and also dumber
         content=f"ModelRecordConfigs changed:\n"
-                f"{json.dumps(model0, indent=2)}\n"
-                f"{json.dumps(model1, indent=2)}"
+                f"{json.dumps(model0.as_json(), indent=2)}\n"
+                f"{json.dumps(model1.as_json(), indent=2)}"
     )

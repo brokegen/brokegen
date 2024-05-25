@@ -114,6 +114,12 @@ class ModelConfigRecord(Base):
     assumed to be changed in response to user actions.
     """
 
+    def as_json(self) -> JSONDict:
+        cols = ModelConfigRecord.__mapper__.columns
+        return dict([
+            (col.name, getattr(self, col.name)) for col in cols
+        ])
+
 
 class InferenceJob(Base):
     """
