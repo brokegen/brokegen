@@ -17,6 +17,7 @@ from fastapi import FastAPI
 import audit
 import history
 import history.ollama
+import starlette.responses
 from audit.http import get_db as get_audit_db
 from audit.http_raw import SqlLoggingMiddleware
 from inference.embeddings.knowledge import get_knowledge
@@ -100,6 +101,15 @@ def run_proxy(data_dir, bind_port, log_level, enable_rag):
         else:
             logger.exception(f"Failed to initialize app databases")
         return
+
+    @app.head("/")
+    def head_response():
+        """
+        TODO: This should technically apply to every GET route, but we don't have much of a use case yet.
+
+        I suppose it could be done/used for API discovery.
+        """
+        return starlette.responses.Response(status_code=200)
 
     history.ollama.install_forwards(app, enable_rag)
     history.ollama.install_test_points(app)
