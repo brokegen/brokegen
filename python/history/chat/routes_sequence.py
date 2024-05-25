@@ -1,14 +1,13 @@
 import logging
 from datetime import datetime
 from http.client import HTTPException
-from typing import Optional, Any
+from typing import Optional
 
 import fastapi.routing
 import orjson
 from fastapi import FastAPI, Depends
 from pydantic import BaseModel, Json
 from sqlalchemy import select, Row
-from typing_extensions import deprecated
 
 from history.chat.database import MessageID, Message, ChatSequenceID, ChatSequence
 from history.chat.routes_model import fetch_model_info, translate_model_info_diff, translate_model_info
@@ -108,15 +107,33 @@ def install_routes(app: FastAPI):
         """
         TODO: Confirm that this function is idempotent-enough for chat imports.
         """
+        sorted_response_info = None
+        if ijob_in.response_info:
+            sorted_response_info = orjson.loads(
+                orjson.dumps(ijob_in.response_info, option=orjson.OPT_SORT_KEYS)
+            )
+        elif ijob_in.response_info_str:
+            # TODO: This is a really dumb way of sorting, seek a better way.
+            sorted_response_info = orjson.loads(
+                orjson.dumps(
+                    orjson.loads(ijob_in.response_info_str),
+                    option=orjson.OPT_SORT_KEYS,
+                )
+            )
+
         match_object = history_db.execute(
             select(InferenceJob.id)
             .filter_by(
                 model_config=ijob_in.model_config_id,
-                # TODO: Check whether these do the right thing in NULL cases
+                prompt_tokens=ijob_in.prompt_tokens,
+                prompt_eval_time=ijob_in.prompt_eval_time,
                 prompt_with_templating=ijob_in.prompt_with_templating,
                 response_created_at=ijob_in.response_created_at,
+                response_tokens=ijob_in.response_tokens,
+                response_eval_time=ijob_in.response_eval_time,
+                response_error=ijob_in.response_error,
+                response_info=sorted_response_info,
             )
-            .limit(1)
         ).scalar_one_or_none()
         if match_object is not None:
             return InferenceJobAddResponse(
@@ -133,7 +150,7 @@ def install_routes(app: FastAPI):
             response_tokens=ijob_in.response_tokens,
             response_eval_time=ijob_in.response_eval_time,
             response_error=ijob_in.response_error,
-            response_info=ijob_in.response_info or orjson.loads(ijob_in.response_info_str),
+            response_info=sorted_response_info,
         )
         history_db.add(new_object)
         history_db.commit()
