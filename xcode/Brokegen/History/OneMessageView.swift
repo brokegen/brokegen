@@ -61,7 +61,7 @@ struct OneMessageView: View {
         .frame(maxWidth: .infinity)
     }
 
-    public func expandDetails(_ expandDetails: Bool) -> OneMessageView{
+    public func expandDetails(_ expandDetails: Bool) -> OneMessageView {
         var view = self
         view.expandDetails = expandDetails
 

@@ -100,7 +100,7 @@ class ChatSequence: Identifiable {
 
         let messagesJsonList = jsonDict["messages"] as? [[String : Any]]
         for messageJson in messagesJsonList! {
-            var newMessage = Message(
+            let newMessage = Message(
                 role: messageJson["role"] as? String ?? "[invalid]",
                 content: messageJson["content"] as? String ?? "",
                 createdAt: messageJson["created_at"] as? Date

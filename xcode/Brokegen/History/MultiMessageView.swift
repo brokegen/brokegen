@@ -27,7 +27,7 @@ struct MultiMessageView: View {
 }
 
 #Preview(traits: .fixedLayout(width: 800, height: 800)) {
-    var messages: [Message] = [
+    let messages: [Message] = [
         Message(role: "user", content: "Hello this is a prompt", createdAt: Date(timeIntervalSinceNow: -604_800)),
         Message(role: "clown", content: "Hello! How can I help you today with your prompt? Please provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now),
         Message(role: "user", content: """
