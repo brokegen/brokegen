@@ -66,18 +66,18 @@ def install_routes(app: FastAPI):
     )
     async def create_model(
             model_info: ModelIn,
-            allow_duplicates: bool = False,
             history_db: HistoryDB = Depends(get_history_db),
     ) -> ModelAddResponse:
         if model_info.executor_info is None:
             raise HTTPException(400, "Must populate `executor_info` field")
 
-        construct_executor(model_info.executor_info, model_info.seen_at)
+        sorted_executor = construct_executor(model_info.executor_info, model_info.seen_at)
 
         # TODO: Deduplicate this against history.ollama.models.fetch_model_record
         maybe_model = history_db.execute(
             select(ModelConfigRecord)
-            .where(ModelConfigRecord.executor_info == model_info.executor_info,
+            # NB We must use the new executor info because `sorted_`
+            .where(ModelConfigRecord.executor_info == sorted_executor.executor_info,
                    ModelConfigRecord.human_id == model_info.human_id)
             .order_by(ModelConfigRecord.last_seen)
             .limit(1)

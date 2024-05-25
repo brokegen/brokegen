@@ -3,6 +3,11 @@ For now, we are simply intercepting and recording Ollama-like requests.
 
 Specifically, let's just record Ollama model info.
 """
+from pydantic import PositiveInt
+
+from history.shared.json import JSONDict
+from inference.prompting.models import TemplatedPromptText
+
 try:
     import orjson as json
 except ImportError:
@@ -11,7 +16,7 @@ except ImportError:
 from collections.abc import Generator
 from typing import TypeAlias
 
-from sqlalchemy import create_engine, Column, String, DateTime, JSON, Integer, NullPool, StaticPool
+from sqlalchemy import create_engine, Column, String, DateTime, JSON, Integer, NullPool, StaticPool, Double
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 SessionLocal: sessionmaker | None = None
@@ -19,7 +24,8 @@ Base = declarative_base()
 
 HistoryDB: TypeAlias = Session
 
-ModelConfigID: TypeAlias = int
+ModelConfigID: TypeAlias = PositiveInt
+InferenceJobID: TypeAlias = PositiveInt
 
 
 def load_models(db_path: str) -> None:
@@ -65,6 +71,7 @@ def get_db() -> Generator[HistoryDB]:
         db.close()
 
 
+# TODO: Consider renaming this to Provider, and which has more namespace conflicts
 class ExecutorConfigRecord(Base):
     __tablename__ = 'ExecutorConfigRecords'
 
@@ -110,15 +117,35 @@ class ModelConfigRecord(Base):
 
 class InferenceJob(Base):
     """
-    These records _should_ be most useful for things like estimating tokens/second,
-    or extrapolating time/money costs for having a different provider do the inference.
+    These are basically 1:1 with ChatSequences, though sub-queries will also generate these.
+
+    Primary purpose of these records is estimating tokens/second, or extrapolating time/money costs
+    for having a different executor do the inference.
     """
     __tablename__ = 'InferenceJobs'
 
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-    raw_prompt = Column(String)
-    "Can be NULL; in which case, we have enough in model_config to reconstruct it"
+    model_config: ModelConfigID = Column(Integer, nullable=False)
 
-    model_config: ModelConfigID = Column(Integer, nullable=False)  # ModelConfigRecord.id
-    overridden_inference_params = Column(JSON)
-    response_stats = Column(JSON)
+    prompt_tokens = Column(Integer)
+    prompt_eval_time = Column(Double)
+    "Total time in milliseconds"
+    prompt_with_templating: TemplatedPromptText | None = Column(String, nullable=True)
+    """
+    Can explicitly be NULL, in which case
+    we should have enough info across other tables to reconstruct the \"raw\" prompt
+    """
+
+    response_created_at = Column(DateTime)
+    response_tokens = Column(Integer)
+    response_eval_time = Column(Double)
+    "Total time in milliseconds"
+
+    response_error = Column(String)
+    "If this field is non-NULL, indicates that an error occurred during inference"
+    response_info: JSONDict = Column(JSON)
+    """
+    Freeform field, for additional data from the executor.
+    
+    Formerly named `response_stats`.
+    """

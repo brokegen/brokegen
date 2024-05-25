@@ -1,17 +1,19 @@
-import json
 import logging
 from datetime import datetime
 from http.client import HTTPException
-from typing import Optional
+from typing import Optional, Any
 
 import fastapi.routing
+import orjson
 from fastapi import FastAPI, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Json
 from sqlalchemy import select, Row
+from typing_extensions import deprecated
 
 from history.chat.database import MessageID, Message, ChatSequenceID, ChatSequence
-from history.shared.database import HistoryDB, get_db as get_history_db, ModelConfigRecord, InferenceJob
-from inference.prompting.models import RoleName, PromptText
+from history.chat.routes_model import fetch_model_info, translate_model_info_diff, translate_model_info
+from history.shared.database import HistoryDB, get_db as get_history_db, ModelConfigRecord, ModelConfigID, \
+    InferenceJobID, InferenceJob
 
 logger = logging.getLogger(__name__)
 
@@ -34,59 +36,28 @@ class SequenceAddResponse(BaseModel):
     just_created: bool
 
 
-class InfoMessageOut(BaseModel):
+class InferenceJobIn(BaseModel):
+    model_config_id: ModelConfigID
+
+    prompt_tokens: Optional[int] = None
+    prompt_eval_time: Optional[float] = None
+    prompt_with_templating: Optional[str] = None
+
+    response_created_at: Optional[datetime] = None
+    response_tokens: Optional[int] = None
+    response_eval_time: Optional[float] = None
+
+    response_error: Optional[str] = None
+    response_info: Optional[Json] = None
+    response_info_str: Optional[str] = None
     """
-    This class is a bridge between "real" user/assistant messages,
-    and ModelConfigRecord changes.
-
-    TODO: Once we've written client support to render config changes,
-          remove this and replace with a real config change.
+    Included for legacy reasons, aka can't figure out how to get client to encode the JSON correctly.
     """
-    role: RoleName = 'model info'
-    content: PromptText
 
 
-def fetch_model_info(ij_id) -> ModelConfigRecord | None:
-    if ij_id is None:
-        return None
-
-    # NB Usually, running a query during iteration would need a second SQLAlchemy cursor-session-thing.
-    history_db = next(get_history_db())
-    return history_db.execute(
-        select(ModelConfigRecord)
-        .join(InferenceJob, InferenceJob.model_config == ModelConfigRecord.id)
-        .where(InferenceJob.id == ij_id)
-        .limit(1)
-    ).scalar_one_or_none()
-
-
-def translate_model_info(model0: ModelConfigRecord | None) -> Message:
-    if model0 is None:
-        return Message(
-            role='model config',
-            content="no info available",
-        )
-
-    return Message(
-        role='model config',
-        content=f"ModelConfigRecord: {json.dumps(model0.__dict__, indent=2)}"
-    )
-
-
-def translate_model_diff(
-        model0: ModelConfigRecord | None,
-        model1: ModelConfigRecord,
-) -> Message:
-    if model0 is None:
-        return translate_model_info(model1)
-
-    return Message(
-        role='model config',
-        # TODO: pip install jsondiff would make this simpler, and also dumber
-        content=f"ModelRecordConfigs changed:\n"
-                f"{json.dumps(model0, indent=2)}\n"
-                f"{json.dumps(model1, indent=2)}"
-    )
+class InferenceJobAddResponse(BaseModel):
+    ijob_id: InferenceJobID
+    just_created: bool
 
 
 def install_routes(app: FastAPI):
@@ -129,6 +100,49 @@ def install_routes(app: FastAPI):
             just_created=True,
         )
 
+    @router.post("/sequences/none/inference-job")
+    def construct_inference_job(
+            ijob_in: InferenceJobIn,
+            history_db: HistoryDB = Depends(get_history_db),
+    ) -> InferenceJobAddResponse:
+        """
+        TODO: Confirm that this function is idempotent-enough for chat imports.
+        """
+        match_object = history_db.execute(
+            select(InferenceJob.id)
+            .filter_by(
+                model_config=ijob_in.model_config_id,
+                # TODO: Check whether these do the right thing in NULL cases
+                prompt_with_templating=ijob_in.prompt_with_templating,
+                response_created_at=ijob_in.response_created_at,
+            )
+            .limit(1)
+        ).scalar_one_or_none()
+        if match_object is not None:
+            return InferenceJobAddResponse(
+                ijob_id=match_object,
+                just_created=False,
+            )
+
+        new_object = InferenceJob(
+            model_config=ijob_in.model_config_id,
+            prompt_tokens=ijob_in.prompt_tokens,
+            prompt_eval_time=ijob_in.prompt_eval_time,
+            prompt_with_templating=ijob_in.prompt_with_templating,
+            response_created_at=ijob_in.response_created_at,
+            response_tokens=ijob_in.response_tokens,
+            response_eval_time=ijob_in.response_eval_time,
+            response_error=ijob_in.response_error,
+            response_info=ijob_in.response_info or orjson.loads(ijob_in.response_info_str),
+        )
+        history_db.add(new_object)
+        history_db.commit()
+
+        return InferenceJobAddResponse(
+            ijob_id=new_object.id,
+            just_created=True,
+        )
+
     @router.get("/sequences/{id:int}")
     def get_sequence(
             id: ChatSequenceID,
@@ -164,7 +178,7 @@ def install_routes(app: FastAPI):
                 this_model = fetch_model_info(message_row[2])
                 if last_seen_model is not None:
                     # Since we're iterating in child-to-parent order, dump diffs backwards if something changed.
-                    messages_list.append(translate_model_diff(last_seen_model, this_model))
+                    messages_list.append(translate_model_info_diff(last_seen_model, this_model))
 
                 last_seen_model = this_model
 
