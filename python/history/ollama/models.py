@@ -25,7 +25,7 @@ def build_executor_record(
         # https://docs.python.org/3/library/uuid.html#uuid.getnode
         # This is based on the MAC address of a network interface on the host system;the important
         # thing is that the ProviderConfigRecord differs when the setup might give different results.
-        'node-id': uuid.getnode(),
+        'node_id': uuid.getnode(),
     }
 
     maybe_executor = history_db.execute(
