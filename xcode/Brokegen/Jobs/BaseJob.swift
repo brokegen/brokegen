@@ -54,6 +54,10 @@ class Job: BaseJob {
     var displayedStatusUpdater: AnyCancellable? = nil
     var historicalStatusUpdates: [(Date, JobStatus)] = []
 
+    @Published var showRelativeTimes: Bool = false
+    var relativeTimesUpdater: AnyCancellable? = nil
+    var relativeTimesUpdaterTimer: Timer? = nil
+
     override init() {
         super.init()
 
@@ -71,6 +75,22 @@ class Job: BaseJob {
         self.status = .notStarted
 
         displayedOutput = ""
+
+        relativeTimesUpdater = self.$showRelativeTimes
+            .sink { showRelativeTimes in
+                if !showRelativeTimes {
+                    self.relativeTimesUpdaterTimer?.invalidate()
+                    self.relativeTimesUpdaterTimer = nil
+                }
+                else if self.relativeTimesUpdaterTimer == nil {
+                    self.relativeTimesUpdaterTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+                        self.updateDisplayedStatusTexts()
+                    }
+                }
+            }
+
+        // TODO: Tie this to the UI-visibility state
+        // showRelativeTimes = true
     }
 
     func status(_ status: JobStatus) -> Job {
@@ -78,21 +98,17 @@ class Job: BaseJob {
         return self
     }
 
-    func updateDisplayedStatusTexts(useRelativeTimes: Bool = true) {
-        if useRelativeTimes {
+    func updateDisplayedStatusTexts(forceRelativeTimes: Bool = false) {
+        if showRelativeTimes || forceRelativeTimes {
             var stringMaker = ""
             let referenceTime = Date.now
 
             if self.historicalStatusUpdates.count > 1 {
-                for (time, status) in self.historicalStatusUpdates.dropLast() {
+                for (time, status) in self.historicalStatusUpdates {
                     let elapsedTime = String(format: "%.3f seconds ago", referenceTime.timeIntervalSince(time))
                     stringMaker += "\(elapsedTime): status updated to \(status)\n"
                 }
                 stringMaker += "\n\n"
-            }
-
-            if let (lastTime, lastStatus) = self.historicalStatusUpdates.last {
-                stringMaker += "Last update \(lastTime): status set to \(lastStatus)"
             }
 
             self.displayedStatus = stringMaker

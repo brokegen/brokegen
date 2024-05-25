@@ -44,6 +44,11 @@ class SimplePing: Job {
             .response { r in
                 switch r.result {
                 case .success(let data):
+                    if self.status == .stopped {
+                        self.displayedOutput += "\(Date.now): timer fired after .stopped detected, exiting\n"
+                        return
+                    }
+
                     self.status = .startedWithOutput
                     self.displayedOutput += "\(Date.now): HEAD success"
                     if data != nil {
@@ -71,12 +76,12 @@ class SimplePing: Job {
     }
 
     private func terminate(because reason: String?) -> SimplePing {
-        if reason != nil {
-            self.displayedOutput += "\(Date.now): terminating because \(reason!)"
-        }
-
         timer?.invalidate()
         timer = nil
+
+        if reason != nil {
+            self.displayedOutput += "\(Date.now): terminating because \(reason!)\n"
+        }
 
         status = .stopped
         return self
