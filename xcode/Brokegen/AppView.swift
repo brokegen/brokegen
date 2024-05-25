@@ -127,6 +127,13 @@ struct AppView: View {
 
                 Divider()
                 MiniJobsSidebar()
+
+                NavigationLink(destination: SystemInfoView()) {
+                    Text("System Info")
+                        .font(.title2)
+                        .lineLimit(3)
+                }
+                .padding(32)
             }
             .listStyle(.sidebar)
             .frame(minWidth: 200, idealWidth: 400, maxHeight: .infinity)
