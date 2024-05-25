@@ -1,12 +1,49 @@
 import SwiftUI
 
+struct InlineTextInput: View {
+    @Binding var textInEdit: String
+    let textFieldMaxChars: Int
+
+    init(
+        textInEdit: Binding<String>,
+        textFieldMaxChars: Int = 280
+    ) {
+        self._textInEdit = textInEdit
+        self.textFieldMaxChars = textFieldMaxChars
+    }
+
+    var body: some View {
+        if textInEdit.count <= textFieldMaxChars {
+            TextField("Enter your message", text: $textInEdit, axis: .vertical)
+                .textFieldStyle(.plain)
+                .monospaced()
+                .lineSpacing(240)
+                .lineLimit(4...40)
+        }
+        else {
+            TextEditor(text: $textInEdit)
+                .monospaced()
+                .lineLimit(4...40)
+                .scrollDisabled(true)
+        }
+    }
+}
+
 struct MultiMessageView: View {
     let messages: [Message]
     @State var messageInEdit: String
 
-    init(_ messages: [Message]) {
+    let submitter: ((String) async -> Data?)?
+    @State var submitting: Bool
+
+    init(
+        _ messages: [Message],
+        submitter: ((String) async -> Data?)? = nil
+    ) {
         self.messages = messages
         self._messageInEdit = State(initialValue: "")
+        self.submitter = submitter
+        self._submitting = State(initialValue: false)
     }
 
     var body: some View {
@@ -17,11 +54,23 @@ struct MultiMessageView: View {
                     .padding(.top, 16)
             }
 
-            TextField("Enter your message", text: $messageInEdit, axis: .vertical)
-                .textFieldStyle(.plain)
-                .lineSpacing(140)
+            InlineTextInput(textInEdit: $messageInEdit)
+                .padding(.top, 24)
+                .padding(.bottom, 24)
                 .border(.blue)
-                .padding(24)
+                .padding(.leading, 24)
+                .padding(.trailing, 24)
+                .disabled(submitting)
+                .onSubmit {
+                    guard !submitting else { return }
+                    submitting = true
+                    Task.init {
+                        if submitter != nil {
+                            _ = await submitter!(messageInEdit)
+                        }
+                        submitting = false
+                    }
+                }
         }
     }
 }

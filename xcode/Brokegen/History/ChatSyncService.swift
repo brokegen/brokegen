@@ -191,3 +191,49 @@ class ChatSyncService: Observable, ObservableObject {
         }
     }
 }
+
+/// Finally, something to submit new chat requests
+extension ChatSyncService {
+    public func generate(_ userPrompt: String, id chatSequenceId: Int) async -> Data? {
+        let parameters: [String : Any?] = [
+            "user_prompt": userPrompt,
+            "chat_sequence_id": chatSequenceId
+        ]
+
+        do {
+            return try await withCheckedThrowingContinuation { continuation in
+                AF.request(
+                    serverBaseURL + "/generate",
+                    method: .post,
+                    parameters: parameters,
+                    encoding: JSONEncoding.default
+                )
+                .response { r in
+                    switch r.result {
+                    case .success(let data):
+                        do {
+                            guard data != nil else {
+                                continuation.resume(returning: nil)
+                                return
+                            }
+                            /// TODO: Handle streaming result
+                            print("POST /generate: \(String(data: data!, encoding: .utf8)!)")
+                            continuation.resume(returning: data!)
+                        }
+                        catch {
+                            print("POST /generate decoding failed: \(String(describing: data))")
+                            continuation.resume(returning: nil)
+                        }
+                    case .failure(let error):
+                        print("POST /generate failed: " + error.localizedDescription)
+                        continuation.resume(returning: nil)
+                    }
+                }
+            }
+        }
+        catch {
+            print("POST /generate failed: exception thrown")
+            return nil
+        }
+    }
+}
