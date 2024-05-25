@@ -4,6 +4,7 @@ import pydantic
 from sqlalchemy import Column, String, DateTime, Integer, Boolean
 
 from history.shared.database import Base
+from history.shared.json import JSONDict
 from inference.prompting.models import RoleName, PromptText
 
 MessageID: TypeAlias = pydantic.PositiveInt
@@ -23,6 +24,12 @@ class Message(Base):
 
     The rest of the data structures are… too brittle and unstructured, though.
     """
+
+    def as_json(self) -> JSONDict:
+        cols = Message.__mapper__.columns
+        return dict([
+            (col.name, getattr(self, col.name)) for col in cols
+        ])
 
 
 class ChatSequence(Base):

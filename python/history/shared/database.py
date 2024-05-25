@@ -48,14 +48,14 @@ def load_models(db_path: str) -> None:
 def load_models_pytest():
     engine = create_engine(
         'sqlite:///',
-        # Can also be done with `logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)`
-        echo=True,
         connect_args={
             "check_same_thread": False,
         },
         # https://stackoverflow.com/questions/74536228/sqlalchemy-doesnt-correctly-create-in-memory-database
         # Must be used, since in-memory database only exists in scope of connection
         poolclass=StaticPool,
+        # Can also be done with `logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)`
+        echo=True,
     )
     Base.metadata.create_all(bind=engine)
 
@@ -135,7 +135,7 @@ class InferenceJob(Base):
 
     prompt_tokens = Column(Integer)
     prompt_eval_time = Column(Double)
-    "Total time in milliseconds"
+    "Total time in seconds (Apple documentation for timeIntervalSince uses seconds, so why not)"
     prompt_with_templating: TemplatedPromptText | None = Column(String, nullable=True)
     """
     Can explicitly be NULL, in which case
@@ -145,7 +145,7 @@ class InferenceJob(Base):
     response_created_at = Column(DateTime)
     response_tokens = Column(Integer)
     response_eval_time = Column(Double)
-    "Total time in milliseconds"
+    "Total time in seconds"
 
     response_error = Column(String)
     "If this field is non-NULL, indicates that an error occurred during inference"

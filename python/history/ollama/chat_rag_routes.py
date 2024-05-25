@@ -1,5 +1,6 @@
 import logging
 from collections.abc import AsyncIterable
+from datetime import datetime
 from typing import TypeAlias, Callable, Awaitable, Any, AsyncIterator
 
 import httpx
@@ -40,10 +41,12 @@ async def do_generate_raw_templated(
         history_db,
     )
 
+    if safe_get(request_content, 'options'):
+        raise NotImplementedError("Haven't implemented handling of override options! Need to construct a new ModelConfig.")
+
     inference_job = InferenceJob(
-        raw_prompt=request_content['prompt'],
         model_config=model.id,
-        overridden_inference_params=request_content.get('options', None),
+        prompt_with_templating=request_content['prompt'],
     )
     history_db.add(inference_job)
     history_db.commit()
@@ -57,10 +60,24 @@ async def do_generate_raw_templated(
     )
 
     async def finalize_inference_job(response_content_json: OllamaResponseContentJSON):
-        response_stats = dict(response_content_json)
-
         merged_job = history_db.merge(inference_job)
-        merged_job.response_stats = response_stats
+        if safe_get(response_content_json, 'prompt_eval_count'):
+            merged_job.prompt_tokens = safe_get(response_content_json, 'prompt_eval_count')
+        if safe_get(response_content_json, 'prompt_eval_duration'):
+            merged_job.prompt_eval_time = safe_get(response_content_json, 'prompt_eval_duration') / 1e9
+
+        if safe_get(response_content_json, 'created_at'):
+            merged_job.response_created_at = datetime.fromisoformat(safe_get(response_content_json, 'created_at'))
+        if safe_get(response_content_json, 'eval_count'):
+            merged_job.response_tokens = safe_get(response_content_json, 'eval_count')
+        if safe_get(response_content_json, 'eval_duration'):
+            merged_job.response_eval_time = safe_get(response_content_json, 'eval_duration') / 1e9
+
+        # TODO: I'm not sure this is even the actual field to check
+        if safe_get(response_content_json, 'error'):
+            merged_job.response_error = safe_get(response_content_json, 'error')
+
+        merged_job.response_info = dict(response_content_json)
 
         history_db.add(merged_job)
         history_db.commit()
@@ -207,7 +224,7 @@ async def do_proxy_chat_rag(
         retrieval_policy: RetrievalPolicy,
         history_db: HistoryDB,
         audit_db: AuditDB,
-):
+) -> JSONStreamingResponse:
     request_content_bytes: bytes = await original_request.body()
     request_content_json: OllamaRequestContentJSON = orjson.loads(request_content_bytes)
 
@@ -290,23 +307,6 @@ async def do_proxy_chat_rag(
     prompt_override = await retrieval_policy.parse_chat_history(chat_messages, generate_helper_fn,
                                                                 generate_retrieval_str)
 
-    # new_access = AccessEvent(
-    #     api_bucket=f"do_proxy_chat_rag({retrieval_policy.__class__.__name__})",
-    #     accessed_at=datetime.now(tz=timezone.utc),
-    #     api_endpoint=str(original_request.url),
-    #     request={
-    #         "content": request_content_json,
-    #         "headers": original_request.headers.items(),
-    #         "method": original_request.method,
-    #         "url": str(original_request.url),
-    #     },
-    #     response={
-    #         "content": "[not recorded yet/interrupted during processing]",
-    #     },
-    # )
-    # audit_db.add(new_access)
-    # audit_db.commit()
-
     ollama_response = await convert_chat_to_generate(
         original_request,
         request_content_json,
@@ -338,8 +338,6 @@ async def do_proxy_chat_rag(
             async for chunk in primordial:
                 yield chunk
 
-        upstream_response._content_iterable = identity_proxy(upstream_response._content_iterable)
-        upstream_response._content_iterable = identity_proxy(upstream_response._content_iterable)
         upstream_response._content_iterable = identity_proxy(upstream_response._content_iterable)
         upstream_response._content_iterable = identity_proxy(upstream_response._content_iterable)
 

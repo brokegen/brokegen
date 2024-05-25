@@ -52,9 +52,11 @@ def fetch_model_record(
         model_name: str,
         history_db: HistoryDB,
 ) -> ModelConfigRecord | None:
+    sorted_executor_info = dict(sorted(executor_record.executor_info.items()))
+
     return history_db.execute(
         select(ModelConfigRecord)
-        .where(ModelConfigRecord.executor_info == executor_record.executor_info,
+        .where(ModelConfigRecord.executor_info == sorted_executor_info,
                ModelConfigRecord.human_id == model_name)
         .order_by(ModelConfigRecord.last_seen)
         .limit(1)
@@ -75,6 +77,7 @@ def build_models_from_api_tags(
         sorted_model_json = orjson.loads(
             orjson.dumps(model, option=orjson.OPT_SORT_KEYS)
         )
+        sorted_executor_info = dict(sorted(executor_record.executor_info.items()))
         modified_at = datetime.fromisoformat(sorted_model_json['modified_at'])
         # TODO: Verify whether ollama source timestamps are in UTC
         modified_at = modified_at.replace(tzinfo=None)
@@ -88,7 +91,7 @@ def build_models_from_api_tags(
             select(ModelConfigRecord)
             .where(
                 ModelConfigRecord.human_id == sorted_model_json['name'],
-                ModelConfigRecord.executor_info == executor_record.executor_info,
+                ModelConfigRecord.executor_info == sorted_executor_info,
                 details_match_statement,
             )
             .order_by(ModelConfigRecord.last_seen.desc())
@@ -138,6 +141,7 @@ def build_model_from_api_show(
     sorted_response_json = orjson.loads(
         orjson.dumps(response_json, option=orjson.OPT_SORT_KEYS)
     )
+    sorted_executor_info = dict(sorted(executor_record.executor_info.items()))
 
     static_model_info = {}
     default_inference_params = {}
@@ -174,7 +178,7 @@ def build_model_from_api_show(
         select(ModelConfigRecord)
         .where(
             ModelConfigRecord.human_id == human_id,
-            ModelConfigRecord.executor_info == executor_record.executor_info,
+            ModelConfigRecord.executor_info == sorted_executor_info,
             details_match_statement,
             ModelConfigRecord.default_inference_params == default_inference_params,
         )
@@ -196,7 +200,7 @@ def build_model_from_api_show(
         select(ModelConfigRecord)
         .where(
             ModelConfigRecord.human_id == human_id,
-            ModelConfigRecord.executor_info == executor_record.executor_info,
+            ModelConfigRecord.executor_info == sorted_executor_info,
             details_match_statement,
             ModelConfigRecord.default_inference_params.is_({}),
         )

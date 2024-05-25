@@ -194,10 +194,10 @@ class ChatSyncService: Observable, ObservableObject {
 
 /// Finally, something to submit new chat requests
 extension ChatSyncService {
-    public func generate(_ userPrompt: String, id chatSequenceId: Int) async -> Data? {
+    public func generate(_ userPrompt: String, id sequenceId: Int) async -> Data? {
         let parameters: [String : Any?] = [
             "user_prompt": userPrompt,
-            "chat_sequence_id": chatSequenceId
+            "sequence_id": sequenceId
         ]
 
         do {

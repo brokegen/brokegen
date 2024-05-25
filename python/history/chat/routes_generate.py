@@ -1,0 +1,79 @@
+import logging
+from datetime import datetime, timezone
+
+import fastapi.routing
+import orjson
+import starlette.requests
+from fastapi import FastAPI, Depends
+from pydantic import BaseModel
+from sqlalchemy import select
+
+import history.ollama
+from audit.http import AuditDB
+from audit.http import get_db as get_audit_db
+from history.chat.database import Message, ChatSequenceID, ChatSequence
+from history.chat.routes_sequence import do_get_sequence
+from history.shared.database import HistoryDB, get_db as get_history_db, ModelConfigRecord, InferenceJob
+from history.shared.json import JSONStreamingResponse
+from inference.embeddings.retrieval import SkipRetrievalPolicy
+from inference.prompting.models import PromptText
+
+logger = logging.getLogger(__name__)
+
+
+class GenerateIn(BaseModel):
+    user_prompt: PromptText
+    sequence_id: ChatSequenceID
+
+
+def install_routes(app: FastAPI):
+    router = fastapi.routing.APIRouter()
+
+    @router.post("/generate")
+    async def get_simple_chat(
+            empty_request: starlette.requests.Request,
+            params: GenerateIn,
+            history_db: HistoryDB = Depends(get_history_db),
+            audit_db: AuditDB = Depends(get_audit_db),
+    ) -> JSONStreamingResponse:
+        # Manually construct a Request object, because that's how we pass any data around
+        constructed_request = empty_request
+
+        # Manually fetch the message + model config history from our requests
+        messages_list = do_get_sequence(params.sequence_id, history_db, include_model_info_diffs=False)
+        # And append our user message as its own message
+        messages_list.append(Message(
+            role='user',
+            content=params.user_prompt,
+            created_at=datetime.now(tz=timezone.utc),
+        ))
+
+        # Fetch the latest model config from ChatSequence
+        ijob_id = history_db.execute(
+            select(InferenceJob.id)
+            .join(ChatSequence, ChatSequence.inference_job_id == InferenceJob.id)
+            .where(ChatSequence.id == params.sequence_id)
+        ).scalar_one()
+
+        model_name = history_db.execute(
+            select(ModelConfigRecord.human_id)
+            .join(InferenceJob, InferenceJob.model_config == ModelConfigRecord.id)
+            .where(InferenceJob.id == ijob_id)
+        ).scalar_one()
+
+        constructed_body = {
+            "messages": [m.as_json() for m in messages_list],
+            "model": model_name,
+        }
+        # NB This overwrites the internals of the Requests object;
+        # we should really be passing decoded versions throughout the app.
+        constructed_request._body = orjson.dumps(constructed_body)
+
+        return await history.ollama.chat_rag_routes.do_proxy_chat_rag(
+            constructed_request,
+            SkipRetrievalPolicy(),
+            history_db,
+            audit_db,
+        )
+
+    app.include_router(router)

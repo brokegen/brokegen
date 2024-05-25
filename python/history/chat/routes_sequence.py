@@ -59,6 +59,49 @@ class InferenceJobAddResponse(BaseModel):
     just_created: bool
 
 
+def do_get_sequence(
+        id: ChatSequenceID,
+        history_db: HistoryDB,
+        include_model_info_diffs: bool,
+) -> list[Message]:
+    messages_list = []
+
+    last_seen_model: ModelConfigRecord | None = None
+    sequence_id: ChatSequenceID = id
+    while sequence_id is not None:
+        logger.debug(f"Checking for sequence {id} => ancestor {sequence_id}")
+        message_row: Row[Message, ChatSequenceID | None, int] | None
+        message_row = history_db.execute(
+            select(Message, ChatSequence.parent_sequence, ChatSequence.inference_job_id)
+            .join(Message, Message.id == ChatSequence.current_message)
+            .where(ChatSequence.id == sequence_id)
+        ).one_or_none()
+        if message_row is None:
+            break
+
+        message, parent_id, _ = message_row
+        messages_list.append(message)
+        sequence_id = parent_id
+
+        # For "debug" purposes, compute the diffs even if we don't render them
+        if message_row[2] is not None:
+            this_model = fetch_model_info(message_row[2])
+            if last_seen_model is not None:
+                # Since we're iterating in child-to-parent order, dump diffs backwards if something changed.
+                mdiff = translate_model_info_diff(last_seen_model, this_model)
+                if mdiff is not None:
+                    if include_model_info_diffs:
+                        messages_list.append(mdiff)
+
+            last_seen_model = this_model
+
+    # End of iteration, populate "initial" model info, if needed
+    if include_model_info_diffs:
+        messages_list.append(translate_model_info(last_seen_model))
+
+    return messages_list[::-1]
+
+
 def install_routes(app: FastAPI):
     router = fastapi.routing.APIRouter()
 
@@ -172,40 +215,11 @@ def install_routes(app: FastAPI):
         if match_object is None:
             raise HTTPException(400, "No matching object")
 
-        messages_list = []
-
-        last_seen_model: ModelConfigRecord | None = None
-        sequence_id: ChatSequenceID = id
-        while sequence_id is not None:
-            logger.debug(f"Checking for sequence {id} => ancestor {sequence_id}")
-            message_row: Row[Message, ChatSequenceID | None, int] | None
-            message_row = history_db.execute(
-                select(Message, ChatSequence.parent_sequence, ChatSequence.inference_job_id)
-                .join(Message, Message.id == ChatSequence.current_message)
-                .where(ChatSequence.id == sequence_id)
-            ).one_or_none()
-            if message_row is None:
-                break
-
-            message, parent_id, _ = message_row
-            messages_list.append(message)
-            sequence_id = parent_id
-
-            if message_row[2] is not None:
-                this_model = fetch_model_info(message_row[2])
-                if last_seen_model is not None:
-                    # Since we're iterating in child-to-parent order, dump diffs backwards if something changed.
-                    mdiff = translate_model_info_diff(last_seen_model, this_model)
-                    if mdiff is not None:
-                        messages_list.append(mdiff)
-
-                last_seen_model = this_model
-
-        # End of iteration, populate "initial" model info, if needed
-        messages_list.append(translate_model_info(last_seen_model))
-
-        match_object.messages = messages_list[::-1]
+        # This modifies the SQLAlchemy object, when we should really have turned it into a JSON first.
+        # TODO: Turn the `match_object` into a JSON object first.
+        match_object.messages = do_get_sequence(id, history_db, include_model_info_diffs=True)
         return match_object
+
 
     @router.get("/sequences/pinned")
     def get_pinned_sequences(

@@ -74,13 +74,15 @@ async def lifespan_logging(app: FastAPI):
 @click.option('--data-dir', default='data/',
               help='Filesystem directory to store/read data from',
               type=click.Path(exists=True, writable=True, file_okay=False))
-@click.option('--bind-port', default=6635, help='uvicorn bind port')
+@click.option('--bind-port', default=6635, type=click.IntRange(0, 65535),
+              help='uvicorn bind port')
 @click.option('--log-level', default='DEBUG',
               type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'FATAL'], case_sensitive=False),
               help='loglevel to pass to Python `logging`')
-@click.option('--enable-rag', default=False,
+@click.option('--trace-sqlalchemy', default=False, type=click.BOOL)
+@click.option('--enable-rag', default=False, type=click.BOOL,
               help='Load FAISS files from --data-dir, and apply them to any /api/chat calls')
-def run_proxy(data_dir, bind_port, log_level, enable_rag):
+def run_proxy(data_dir, bind_port, log_level, trace_sqlalchemy: bool, enable_rag):
     numeric_log_level = getattr(logging, str(log_level).upper(), None)
     logging.getLogger().setLevel(level=numeric_log_level)
 
@@ -90,6 +92,9 @@ def run_proxy(data_dir, bind_port, log_level, enable_rag):
     app: FastAPI = FastAPI(
         lifespan=lifespan_logging,
     )
+
+    if trace_sqlalchemy:
+        logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
     try:
         audit.http.init_db(f"{data_dir}/audit.db")
@@ -115,6 +120,7 @@ def run_proxy(data_dir, bind_port, log_level, enable_rag):
     history.ollama.install_test_points(app)
     history.chat.routes_message.install_routes(app)
     history.chat.routes_sequence.install_routes(app)
+    history.chat.routes_generate.install_routes(app)
     history.shared.routes.install_routes(app)
 
     if enable_rag:
