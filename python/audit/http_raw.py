@@ -142,6 +142,8 @@ class HttpxLogger:
 
         # TODO: This will be a very long, slow call. Is it worth reading _here_?
         self.event.request_content = await request.aread()
+        # Write the content right back to the request. No longer streaming, but we couldn't afford that anyway.
+        request._content = self.event.request_content
 
     async def response_logger(self, response: httpx.Response):
         self.event.response_status_code = response.status_code
@@ -150,14 +152,17 @@ class HttpxLogger:
         async def post_response_wrapper(
                 joined_chunks: bytes,
         ):
-            self.event.response_content = joined_chunks
+            merged = self.audit_db.merge(self.event)
+            merged.response_content = joined_chunks
 
             try:
-                self.audit_db.add(self.event)
+                self.audit_db.add(merged)
                 self.audit_db.commit()
             except sqlalchemy.exc.SQLAlchemyError:
                 logger.exception("Failed to commit intercepted httpx traffic")
                 self.audit_db.rollback()
+
+            self.event = merged
 
         async def response_wrapper(
                 primordial: AsyncIterator[bytes],
@@ -170,9 +175,15 @@ class HttpxLogger:
 
             await post_response_wrapper(b''.join(all_chunks))
 
-        # TODO: This reaches in to monkeypatch internals, and assumes no callers will call aiter_raw()
-        response.aiter_bytes = lambda: response_wrapper(response.aiter_bytes())
+            # True ending: restore the event hooks.
+            self.client.event_hooks = self.original_event_hooks
 
+        # This reaches in to monkeypatch internals, and assumes no callers will call aiter_raw()
+        # TODO: Check if any of _our_ callers hit up aiter_raw()
+        response.original_aiter_bytes = response.aiter_bytes
+        response.aiter_bytes = lambda: response_wrapper(response.original_aiter_bytes())
+
+        # This is only the first capture; further/final capture is at the end of response_wrapper()
         await post_response_wrapper(b'')
 
     def __enter__(self):
@@ -189,4 +200,6 @@ class HttpxLogger:
         }
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.client.event_hooks = self.original_event_hooks
+        # This should reset the event hooks, but what we really want is to reset them after the capture is done.
+        # self.client.event_hooks = self.original_event_hooks
+        pass

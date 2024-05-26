@@ -237,7 +237,7 @@ class OllamaEventBuilder:
                     await on_done_fn(self.response_content_json or {})
 
         return starlette.responses.StreamingResponse(
-            content=_wrapper(upstream_response.aiter_raw()),
+            content=_wrapper(upstream_response.aiter_bytes()),
             status_code=upstream_response.status_code,
             headers=upstream_response.headers,
             background=BackgroundTask(post_forward_cleanup),
