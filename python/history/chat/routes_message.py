@@ -16,7 +16,7 @@ from inference.prompting.models import RoleName, PromptText
 logger = logging.getLogger(__name__)
 
 
-class MessageIn(BaseModel):
+class MessageIn(BaseModel, frozen=True):
     role: RoleName
     content: PromptText
     created_at: Optional[datetime] = None
@@ -79,8 +79,6 @@ def install_routes(app: FastAPI):
     )
     def get_message(
             id: MessageID,
-            request_token_count: bool = True,
-            request_generation_info: bool = True,
             history_db: HistoryDB = Depends(get_history_db),
     ) -> MessageOut:
         match_object = history_db.execute(

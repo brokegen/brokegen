@@ -1,7 +1,6 @@
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import TypeAlias, cast
 
 import httpx
 import orjson
@@ -12,8 +11,6 @@ from providers.database import HistoryDB, ProviderRecordOrm, get_db
 from providers.registry import ProviderConfig, ProviderRegistry, BaseProvider, ProviderRecord
 
 logger = logging.getLogger(__name__)
-
-SortedExecutorConfig: TypeAlias = ProviderRecordOrm
 
 _real_ollama_client = httpx.AsyncClient(
     base_url="http://localhost:11434",
@@ -62,26 +59,25 @@ class OllamaProvider(BaseProvider):
             "endpoint": self.base_url,
         }
         provider_identifiers_dict.update(local_provider_identifiers())
-
         provider_identifiers = orjson.dumps(provider_identifiers_dict, option=orjson.OPT_SORT_KEYS)
 
         # Check for existing matches
-        maybe_executor = history_db.execute(
+        maybe_provider = history_db.execute(
             select(ProviderRecordOrm)
-            .where(ProviderRecordOrm.provider_identifiers == provider_identifiers)
+            .where(ProviderRecordOrm.identifiers == provider_identifiers)
         ).scalar_one_or_none()
-        if maybe_executor is not None:
-            return ProviderRecord.from_orm(maybe_executor)
+        if maybe_provider is not None:
+            return ProviderRecord.from_orm(maybe_provider)
 
-        new_executor = ProviderRecordOrm(
-            provider_identifiers=provider_identifiers,
+        new_provider = ProviderRecordOrm(
+            identifiers=provider_identifiers,
             created_at=datetime.now(tz=timezone.utc),
             machine_info=await local_fetch_machine_info(),
         )
-        history_db.add(new_executor)
+        history_db.add(new_provider)
         history_db.commit()
 
-        return ProviderRecord.from_orm(new_executor)
+        return ProviderRecord.from_orm(new_provider)
 
 
 async def discover_servers():

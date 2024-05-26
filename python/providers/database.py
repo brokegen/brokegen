@@ -74,8 +74,8 @@ class ProviderRecordOrm(Base):
     """
     __tablename__ = 'ProviderRecords'
 
-    provider_identifiers = Column(String, primary_key=True, nullable=False)
-    "This is generally encoded JSON; it's kept as a String so it can be used as an identifier"
+    identifiers = Column(String, primary_key=True, nullable=False)
+    "This is generally just JSON; it's kept as a String so it can be used as a primary key"
     created_at = Column(DateTime, primary_key=True, nullable=False)
 
     machine_info = Column(JSON)
@@ -91,7 +91,7 @@ class ModelConfigRecord(Base):
     first_seen_at = Column(DateTime)
     last_seen = Column(DateTime)
 
-    provider_identifiers = Column(String, ForeignKey('ProviderRecords.provider_identifiers'), nullable=False)
+    provider_identifiers = Column(String, ForeignKey('ProviderRecords.identifiers'), nullable=False)
     static_model_info = Column(JSON)
     """
     Contains parameters that are not something our client can change,

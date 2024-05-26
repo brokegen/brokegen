@@ -13,7 +13,7 @@ def fetch_model_record(
         model_name: str,
         history_db: HistoryDB,
 ) -> ModelConfigRecord | None:
-    sorted_executor_info = dict(sorted(executor_record.provider_identifiers.items()))
+    sorted_executor_info = dict(sorted(executor_record.identifiers.items()))
 
     return history_db.execute(
         select(ModelConfigRecord)
@@ -38,7 +38,7 @@ def build_models_from_api_tags(
         sorted_model_json = orjson.loads(
             orjson.dumps(model, option=orjson.OPT_SORT_KEYS)
         )
-        sorted_executor_info = dict(sorted(executor_record.provider_identifiers.items()))
+        sorted_executor_info = dict(sorted(executor_record.identifiers.items()))
         modified_at = datetime.fromisoformat(sorted_model_json['modified_at'])
         # TODO: Verify whether ollama source timestamps are in UTC
         modified_at = modified_at.replace(tzinfo=None)
@@ -78,7 +78,7 @@ def build_models_from_api_tags(
             human_id=sorted_model_json['name'],
             first_seen_at=modified_at,
             last_seen=max(modified_at, accessed_at),
-            executor_info=executor_record.provider_identifiers,
+            executor_info=executor_record.identifiers,
             static_model_info=sorted_model_json,
             default_inference_params={},
         )
@@ -102,7 +102,7 @@ def build_model_from_api_show(
     sorted_response_json = orjson.loads(
         orjson.dumps(response_json, option=orjson.OPT_SORT_KEYS)
     )
-    sorted_executor_info = dict(sorted(executor_record.provider_identifiers.items()))
+    sorted_executor_info = dict(sorted(executor_record.identifiers.items()))
 
     static_model_info = {}
     default_inference_params = {}
@@ -181,7 +181,7 @@ def build_model_from_api_show(
         human_id=human_id,
         first_seen_at=accessed_at,
         last_seen=accessed_at,
-        executor_info=executor_record.provider_identifiers,
+        executor_info=executor_record.identifiers,
         static_model_info=static_model_info,
         default_inference_params=default_inference_params,
     )

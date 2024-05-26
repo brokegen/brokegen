@@ -2,7 +2,7 @@ import logging
 import os
 import subprocess
 from datetime import datetime, timezone
-from typing import TypeAlias, Union
+from typing import Union
 
 import httpx
 import orjson
@@ -14,13 +14,17 @@ from providers.registry import ProviderConfig, ProviderRegistry, BaseProvider, P
 
 logger = logging.getLogger(__name__)
 
-SortedExecutorConfig: TypeAlias = ProviderRecordOrm
-
 
 class LlamafileProvider(BaseProvider):
+    """
+    Providers are expected to be extremely lightweight, so we have an extra "launch()" function that actually starts.
+
+    TODO: Make instances share process interactions, which probably implies Borg pattern.
+    """
     filename: str
-    real_server: subprocess.Popen
-    client: httpx.AsyncClient
+    server_process: subprocess.Popen | None = None
+    server_process_cmdline: str
+    server_comms: httpx.AsyncClient
 
     def __init__(
             self,
@@ -29,14 +33,11 @@ class LlamafileProvider(BaseProvider):
             target_port: str = "1822",
     ):
         self.filename = filename
-        self.real_server = subprocess.Popen(
+        self.server_process_cmdline = (
             f"{filename} --server --nobrowser "
-            f"--port {target_port} --host {target_host}",
-            shell=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.STDOUT,
+            f"--port {target_port} --host {target_host}"
         )
-        self.client = httpx.AsyncClient(
+        self.server_comms = httpx.AsyncClient(
             base_url=f"http://{target_host}:{target_port}",
             http2=True,
             proxy=None,
@@ -46,12 +47,20 @@ class LlamafileProvider(BaseProvider):
             follow_redirects=False,
         )
 
+    def launch(self):
+        self.server_process = subprocess.Popen(
+            self.server_process_cmdline,
+            shell=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.STDOUT,
+        )
+
     async def available(self) -> bool:
-        ping1 = self.client.build_request(
+        ping1 = self.server_comms.build_request(
             method='HEAD',
             url='/',
         )
-        await self.client.send(ping1)
+        await self.server_comms.send(ping1)
         return True
 
     async def make_record(self) -> ProviderRecord:
@@ -62,26 +71,25 @@ class LlamafileProvider(BaseProvider):
             "endpoint": self.filename,
         }
         provider_identifiers_dict.update(local_provider_identifiers())
-
         provider_identifiers = orjson.dumps(provider_identifiers_dict, option=orjson.OPT_SORT_KEYS)
 
         # Check for existing matches
-        maybe_executor = history_db.execute(
+        maybe_provider = history_db.execute(
             select(ProviderRecordOrm)
-            .where(ProviderRecordOrm.provider_identifiers == provider_identifiers)
+            .where(ProviderRecordOrm.identifiers == provider_identifiers)
         ).scalar_one_or_none()
-        if maybe_executor is not None:
-            return ProviderRecord.from_orm(maybe_executor)
+        if maybe_provider is not None:
+            return ProviderRecord.from_orm(maybe_provider)
 
-        new_executor = ProviderRecordOrm(
-            provider_identifiers=provider_identifiers,
+        new_provider = ProviderRecordOrm(
+            identifiers=provider_identifiers,
             created_at=datetime.now(tz=timezone.utc),
             machine_info=await local_fetch_machine_info(),
         )
-        history_db.add(new_executor)
+        history_db.add(new_provider)
         history_db.commit()
 
-        return ProviderRecord.from_orm(new_executor)
+        return ProviderRecord.from_orm(new_provider)
 
     @staticmethod
     def from_filename(filename: str) -> Union['LlamafileProvider', None]:

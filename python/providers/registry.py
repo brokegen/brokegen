@@ -12,6 +12,7 @@ from abc import abstractmethod
 from datetime import datetime
 from typing import TypeAlias, Callable, Awaitable, Optional
 
+import orjson
 from pydantic import BaseModel, ConfigDict
 
 ProviderType: TypeAlias = str
@@ -24,17 +25,33 @@ class ProviderConfig(BaseModel):
     type: ProviderType
     id: ProviderID
 
+    model_config = ConfigDict(
+        extra='forbid',
+        frozen=True,
+    )
+
 
 class ProviderRecord(BaseModel):
-    provider_identifiers: str
+    identifiers: str
     created_at: datetime
 
     machine_info: Optional[dict] = None
     human_info: Optional[str] = None
 
     model_config = ConfigDict(
+        extra='forbid',
         from_attributes=True,
+        frozen=True,
     )
+
+    def __hash__(self) -> int:
+        return hash((
+            self.identifiers,
+            self.created_at,
+            # NB This is odd, and requires the class to be immutable
+            orjson.dumps(self.machine_info),
+            self.human_info,
+        ))
 
 
 class BaseProvider:
@@ -49,10 +66,8 @@ class BaseProvider:
 
 ProviderFactory: TypeAlias = Callable[[ProviderConfig], Awaitable[BaseProvider | None]]
 """
-This is a single combined function because it shouldn't be much overhead to instantiate a Provider.
-
-TODO: Actually, instantiating LlamafileProviders is really expensive.
-So we split off launch into a separate step.
+Try start + start is a single combined function because Providers are expected to be low overhead.
+In cases where we manage our own servers (llamafile, llama.cpp), we expect those Providers to quietly manage resources.
 """
 
 
@@ -71,8 +86,12 @@ class ProviderRegistry(_Borg):
     def __init__(self):
         _Borg.__init__(self)
 
-        if not hasattr(self, 'registered_funcs'):
+        if not hasattr(self, '_factories'):
             self._factories = []
+        if not hasattr(self, 'by_config'):
+            self.by_config = {}
+        if not hasattr(self, 'by_record'):
+            self.by_record = {}
 
     def register_factory(
             self,

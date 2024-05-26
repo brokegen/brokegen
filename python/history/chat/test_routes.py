@@ -6,6 +6,7 @@ import pytest
 from starlette.testclient import TestClient
 
 import history.chat.routes_message
+import providers
 from providers.database import HistoryDB
 
 

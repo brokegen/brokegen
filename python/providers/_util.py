@@ -23,7 +23,6 @@ def local_provider_identifiers() -> dict:
     return provider_identifiers_dict
 
 
-@functools.lru_cache(maxsize=1)
 async def local_fetch_machine_info(
         include_personal_information: bool = True,
         system_profiler_timeout: float | None = 5.0,
