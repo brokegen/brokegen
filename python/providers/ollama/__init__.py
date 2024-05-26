@@ -99,9 +99,7 @@ async def discover_servers():
     registry = ProviderRegistry()
     registry.register_factory(factory)
 
-    provider = await registry.make(ProviderConfig(type="ollama", id="http://localhost:11434"))
-    if provider:
-        await provider.make_record()
+    await registry.make(ProviderConfig(type="ollama", id="http://localhost:11434"))
 
 
 def build_executor_record(

@@ -134,6 +134,4 @@ async def discover_in(*search_paths: str):
                     yield os.path.abspath(os.path.join(rootpath, file))
 
     for file in _generate_filenames():
-        provider = await registry.make(ProviderConfig(type="llamafile", id=file))
-        if provider:
-            await provider.make_record()
+        await registry.make(ProviderConfig(type="llamafile", id=file))
