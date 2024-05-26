@@ -4,6 +4,7 @@ if __name__ == '__main__':
     # https://github.com/encode/uvicorn/issues/939
     # https://pyinstaller.org/en/latest/common-issues-and-pitfalls.html
     import multiprocessing
+
     multiprocessing.freeze_support()
 
 import logging
@@ -12,12 +13,12 @@ import sqlite3
 from contextlib import asynccontextmanager
 
 import click
+import starlette.responses
 from fastapi import FastAPI
 
 import audit
 import history
 import history.ollama
-import starlette.responses
 from audit.http import get_db as get_audit_db
 from audit.http_raw import SqlLoggingMiddleware
 from inference.embeddings.knowledge import get_knowledge
@@ -80,9 +81,17 @@ async def lifespan_logging(app: FastAPI):
               type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'FATAL'], case_sensitive=False),
               help='loglevel to pass to Python `logging`')
 @click.option('--trace-sqlalchemy', default=False, type=click.BOOL)
+@click.option('--trace-fastapi', default=True, type=click.BOOL)
 @click.option('--enable-rag', default=False, type=click.BOOL,
               help='Load FAISS files from --data-dir, and apply them to any /api/chat calls')
-def run_proxy(data_dir, bind_port, log_level, trace_sqlalchemy: bool, enable_rag):
+def run_proxy(
+        data_dir,
+        bind_port,
+        log_level,
+        trace_sqlalchemy: bool,
+        trace_fastapi: bool,
+        enable_rag,
+):
     numeric_log_level = getattr(logging, str(log_level).upper(), None)
     logging.getLogger().setLevel(level=numeric_log_level)
 
@@ -106,6 +115,12 @@ def run_proxy(data_dir, bind_port, log_level, trace_sqlalchemy: bool, enable_rag
         else:
             logger.exception(f"Failed to initialize app databases")
         return
+
+    if trace_fastapi:
+        app.add_middleware(
+            SqlLoggingMiddleware,
+            audit_db=next(get_audit_db()),
+        )
 
     @app.head("/")
     def head_response():

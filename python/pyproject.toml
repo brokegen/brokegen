@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = 'brokegen'
-version = '0.5'
+version = '0.5.1'
 license = {text = '0BSD'}
 
 # Virtually all dependencies are optional, because of how disparate our build targets are.
@@ -19,7 +19,7 @@ dependencies = [
 inference = [
     'faiss-cpu',
     'fastapi',
-    'httpx[http2]',
+    'httpx[http2]==0.27.0',
     'langchain',
     'langchain_experimental',
     'orjson',
