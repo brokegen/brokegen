@@ -5,7 +5,7 @@ struct MultiSequenceView: View {
 
     var body: some View {
         List {
-            Button("Import", systemImage: "paperplane") {
+            Button("Refresh", systemImage: "paperplane") {
                 chatService.fetchPinnedSequences()
             }
             .buttonStyle(.accessoryBar)
@@ -14,12 +14,24 @@ struct MultiSequenceView: View {
                 !s.messages.isEmpty
             }) { sequence in
                 NavigationLink(destination: OneSequenceView(sequence)) {
-                    Text(
-                        sequence.humanDesc ??
-                        "ChatSequence #\(sequence.serverId!)")
+                    VStack {
+                        let longTitle: String =
+                            (sequence.humanDesc ?? "ChatSequence #\(sequence.serverId!)") +
+                            " -- \(sequence.messages.count) messages"
+                        Text(longTitle)
+                            .font(.headline)
+
+                        if let subTitle = sequence.messages.last?.createdAt {
+                            Text(String(describing: subTitle))
+                                .font(.subheadline)
+                        }
+                    }
                 }
+                .padding(12)
+                .lineLimit(4)
             }
             .padding(8)
         }
+        .frame(maxWidth: 800)
     }
 }

@@ -99,12 +99,22 @@ class ChatSequence: Identifiable, Codable {
         humanDesc = jsonDict["human_desc"] as? String
         userPinned = jsonDict["user_pinned"] != nil
 
+        let dateFormatter = ISO8601DateFormatter()
+        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
         let messagesJsonList = jsonDict["messages"] as? [[String : Any]]
         for messageJson in messagesJsonList! {
+            var createdAt0: Date? = nil
+            if let createdAt1 = messageJson["created_at"] as? String {
+                if let createdAt2 = dateFormatter.date(from: createdAt1 + "Z") {
+                    createdAt0 = createdAt2
+                }
+            }
+
             let newMessage = Message(
                 role: messageJson["role"] as? String ?? "[invalid]",
                 content: messageJson["content"] as? String ?? "",
-                createdAt: messageJson["created_at"] as? Date
+                createdAt: createdAt0
             )
             newMessage.serverId = messageJson["id"] as? Int
 
