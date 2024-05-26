@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from history.chat.database import Message
-from history.shared.database import get_db as get_history_db, ModelConfigRecord, InferenceJob
+from providers.database import get_db as get_history_db, ModelConfigRecord, InferenceEvent
 from inference.prompting.models import RoleName, PromptText
 
 logger = logging.getLogger(__name__)
@@ -31,8 +31,8 @@ def fetch_model_info(ij_id) -> ModelConfigRecord | None:
     history_db = next(get_history_db())
     return history_db.execute(
         select(ModelConfigRecord)
-        .join(InferenceJob, InferenceJob.model_config == ModelConfigRecord.id)
-        .where(InferenceJob.id == ij_id)
+        .join(InferenceEvent, InferenceEvent.model_config == ModelConfigRecord.id)
+        .where(InferenceEvent.id == ij_id)
         .limit(1)
     ).scalar_one_or_none()
 

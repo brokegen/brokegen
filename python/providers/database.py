@@ -1,13 +1,3 @@
-"""
-For now, we are simply intercepting and recording Ollama-like requests.
-
-Specifically, let's just record Ollama model info.
-"""
-from pydantic import PositiveInt
-
-from history.shared.json import JSONDict
-from inference.prompting.models import TemplatedPromptText
-
 try:
     import orjson as json
 except ImportError:
@@ -16,8 +6,11 @@ except ImportError:
 from collections.abc import Generator
 from typing import TypeAlias
 
-from sqlalchemy import create_engine, Column, String, DateTime, JSON, Integer, NullPool, StaticPool, Double
+from pydantic import PositiveInt
+from sqlalchemy import create_engine, Column, String, DateTime, JSON, Integer, NullPool, StaticPool, Double, ForeignKey
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
+
+from inference.prompting.models import TemplatedPromptText
 
 SessionLocal: sessionmaker | None = None
 Base = declarative_base()
@@ -71,15 +64,22 @@ def get_db() -> Generator[HistoryDB]:
         db.close()
 
 
-# TODO: Consider renaming this to Provider, and which has more namespace conflicts
-class ExecutorConfigRecord(Base):
-    __tablename__ = 'ExecutorConfigRecords'
+class ProviderRecord(Base):
+    """
+    For most client code, the Provider is invisible (part of the ModelConfig).
 
-    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    This is provided separately so we can provide ModelConfigs that work across providers;
+    in the simplest case this is just sharing the model name.
+    (The advanced case is just sharing all the parameters, and maybe a checksum of the model data.)
+    """
+    __tablename__ = 'ProviderRecords'
 
-    # This should be the primary key, but the ORM layer would need us to encode it as str
-    executor_info = Column(JSON, nullable=False, unique=True)
-    created_at = Column(DateTime)
+    provider_identifiers = Column(String, primary_key=True, nullable=False)
+    "This is generally encoded JSON; it's kept as a String so it can be used as an identifier"
+    created_at = Column(DateTime, primary_key=True, nullable=False)
+
+    machine_info = Column(JSON)
+    human_info = Column(String)
 
 
 class ModelConfigRecord(Base):
@@ -91,7 +91,7 @@ class ModelConfigRecord(Base):
     first_seen_at = Column(DateTime)
     last_seen = Column(DateTime)
 
-    executor_info = Column(JSON, nullable=False)  # relationship=ExecutorConfigRecord.executor_info)
+    provider_identifiers = Column(String, ForeignKey('ProviderRecords.provider_identifiers'), nullable=False)
     static_model_info = Column(JSON)
     """
     Contains parameters that are not something our client can change,
@@ -114,14 +114,14 @@ class ModelConfigRecord(Base):
     assumed to be changed in response to user actions.
     """
 
-    def as_json(self) -> JSONDict:
+    def as_json(self):
         cols = ModelConfigRecord.__mapper__.columns
         return dict([
             (col.name, getattr(self, col.name)) for col in cols
         ])
 
 
-class InferenceJob(Base):
+class InferenceEvent(Base):
     """
     These are basically 1:1 with ChatSequences, though sub-queries will also generate these.
 
@@ -149,9 +149,7 @@ class InferenceJob(Base):
 
     response_error = Column(String)
     "If this field is non-NULL, indicates that an error occurred during inference"
-    response_info: JSONDict = Column(JSON)
+    response_info = Column(JSON)
     """
-    Freeform field, for additional data from the executor.
-    
-    Formerly named `response_stats`.
+    Freeform field, for additional data from the Provider.
     """

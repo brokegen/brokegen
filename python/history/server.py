@@ -1,4 +1,6 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
+import providers.ollama
+
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
@@ -107,7 +109,7 @@ def run_proxy(
 
     try:
         audit.http.init_db(f"{data_dir}/audit.db")
-        history.shared.database.load_models(f"{data_dir}/requests-history.db")
+        providers.database.load_models(f"{data_dir}/requests-history.db")
 
     except sqlite3.OperationalError:
         if not os.path.exists(data_dir):
@@ -131,12 +133,15 @@ def run_proxy(
         """
         return starlette.responses.Response(status_code=200)
 
-    history.ollama.install_forwards(app, enable_rag)
-    history.ollama.install_test_points(app)
-    history.chat.routes_message.install_routes(app)
-    history.chat.routes_sequence.install_routes(app)
-    history.chat.routes_generate.install_routes(app)
-    history.shared.routes.install_routes(app)
+    # history.ollama.install_forwards(app, enable_rag)
+    # history.ollama.install_test_points(app)
+    # history.chat.routes_message.install_routes(app)
+    # history.chat.routes_sequence.install_routes(app)
+    # history.chat.routes_generate.install_routes(app)
+    # history.shared.routes.install_routes(app)
+
+    asyncio.run(providers.ollama.discover_servers())
+    asyncio.run(providers.llamafile.discover_in('dist'))
 
     if enable_rag:
         get_knowledge().load_shards_from(data_dir)

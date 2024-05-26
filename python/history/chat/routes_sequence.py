@@ -6,13 +6,13 @@ from typing import Optional
 import fastapi.routing
 import orjson
 from fastapi import FastAPI, Depends
-from pydantic import BaseModel, Json
+from pydantic import BaseModel, Json, Field
 from sqlalchemy import select, Row
 
 from history.chat.database import MessageID, Message, ChatSequenceID, ChatSequence
 from history.chat.routes_model import fetch_model_info, translate_model_info_diff, translate_model_info
-from history.shared.database import HistoryDB, get_db as get_history_db, ModelConfigRecord, ModelConfigID, \
-    InferenceJobID, InferenceJob
+from providers.database import HistoryDB, get_db as get_history_db, ModelConfigRecord, ModelConfigID, \
+    InferenceJobID, InferenceEvent
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class SequenceAddResponse(BaseModel):
 
 
 class InferenceJobIn(BaseModel):
-    model_config_id: ModelConfigID
+    model_config_id: ModelConfigID = Field(alias='model_config_id_')
 
     prompt_tokens: Optional[int] = None
     prompt_eval_time: Optional[float] = None
@@ -165,7 +165,7 @@ def install_routes(app: FastAPI):
             )
 
         match_object = history_db.execute(
-            select(InferenceJob.id)
+            select(InferenceEvent.id)
             .filter_by(
                 model_config=ijob_in.model_config_id,
                 prompt_tokens=ijob_in.prompt_tokens,
@@ -184,7 +184,7 @@ def install_routes(app: FastAPI):
                 just_created=False,
             )
 
-        new_object = InferenceJob(
+        new_object = InferenceEvent(
             model_config=ijob_in.model_config_id,
             prompt_tokens=ijob_in.prompt_tokens,
             prompt_eval_time=ijob_in.prompt_eval_time,

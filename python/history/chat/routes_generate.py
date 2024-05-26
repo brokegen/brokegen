@@ -13,7 +13,7 @@ from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
 from history.chat.database import Message, ChatSequenceID, ChatSequence
 from history.chat.routes_sequence import do_get_sequence
-from history.shared.database import HistoryDB, get_db as get_history_db, ModelConfigRecord, InferenceJob
+from providers.database import HistoryDB, get_db as get_history_db, ModelConfigRecord, InferenceEvent
 from history.shared.json import JSONStreamingResponse
 from inference.embeddings.retrieval import SkipRetrievalPolicy
 from inference.prompting.models import PromptText
@@ -50,15 +50,15 @@ def install_routes(app: FastAPI):
 
         # Fetch the latest model config from ChatSequence
         ijob_id = history_db.execute(
-            select(InferenceJob.id)
-            .join(ChatSequence, ChatSequence.inference_job_id == InferenceJob.id)
+            select(InferenceEvent.id)
+            .join(ChatSequence, ChatSequence.inference_job_id == InferenceEvent.id)
             .where(ChatSequence.id == params.sequence_id)
         ).scalar_one()
 
         model_name = history_db.execute(
             select(ModelConfigRecord.human_id)
-            .join(InferenceJob, InferenceJob.model_config == ModelConfigRecord.id)
-            .where(InferenceJob.id == ijob_id)
+            .join(InferenceEvent, InferenceEvent.model_config == ModelConfigRecord.id)
+            .where(InferenceEvent.id == ijob_id)
         ).scalar_one()
 
         constructed_body = {

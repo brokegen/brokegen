@@ -9,12 +9,12 @@ import httpx
 import orjson
 from sqlalchemy import select
 
-from history.shared.database import HistoryDB, ExecutorConfigRecord, get_db
-from history.shared.json import JSONDict
+from providers.database import HistoryDB, ProviderRecord, get_db
+from providers.registry import ProviderConfig, ProviderRegistry, BaseProvider
 
 logger = logging.getLogger(__name__)
 
-SortedExecutorConfig: TypeAlias = ExecutorConfigRecord
+SortedExecutorConfig: TypeAlias = ProviderRecord
 
 _real_ollama_client = httpx.AsyncClient(
     base_url="http://localhost:11434",
@@ -27,33 +27,43 @@ _real_ollama_client = httpx.AsyncClient(
 )
 
 
-class _Borg:
-    _shared_state = {}
+class OllamaProvider(BaseProvider):
+    base_url: str
+    client: httpx.AsyncClient
 
-    def __init__(self):
-        self.__dict__ = self._shared_state
+    def __init__(self, base_url: str):
+        self.base_url = base_url
+        self.client = httpx.AsyncClient(
+            base_url=self.base_url,
+            http2=True,
+            proxy=None,
+            cert=None,
+            timeout=httpx.Timeout(2.0, read=None),
+            max_redirects=0,
+            follow_redirects=False,
+        )
 
+        logger.info(f"OllamaProvider: {base_url}")
 
-class OllamaExecutor(_Borg):
-    ollama_base_url: str
+    async def available(self) -> bool:
+        """Ping endpoint to make sure it's up"""
+        ping1 = self.client.build_request(
+            method='HEAD',
+            url='/',
+        )
+        response1 = await self.client.send(ping1)
+        if response1.status_code != 200:
+            logger.debug(f"Ping {self.base_url}: {response1.status_code=}")
+            return False
 
-    def __init__(self, base_url: str = "http://localhost:11434"):
-        _Borg.__init__(self)
-
-        if hasattr(self, 'ollama_base_url') and self.ollama_base_url != base_url:
-            logger.warning(
-                f"Not overwriting OllamaExecutor.ollama_base_url:\n"
-                f"  requested \"{base_url}\", keeping \"{self.ollama_base_url}\""
-            )
-
-        self.ollama_base_url = base_url
+        return True
 
     def build_executor_record(self):
         history_db = next(get_db())
 
-        executor_info: JSONDict = {
+        executor_info = {
             'name': "ollama",
-            'endpoint': self.ollama_base_url,
+            'endpoint': self.base_url,
         }
         executor_info.update(fetch_system_info())
         executor_info = orjson.loads(orjson.dumps(
@@ -62,13 +72,13 @@ class OllamaExecutor(_Borg):
         ))
 
         maybe_executor = history_db.execute(
-            select(ExecutorConfigRecord)
-            .where(ExecutorConfigRecord.executor_info == executor_info)
+            select(ProviderRecord)
+            .where(ProviderRecord.provider_identifiers == executor_info)
         ).scalar_one_or_none()
         if maybe_executor is not None:
             return maybe_executor
 
-        new_executor = ExecutorConfigRecord(
+        new_executor = ProviderRecord(
             executor_info=executor_info,
             created_at=datetime.now(tz=timezone.utc),
         )
@@ -80,7 +90,7 @@ class OllamaExecutor(_Borg):
 
 def fetch_system_info(
         include_personal_information: bool = True,
-) -> JSONDict:
+):
     if include_personal_information:
         system_profiler = subprocess.Popen(
             ["/usr/sbin/system_profiler", "-timeout", "5", "-json", "SPHardwareDataType"]
@@ -90,7 +100,7 @@ def fetch_system_info(
             *"/usr/sbin/system_profiler -timeout 5 -json -detailLevel mini SPHardwareDataType".split()
         )
 
-    hardware_dict: JSONDict = orjson.loads(system_profiler.stdout.read())
+    hardware_dict = orjson.loads(system_profiler.stdout.read())
 
     # If we somehow still don't have output, fall back to Python defaults
     # TODO: Add these to a standard "core" set of identifiers, the rest can be notes or whatever
@@ -118,11 +128,29 @@ def fetch_system_info(
     return software_dict
 
 
+async def discover_servers():
+    async def factory(config: ProviderConfig) -> OllamaProvider | None:
+        if config.type != 'ollama':
+            return None
+
+        maybe_provider = OllamaProvider(base_url=config.id)
+        if not await maybe_provider.available():
+            logger.info(f"OllamaProvider endpoint offline, skipping: {config.id}")
+            return None
+
+        return maybe_provider
+
+    registry = ProviderRegistry()
+    registry.register_factory(factory)
+
+    await registry.make(ProviderConfig(type="ollama", id="http://localhost:11434"))
+
+
 def build_executor_record(
         endpoint: str,
         do_commit: bool = True,
         history_db: HistoryDB | None = None,
-) -> ExecutorConfigRecord:
+) -> ProviderRecord:
     executor_singleton = OllamaExecutor()
     if endpoint != executor_singleton.ollama_base_url:
         logger.warning(f"Found `build_executor_record()` call with weird endpoint: {endpoint}")

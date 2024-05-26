@@ -5,13 +5,13 @@ import orjson
 from starlette.requests import Request
 
 from audit.http import AuditDB
-from history.ollama.executor import _real_ollama_client, build_executor_record
 from history.ollama.json import OllamaEventBuilder
 from history.ollama.model_routes import do_api_show
 from history.ollama.models import fetch_model_record
-from history.shared.database import HistoryDB, InferenceJob, ModelConfigRecord, ExecutorConfigRecord
 from history.shared.json import safe_get
 from inference.prompting.templating import apply_llm_template
+from providers.database import HistoryDB, InferenceEvent, ModelConfigRecord, ProviderRecord
+from providers.ollama import _real_ollama_client, build_executor_record
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 async def lookup_model_offline(
         model_name: str,
         history_db: HistoryDB,
-) -> Tuple[ModelConfigRecord, ExecutorConfigRecord]:
+) -> Tuple[ModelConfigRecord, ProviderRecord]:
     # TODO: Standardize on verb names, e.g. lookup for offline + fetch for maybe-online
     executor_record = build_executor_record(
         str(_real_ollama_client.base_url),
@@ -39,7 +39,7 @@ async def lookup_model(
         model_name: str,
         history_db: HistoryDB,
         audit_db: AuditDB,
-) -> Tuple[ModelConfigRecord, ExecutorConfigRecord]:
+) -> Tuple[ModelConfigRecord, ProviderRecord]:
     try:
         model, executor_record = lookup_model_offline(model_name, history_db)
 
@@ -73,7 +73,7 @@ async def do_proxy_generate(
     model, executor_record = await lookup_model(original_request, request_content_json['model'], history_db,
                                                 audit_db)
 
-    inference_job = InferenceJob(
+    inference_job = InferenceEvent(
         model_config=model.id,
         overridden_inference_params=request_content_json.get('options', None),
     )

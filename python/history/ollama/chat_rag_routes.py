@@ -11,13 +11,13 @@ import starlette.requests
 from audit.http import AuditDB
 from audit.http_raw import HttpxLogger
 from history.ollama.chat_routes import lookup_model_offline
-from history.ollama.executor import _real_ollama_client
 from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, \
     consolidate_stream, OllamaEventBuilder
-from history.shared.database import HistoryDB, InferenceJob
 from history.shared.json import JSONStreamingResponse, safe_get, JSONArray
 from inference.embeddings.retrieval import RetrievalPolicy
 from inference.prompting.templating import apply_llm_template, PromptText, TemplatedPromptText
+from providers.database import HistoryDB, InferenceEvent
+from providers.ollama import _real_ollama_client
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +42,10 @@ async def do_generate_raw_templated(
     )
 
     if safe_get(request_content, 'options'):
-        raise NotImplementedError("Haven't implemented handling of override options! Need to construct a new ModelConfig.")
+        raise NotImplementedError(
+            "Haven't implemented handling of override options! Need to construct a new ModelConfig.")
 
-    inference_job = InferenceJob(
+    inference_job = InferenceEvent(
         model_config=model.id,
         prompt_with_templating=request_content['prompt'],
     )

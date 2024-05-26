@@ -5,19 +5,19 @@ import orjson
 from sqlalchemy import select, func
 
 from history.ollama.json import OllamaResponseContentJSON
-from history.shared.database import HistoryDB, ModelConfigRecord, get_db, ExecutorConfigRecord
+from providers.database import HistoryDB, ModelConfigRecord, get_db, ProviderRecord
 
 
 def fetch_model_record(
-        executor_record: ExecutorConfigRecord,
+        executor_record: ProviderRecord,
         model_name: str,
         history_db: HistoryDB,
 ) -> ModelConfigRecord | None:
-    sorted_executor_info = dict(sorted(executor_record.executor_info.items()))
+    sorted_executor_info = dict(sorted(executor_record.provider_identifiers.items()))
 
     return history_db.execute(
         select(ModelConfigRecord)
-        .where(ModelConfigRecord.executor_info == sorted_executor_info,
+        .where(ModelConfigRecord.provider_identifiers == sorted_executor_info,
                ModelConfigRecord.human_id == model_name)
         .order_by(ModelConfigRecord.last_seen)
         .limit(1)
@@ -25,7 +25,7 @@ def fetch_model_record(
 
 
 def build_models_from_api_tags(
-        executor_record: ExecutorConfigRecord,
+        executor_record: ProviderRecord,
         accessed_at: datetime,
         response_json,
         do_commit: bool = True,
@@ -38,7 +38,7 @@ def build_models_from_api_tags(
         sorted_model_json = orjson.loads(
             orjson.dumps(model, option=orjson.OPT_SORT_KEYS)
         )
-        sorted_executor_info = dict(sorted(executor_record.executor_info.items()))
+        sorted_executor_info = dict(sorted(executor_record.provider_identifiers.items()))
         modified_at = datetime.fromisoformat(sorted_model_json['modified_at'])
         # TODO: Verify whether ollama source timestamps are in UTC
         modified_at = modified_at.replace(tzinfo=None)
@@ -52,7 +52,7 @@ def build_models_from_api_tags(
             select(ModelConfigRecord)
             .where(
                 ModelConfigRecord.human_id == sorted_model_json['name'],
-                ModelConfigRecord.executor_info == sorted_executor_info,
+                ModelConfigRecord.provider_identifiers == sorted_executor_info,
                 details_match_statement,
             )
             .order_by(ModelConfigRecord.last_seen.desc())
@@ -78,7 +78,7 @@ def build_models_from_api_tags(
             human_id=sorted_model_json['name'],
             first_seen_at=modified_at,
             last_seen=max(modified_at, accessed_at),
-            executor_info=executor_record.executor_info,
+            executor_info=executor_record.provider_identifiers,
             static_model_info=sorted_model_json,
             default_inference_params={},
         )
@@ -89,7 +89,7 @@ def build_models_from_api_tags(
 
 
 def build_model_from_api_show(
-        executor_record: ExecutorConfigRecord,
+        executor_record: ProviderRecord,
         human_id: str,
         accessed_at: datetime,
         response_json: OllamaResponseContentJSON,
@@ -102,7 +102,7 @@ def build_model_from_api_show(
     sorted_response_json = orjson.loads(
         orjson.dumps(response_json, option=orjson.OPT_SORT_KEYS)
     )
-    sorted_executor_info = dict(sorted(executor_record.executor_info.items()))
+    sorted_executor_info = dict(sorted(executor_record.provider_identifiers.items()))
 
     static_model_info = {}
     default_inference_params = {}
@@ -139,7 +139,7 @@ def build_model_from_api_show(
         select(ModelConfigRecord)
         .where(
             ModelConfigRecord.human_id == human_id,
-            ModelConfigRecord.executor_info == sorted_executor_info,
+            ModelConfigRecord.provider_identifiers == sorted_executor_info,
             details_match_statement,
             ModelConfigRecord.default_inference_params == default_inference_params,
         )
@@ -161,7 +161,7 @@ def build_model_from_api_show(
         select(ModelConfigRecord)
         .where(
             ModelConfigRecord.human_id == human_id,
-            ModelConfigRecord.executor_info == sorted_executor_info,
+            ModelConfigRecord.provider_identifiers == sorted_executor_info,
             details_match_statement,
             ModelConfigRecord.default_inference_params.is_({}),
         )
@@ -181,7 +181,7 @@ def build_model_from_api_show(
         human_id=human_id,
         first_seen_at=accessed_at,
         last_seen=accessed_at,
-        executor_info=executor_record.executor_info,
+        executor_info=executor_record.provider_identifiers,
         static_model_info=static_model_info,
         default_inference_params=default_inference_params,
     )

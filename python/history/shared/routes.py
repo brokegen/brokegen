@@ -8,8 +8,8 @@ from fastapi import FastAPI, Depends
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 
-from history.shared.database import HistoryDB, get_db as get_history_db, ModelConfigRecord, ModelConfigID, \
-    ExecutorConfigRecord
+from providers.database import HistoryDB, get_db as get_history_db, ModelConfigRecord, ModelConfigID, \
+    ProviderRecord
 from history.shared.json import JSONDict
 
 
@@ -34,16 +34,16 @@ class ModelAddResponse(BaseModel):
 def construct_executor(
         sorted_executor_info: JSONDict,
         created_at: datetime | None,
-) -> ExecutorConfigRecord:
+) -> ProviderRecord:
     history_db: HistoryDB = next(get_history_db())
     maybe_executor = history_db.execute(
-        select(ExecutorConfigRecord)
-        .where(ExecutorConfigRecord.executor_info == sorted_executor_info)
+        select(ProviderRecord)
+        .where(ProviderRecord.provider_identifiers == sorted_executor_info)
     ).scalar_one_or_none()
     if maybe_executor is not None:
         return maybe_executor
 
-    new_executor = ExecutorConfigRecord(
+    new_executor = ProviderRecord(
         executor_info=sorted_executor_info,
         created_at=created_at or datetime.now(tz=timezone.utc),
     )
@@ -76,7 +76,7 @@ def install_routes(app: FastAPI):
         maybe_model = history_db.execute(
             select(ModelConfigRecord)
             # NB We must use the new executor info because `sorted_`
-            .where(ModelConfigRecord.executor_info == sorted_executor_info,
+            .where(ModelConfigRecord.provider_identifiers == sorted_executor_info,
                    ModelConfigRecord.human_id == model_info.human_id)
             .order_by(ModelConfigRecord.last_seen)
             .limit(1)
