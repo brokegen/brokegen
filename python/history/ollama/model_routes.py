@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 
 import httpx
 from fastapi import Request
@@ -29,6 +30,7 @@ async def do_api_tags(
 ):
     logger.debug(f"ollama proxy: start handler for GET /api/tags")
     intercept = OllamaEventBuilder("ollama:/api/tags", audit_db)
+    cached_accessed_at = intercept.wrapped_event.accessed_at
 
     upstream_request = _real_ollama_client.build_request(
         method=original_request.method,
@@ -42,7 +44,7 @@ async def do_api_tags(
         executor_record = build_executor_record(str(_real_ollama_client.base_url), history_db=history_db)
         build_models_from_api_tags(
             executor_record,
-            intercept.wrapped_event.accessed_at,
+            cached_accessed_at,
             response_content_json,
             history_db=history_db,
         )
