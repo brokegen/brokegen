@@ -16,7 +16,7 @@
 		CE4634EB2BFA71E70063142E /* brokegen-server in Resources */ = {isa = PBXBuildFile; fileRef = CE4634EA2BFA71E70063142E /* brokegen-server */; };
 		CE4634ED2BFAE3020063142E /* RestartableProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634EC2BFAE3020063142E /* RestartableProcess.swift */; };
 		CE4634EF2BFAFA340063142E /* StayAwakeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634EE2BFAFA340063142E /* StayAwakeService.swift */; };
-		CE4634F22BFBB4730063142E /* SequencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634F12BFBB4730063142E /* SequencesView.swift */; };
+		CE4634F22BFBB4730063142E /* MultiSequenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634F12BFBB4730063142E /* MultiSequenceView.swift */; };
 		CE4634F42BFBB4900063142E /* ChatSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634F32BFBB4900063142E /* ChatSyncService.swift */; };
 		CE4634F62BFBB4D00063142E /* ChatsSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634F52BFBB4D00063142E /* ChatsSidebar.swift */; };
 		CE6D8A7F2BF6DF1800A7934D /* RibbonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */; };
@@ -32,7 +32,7 @@
 		CECA47A82BF6D5B8007A28F2 /* System.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECA47A72BF6D5B8007A28F2 /* System.swift */; };
 		CECA47AA2BF6D62E007A28F2 /* SystemInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECA47A92BF6D62E007A28F2 /* SystemInfoView.swift */; };
 		CEDCF2AB2BFFD623006ABBA9 /* OneMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */; };
-		CEDCF2AD2BFFD63A006ABBA9 /* MultiMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDCF2AC2BFFD63A006ABBA9 /* MultiMessageView.swift */; };
+		CEDCF2AD2BFFD63A006ABBA9 /* OneSequenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDCF2AC2BFFD63A006ABBA9 /* OneSequenceView.swift */; };
 		CEFEB4762BFDA67400334522 /* SimplePing.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFEB4752BFDA67400334522 /* SimplePing.swift */; };
 		CEFEB4782BFDA6C900334522 /* TimeJob.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFEB4772BFDA6C900334522 /* TimeJob.swift */; };
 		CEFEB47E2BFE399500334522 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = CEFEB47D2BFE399500334522 /* SwiftTerm */; };
@@ -61,7 +61,7 @@
 		CE4634EA2BFA71E70063142E /* brokegen-server */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = "brokegen-server"; path = "../dist/brokegen-server"; sourceTree = "<group>"; };
 		CE4634EC2BFAE3020063142E /* RestartableProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestartableProcess.swift; sourceTree = "<group>"; };
 		CE4634EE2BFAFA340063142E /* StayAwakeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StayAwakeService.swift; sourceTree = "<group>"; };
-		CE4634F12BFBB4730063142E /* SequencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequencesView.swift; sourceTree = "<group>"; };
+		CE4634F12BFBB4730063142E /* MultiSequenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiSequenceView.swift; sourceTree = "<group>"; };
 		CE4634F32BFBB4900063142E /* ChatSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSyncService.swift; sourceTree = "<group>"; };
 		CE4634F52BFBB4D00063142E /* ChatsSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatsSidebar.swift; sourceTree = "<group>"; };
 		CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RibbonView.swift; sourceTree = "<group>"; };
@@ -77,7 +77,7 @@
 		CECA47A72BF6D5B8007A28F2 /* System.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = System.swift; sourceTree = "<group>"; };
 		CECA47A92BF6D62E007A28F2 /* SystemInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemInfoView.swift; sourceTree = "<group>"; };
 		CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneMessageView.swift; sourceTree = "<group>"; };
-		CEDCF2AC2BFFD63A006ABBA9 /* MultiMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiMessageView.swift; sourceTree = "<group>"; };
+		CEDCF2AC2BFFD63A006ABBA9 /* OneSequenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneSequenceView.swift; sourceTree = "<group>"; };
 		CEFEB4752BFDA67400334522 /* SimplePing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimplePing.swift; sourceTree = "<group>"; };
 		CEFEB4772BFDA6C900334522 /* TimeJob.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeJob.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -119,8 +119,8 @@
 			isa = PBXGroup;
 			children = (
 				CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */,
-				CEDCF2AC2BFFD63A006ABBA9 /* MultiMessageView.swift */,
-				CE4634F12BFBB4730063142E /* SequencesView.swift */,
+				CEDCF2AC2BFFD63A006ABBA9 /* OneSequenceView.swift */,
+				CE4634F12BFBB4730063142E /* MultiSequenceView.swift */,
 				CE4634F52BFBB4D00063142E /* ChatsSidebar.swift */,
 				CE4634F32BFBB4900063142E /* ChatSyncService.swift */,
 			);
@@ -295,14 +295,14 @@
 				CECA47AA2BF6D62E007A28F2 /* SystemInfoView.swift in Sources */,
 				CEFEB4762BFDA67400334522 /* SimplePing.swift in Sources */,
 				CE4634DE2BF937320063142E /* JobsSidebar.swift in Sources */,
-				CE4634F22BFBB4730063142E /* SequencesView.swift in Sources */,
+				CE4634F22BFBB4730063142E /* MultiSequenceView.swift in Sources */,
 				CE9867632BF41954008D6C41 /* AppView.swift in Sources */,
 				CE4634F62BFBB4D00063142E /* ChatsSidebar.swift in Sources */,
 				CE9867652BF41A3E008D6C41 /* PlaceholderContentView.swift in Sources */,
 				CE8229AF2BF7306000029DC2 /* JobsManagerService.swift in Sources */,
 				CEFEB4782BFDA6C900334522 /* TimeJob.swift in Sources */,
 				CE4634ED2BFAE3020063142E /* RestartableProcess.swift in Sources */,
-				CEDCF2AD2BFFD63A006ABBA9 /* MultiMessageView.swift in Sources */,
+				CEDCF2AD2BFFD63A006ABBA9 /* OneSequenceView.swift in Sources */,
 				CE4634F42BFBB4900063142E /* ChatSyncService.swift in Sources */,
 				CE4634EF2BFAFA340063142E /* StayAwakeService.swift in Sources */,
 				CE9867512BF4047C008D6C41 /* BrokegenApp.swift in Sources */,

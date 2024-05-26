@@ -69,11 +69,31 @@ def install_routes(app: FastAPI):
         # we should really be passing decoded versions throughout the app.
         constructed_request._body = orjson.dumps(constructed_body)
 
-        return await history.ollama.chat_rag_routes.do_proxy_chat_rag(
-            constructed_request,
-            SkipRetrievalPolicy(),
-            history_db,
-            audit_db,
-        )
+        # Wrap the output in a… something that appends new ChatSequence information
+        async def wrap_response(
+                upstream_response: JSONStreamingResponse,
+        ) -> JSONStreamingResponse:
+            async def almost_identity_proxy(primordial):
+                async for chunk in primordial:
+                    chunk_json = orjson.loads(chunk)
+                    if chunk_json["done"]:
+                        chunk_json["new_sequence_id"] = -1
+                        chunk_json["error"] = "sequence id's not actually implemented"
+                        yield orjson.dumps(chunk_json)
+                        return
+
+                    yield chunk
+
+            upstream_response._content_iterable = almost_identity_proxy(upstream_response._content_iterable)
+
+            return upstream_response
+
+        return await wrap_response(
+            await history.ollama.chat_rag_routes.do_proxy_chat_rag(
+                constructed_request,
+                SkipRetrievalPolicy(),
+                history_db,
+                audit_db,
+        ))
 
     app.include_router(router)

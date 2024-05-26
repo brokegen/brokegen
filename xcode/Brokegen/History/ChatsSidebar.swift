@@ -28,13 +28,7 @@ struct ChatsSidebar: View {
             Text("Last quarter: Lakers")
         }
 
-        NavigationLink(destination: MultiMessageView(chatService.loadedMessages)) {
-            Spacer()
-            Label("Messages", systemImage: "slider.horizontal.3")
-        }
-        .frame(maxWidth: .infinity)
-
-        NavigationLink(destination: SequencesView()) {
+        NavigationLink(destination: MultiSequenceView()) {
             Spacer()
             Label("Sequences", systemImage: "slider.horizontal.3")
         }

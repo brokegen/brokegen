@@ -1,8 +1,9 @@
 import Alamofire
+import Combine
 import Foundation
 import SwiftData
 
-class Message: Identifiable {
+class Message: Identifiable, Codable {
     let id: UUID = UUID()
     var serverId: Int?
 
@@ -82,7 +83,7 @@ extension Message: Hashable {
     }
 }
 
-class ChatSequence: Identifiable {
+class ChatSequence: Identifiable, Codable {
     let id: UUID = UUID()
     var serverId: Int?
 
@@ -116,11 +117,20 @@ class ChatSequence: Identifiable {
 @Observable
 class ChatSyncService: Observable, ObservableObject {
     var serverBaseURL: String = "http://127.0.0.1:6635"
+    let session: Alamofire.Session = {
+        // Increase the TCP timeoutIntervalForRequest to 24 hours (configurable),
+        // since we expect Ollama models to sometimes take a long time.
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 24 * 3600.0
+        configuration.timeoutIntervalForResource = 7 * 24 * 3600.0
+
+        return Alamofire.Session(configuration: configuration)
+    }()
 
     private func getData(_ endpoint: String) async -> Data? {
         do {
             return try await withCheckedThrowingContinuation { continuation in
-                AF.request(
+                session.request(
                     serverBaseURL + endpoint,
                     method: .get
                 )
@@ -194,46 +204,47 @@ class ChatSyncService: Observable, ObservableObject {
 
 /// Finally, something to submit new chat requests
 extension ChatSyncService {
-    public func generate(_ userPrompt: String, id sequenceId: Int) async -> Data? {
-        let parameters: [String : Any?] = [
-            "user_prompt": userPrompt,
-            "sequence_id": sequenceId
-        ]
+    public func streamGenerate(
+        _ userPrompt: String,
+        id sequenceId: Int
+    ) async -> AnyPublisher<Data, AFError> {
+        let subject = PassthroughSubject<Data, AFError>()
 
-        do {
-            return try await withCheckedThrowingContinuation { continuation in
-                AF.request(
-                    serverBaseURL + "/generate",
-                    method: .post,
-                    parameters: parameters,
-                    encoding: JSONEncoding.default
-                )
-                .response { r in
-                    switch r.result {
-                    case .success(let data):
-                        do {
-                            guard data != nil else {
-                                continuation.resume(returning: nil)
-                                return
-                            }
-                            /// TODO: Handle streaming result
-                            print("POST /generate: \(String(data: data!, encoding: .utf8)!)")
-                            continuation.resume(returning: data!)
-                        }
-                        catch {
-                            print("POST /generate decoding failed: \(String(describing: data))")
-                            continuation.resume(returning: nil)
-                        }
-                    case .failure(let error):
-                        print("POST /generate failed: " + error.localizedDescription)
-                        continuation.resume(returning: nil)
-                    }
+        struct Parameters: Codable {
+            var userPrompt: String
+            var sequenceId: Int
+        }
+
+        let parameters = Parameters(userPrompt: userPrompt, sequenceId: sequenceId)
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+
+        _ = session.streamRequest(
+            serverBaseURL + "/generate"
+        ) { urlRequest in
+            urlRequest.method = .post
+            urlRequest.headers = [
+                "Content-Type": "application/json"
+            ]
+            urlRequest.httpBody = try encoder.encode(parameters)
+        }
+        .responseStream { stream in
+            switch stream.event {
+            case let .stream(result):
+                switch result {
+                case let .success(data):
+                    subject.send(data)
+                }
+            case let .complete(completion):
+                if completion.error == nil {
+                    subject.send(completion: .finished)
+                }
+                else {
+                    subject.send(completion: .failure(completion.error!))
                 }
             }
         }
-        catch {
-            print("POST /generate failed: exception thrown")
-            return nil
-        }
+
+        return subject.eraseToAnyPublisher()
     }
 }

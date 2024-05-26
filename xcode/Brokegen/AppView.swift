@@ -108,13 +108,13 @@ struct AppView: View {
                     .foregroundStyle(.primary)
                     .padding(6)
                 ) {
-                    NavigationLink(destination: SequencesView()) {
+                    NavigationLink(destination: MultiSequenceView()) {
                         Spacer()
                         Label("[All Chats]", systemImage: "slider.horizontal.3")
                     }
                     .frame(maxWidth: .infinity)
 
-                    NavigationLink(destination: SequencesView()) {
+                    NavigationLink(destination: MultiSequenceView()) {
                         Spacer()
                         Label("Import", systemImage: "paperplane")
                             .onAppear {
@@ -139,7 +139,7 @@ struct AppView: View {
             .frame(minWidth: 200, idealWidth: 400, maxHeight: .infinity)
             .toolbar(.hidden)
         }, detail: {
-            SequencesView()
+            MultiSequenceView()
         })
         .navigationTitle("")
     }

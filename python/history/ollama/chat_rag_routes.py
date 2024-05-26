@@ -316,23 +316,9 @@ async def do_proxy_chat_rag(
     )
 
     async def wrap_response(
-            # access: AccessEvent,
             upstream_response: JSONStreamingResponse,
             log_output: bool = True,
     ) -> JSONStreamingResponse:
-        response_json = {
-            'status_code': upstream_response.status_code,
-            'headers': upstream_response.headers.items(),
-            'cookies': "[where are these]",
-            'content': "[not implemented, either]",
-        }
-
-        # merged_access = audit_db.merge(access)
-        # merged_access.response = response_json
-        #
-        # audit_db.add(merged_access)
-        # audit_db.commit()
-
         async def identity_proxy(primordial):
             """This mostly exists for regression testing/checking, unfortunately"""
             async for chunk in primordial:
@@ -364,7 +350,7 @@ async def do_proxy_chat_rag(
 
                 if buffered_text:
                     print(buffered_text)
-                    buffered_text = ''
+                    del buffered_text
 
                 async def replay_chunks():
                     for chunk in stored_chunks:
@@ -374,11 +360,7 @@ async def do_proxy_chat_rag(
                     async for chunk in primo:
                         yield orjson.loads(chunk)
 
-                consolidated = await consolidate_stream(to_json(replay_chunks()))
-                # merged_access = audit_db.merge(access)
-                # merged_access.response = consolidated
-                # audit_db.add(merged_access)
-                # audit_db.commit()
+                _ = await consolidate_stream(to_json(replay_chunks()))
 
             upstream_response._content_iterable = big_fake_tee(upstream_response._content_iterable)
             return upstream_response
