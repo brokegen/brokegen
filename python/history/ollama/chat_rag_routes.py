@@ -11,7 +11,7 @@ import starlette.requests
 from audit.http import AuditDB
 from audit.http_raw import HttpxLogger
 from history.ollama.chat_routes import lookup_model_offline
-from history.ollama.forward_routes import _real_ollama_client
+from history.ollama.executor import _real_ollama_client
 from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, \
     consolidate_stream, OllamaEventBuilder
 from history.shared.database import HistoryDB, InferenceJob

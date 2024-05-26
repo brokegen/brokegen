@@ -1,50 +1,11 @@
 import json
-import platform
-import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 
 import orjson
 from sqlalchemy import select, func
 
 from history.ollama.json import OllamaResponseContentJSON
 from history.shared.database import HistoryDB, ModelConfigRecord, get_db, ExecutorConfigRecord
-
-
-def build_executor_record(
-        endpoint: str,
-        do_commit: bool = True,
-        history_db: HistoryDB | None = None,
-) -> ExecutorConfigRecord:
-    if history_db is None:
-        history_db = next(get_db())
-
-    executor_info = {
-        'name': "ollama",
-        'endpoint': endpoint,
-        'platform': platform.platform(),
-        # https://docs.python.org/3/library/uuid.html#uuid.getnode
-        # This is based on the MAC address of a network interface on the host system;the important
-        # thing is that the ProviderConfigRecord differs when the setup might give different results.
-        'node_id': uuid.getnode(),
-    }
-    executor_info = dict(sorted(executor_info.items()))
-
-    maybe_executor = history_db.execute(
-        select(ExecutorConfigRecord)
-        .where(ExecutorConfigRecord.executor_info == executor_info)
-    ).scalar_one_or_none()
-    if maybe_executor is not None:
-        return maybe_executor
-
-    new_executor = ExecutorConfigRecord(
-        executor_info=executor_info,
-        created_at=datetime.now(tz=timezone.utc),
-    )
-    history_db.add(new_executor)
-    if do_commit:
-        history_db.commit()
-
-    return new_executor
 
 
 def fetch_model_record(

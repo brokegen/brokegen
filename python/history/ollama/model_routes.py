@@ -6,7 +6,8 @@ from fastapi import Request
 
 from audit.http import AuditDB
 from history.ollama.json import OllamaEventBuilder
-from history.ollama.models import build_executor_record, build_model_from_api_show, build_models_from_api_tags
+from history.ollama.models import build_model_from_api_show, build_models_from_api_tags
+from history.ollama.executor import build_executor_record
 from history.shared.database import HistoryDB
 from history.shared.json import safe_get
 

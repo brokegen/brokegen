@@ -5,10 +5,10 @@ import orjson
 from starlette.requests import Request
 
 from audit.http import AuditDB
-from history.ollama.forward_routes import _real_ollama_client
+from history.ollama.executor import _real_ollama_client, build_executor_record
 from history.ollama.json import OllamaEventBuilder
 from history.ollama.model_routes import do_api_show
-from history.ollama.models import build_executor_record, fetch_model_record
+from history.ollama.models import fetch_model_record
 from history.shared.database import HistoryDB, InferenceJob, ModelConfigRecord, ExecutorConfigRecord
 from history.shared.json import safe_get
 from inference.prompting.templating import apply_llm_template

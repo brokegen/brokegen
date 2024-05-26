@@ -12,7 +12,9 @@ from history.shared.database import HistoryDB
 @pytest.fixture(scope='session')
 def chat_test_app():
     test_app = fastapi.FastAPI()
-    history.chat.routes.install_routes(test_app)
+    history.chat.routes_generate.install_routes(test_app)
+    history.chat.routes_message.install_routes(test_app)
+    history.chat.routes_sequence.install_routes(test_app)
 
     yield test_app
 

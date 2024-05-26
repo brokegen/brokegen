@@ -21,11 +21,13 @@ struct PrettyDate: View {
 }
 
 struct OneMessageView: View {
-    var message: Message
+    let message: Message
+    let sequence: ChatSequence?
     @State var expandDetails: Bool
 
-    init(_ message: Message) {
+    init(_ message: Message, sequence: ChatSequence? = nil) {
         self.message = message
+        self.sequence = sequence
         self._expandDetails = State(initialValue: false)
     }
 
@@ -57,6 +59,8 @@ struct OneMessageView: View {
             }
 
             Text(message.content)
+                .monospaced()
+                .lineSpacing(6)
         }
         .frame(maxWidth: .infinity)
     }

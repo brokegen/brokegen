@@ -10,17 +10,8 @@ from typing_extensions import deprecated
 
 from audit.http import AuditDB
 from audit.http_raw import HttpxLogger
+from history.ollama.executor import _real_ollama_client
 from history.ollama.json import OllamaEventBuilder, OllamaResponseContentJSON
-
-_real_ollama_client = httpx.AsyncClient(
-    base_url="http://localhost:11434",
-    http2=True,
-    proxy=None,
-    cert=None,
-    timeout=httpx.Timeout(2.0, read=None),
-    max_redirects=0,
-    follow_redirects=False,
-)
 
 logger = logging.getLogger(__name__)
 
