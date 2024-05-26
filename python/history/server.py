@@ -1,12 +1,9 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
-import providers.ollama
-
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
     # https://pyinstaller.org/en/latest/common-issues-and-pitfalls.html
     import multiprocessing
-
     multiprocessing.freeze_support()
 
 import logging
@@ -21,6 +18,7 @@ from fastapi import FastAPI
 import audit
 import history
 import history.ollama
+import providers.ollama
 from audit.http import get_db as get_audit_db
 from audit.http_raw import SqlLoggingMiddleware
 from inference.embeddings.knowledge import get_knowledge
@@ -133,15 +131,15 @@ def run_proxy(
         """
         return starlette.responses.Response(status_code=200)
 
-    # history.ollama.install_forwards(app, enable_rag)
-    # history.ollama.install_test_points(app)
-    # history.chat.routes_message.install_routes(app)
-    # history.chat.routes_sequence.install_routes(app)
-    # history.chat.routes_generate.install_routes(app)
-    # history.shared.routes.install_routes(app)
-
     asyncio.run(providers.ollama.discover_servers())
     asyncio.run(providers.llamafile.discover_in('dist'))
+
+    history.ollama.install_forwards(app, enable_rag)
+    history.ollama.install_test_points(app)
+    history.chat.routes_message.install_routes(app)
+    history.chat.routes_sequence.install_routes(app)
+    history.chat.routes_generate.install_routes(app)
+    history.shared.routes.install_routes(app)
 
     if enable_rag:
         get_knowledge().load_shards_from(data_dir)

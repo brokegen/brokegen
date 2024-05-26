@@ -10,7 +10,7 @@ from history.ollama.model_routes import do_api_show
 from history.ollama.models import fetch_model_record
 from history.shared.json import safe_get
 from inference.prompting.templating import apply_llm_template
-from providers.database import HistoryDB, InferenceEvent, ModelConfigRecord, ProviderRecord
+from providers.database import HistoryDB, InferenceEvent, ModelConfigRecord, ProviderRecordOrm
 from providers.ollama import _real_ollama_client, build_executor_record
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 async def lookup_model_offline(
         model_name: str,
         history_db: HistoryDB,
-) -> Tuple[ModelConfigRecord, ProviderRecord]:
+) -> Tuple[ModelConfigRecord, ProviderRecordOrm]:
     # TODO: Standardize on verb names, e.g. lookup for offline + fetch for maybe-online
     executor_record = build_executor_record(
         str(_real_ollama_client.base_url),
@@ -39,7 +39,7 @@ async def lookup_model(
         model_name: str,
         history_db: HistoryDB,
         audit_db: AuditDB,
-) -> Tuple[ModelConfigRecord, ProviderRecord]:
+) -> Tuple[ModelConfigRecord, ProviderRecordOrm]:
     try:
         model, executor_record = lookup_model_offline(model_name, history_db)
 

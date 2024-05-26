@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 
 from providers.database import HistoryDB, get_db as get_history_db, ModelConfigRecord, ModelConfigID, \
-    ProviderRecord
+    ProviderRecordOrm
 from history.shared.json import JSONDict
 
 
@@ -34,16 +34,16 @@ class ModelAddResponse(BaseModel):
 def construct_executor(
         sorted_executor_info: JSONDict,
         created_at: datetime | None,
-) -> ProviderRecord:
+) -> ProviderRecordOrm:
     history_db: HistoryDB = next(get_history_db())
     maybe_executor = history_db.execute(
-        select(ProviderRecord)
-        .where(ProviderRecord.provider_identifiers == sorted_executor_info)
+        select(ProviderRecordOrm)
+        .where(ProviderRecordOrm.provider_identifiers == sorted_executor_info)
     ).scalar_one_or_none()
     if maybe_executor is not None:
         return maybe_executor
 
-    new_executor = ProviderRecord(
+    new_executor = ProviderRecordOrm(
         executor_info=sorted_executor_info,
         created_at=created_at or datetime.now(tz=timezone.utc),
     )

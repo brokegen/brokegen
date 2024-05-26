@@ -1,1 +1,1 @@
-from . import chat, ollama
+from . import chat, ollama, shared

@@ -1,52 +1,24 @@
 import logging
 import os
 import subprocess
+from datetime import datetime, timezone
 from typing import TypeAlias, Union
 
 import httpx
+import orjson
+from sqlalchemy import select
 
-from providers.database import ProviderRecord
-from providers.registry import ProviderConfig, ProviderRegistry, BaseProvider
+from providers._util import local_provider_identifiers, local_fetch_machine_info
+from providers.database import ProviderRecordOrm, HistoryDB, get_db
+from providers.registry import ProviderConfig, ProviderRegistry, BaseProvider, ProviderRecord
 
 logger = logging.getLogger(__name__)
 
-SortedExecutorConfig: TypeAlias = ProviderRecord
-
-
-async def run_ingest(import_files_dir, import_suffix_filter, files_offset, files_count, data_dir):
-    async with lifespan_generic(None):
-        def _generate_filenames(rootpath: str):
-            for dirpath, _, filenames in os.walk(rootpath):
-                for file in filenames:
-                    full_filepath = os.path.join(dirpath, file)
-                    if import_suffix_filter:
-                        n = len(import_suffix_filter)
-                        if full_filepath[-n:] != import_suffix_filter:
-                            continue
-
-                    relative_dirpath = os.path.relpath(dirpath, rootpath)
-                    if relative_dirpath:
-                        yield os.path.join(relative_dirpath, file)
-                    else:
-                        yield file
-
-        # TODO: Are we supposed to return an Iterable or Iterator?
-        def sliced_filenames(rootpath: str):
-            sorted_filenames = sorted(_generate_filenames(rootpath))
-            logger.info(f"{rootpath}: Slicing files {files_offset} - {files_offset + files_count} "
-                        f"of {len(sorted_filenames)} total")
-
-            for index, full_filename in list(enumerate(sorted_filenames))[files_offset:files_offset + files_count]:
-                yield f"#{index}", full_filename
-
-        # TODO: We don't actually need to load anything, do we?
-        knowledge = get_knowledge().load_shards_from(data_dir)
-        return await ingest.filesystem.bulk_loader(
-            sliced_filenames(import_files_dir),
-            knowledge)
+SortedExecutorConfig: TypeAlias = ProviderRecordOrm
 
 
 class LlamafileProvider(BaseProvider):
+    filename: str
     real_server: subprocess.Popen
     client: httpx.AsyncClient
 
@@ -56,6 +28,7 @@ class LlamafileProvider(BaseProvider):
             target_host: str = "127.0.0.1",
             target_port: str = "1822",
     ):
+        self.filename = filename
         self.real_server = subprocess.Popen(
             f"{filename} --server --nobrowser "
             f"--port {target_port} --host {target_host}",
@@ -72,6 +45,43 @@ class LlamafileProvider(BaseProvider):
             max_redirects=0,
             follow_redirects=False,
         )
+
+    async def available(self) -> bool:
+        ping1 = self.client.build_request(
+            method='HEAD',
+            url='/',
+        )
+        await self.client.send(ping1)
+        return True
+
+    async def make_record(self) -> ProviderRecord:
+        history_db: HistoryDB = next(get_db())
+
+        provider_identifiers_dict = {
+            "name": "llamafile",
+            "endpoint": self.filename,
+        }
+        provider_identifiers_dict.update(local_provider_identifiers())
+
+        provider_identifiers = orjson.dumps(provider_identifiers_dict, option=orjson.OPT_SORT_KEYS)
+
+        # Check for existing matches
+        maybe_executor = history_db.execute(
+            select(ProviderRecordOrm)
+            .where(ProviderRecordOrm.provider_identifiers == provider_identifiers)
+        ).scalar_one_or_none()
+        if maybe_executor is not None:
+            return ProviderRecord.from_orm(maybe_executor)
+
+        new_executor = ProviderRecordOrm(
+            provider_identifiers=provider_identifiers,
+            created_at=datetime.now(tz=timezone.utc),
+            machine_info=await local_fetch_machine_info(),
+        )
+        history_db.add(new_executor)
+        history_db.commit()
+
+        return ProviderRecord.from_orm(new_executor)
 
     @staticmethod
     def from_filename(filename: str) -> Union['LlamafileProvider', None]:
@@ -124,4 +134,6 @@ async def discover_in(*search_paths: str):
                     yield os.path.abspath(os.path.join(rootpath, file))
 
     for file in _generate_filenames():
-        await registry.make(ProviderConfig(type="llamafile", id=file))
+        provider = await registry.make(ProviderConfig(type="llamafile", id=file))
+        if provider:
+            await provider.make_record()

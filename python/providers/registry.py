@@ -7,9 +7,11 @@ Current known providers generally have two things to look for: Type, and ID.
 1. type: ollama / id: http://localhost:11434
 2. type: llamafile / id: ~/Downloads/llava-v1.5-7b-q4.llamafile
 """
-from typing import TypeAlias, Callable, Awaitable
+from abc import abstractmethod
+from datetime import datetime
+from typing import TypeAlias, Callable, Awaitable, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 ProviderType: TypeAlias = str
 ProviderID: TypeAlias = str
@@ -20,8 +22,26 @@ class ProviderConfig(BaseModel):
     id: ProviderID
 
 
+class ProviderRecord(BaseModel):
+    provider_identifiers: str
+    created_at: datetime
+
+    machine_info: Optional[dict] = None
+    human_info: Optional[str] = None
+
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
+
+
 class BaseProvider:
-    pass
+    @abstractmethod
+    async def available(self) -> bool:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def make_record(self) -> ProviderRecord:
+        raise NotImplementedError()
 
 
 ProviderFactory: TypeAlias = Callable[[ProviderConfig], Awaitable[BaseProvider | None]]

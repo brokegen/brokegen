@@ -15,7 +15,7 @@ JSONArray: TypeAlias = List[JSONObject]
 
 
 def safe_get(
-        parent_json_ish: JSONDict | JSONArray | None,
+        parent_json_ish: JSONDict | None,
         *keys: JSONDictKey,
 ) -> JSONObject | None:
     """
@@ -31,6 +31,29 @@ def safe_get(
         if key in next_json_ish:
             next_json_ish = next_json_ish[key]
         else:
+            return None
+
+    return next_json_ish
+
+
+def safe_get_arrayed(
+        parent_json_ish: JSONDict | JSONArray | None,
+        *keys: JSONDictKey | int,
+):
+    if not parent_json_ish:
+        return None
+
+    next_json_ish = parent_json_ish
+    for key in keys:
+        if key in next_json_ish:
+            next_json_ish = next_json_ish[key]
+            continue
+
+        # Check for array-ish behavior
+        try:
+            next_json_ish = next_json_ish[key]
+            continue
+        except IndexError:
             return None
 
     return next_json_ish

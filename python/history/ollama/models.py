@@ -5,11 +5,11 @@ import orjson
 from sqlalchemy import select, func
 
 from history.ollama.json import OllamaResponseContentJSON
-from providers.database import HistoryDB, ModelConfigRecord, get_db, ProviderRecord
+from providers.database import HistoryDB, ModelConfigRecord, get_db, ProviderRecordOrm
 
 
 def fetch_model_record(
-        executor_record: ProviderRecord,
+        executor_record: ProviderRecordOrm,
         model_name: str,
         history_db: HistoryDB,
 ) -> ModelConfigRecord | None:
@@ -25,7 +25,7 @@ def fetch_model_record(
 
 
 def build_models_from_api_tags(
-        executor_record: ProviderRecord,
+        executor_record: ProviderRecordOrm,
         accessed_at: datetime,
         response_json,
         do_commit: bool = True,
@@ -89,7 +89,7 @@ def build_models_from_api_tags(
 
 
 def build_model_from_api_show(
-        executor_record: ProviderRecord,
+        executor_record: ProviderRecordOrm,
         human_id: str,
         accessed_at: datetime,
         response_json: OllamaResponseContentJSON,

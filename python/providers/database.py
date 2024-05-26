@@ -64,7 +64,7 @@ def get_db() -> Generator[HistoryDB]:
         db.close()
 
 
-class ProviderRecord(Base):
+class ProviderRecordOrm(Base):
     """
     For most client code, the Provider is invisible (part of the ModelConfig).
 
