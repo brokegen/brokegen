@@ -78,7 +78,7 @@ def install_routes(app: FastAPI):
         # Replace the model_in's provider_identifiers with a sorted one
         model_in.provider_identifiers = provider_record.identifiers
 
-        maybe_model = lookup_inference_model_record(model_in.human_id, provider_record, history_db)
+        maybe_model = lookup_inference_model_record(model_in.human_id, provider_record.identifiers, history_db)
         if maybe_model is not None:
             # Check in-depth to see if we have anything actually-identical
             maybe_model1 = lookup_inference_model_record_detailed(model_in, history_db)
