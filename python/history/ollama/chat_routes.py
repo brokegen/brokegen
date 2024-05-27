@@ -11,9 +11,10 @@ from history.ollama.models import fetch_model_record
 from _util.json import safe_get
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB
-from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm
-from providers.orm import ProviderRecordOrm
+from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, lookup_inference_model_record
+from providers.orm import ProviderRecordOrm, ProviderLabel
 from providers.ollama import _real_ollama_client, build_executor_record
+from providers.registry import ProviderRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,11 @@ async def lookup_model(
         audit_db: AuditDB,
 ) -> Tuple[InferenceModelRecordOrm, ProviderRecordOrm]:
     try:
-        model, executor_record = lookup_model_offline(model_name, history_db)
+        provider = await ProviderRegistry().make(ProviderLabel(type="ollama", id="http://localhost:11434"))
+        provider_record = provider.make_record()
+        model = lookup_inference_model_record(provider_record, model_name, history_db)
+
+        return model, provider_record
 
     except ValueError:
         executor_record = build_executor_record(

@@ -79,7 +79,10 @@ async def consolidate_stream(
 
     done = safe_get(consolidated_response, 'done')
     if not done:
-        logger.warning(f"Ollama response is {done=}, but we already ran out of bytes to process")
+        if done is None:
+            logger.debug(f"Ollama response is {done=}, are you sure this was a streaming request?")
+        else:
+            logger.warning(f"Ollama response is {done=}, but we already ran out of bytes to process")
 
     if 'context' in consolidated_response:
         del consolidated_response['context']

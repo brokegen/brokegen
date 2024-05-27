@@ -99,7 +99,7 @@ async def discover_servers():
     await registry.make(ProviderLabel(type="ollama", id="http://localhost:11434"))
 
 
-def build_executor_record(
+async def build_executor_record(
         endpoint: str,
         do_commit: bool = True,
         history_db: HistoryDB | None = None,
@@ -111,4 +111,4 @@ def build_executor_record(
     if not do_commit:
         logger.warning(f"Found a caller that wants {do_commit=}, ignoring")
 
-    return asyncio.run(executor_singleton.make_record())
+    return executor_singleton.make_record()
