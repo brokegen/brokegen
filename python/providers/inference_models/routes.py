@@ -33,7 +33,7 @@ def make_provider_record(
         "name": "[external upload]",
         "endpoint": endpoint,
     }
-    provider_identifiers_dict.update(provider_in.identifiers)
+    provider_identifiers_dict.update(orjson.loads(provider_in.identifiers))
     provider_identifiers = orjson.dumps(provider_identifiers_dict, option=orjson.OPT_SORT_KEYS)
 
     # Check for existing matches
@@ -47,7 +47,7 @@ def make_provider_record(
     optional_kwargs = {}
     if provider_in.machine_info:
         optional_kwargs["machine_info"] = provider_in.machine_info
-    if provider_in.provider_human_info:
+    if provider_in.human_info:
         optional_kwargs["human_info"] = provider_in.human_info
 
     new_provider = ProviderRecordOrm(

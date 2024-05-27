@@ -49,6 +49,7 @@ ProviderAddRequest = create_model(
     __base__=ProviderRecord,
 )
 
+# TODO: This doesn't work, either
 ProviderAddRequest.__fields__['identifiers'].annotation = dict
 
 

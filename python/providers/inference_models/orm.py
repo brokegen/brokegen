@@ -48,11 +48,13 @@ InferenceModelAddRequest = create_model(
     __base__=InferenceModelRecord,
 )
 
+# TODO: Neither of these truly work
+InferenceModelAddRequest.__fields__['provider_identifiers'].exclude = True
 del InferenceModelAddRequest.__fields__['provider_identifiers']
 
 
 class InferenceModelRecordOrm(Base):
-    __tablename__ = 'ModelConfigRecords'
+    __tablename__ = 'InferenceModelRecords'
 
     id: InferenceModelRecordID = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     human_id: InferenceModelHumanID = Column(String, nullable=False)
