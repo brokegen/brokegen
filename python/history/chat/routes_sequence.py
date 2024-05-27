@@ -101,7 +101,7 @@ def do_get_sequence(
     return messages_list[::-1]
 
 
-def install_routes(app: FastAPI):
+def construct_router():
     router = fastapi.routing.APIRouter()
 
     @router.post("/sequences")
@@ -230,4 +230,4 @@ def install_routes(app: FastAPI):
 
         return {"sequence_ids": list(pinned)}
 
-    app.include_router(router)
+    return router

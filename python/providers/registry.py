@@ -50,7 +50,7 @@ class ProviderRegistry(_Borg):
 
         if not hasattr(self, '_factories'):
             self._factories = []
-        if not hasattr(self, 'by_config'):
+        if not hasattr(self, 'by_label'):
             self.by_label = {}
         if not hasattr(self, 'by_record'):
             self.by_record = {}

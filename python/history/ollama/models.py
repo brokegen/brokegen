@@ -1,13 +1,16 @@
 import json
 from datetime import datetime
+from typing import Generator
 
 import orjson
 from sqlalchemy import select, func
 
+from _util.json import safe_get
 from history.ollama.json import OllamaResponseContentJSON
 from providers.inference_models.database import HistoryDB, get_db
-from providers.inference_models.orm import InferenceModelRecordOrm
-from providers.orm import ProviderRecordOrm
+from providers.inference_models.orm import InferenceModelRecordOrm, InferenceModelRecordID, InferenceModelRecord, \
+    InferenceModelAddRequest, lookup_inference_model_record_detailed
+from providers.orm import ProviderRecordOrm, ProviderRecord
 
 
 def fetch_model_record(
@@ -27,67 +30,48 @@ def fetch_model_record(
 
 
 def build_models_from_api_tags(
-        executor_record: ProviderRecordOrm,
+        provider_record: ProviderRecord,
         accessed_at: datetime,
         response_json,
-        do_commit: bool = True,
-        history_db: HistoryDB | None = None,
-) -> None:
-    if history_db is None:
-        history_db = next(get_db())
-
-    for model in response_json['models']:
+        history_db: HistoryDB,
+) -> Generator[tuple[InferenceModelRecordID, InferenceModelRecord], None, None]:
+    for model0 in safe_get(response_json, 'models'):
         sorted_model_json = orjson.loads(
-            orjson.dumps(model, option=orjson.OPT_SORT_KEYS)
+            orjson.dumps(model0, option=orjson.OPT_SORT_KEYS)
         )
-        sorted_executor_info = dict(sorted(executor_record.identifiers.items()))
-        modified_at = datetime.fromisoformat(sorted_model_json['modified_at'])
-        # TODO: Verify whether ollama source timestamps are in UTC
-        modified_at = modified_at.replace(tzinfo=None)
 
-        # First, check for exact matches.
-        details_match_statement = (
-                func.json_extract(InferenceConfigRecordOrm.model_identifiers, "$.details")
-                == json.dumps(sorted_model_json['details'], separators=(',', ':'), sort_keys=True)
+        model_modified_at = accessed_at
+        if safe_get(sorted_model_json, 'modified_at'):
+            # TODO: Verify whether ollama source timestamps are in UTC
+            model_modified_at = datetime.fromisoformat(sorted_model_json['modified_at'])
+            model_modified_at = model_modified_at.replace(tzinfo=None)
+
+        # Construct most of a new model, for the sake of checking
+        model_in = InferenceModelAddRequest(
+            human_id=safe_get(sorted_model_json, 'name'),
+            first_seen_at=model_modified_at,
+            last_seen=model_modified_at,
+            provider_identifiers=provider_record.identifiers,
+            model_identifiers=orjson.dumps(sorted_model_json['details'], option=orjson.OPT_SORT_KEYS),
+            # combined_inference_parameters=None,
         )
-        maybe_model = history_db.execute(
-            select(InferenceConfigRecordOrm)
-            .where(
-                InferenceConfigRecordOrm.human_id == sorted_model_json['name'],
-                InferenceConfigRecordOrm.provider_identifiers == sorted_executor_info,
-                details_match_statement,
-            )
-            .order_by(InferenceConfigRecordOrm.last_seen.desc())
-            .limit(1)
-        ).scalar_one_or_none()
+
+        maybe_model = lookup_inference_model_record_detailed(model_in, history_db)
         if maybe_model is not None:
-            # If we already have a record, check dates to see if we expect modification
-            if modified_at <= maybe_model.last_seen:
-                # Everything's good and matches, just update its static info, which is all we have anyway
-                # TODO: That `modified_at` field would be really nice to have, somewhere else
-                maybe_model.model_identifiers = sorted_model_json
-                maybe_model.first_seen_at = min(maybe_model.first_seen_at, accessed_at, modified_at)
-                maybe_model.last_seen = max(maybe_model.last_seen, accessed_at, modified_at)
-
-                history_db.add(maybe_model)
-                if do_commit:
-                    history_db.commit()
-
-                continue
-
-        # Otherwise, what is all this, just add a new thing
-        new_model = InferenceConfigRecordOrm(
-            human_id=sorted_model_json['name'],
-            first_seen_at=modified_at,
-            last_seen=max(modified_at, accessed_at),
-            executor_info=executor_record.identifiers,
-            static_model_info=sorted_model_json,
-            default_inference_params={},
-        )
-
-        history_db.add(new_model)
-        if do_commit:
+            maybe_model.merge_in_updates(model_in)
+            history_db.add(maybe_model)
             history_db.commit()
+
+            yield maybe_model.id, InferenceModelRecord.from_orm(maybe_model)
+            continue
+
+        new_model = InferenceModelRecordOrm(
+            **model_in.model_dump(),
+        )
+        history_db.add(new_model)
+        history_db.commit()
+
+        yield new_model.id, InferenceModelRecord.from_orm(new_model)
 
 
 def build_model_from_api_show(

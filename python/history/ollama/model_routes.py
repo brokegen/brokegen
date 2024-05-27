@@ -1,6 +1,8 @@
 import logging
 
 import httpx
+import orjson
+import starlette.responses
 from fastapi import Request
 
 from _util.json import safe_get
@@ -8,7 +10,10 @@ from audit.http import AuditDB
 from history.ollama.json import OllamaEventBuilder
 from history.ollama.models import build_model_from_api_show, build_models_from_api_tags
 from providers.inference_models.database import HistoryDB
-from providers.ollama import build_executor_record
+from providers.inference_models.orm import InferenceModelRecordID, InferenceModelRecord
+from providers.ollama import build_executor_record, OllamaProvider
+from providers.orm import ProviderLabel
+from providers.registry import ProviderRegistry
 
 _real_ollama_client = httpx.AsyncClient(
     base_url="http://localhost:11434",
@@ -21,6 +26,33 @@ _real_ollama_client = httpx.AsyncClient(
 )
 
 logger = logging.getLogger(__name__)
+
+
+async def do_list_available_models(
+        provider: OllamaProvider,
+        history_db: HistoryDB,
+        audit_db: AuditDB,
+) -> dict[InferenceModelRecordID, InferenceModelRecord]:
+    intercept = OllamaEventBuilder("ollama:/api/tags", audit_db)
+    cached_accessed_at = intercept.wrapped_event.accessed_at
+
+    upstream_request = provider.client.build_request(
+        method="GET",
+        url="/api/tags",
+        # https://github.com/encode/httpx/discussions/2959
+        # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
+        headers=[('Connection', 'close')],
+    )
+    response: httpx.Response = await provider.client.send(upstream_request)
+    response: starlette.responses.Response = await intercept.wrap_response(response)
+
+    big_result = dict(list(build_models_from_api_tags(
+        await provider.make_record(),
+        cached_accessed_at,
+        orjson.loads(response.body),
+        history_db=history_db,
+    )))
+    return big_result
 
 
 async def do_api_tags(
@@ -41,13 +73,13 @@ async def do_api_tags(
     )
 
     async def on_done_fetching(response_content_json):
-        executor_record = build_executor_record(str(_real_ollama_client.base_url), history_db=history_db)
-        build_models_from_api_tags(
-            executor_record,
+        provider = ProviderRegistry().by_label[ProviderLabel(type="ollama", id=_real_ollama_client.base_url)]
+        list(build_models_from_api_tags(
+            await provider.make_record(),
             cached_accessed_at,
             response_content_json,
             history_db=history_db,
-        )
+        ))
 
     upstream_response = await _real_ollama_client.send(upstream_request)
     return await intercept.wrap_response(upstream_response, on_done_fetching)

@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from datetime import datetime, timezone
 
@@ -44,6 +43,9 @@ class OllamaProvider(BaseProvider):
         ping1 = self.client.build_request(
             method='HEAD',
             url='/',
+            # https://github.com/encode/httpx/discussions/2959
+            # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
+            headers=[('Connection', 'close')],
         )
         response1 = await self.client.send(ping1)
         if response1.status_code != 200:

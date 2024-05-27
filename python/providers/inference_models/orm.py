@@ -32,9 +32,9 @@ class InferenceModelRecord(BaseModel):
     last_seen: Optional[datetime] = None
 
     provider_identifiers: str
-    model_identifiers: Optional[dict] = str
+    model_identifiers: Optional[dict] = None
 
-    combined_inference_parameters: Optional[dict] = str
+    combined_inference_parameters: Optional[dict] = None
 
     model_config = ConfigDict(
         extra='forbid',
@@ -57,9 +57,9 @@ class InferenceModelAddRequest(BaseModel):
 
     provider_identifiers: Optional[str] = None
     """WARNING: This field is generally not-sorted, and should be, for realistic use."""
-    model_identifiers: Optional[dict] = str
+    model_identifiers: Optional[dict] = None
 
-    combined_inference_parameters: Optional[dict] = str
+    combined_inference_parameters: Optional[dict] = None
 
 
 class InferenceModelRecordOrm(Base):
@@ -71,7 +71,8 @@ class InferenceModelRecordOrm(Base):
     first_seen_at = Column(DateTime)
     last_seen = Column(DateTime)
 
-    provider_identifiers: str = Column(String, ForeignKey('ProviderRecords.identifiers'), nullable=False)
+    # TODO: ForeignKey('ProviderRecords.identifiers')
+    provider_identifiers: str = Column(String,  nullable=False)
     model_identifiers = Column(JSON)
     """
     Contains parameters that are not something our client can change,
@@ -99,7 +100,7 @@ class InferenceModelRecordOrm(Base):
                          name="all columns"),
     )
 
-    def merge_in_updates(self, model_in: InferenceModelRecord) -> Self:
+    def merge_in_updates(self, model_in: InferenceModelRecord | InferenceModelAddRequest) -> Self:
         # Update the last-seen date, if needed
         if model_in.first_seen_at is not None:
             if self.first_seen_at is None:
