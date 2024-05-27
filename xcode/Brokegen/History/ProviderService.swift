@@ -3,6 +3,15 @@ import Combine
 import Foundation
 import SwiftData
 
+public enum JSONObject: Codable {
+    case string(String)
+    case number(Float)
+    case object([String:JSONObject])
+    case array([JSONObject])
+    case bool(Bool)
+    case null
+}
+
 public struct InferenceModel: Identifiable, Codable {
     public let id: UUID = UUID()
     public let serverId: Int
@@ -12,9 +21,9 @@ public struct InferenceModel: Identifiable, Codable {
     public let lastSeen: Date?
 
     public let providerIdentifiers: String
-//    public let modelIdentifiers: [String : Any?]?
-//
-//    public let combinedInferenceParameters: [String : Any?]?
+    public let modelIdentifiers: JSONObject?
+
+    public let combinedInferenceParameters: JSONObject?
 
 }
 
@@ -42,7 +51,9 @@ extension InferenceModel {
             humanId: jsonDict["human_id"] as! String,
             firstSeenAt: firstSeenAt0,
             lastSeen: lastSeen0,
-            providerIdentifiers: jsonDict["provider_identifiers"] as! String
+            providerIdentifiers: jsonDict["provider_identifiers"] as! String,
+            modelIdentifiers: jsonDict["model_identifiers"] as? JSONObject,
+            combinedInferenceParameters: jsonDict["combined_inference_parameters"] as? JSONObject
         )
     }
 }
@@ -123,7 +134,7 @@ class ProviderService: Observable, ObservableObject {
     func fetchAvailableModels() {
         Task.init {
             if let data = await getDataAsJsonDict("/models/available") {
-                for (serverId, modelInfo) in data {
+                for (_, modelInfo) in data {
                     let model = InferenceModel(modelInfo as! [String : Any?])
                     availableModels.append(model)
                 }
