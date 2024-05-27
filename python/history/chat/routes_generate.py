@@ -4,20 +4,20 @@ from datetime import datetime, timezone
 import fastapi.routing
 import orjson
 import starlette.requests
-from fastapi import FastAPI, Depends
+from fastapi import Depends
 from pydantic import BaseModel
 from sqlalchemy import select
 
 import history.ollama
+from _util.json import JSONStreamingResponse
+from _util.typing import ChatSequenceID, PromptText, InferenceModelHumanID
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
-from history.chat.database import ChatMessageOrm, ChatSequence
-from _util.typing import ChatSequenceID, PromptText, InferenceModelHumanID
+from history.chat.database import ChatMessageOrm, ChatSequence, lookup_chat_message, ChatMessageAddRequest
 from history.chat.routes_sequence import do_get_sequence
+from inference.embeddings.retrieval import SkipRetrievalPolicy
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, InferenceEventID
-from _util.json import JSONStreamingResponse
-from inference.embeddings.retrieval import SkipRetrievalPolicy
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class GenerateIn(BaseModel):
     sequence_id: ChatSequenceID
 
 
-def install_routes(app: FastAPI):
+def construct_router():
     router = fastapi.routing.APIRouter()
 
     @router.post("/generate")
@@ -37,20 +37,27 @@ def install_routes(app: FastAPI):
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
     ) -> JSONStreamingResponse:
-        # Manually construct a Request object, because that's how we pass any data around
-        constructed_request = empty_request
-
         # Manually fetch the message + model config history from our requests
-        messages_list = do_get_sequence(params.sequence_id, history_db, include_model_info_diffs=False)
-        # And append our user message as its own message
-        # TODO: Commit this message and/or check for duplicates
-        messages_list.append(ChatMessageOrm(
-            role='user',
-            content=params.user_prompt,
-            created_at=datetime.now(tz=timezone.utc),
-        ))
+        messages_list: list[ChatMessageOrm] = \
+            do_get_sequence(params.sequence_id, history_db, include_model_info_diffs=False)
 
-        # Fetch the latest model config from ChatSequence
+        # First, store the message that was painstakingly generated for us.
+        if params.user_prompt and params.user_prompt.strip():
+            new_message = ChatMessageOrm(
+                role='user',
+                content=params.user_prompt,
+                created_at=datetime.now(tz=timezone.utc),
+            )
+            maybe_message = lookup_chat_message(ChatMessageAddRequest.from_orm(new_message), history_db)
+            if maybe_message is not None:
+                messages_list.append(maybe_message)
+
+            else:
+                history_db.add(new_message)
+                history_db.commit()
+                messages_list.append(new_message)
+
+        # Fetch the InferenceModelHumanID from latest ChatSequence
         inference_id: InferenceEventID = history_db.execute(
             select(InferenceEventOrm.id)
             .join(ChatSequence, ChatSequence.inference_job_id == InferenceEventOrm.id)
@@ -63,31 +70,46 @@ def install_routes(app: FastAPI):
             .where(InferenceEventOrm.id == inference_id)
         ).scalar_one()
 
-        constructed_body = {
+        constructed_ollama_body = {
             "messages": [m.as_json() for m in messages_list],
             "model": model_name,
         }
+
+        # Manually construct a Request object, because that's how we pass any data around
+        constructed_request = empty_request
         # NB This overwrites the internals of the Requests object;
         # we should really be passing decoded versions throughout the app.
-        constructed_request._body = orjson.dumps(constructed_body)
+        constructed_request._body = orjson.dumps(constructed_ollama_body)
 
         # Wrap the output in a… something that appends new ChatSequence information
+        async def add_json_suffix(primordial):
+            done_signaled: int = 0
+            async for chunk in primordial:
+                chunk_json = orjson.loads(chunk)
+                if chunk_json["done"]:
+                    done_signaled += 1
+                    chunk_json["done"] = False
+                    yield orjson.dumps(chunk_json)
+                    continue
+
+                yield chunk
+                if done_signaled > 0:
+                    logger.warning(f"/generate: Still yielding chunks after `done=True`")
+
+            if not done_signaled:
+                logger.warning(f"Finished /generate streaming response without hitting `done=True`")
+
+            # Construct our actual suffix
+            suffix_chunk_json = {
+                "new_sequence_id": -1,
+                "error": "sequence id's not actually implemented",
+            }
+            yield orjson.dumps(suffix_chunk_json)
+
         async def wrap_response(
                 upstream_response: JSONStreamingResponse,
         ) -> JSONStreamingResponse:
-            async def almost_identity_proxy(primordial):
-                async for chunk in primordial:
-                    chunk_json = orjson.loads(chunk)
-                    if chunk_json["done"]:
-                        chunk_json["new_sequence_id"] = -1
-                        chunk_json["error"] = "sequence id's not actually implemented"
-                        yield orjson.dumps(chunk_json)
-                        return
-
-                    yield chunk
-
-            upstream_response._content_iterable = almost_identity_proxy(upstream_response._content_iterable)
-
+            upstream_response._content_iterable = add_json_suffix(upstream_response._content_iterable)
             return upstream_response
 
         return await wrap_response(
@@ -96,6 +118,6 @@ def install_routes(app: FastAPI):
                 SkipRetrievalPolicy(),
                 history_db,
                 audit_db,
-        ))
+            ))
 
-    app.include_router(router)
+    return router

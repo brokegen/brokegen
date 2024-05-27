@@ -163,7 +163,6 @@ def run_proxy(
     history.ollama.install_forwards(app, enable_rag)
     history.ollama.install_test_points(app)
     history.chat.routes_message.install_routes(app)
-    history.chat.routes_generate.install_routes(app)
     history.chat.install_routes(app)
     providers.inference_models.routes.install_routes(app)
 
