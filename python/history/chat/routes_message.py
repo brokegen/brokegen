@@ -8,10 +8,10 @@ from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 from sqlalchemy import select
 
+from _util.json import JSONDict
 from history.chat.database import MessageID, Message
-from providers.database import HistoryDB, get_db as get_history_db
-from history.shared.json import JSONDict
 from inference.prompting.models import RoleName, PromptText
+from providers.inference_models.database import HistoryDB, get_db as get_history_db
 
 logger = logging.getLogger(__name__)
 

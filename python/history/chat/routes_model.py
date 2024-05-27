@@ -5,7 +5,8 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from history.chat.database import Message
-from providers.database import get_db as get_history_db, ModelConfigRecord, InferenceEvent
+from providers.inference_models.database import get_db as get_history_db
+from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm
 from inference.prompting.models import RoleName, PromptText
 
 logger = logging.getLogger(__name__)
@@ -23,21 +24,21 @@ class InfoMessageOut(BaseModel):
     content: PromptText
 
 
-def fetch_model_info(ij_id) -> ModelConfigRecord | None:
+def fetch_model_info(ij_id) -> InferenceModelRecordOrm | None:
     if ij_id is None:
         return None
 
     # NB Usually, running a query during iteration would need a second SQLAlchemy cursor-session-thing.
     history_db = next(get_history_db())
     return history_db.execute(
-        select(ModelConfigRecord)
-        .join(InferenceEvent, InferenceEvent.model_config == ModelConfigRecord.id)
-        .where(InferenceEvent.id == ij_id)
+        select(InferenceConfigRecordOrm)
+        .join(InferenceEventOrm, InferenceEventOrm.model_config == InferenceConfigRecordOrm.id)
+        .where(InferenceEventOrm.id == ij_id)
         .limit(1)
     ).scalar_one_or_none()
 
 
-def translate_model_info(model0: ModelConfigRecord | None) -> Message:
+def translate_model_info(model0: InferenceModelRecordOrm | None) -> Message:
     if model0 is None:
         return Message(
             role='model config',
@@ -51,8 +52,8 @@ def translate_model_info(model0: ModelConfigRecord | None) -> Message:
 
 
 def translate_model_info_diff(
-        model0: ModelConfigRecord | None,
-        model1: ModelConfigRecord,
+        model0: InferenceModelRecordOrm | None,
+        model1: InferenceModelRecordOrm,
 ) -> InfoMessageOut | None:
     if model0 is None:
         return translate_model_info(model1)

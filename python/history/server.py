@@ -107,7 +107,7 @@ def run_proxy(
 
     try:
         audit.http.init_db(f"{data_dir}/audit.db")
-        providers.database.load_models(f"{data_dir}/requests-history.db")
+        providers.inference_models.database.load_db_models(f"{data_dir}/requests-history.db")
 
     except sqlite3.OperationalError:
         if not os.path.exists(data_dir):
@@ -139,7 +139,7 @@ def run_proxy(
     history.chat.routes_message.install_routes(app)
     history.chat.routes_sequence.install_routes(app)
     history.chat.routes_generate.install_routes(app)
-    history.shared.routes.install_routes(app)
+    providers.inference_models.routes.install_routes(app)
 
     if enable_rag:
         get_knowledge().load_shards_from(data_dir)

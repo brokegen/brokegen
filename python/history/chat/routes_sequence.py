@@ -11,8 +11,9 @@ from sqlalchemy import select, Row
 
 from history.chat.database import MessageID, Message, ChatSequenceID, ChatSequence
 from history.chat.routes_model import fetch_model_info, translate_model_info_diff, translate_model_info
-from providers.database import HistoryDB, get_db as get_history_db, ModelConfigRecord, ModelConfigID, \
-    InferenceJobID, InferenceEvent
+from providers.inference_models.database import HistoryDB, get_db as get_history_db
+from providers.inference_models.orm import InferenceModelRecordID, InferenceEventID
+from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ class SequenceAddResponse(BaseModel):
 
 
 class InferenceJobIn(BaseModel):
-    model_config_id: ModelConfigID = Field(alias='model_config_id_')
+    model_config_id: InferenceModelRecordID = Field(alias='model_config_id_')
 
     prompt_tokens: Optional[int] = None
     prompt_eval_time: Optional[float] = None
@@ -55,7 +56,7 @@ class InferenceJobIn(BaseModel):
 
 
 class InferenceJobAddResponse(BaseModel):
-    ijob_id: InferenceJobID
+    ijob_id: InferenceEventID
     just_created: bool
 
 
@@ -66,7 +67,7 @@ def do_get_sequence(
 ) -> list[Message]:
     messages_list = []
 
-    last_seen_model: ModelConfigRecord | None = None
+    last_seen_model: InferenceConfigRecordOrm | None = None
     sequence_id: ChatSequenceID = id
     while sequence_id is not None:
         logger.debug(f"Checking for sequence {id} => ancestor {sequence_id}")
@@ -165,7 +166,7 @@ def install_routes(app: FastAPI):
             )
 
         match_object = history_db.execute(
-            select(InferenceEvent.id)
+            select(InferenceEventOrm.id)
             .filter_by(
                 model_config=ijob_in.model_config_id,
                 prompt_tokens=ijob_in.prompt_tokens,
@@ -184,7 +185,7 @@ def install_routes(app: FastAPI):
                 just_created=False,
             )
 
-        new_object = InferenceEvent(
+        new_object = InferenceEventOrm(
             model_config=ijob_in.model_config_id,
             prompt_tokens=ijob_in.prompt_tokens,
             prompt_eval_time=ijob_in.prompt_eval_time,
@@ -219,7 +220,6 @@ def install_routes(app: FastAPI):
         # TODO: Turn the `match_object` into a JSON object first.
         match_object.messages = do_get_sequence(id, history_db, include_model_info_diffs=True)
         return match_object
-
 
     @router.get("/sequences/pinned")
     def get_pinned_sequences(

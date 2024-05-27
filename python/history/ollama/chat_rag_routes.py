@@ -8,15 +8,16 @@ import orjson
 import starlette.datastructures
 import starlette.requests
 
+from _util.json import JSONStreamingResponse, safe_get, JSONArray
 from audit.http import AuditDB
 from audit.http_raw import HttpxLogger
 from history.ollama.chat_routes import lookup_model_offline
 from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, \
     consolidate_stream, OllamaEventBuilder
-from history.shared.json import JSONStreamingResponse, safe_get, JSONArray
 from inference.embeddings.retrieval import RetrievalPolicy
 from inference.prompting.templating import apply_llm_template, PromptText, TemplatedPromptText
-from providers.database import HistoryDB, InferenceEvent
+from providers.inference_models.database import HistoryDB
+from providers.inference_models.orm import InferenceEventOrm
 from providers.ollama import _real_ollama_client
 
 logger = logging.getLogger(__name__)
@@ -45,7 +46,7 @@ async def do_generate_raw_templated(
         raise NotImplementedError(
             "Haven't implemented handling of override options! Need to construct a new ModelConfig.")
 
-    inference_job = InferenceEvent(
+    inference_job = InferenceEventOrm(
         model_config=model.id,
         prompt_with_templating=request_content['prompt'],
     )
@@ -103,13 +104,13 @@ async def convert_chat_to_generate(
 
     model_template = (
             safe_get(chat_request_content, 'options', 'template')
-            or safe_get(model.default_inference_params, 'template')
+            or safe_get(model.combined_inference_parameters, 'template')
             or ''
     )
 
     system_message = (
             safe_get(chat_request_content, 'options', 'system')
-            or safe_get(model.default_inference_params, 'system')
+            or safe_get(model.combined_inference_parameters, 'system')
             or ''
     )
 
@@ -268,14 +269,14 @@ async def do_proxy_chat_rag(
 
         model_template = (
                 safe_get(request_content_json, 'options', 'template')
-                or safe_get(model.default_inference_params, 'template')
+                or safe_get(model.combined_inference_parameters, 'template')
                 or ''
         )
 
         final_system_message = (
                 system_message
                 or safe_get(request_content_json, 'options', 'system')
-                or safe_get(model.default_inference_params, 'system')
+                or safe_get(model.combined_inference_parameters, 'system')
                 or None
         )
 

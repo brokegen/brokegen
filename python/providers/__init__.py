@@ -1,2 +1,2 @@
 from . import llamafile, ollama
-from . import database, registry
+from . import inference_models, orm, registry

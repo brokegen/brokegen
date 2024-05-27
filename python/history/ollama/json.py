@@ -9,8 +9,8 @@ import sqlalchemy.exc
 import starlette.responses
 from starlette.background import BackgroundTask
 
+from _util.json import JSONDict, safe_get
 from audit.http import AuditDB, get_db, HttpEvent
-from history.shared.json import JSONDict, safe_get
 
 OllamaRequestContentJSON: TypeAlias = JSONDict
 OllamaResponseContentJSON: TypeAlias = JSONDict

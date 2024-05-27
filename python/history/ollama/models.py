@@ -5,21 +5,23 @@ import orjson
 from sqlalchemy import select, func
 
 from history.ollama.json import OllamaResponseContentJSON
-from providers.database import HistoryDB, ModelConfigRecord, get_db, ProviderRecordOrm
+from providers.inference_models.database import HistoryDB, get_db
+from providers.inference_models.orm import InferenceModelRecordOrm
+from providers.orm import ProviderRecordOrm
 
 
 def fetch_model_record(
         executor_record: ProviderRecordOrm,
         model_name: str,
         history_db: HistoryDB,
-) -> ModelConfigRecord | None:
+) -> InferenceModelRecordOrm | None:
     sorted_executor_info = dict(sorted(executor_record.identifiers.items()))
 
     return history_db.execute(
-        select(ModelConfigRecord)
-        .where(ModelConfigRecord.provider_identifiers == sorted_executor_info,
-               ModelConfigRecord.human_id == model_name)
-        .order_by(ModelConfigRecord.last_seen)
+        select(InferenceModelRecordOrm)
+        .where(InferenceModelRecordOrm.provider_identifiers == sorted_executor_info,
+               InferenceModelRecordOrm.human_id == model_name)
+        .order_by(InferenceModelRecordOrm.last_seen)
         .limit(1)
     ).scalar_one_or_none()
 
@@ -45,17 +47,17 @@ def build_models_from_api_tags(
 
         # First, check for exact matches.
         details_match_statement = (
-                func.json_extract(ModelConfigRecord.static_model_info, "$.details")
+                func.json_extract(InferenceConfigRecordOrm.model_identifiers, "$.details")
                 == json.dumps(sorted_model_json['details'], separators=(',', ':'), sort_keys=True)
         )
         maybe_model = history_db.execute(
-            select(ModelConfigRecord)
+            select(InferenceConfigRecordOrm)
             .where(
-                ModelConfigRecord.human_id == sorted_model_json['name'],
-                ModelConfigRecord.provider_identifiers == sorted_executor_info,
+                InferenceConfigRecordOrm.human_id == sorted_model_json['name'],
+                InferenceConfigRecordOrm.provider_identifiers == sorted_executor_info,
                 details_match_statement,
             )
-            .order_by(ModelConfigRecord.last_seen.desc())
+            .order_by(InferenceConfigRecordOrm.last_seen.desc())
             .limit(1)
         ).scalar_one_or_none()
         if maybe_model is not None:
@@ -63,7 +65,7 @@ def build_models_from_api_tags(
             if modified_at <= maybe_model.last_seen:
                 # Everything's good and matches, just update its static info, which is all we have anyway
                 # TODO: That `modified_at` field would be really nice to have, somewhere else
-                maybe_model.static_model_info = sorted_model_json
+                maybe_model.model_identifiers = sorted_model_json
                 maybe_model.first_seen_at = min(maybe_model.first_seen_at, accessed_at, modified_at)
                 maybe_model.last_seen = max(maybe_model.last_seen, accessed_at, modified_at)
 
@@ -74,7 +76,7 @@ def build_models_from_api_tags(
                 continue
 
         # Otherwise, what is all this, just add a new thing
-        new_model = ModelConfigRecord(
+        new_model = InferenceConfigRecordOrm(
             human_id=sorted_model_json['name'],
             first_seen_at=modified_at,
             last_seen=max(modified_at, accessed_at),
@@ -95,7 +97,7 @@ def build_model_from_api_show(
         response_json: OllamaResponseContentJSON,
         do_commit: bool = True,
         history_db: HistoryDB | None = None,
-) -> ModelConfigRecord:
+) -> InferenceModelRecordOrm:
     if history_db is None:
         history_db = next(get_db())
 
@@ -131,17 +133,17 @@ def build_model_from_api_show(
     # - NB SQLite JSON uses a compact encoding, so we have to strip extra whitespace from our result.
     # - Also, note that we sort the fields later on, to ensure consistency
     details_match_statement = (
-            func.json_extract(ModelConfigRecord.static_model_info, "$.details")
+            func.json_extract(InferenceConfigRecordOrm.model_identifiers, "$.details")
             # TODO: Figure out how this works with orjson
             == json.dumps(static_model_info['details'], separators=(',', ':'), sort_keys=True)
     )
     maybe_model = history_db.execute(
-        select(ModelConfigRecord)
+        select(InferenceConfigRecordOrm)
         .where(
-            ModelConfigRecord.human_id == human_id,
-            ModelConfigRecord.provider_identifiers == sorted_executor_info,
+            InferenceConfigRecordOrm.human_id == human_id,
+            InferenceConfigRecordOrm.provider_identifiers == sorted_executor_info,
             details_match_statement,
-            ModelConfigRecord.default_inference_params == default_inference_params,
+            InferenceConfigRecordOrm.combined_inference_parameters == default_inference_params,
         )
     ).scalar_one_or_none()
     if maybe_model is not None:
@@ -158,18 +160,18 @@ def build_model_from_api_show(
     # TODO: This gets weird with writing params here and there;
     #       need to formalize this with unit tests.
     maybe_api_tags_model = history_db.execute(
-        select(ModelConfigRecord)
+        select(InferenceConfigRecordOrm)
         .where(
-            ModelConfigRecord.human_id == human_id,
-            ModelConfigRecord.provider_identifiers == sorted_executor_info,
+            InferenceConfigRecordOrm.human_id == human_id,
+            InferenceConfigRecordOrm.provider_identifiers == sorted_executor_info,
             details_match_statement,
-            ModelConfigRecord.default_inference_params.is_({}),
+            InferenceConfigRecordOrm.combined_inference_parameters.is_({}),
         )
     ).scalar_one_or_none()
     if maybe_api_tags_model is not None:
         maybe_api_tags_model.first_seen_at = min(maybe_api_tags_model.first_seen_at, accessed_at)
         maybe_api_tags_model.last_seen = max(maybe_api_tags_model.last_seen, accessed_at)
-        maybe_api_tags_model.default_inference_params = default_inference_params
+        maybe_api_tags_model.combined_inference_parameters = default_inference_params
 
         history_db.add(maybe_api_tags_model)
         if do_commit:
@@ -177,7 +179,7 @@ def build_model_from_api_show(
 
         return maybe_api_tags_model
 
-    new_model = ModelConfigRecord(
+    new_model = InferenceConfigRecordOrm(
         human_id=human_id,
         first_seen_at=accessed_at,
         last_seen=accessed_at,

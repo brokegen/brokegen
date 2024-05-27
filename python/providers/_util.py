@@ -6,7 +6,7 @@ import uuid
 
 import orjson
 
-from history.shared.json import safe_get_arrayed
+from _util.json import safe_get_arrayed
 
 logger = logging.getLogger(__name__)
 

@@ -19,8 +19,9 @@ Current Python is basically single-threaded, so we use `async` as much as possib
 
 There are a lot of different verbs, because data is created, fetched, constructed, updated, etc.
 
-- `Records` is a suffix that implies we're storing every variant of a provided datom. For example, even if a model config changes by one tiny parameter (`top_k` going from 60 to 80), record that change.
 - `Templated` means the prompts and content have been adapted for use by a specific model type, since chat/instruct-type models are trained on special tokens to demarcate user/assistant input. (This is less useful for local models, where we don't have to fight a `system` prompt that's set in stone.) 
+- `Records` is a suffix that implies we're storing every variant of a provided datom. For example, even if a model config changes by one tiny parameter (`top_k` going from 60 to 80), record that change.
+- `Label` means it's for human use; 
 
 Data + network calls:
 
@@ -28,7 +29,7 @@ Data + network calls:
   - `create_` is also strictly offline, but focused on objects rather than data.
   - `make_` is also for creating objects, but is expected to do heavy caching
 - `fetch_` means look up in local databases, or hit Providers as a secondary step
-- `construct_` means we expect to be hitting Providers first, but otherwise similar behavior as `fetch_`. **Deprecated.**
+- `construct_` means we expect to be hitting Providers first, but otherwise similar behavior as `fetch_`.
 
 Other prefixes:
 

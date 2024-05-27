@@ -8,9 +8,11 @@ from audit.http import AuditDB
 from history.ollama.json import OllamaEventBuilder
 from history.ollama.model_routes import do_api_show
 from history.ollama.models import fetch_model_record
-from history.shared.json import safe_get
+from _util.json import safe_get
 from inference.prompting.templating import apply_llm_template
-from providers.database import HistoryDB, InferenceEvent, ModelConfigRecord, ProviderRecordOrm
+from providers.inference_models.database import HistoryDB
+from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm
+from providers.orm import ProviderRecordOrm
 from providers.ollama import _real_ollama_client, build_executor_record
 
 logger = logging.getLogger(__name__)
@@ -19,7 +21,7 @@ logger = logging.getLogger(__name__)
 async def lookup_model_offline(
         model_name: str,
         history_db: HistoryDB,
-) -> Tuple[ModelConfigRecord, ProviderRecordOrm]:
+) -> Tuple[InferenceModelRecordOrm, ProviderRecordOrm]:
     # TODO: Standardize on verb names, e.g. lookup for offline + fetch for maybe-online
     executor_record = build_executor_record(
         str(_real_ollama_client.base_url),
@@ -39,7 +41,7 @@ async def lookup_model(
         model_name: str,
         history_db: HistoryDB,
         audit_db: AuditDB,
-) -> Tuple[ModelConfigRecord, ProviderRecordOrm]:
+) -> Tuple[InferenceModelRecordOrm, ProviderRecordOrm]:
     try:
         model, executor_record = lookup_model_offline(model_name, history_db)
 
@@ -73,7 +75,7 @@ async def do_proxy_generate(
     model, executor_record = await lookup_model(original_request, request_content_json['model'], history_db,
                                                 audit_db)
 
-    inference_job = InferenceEvent(
+    inference_job = InferenceEventOrm(
         model_config=model.id,
         overridden_inference_params=request_content_json.get('options', None),
     )
@@ -83,13 +85,13 @@ async def do_proxy_generate(
     # Tweak the request so we see/add the `raw` prompting info
     model_template = (
             safe_get(inference_job.overridden_inference_params, 'options', 'template')
-            or safe_get(model.default_inference_params, 'template')
+            or safe_get(model.combined_inference_parameters, 'template')
             or ''
     )
 
     system_message = (
             safe_get(inference_job.overridden_inference_params, 'options', 'system')
-            or safe_get(model.default_inference_params, 'system')
+            or safe_get(model.combined_inference_parameters, 'system')
             or ''
     )
 

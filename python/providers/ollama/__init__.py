@@ -7,8 +7,9 @@ import orjson
 from sqlalchemy import select
 
 from providers._util import local_provider_identifiers, local_fetch_machine_info
-from providers.database import HistoryDB, ProviderRecordOrm, get_db
-from providers.registry import ProviderConfig, ProviderRegistry, BaseProvider, ProviderRecord
+from providers.inference_models.database import HistoryDB, get_db
+from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord
+from providers.registry import ProviderRegistry, BaseProvider
 
 logger = logging.getLogger(__name__)
 
@@ -81,13 +82,13 @@ class OllamaProvider(BaseProvider):
 
 
 async def discover_servers():
-    async def factory(config: ProviderConfig) -> OllamaProvider | None:
-        if config.type != 'ollama':
+    async def factory(label: ProviderLabel) -> OllamaProvider | None:
+        if label.type != 'ollama':
             return None
 
-        maybe_provider = OllamaProvider(base_url=config.id)
+        maybe_provider = OllamaProvider(base_url=label.id)
         if not await maybe_provider.available():
-            logger.info(f"OllamaProvider endpoint offline, skipping: {config.id}")
+            logger.info(f"OllamaProvider endpoint offline, skipping: {label.id}")
             return None
 
         return maybe_provider
@@ -95,7 +96,7 @@ async def discover_servers():
     registry = ProviderRegistry()
     registry.register_factory(factory)
 
-    await registry.make(ProviderConfig(type="ollama", id="http://localhost:11434"))
+    await registry.make(ProviderLabel(type="ollama", id="http://localhost:11434"))
 
 
 def build_executor_record(

@@ -3,12 +3,12 @@ import logging
 import httpx
 from fastapi import Request
 
+from _util.json import safe_get
 from audit.http import AuditDB
 from history.ollama.json import OllamaEventBuilder
 from history.ollama.models import build_model_from_api_show, build_models_from_api_tags
+from providers.inference_models.database import HistoryDB
 from providers.ollama import build_executor_record
-from providers.database import HistoryDB
-from history.shared.json import safe_get
 
 _real_ollama_client = httpx.AsyncClient(
     base_url="http://localhost:11434",

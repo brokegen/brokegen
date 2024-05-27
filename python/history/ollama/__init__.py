@@ -8,6 +8,7 @@ from fastapi import FastAPI, APIRouter, Depends, Query
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from _util.json import safe_get
 from audit.http import AuditDB, get_db as get_audit_db
 from history.ollama.chat_rag_routes import do_proxy_chat_rag, convert_chat_to_generate, OllamaModelName, \
     do_generate_raw_templated
@@ -15,11 +16,10 @@ from history.ollama.chat_routes import do_proxy_generate, lookup_model_offline
 from history.ollama.forward_routes import forward_request_nodetails, forward_request, forward_request_nolog
 from history.ollama.json import consolidate_stream, OllamaResponseContentJSON, chunk_and_log_output
 from history.ollama.model_routes import do_api_tags, do_api_show
-from providers.database import HistoryDB, get_db as get_history_db
-from history.shared.json import safe_get
 from inference.embeddings.knowledge import KnowledgeSingleton, get_knowledge_dependency
 from inference.embeddings.retrieval import SkipRetrievalPolicy, CustomRetrievalPolicy
 from inference.prompting.templating import TemplatedPromptText, apply_llm_template
+from providers.inference_models.database import HistoryDB, get_db as get_history_db
 
 logger = logging.getLogger(__name__)
 
@@ -129,8 +129,8 @@ which bypasses censoring for tested models.""")
             history_db,
         )
 
-        model_template = safe_get(model.default_inference_params, 'template') or ''
-        default_system_message = safe_get(model.default_inference_params, 'system') or ''
+        model_template = safe_get(model.combined_inference_parameters, 'template') or ''
+        default_system_message = safe_get(model.combined_inference_parameters, 'system') or ''
 
         templated_text = await apply_llm_template(
             model_template=model_template,
