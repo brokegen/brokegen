@@ -1,3 +1,4 @@
+import itertools
 import logging
 import operator
 from typing import cast, Any
@@ -36,7 +37,7 @@ async def do_list_available_models(
         provider: OllamaProvider,
         history_db: HistoryDB,
         audit_db: AuditDB,
-) -> dict[InferenceModelRecordID, InferenceModelRecord | Any]:
+) -> dict[int, InferenceModelRecord | Any]:
     intercept = OllamaEventBuilder("ollama:/api/tags", audit_db)
     cached_accessed_at = intercept.wrapped_event.accessed_at
 
@@ -57,10 +58,16 @@ async def do_list_available_models(
         history_db=history_db,
     )
     models_and_sort_keys = inject_inference_stats(available_models_generator, history_db)
+
+    # NB Swift JSON decode does not preserve order, because JSON does not preserve order
     sorted_masks = sorted(models_and_sort_keys, key=operator.itemgetter(1), reverse=True)
-    return dict(
-        [(mask[0].id, mask[0]) for mask in sorted_masks]
+    dicted_masks = dict(
+        [(index, model) for index, (model, sort_key) in enumerate(sorted_masks)]
     )
+    for k, v in itertools.islice(dicted_masks.items(), 5):
+        logger.debug(f"InferenceModel #{k}: {v.stats}")
+
+    return dicted_masks
 
 
 async def do_api_tags(

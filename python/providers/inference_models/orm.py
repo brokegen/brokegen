@@ -273,7 +273,6 @@ def inject_inference_stats(
             )
         )
         query_result = history_db.execute(query).one()
-        print(f"[DEBUG] model {inference_model.id}: {query_result=}")
 
         stats_dict = {}
         if query_result is not None:

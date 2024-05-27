@@ -140,8 +140,10 @@ class ProviderService: Observable, ObservableObject {
     func fetchAvailableModels() {
         Task.init {
             if let data = await getDataAsJsonDict("/models/available") {
-                for (_, modelInfo) in data {
+                let sortedData = data.sorted(by: { Int($0.0) ?? -1 < Int($1.0) ?? -1 })
+                for (sortIndex, modelInfo) in sortedData {
                     let model = InferenceModel(modelInfo as! [String : Any?])
+                    print("[DEBUG] adding model #\(sortIndex) \(model.humanId): \(String(describing: model.stats) ?? "")")
                     availableModels.append(model)
                 }
             }
