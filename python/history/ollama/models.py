@@ -34,7 +34,7 @@ def build_models_from_api_tags(
         accessed_at: datetime,
         response_json,
         history_db: HistoryDB,
-) -> Generator[tuple[InferenceModelRecordID, InferenceModelRecord], None, None]:
+) -> Generator[InferenceModelRecord, None, None]:
     for model0 in safe_get(response_json, 'models'):
         sorted_model_json = orjson.loads(
             orjson.dumps(model0, option=orjson.OPT_SORT_KEYS)
@@ -62,7 +62,7 @@ def build_models_from_api_tags(
             history_db.add(maybe_model)
             history_db.commit()
 
-            yield maybe_model.id, InferenceModelRecord.from_orm(maybe_model)
+            yield InferenceModelRecord.from_orm(maybe_model)
             continue
 
         # Also allow for the case where /api/show provided real parameters that got merged in
@@ -80,7 +80,7 @@ def build_models_from_api_tags(
             .limit(1)
         ).scalar_one_or_none()
         if maybe_model2 is not None:
-            yield maybe_model2.id, maybe_model2
+            yield maybe_model2
             continue
 
         new_model = InferenceModelRecordOrm(
@@ -89,7 +89,7 @@ def build_models_from_api_tags(
         history_db.add(new_model)
         history_db.commit()
 
-        yield new_model.id, InferenceModelRecord.from_orm(new_model)
+        yield InferenceModelRecord.from_orm(new_model)
 
 
 def build_model_from_api_show(

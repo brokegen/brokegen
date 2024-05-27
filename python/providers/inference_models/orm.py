@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TypeAlias, Optional, Self
+from typing import TypeAlias, Optional, Self, Iterable
 
 from pydantic import PositiveInt, BaseModel, ConfigDict
 from sqlalchemy import Column, Integer, String, DateTime, JSON, Double, select, UniqueConstraint
@@ -232,3 +232,12 @@ def lookup_inference_model(
         .join(InferenceEventOrm, InferenceEventOrm.model_record_id == InferenceModelRecordOrm.id)
         .where(InferenceEventOrm.id == inference_id)
     ).scalar_one_or_none()
+
+
+def inject_inference_stats(
+        models: Iterable[InferenceModelRecord],
+        history_db: HistoryDB,
+        days: int,
+) -> Iterable[InferenceModelRecord]:
+    for inference_model in models:
+        yield inference_model

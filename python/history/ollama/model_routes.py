@@ -8,12 +8,12 @@ from fastapi import Request
 
 import providers
 from _util.json import safe_get
+from _util.typing import InferenceModelRecordID, InferenceModelHumanID
 from audit.http import AuditDB
 from history.ollama.json import OllamaEventBuilder
 from history.ollama.models import build_model_from_api_show, build_models_from_api_tags
 from providers.inference_models.database import HistoryDB
-from providers.inference_models.orm import InferenceModelRecord, InferenceModelRecordOrm
-from _util.typing import InferenceModelRecordID, InferenceModelHumanID
+from providers.inference_models.orm import InferenceModelRecord, InferenceModelRecordOrm, inject_inference_stats
 from providers.ollama import OllamaProvider
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry, BaseProvider
@@ -49,12 +49,16 @@ async def do_list_available_models(
     response: httpx.Response = await provider.client.send(upstream_request)
     response: starlette.responses.Response = await intercept.wrap_response(response)
 
-    return dict(list(build_models_from_api_tags(
+    available_models_generator = build_models_from_api_tags(
         await provider.make_record(),
         cached_accessed_at,
         orjson.loads(response.body),
         history_db=history_db,
-    )))
+    )
+    available_models = inject_inference_stats(available_models_generator, history_db, days=90)
+    return dict(
+        [(model.id, model) for model in available_models]
+    )
 
 
 async def do_api_tags(
