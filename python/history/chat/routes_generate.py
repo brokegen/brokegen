@@ -12,14 +12,12 @@ import history.ollama
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
 from history.chat.database import Message, ChatSequence
-from _util.typing import ChatSequenceID
+from _util.typing import ChatSequenceID, PromptText, InferenceModelHumanID
 from history.chat.routes_sequence import do_get_sequence
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, InferenceEventID, \
-    InferenceModelHumanID
+from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, InferenceEventID
 from _util.json import JSONStreamingResponse
 from inference.embeddings.retrieval import SkipRetrievalPolicy
-from inference.prompting.models import PromptText
 
 logger = logging.getLogger(__name__)
 

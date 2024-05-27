@@ -10,8 +10,7 @@ from sqlalchemy import select
 
 from _util.json import JSONDict
 from history.chat.database import Message
-from _util.typing import MessageID
-from inference.prompting.models import RoleName, PromptText
+from _util.typing import MessageID, PromptText, RoleName
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 
 logger = logging.getLogger(__name__)

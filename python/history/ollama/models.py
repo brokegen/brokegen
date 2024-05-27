@@ -7,8 +7,9 @@ from sqlalchemy import select, or_
 from _util.json import safe_get
 from history.ollama.json import OllamaResponseContentJSON
 from providers.inference_models.database import HistoryDB
-from providers.inference_models.orm import InferenceModelRecordOrm, InferenceModelRecordID, InferenceModelRecord, \
-    InferenceModelAddRequest, lookup_inference_model_record_detailed, InferenceModelHumanID
+from providers.inference_models.orm import InferenceModelRecordOrm, InferenceModelRecord, \
+    InferenceModelAddRequest, lookup_inference_model_record_detailed
+from _util.typing import InferenceModelRecordID, InferenceModelHumanID
 from providers.orm import ProviderRecordOrm, ProviderRecord
 
 

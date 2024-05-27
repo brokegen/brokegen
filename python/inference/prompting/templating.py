@@ -1,6 +1,6 @@
 import re
 
-from inference.prompting.models import PromptText, TemplatedPromptText
+from _util.typing import PromptText, TemplatedPromptText
 
 
 async def apply_llm_template(

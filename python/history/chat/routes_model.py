@@ -4,7 +4,7 @@ import logging
 from pydantic import BaseModel
 
 from history.chat.database import Message
-from inference.prompting.models import RoleName, PromptText
+from _util.typing import PromptText, RoleName
 from providers.inference_models.orm import InferenceModelRecordOrm
 
 logger = logging.getLogger(__name__)

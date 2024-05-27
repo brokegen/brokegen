@@ -1,8 +1,7 @@
 from sqlalchemy import Column, String, DateTime, Integer, Boolean
 
 from _util.json import JSONDict
-from _util.typing import MessageID, ChatSequenceID
-from inference.prompting.models import RoleName, PromptText
+from _util.typing import MessageID, ChatSequenceID, PromptText, RoleName
 from providers.inference_models.database import Base
 
 

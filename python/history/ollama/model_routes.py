@@ -12,8 +12,8 @@ from audit.http import AuditDB
 from history.ollama.json import OllamaEventBuilder
 from history.ollama.models import build_model_from_api_show, build_models_from_api_tags
 from providers.inference_models.database import HistoryDB
-from providers.inference_models.orm import InferenceModelRecordID, InferenceModelRecord, InferenceModelHumanID, \
-    InferenceModelRecordOrm
+from providers.inference_models.orm import InferenceModelRecord, InferenceModelRecordOrm
+from _util.typing import InferenceModelRecordID, InferenceModelHumanID
 from providers.ollama import OllamaProvider
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry, BaseProvider

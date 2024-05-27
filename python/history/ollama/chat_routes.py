@@ -12,7 +12,8 @@ from history.ollama.model_routes import do_api_show
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, lookup_inference_model_record, \
-    InferenceModelHumanID, InferenceReason
+    InferenceReason
+from _util.typing import InferenceModelHumanID
 from providers.ollama import _real_ollama_client
 from providers.orm import ProviderLabel, ProviderRecord
 from providers.registry import ProviderRegistry

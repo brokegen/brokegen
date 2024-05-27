@@ -8,8 +8,8 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import InferenceModelRecordOrm, InferenceModelRecordID, \
-    lookup_inference_model_record, lookup_inference_model_record_detailed, InferenceModelAddRequest
+from providers.inference_models.orm import InferenceModelRecordOrm, lookup_inference_model_record, lookup_inference_model_record_detailed, InferenceModelAddRequest
+from _util.typing import InferenceModelRecordID
 from providers.orm import ProviderRecordOrm, ProviderRecord, ProviderAddRequest
 
 

@@ -16,7 +16,8 @@ from history.ollama.chat_routes import lookup_model_offline
 from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, \
     consolidate_stream, OllamaEventBuilder
 from inference.embeddings.retrieval import RetrievalPolicy
-from inference.prompting.templating import apply_llm_template, PromptText, TemplatedPromptText
+from inference.prompting.templating import apply_llm_template
+from _util.typing import PromptText, TemplatedPromptText
 from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceEventOrm, InferenceReason
 from providers.ollama import _real_ollama_client

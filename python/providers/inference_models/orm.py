@@ -4,13 +4,9 @@ from typing import TypeAlias, Optional, Self
 from pydantic import PositiveInt, BaseModel, ConfigDict
 from sqlalchemy import Column, Integer, String, DateTime, JSON, Double, select, UniqueConstraint
 
-from _util.typing import ChatSequenceID
-from inference.prompting.models import TemplatedPromptText
+from _util.typing import ChatSequenceID, TemplatedPromptText, InferenceModelRecordID, InferenceModelHumanID
 from providers.inference_models.database import Base, HistoryDB
 from providers.orm import ProviderLabel
-
-InferenceModelRecordID: TypeAlias = PositiveInt
-InferenceModelHumanID: TypeAlias = str
 
 InferenceEventID: TypeAlias = PositiveInt
 InferenceReason: TypeAlias = str

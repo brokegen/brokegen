@@ -18,7 +18,8 @@ from history.ollama.json import consolidate_stream, OllamaResponseContentJSON, c
 from history.ollama.model_routes import do_api_tags, do_api_show_streaming
 from inference.embeddings.knowledge import KnowledgeSingleton, get_knowledge_dependency
 from inference.embeddings.retrieval import SkipRetrievalPolicy, CustomRetrievalPolicy
-from inference.prompting.templating import TemplatedPromptText, apply_llm_template
+from inference.prompting.templating import apply_llm_template
+from _util.typing import TemplatedPromptText
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceReason
 

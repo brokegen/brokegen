@@ -10,12 +10,12 @@ from pydantic import BaseModel, Json
 from sqlalchemy import select, Row
 
 from history.chat.database import Message, ChatSequence
-from _util.typing import MessageID, ChatSequenceID
+from _util.typing import MessageID, ChatSequenceID, InferenceModelRecordID
 from history.chat.routes_model import translate_model_info_diff, translate_model_info
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceEventOrm, lookup_inference_model, InferenceModelRecordOrm, \
     InferenceReason
-from providers.inference_models.orm import InferenceModelRecordID, InferenceEventID
+from providers.inference_models.orm import InferenceEventID
 
 logger = logging.getLogger(__name__)
 
