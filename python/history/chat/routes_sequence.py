@@ -169,7 +169,14 @@ def install_routes(app: FastAPI):
 
         if "response_info_str" in filtered_inference_event_in:
             if not filtered_inference_event_in.get("response_info", None):
-                filtered_inference_event_in["response_info"] = filtered_inference_event_in["response_info_str"]
+                # Enforce response_info sort order
+                sorted_response_info = orjson.loads(
+                    orjson.dumps(
+                        orjson.loads(filtered_inference_event_in["response_info_str"]),
+                        option=orjson.OPT_SORT_KEYS
+                    )
+                )
+                filtered_inference_event_in["response_info"] = sorted_response_info
                 del filtered_inference_event_in["response_info_str"]
 
         match_object = history_db.execute(
