@@ -28,7 +28,8 @@ async def lookup_model_offline(
     provider = await ProviderRegistry().make(ProviderLabel(type="ollama", id="http://localhost:11434"))
     provider_record = await provider.make_record()
     model = lookup_inference_model_record(model_name, provider_record.identifiers, history_db)
-
+    if not model:
+        raise HTTPException(400, "Trying to look up model that doesn't exist, you should create it first")
     if not safe_get(model.combined_inference_parameters, 'template'):
         raise HTTPException(500, "No model template available, confirm that InferenceModelRecords are complete")
 

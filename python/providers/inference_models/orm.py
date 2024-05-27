@@ -138,7 +138,7 @@ def lookup_inference_model_record(
                InferenceModelRecordOrm.human_id == human_id)
         .order_by(InferenceModelRecordOrm.last_seen.desc())
         .limit(1)
-    ).scalar_one()
+    ).scalar_one_or_none()
 
 
 def lookup_inference_model_record_detailed(
