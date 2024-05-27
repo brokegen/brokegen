@@ -1,19 +1,22 @@
 import logging
+from typing import cast
 
 import httpx
 import orjson
 import starlette.responses
 from fastapi import Request
 
+import providers
 from _util.json import safe_get
 from audit.http import AuditDB
 from history.ollama.json import OllamaEventBuilder
 from history.ollama.models import build_model_from_api_show, build_models_from_api_tags
 from providers.inference_models.database import HistoryDB
-from providers.inference_models.orm import InferenceModelRecordID, InferenceModelRecord
-from providers.ollama import build_executor_record, OllamaProvider
+from providers.inference_models.orm import InferenceModelRecordID, InferenceModelRecord, InferenceModelHumanID, \
+    InferenceModelRecordOrm
+from providers.ollama import OllamaProvider
 from providers.orm import ProviderLabel
-from providers.registry import ProviderRegistry
+from providers.registry import ProviderRegistry, BaseProvider
 
 _real_ollama_client = httpx.AsyncClient(
     base_url="http://localhost:11434",
@@ -46,13 +49,12 @@ async def do_list_available_models(
     response: httpx.Response = await provider.client.send(upstream_request)
     response: starlette.responses.Response = await intercept.wrap_response(response)
 
-    big_result = dict(list(build_models_from_api_tags(
+    return dict(list(build_models_from_api_tags(
         await provider.make_record(),
         cached_accessed_at,
         orjson.loads(response.body),
         history_db=history_db,
     )))
-    return big_result
 
 
 async def do_api_tags(
@@ -86,38 +88,71 @@ async def do_api_tags(
 
 
 async def do_api_show(
+        model_name: InferenceModelHumanID,
+        history_db: HistoryDB,
+        audit_db: AuditDB,
+) -> InferenceModelRecordOrm:
+    intercept = OllamaEventBuilder("ollama:/api/show", audit_db)
+    logger.debug(f"ollama proxy: start handler for POST /api/show")
+
+    provider: BaseProvider = ProviderRegistry().by_label[ProviderLabel(type="ollama", id=_real_ollama_client.base_url)]
+    provider: providers.ollama.OllamaProvider = cast(providers.ollama.OllamaProvider, provider)
+    upstream_request = provider.client.build_request(
+        method="POST",
+        url="/api/show",
+        content=orjson.dumps({"name": model_name}),
+        # https://github.com/encode/httpx/discussions/2959
+        # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
+        headers=[('Connection', 'close')],
+    )
+    response: httpx.Response = await provider.client.send(upstream_request)
+    response: starlette.responses.Response = await intercept.wrap_response(response)
+
+    return build_model_from_api_show(
+        model_name,
+        (await provider.make_record()).identifiers,
+        orjson.loads(response.body),
+        history_db,
+    )
+
+
+async def do_api_show_streaming(
         original_request: Request,
         history_db: HistoryDB,
         audit_db: AuditDB,
-):
+) -> starlette.responses.Response:
     intercept = OllamaEventBuilder("ollama:/api/show", audit_db)
-    logger.debug(f"ollama proxy: start handler for POST /api/show")
-    upstream_request = _real_ollama_client.build_request(
-        method=original_request.method,
+    logger.debug(f"ollama proxy: start legacy handler for POST /api/show")
+
+    provider: BaseProvider = ProviderRegistry().by_label[
+        ProviderLabel(type="ollama", id=str(_real_ollama_client.base_url))
+    ]
+    provider: providers.ollama.OllamaProvider = cast(providers.ollama.OllamaProvider, provider)
+    upstream_request = provider.client.build_request(
+        method="POST",
         url="/api/show",
         content=intercept.wrap_req(original_request.stream()),
-        headers=original_request.headers,
-        cookies=original_request.cookies,
+        # https://github.com/encode/httpx/discussions/2959
+        # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
+        headers=[('Connection', 'close')],
     )
 
+    upstream_response = await provider.client.send(upstream_request)
     # Stash the model name, since we bothered to intercept it
-    model_name = safe_get(intercept.wrapped_event.request_info, 'name')
+    human_id = safe_get(intercept.wrapped_event.request_info, 'name')
 
     async def on_done_fetching(response_content_json):
-        if not model_name:
-            logger.info(f"ollama /api/show: Failed to log request, JSON incomplete")
+        if not human_id:
+            logger.info(f"ollama /api/show: Failed to log initial request, JSON incomplete")
             return
 
-        executor_record = build_executor_record(str(_real_ollama_client.base_url), history_db=history_db)
-        model = build_model_from_api_show(
-            executor_record,
-            model_name,
-            intercept.wrapped_event.accessed_at,
+        provider: BaseProvider = ProviderRegistry().by_label[
+            ProviderLabel(type="ollama", id=str(_real_ollama_client.base_url))]
+        build_model_from_api_show(
+            human_id,
+            (await provider.make_record()).identifiers,
             response_content_json,
-            history_db=history_db,
+            history_db,
         )
 
-        return model
-
-    upstream_response = await _real_ollama_client.send(upstream_request)
     return await intercept.wrap_response(upstream_response, on_done_fetching)

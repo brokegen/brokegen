@@ -14,7 +14,8 @@ from audit.http import get_db as get_audit_db
 from history.chat.database import Message, ChatSequenceID, ChatSequence
 from history.chat.routes_sequence import do_get_sequence
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm
+from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, InferenceEventID, \
+    InferenceModelHumanID
 from _util.json import JSONStreamingResponse
 from inference.embeddings.retrieval import SkipRetrievalPolicy
 from inference.prompting.models import PromptText
@@ -43,6 +44,7 @@ def install_routes(app: FastAPI):
         # Manually fetch the message + model config history from our requests
         messages_list = do_get_sequence(params.sequence_id, history_db, include_model_info_diffs=False)
         # And append our user message as its own message
+        # TODO: Commit this message and/or check for duplicates
         messages_list.append(Message(
             role='user',
             content=params.user_prompt,
@@ -50,16 +52,16 @@ def install_routes(app: FastAPI):
         ))
 
         # Fetch the latest model config from ChatSequence
-        ijob_id = history_db.execute(
+        inference_id: InferenceEventID = history_db.execute(
             select(InferenceEventOrm.id)
             .join(ChatSequence, ChatSequence.inference_job_id == InferenceEventOrm.id)
             .where(ChatSequence.id == params.sequence_id)
         ).scalar_one()
 
-        model_name = history_db.execute(
+        model_name: InferenceModelHumanID = history_db.execute(
             select(InferenceModelRecordOrm.human_id)
             .join(InferenceEventOrm, InferenceEventOrm.model_record_id == InferenceModelRecordOrm.id)
-            .where(InferenceEventOrm.id == ijob_id)
+            .where(InferenceEventOrm.id == inference_id)
         ).scalar_one()
 
         constructed_body = {

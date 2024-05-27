@@ -31,6 +31,9 @@ class Message(Base):
             (col.name, getattr(self, col.name)) for col in cols
         ])
 
+    def __str__(self) -> str:
+        return f"<ChatMessage#{self.id} role={self.role} content={self.content}>"
+
 
 class ChatSequence(Base):
     """

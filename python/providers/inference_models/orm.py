@@ -113,10 +113,10 @@ class InferenceModelRecordOrm(Base):
             else:
                 self.last_seen = min(model_in.last_seen, self.last_seen)
 
-        if not self.model_identifiers:
+        if not self.model_identifiers or self.model_identifiers == 'null':
             self.model_identifiers = model_in.model_identifiers
 
-        if not self.combined_inference_parameters:
+        if not self.combined_inference_parameters or self.combined_inference_parameters == 'null':
             self.combined_inference_parameters = model_in.combined_inference_parameters
 
         return self
@@ -129,17 +129,17 @@ class InferenceModelRecordOrm(Base):
 
 
 def lookup_inference_model_record(
-        provider_record: ProviderRecord,
         human_id: InferenceModelHumanID,
+        provider_identifiers: str,
         history_db: HistoryDB,
-) -> InferenceModelRecordOrm | None:
+) -> InferenceModelRecordOrm:
     return history_db.execute(
         select(InferenceModelRecordOrm)
-        .where(InferenceModelRecordOrm.provider_identifiers == provider_record.identifiers,
+        .where(InferenceModelRecordOrm.provider_identifiers == provider_identifiers,
                InferenceModelRecordOrm.human_id == human_id)
         .order_by(InferenceModelRecordOrm.last_seen.desc())
         .limit(1)
-    ).scalar_one_or_none()
+    ).scalar_one()
 
 
 def lookup_inference_model_record_detailed(
@@ -172,7 +172,7 @@ class InferenceEventOrm(Base):
     """
     __tablename__ = 'InferenceEvents'
 
-    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    id: InferenceEventID = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     model_record_id: InferenceModelRecordID = Column(Integer, nullable=False)
 
     prompt_tokens = Column(Integer)
@@ -204,3 +204,14 @@ class InferenceEventOrm(Base):
                          "response_created_at", "response_tokens", "response_eval_time", "response_error",
                          "response_info", name="all columns"),
     )
+
+
+def lookup_inference_model(
+        inference_id: InferenceEventID,
+        history_db: HistoryDB,
+) -> InferenceModelRecordOrm | None:
+    return history_db.execute(
+        select(InferenceModelRecordOrm)
+        .join(InferenceEventOrm, InferenceEventOrm.model_record_id == InferenceModelRecordOrm.id)
+        .where(InferenceEventOrm.id == inference_id)
+    ).scalar_one_or_none()

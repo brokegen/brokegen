@@ -2,67 +2,48 @@ import logging
 from typing import Tuple
 
 import orjson
+from fastapi import HTTPException
 from starlette.requests import Request
 
+from _util.json import safe_get
 from audit.http import AuditDB
 from history.ollama.json import OllamaEventBuilder
 from history.ollama.model_routes import do_api_show
-from history.ollama.models import fetch_model_record
-from _util.json import safe_get
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB
-from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, lookup_inference_model_record
-from providers.orm import ProviderRecordOrm, ProviderLabel
-from providers.ollama import _real_ollama_client, build_executor_record
+from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, lookup_inference_model_record, \
+    InferenceModelHumanID
+from providers.ollama import _real_ollama_client
+from providers.orm import ProviderLabel, ProviderRecord
 from providers.registry import ProviderRegistry
 
 logger = logging.getLogger(__name__)
 
 
 async def lookup_model_offline(
-        model_name: str,
+        model_name: InferenceModelHumanID,
         history_db: HistoryDB,
-) -> Tuple[InferenceModelRecordOrm, ProviderRecordOrm]:
-    # TODO: Standardize on verb names, e.g. lookup for offline + fetch for maybe-online
-    executor_record = build_executor_record(
-        str(_real_ollama_client.base_url),
-        history_db=history_db)
-    model = fetch_model_record(
-        executor_record,
-        model_name,
-        history_db)
-    if model is None:
-        raise ValueError(f"Model not in database: {model_name}")
+) -> Tuple[InferenceModelRecordOrm, ProviderRecord]:
+    provider = await ProviderRegistry().make(ProviderLabel(type="ollama", id="http://localhost:11434"))
+    provider_record = await provider.make_record()
+    model = lookup_inference_model_record(model_name, provider_record.identifiers, history_db)
 
-    return model, executor_record
+    if not safe_get(model.combined_inference_parameters, 'template'):
+        raise HTTPException(500, "No model template available, confirm that InferenceModelRecords are complete")
+
+    return model, provider_record
 
 
 async def lookup_model(
-        parent_request: Request,
-        model_name: str,
+        model_name: InferenceModelHumanID,
         history_db: HistoryDB,
         audit_db: AuditDB,
-) -> Tuple[InferenceModelRecordOrm, ProviderRecordOrm]:
+) -> Tuple[InferenceModelRecordOrm, ProviderRecord]:
     try:
-        provider = await ProviderRegistry().make(ProviderLabel(type="ollama", id="http://localhost:11434"))
-        provider_record = provider.make_record()
-        model = lookup_inference_model_record(provider_record, model_name, history_db)
-
-        return model, provider_record
-
+        return await lookup_model_offline(model_name, history_db)
     except ValueError:
-        executor_record = build_executor_record(
-            str(_real_ollama_client.base_url),
-            history_db=history_db)
-
-        # TODO: This… wouldn't work, because the request content probably doesn't actually include the model
-        await do_api_show(parent_request, history_db, audit_db)
-        model = fetch_model_record(executor_record, model_name, history_db)
-
-        if not model:
-            raise RuntimeError(f"Failed to fetch Ollama model {model_name}")
-
-    return model, executor_record
+        provider = ProviderRegistry().by_label[ProviderLabel(type="ollama", id=_real_ollama_client.base_url)]
+        return await do_api_show(model_name, history_db, audit_db), await provider.make_record()
 
 
 async def do_proxy_generate(
@@ -77,8 +58,7 @@ async def do_proxy_generate(
     intercept.wrapped_event.request_info = request_content_json
     intercept._try_commit()
 
-    model, executor_record = await lookup_model(original_request, request_content_json['model'], history_db,
-                                                audit_db)
+    model, executor_record = await lookup_model(request_content_json['model'], history_db, audit_db)
 
     inference_job = InferenceEventOrm(
         model_config=model.id,

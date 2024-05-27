@@ -7,6 +7,7 @@ import httpx
 import orjson
 import starlette.datastructures
 import starlette.requests
+from starlette.exceptions import HTTPException
 
 from _util.json import JSONStreamingResponse, safe_get, JSONArray
 from audit.http import AuditDB
@@ -34,20 +35,15 @@ async def do_generate_raw_templated(
         on_done_fn: Callable[[OllamaResponseContentJSON], Awaitable[Any]] | None = None,
 ):
     intercept = OllamaEventBuilder("ollama:/api/generate", audit_db)
-    intercept.wrapped_event.request_info = request_content
-    intercept._try_commit()
 
-    model, executor_record = await lookup_model_offline(
-        request_content['model'],
-        history_db,
-    )
+    model, executor_record = await lookup_model_offline(request_content['model'], history_db)
 
     if safe_get(request_content, 'options'):
         raise NotImplementedError(
             "Haven't implemented handling of override options! Need to construct a new ModelConfig.")
 
     inference_job = InferenceEventOrm(
-        model_config=model.id,
+        model_record_id=model.id,
         prompt_with_templating=request_content['prompt'],
     )
     history_db.add(inference_job)
@@ -107,6 +103,8 @@ async def convert_chat_to_generate(
             or safe_get(model.combined_inference_parameters, 'template')
             or ''
     )
+    if not model_template:
+        raise HTTPException(500, "No model template available, confirm that InferenceModelRecords are complete")
 
     system_message = (
             safe_get(chat_request_content, 'options', 'system')

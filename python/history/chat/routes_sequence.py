@@ -5,14 +5,14 @@ from typing import Optional
 
 import fastapi.routing
 import orjson
-from fastapi import FastAPI, Depends
+from fastapi import Depends
 from pydantic import BaseModel, Json
 from sqlalchemy import select, Row
 
 from history.chat.database import MessageID, Message, ChatSequenceID, ChatSequence
-from history.chat.routes_model import fetch_model_info, translate_model_info_diff, translate_model_info
+from history.chat.routes_model import translate_model_info_diff, translate_model_info
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import InferenceEventOrm
+from providers.inference_models.orm import InferenceEventOrm, lookup_inference_model, InferenceModelRecordOrm
 from providers.inference_models.orm import InferenceModelRecordID, InferenceEventID
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ class SequenceAddResponse(BaseModel):
     just_created: bool
 
 
-class InferenceJobIn(BaseModel):
+class InferenceEventIn(BaseModel):
     prompt_tokens: Optional[int] = None
     prompt_eval_time: Optional[float] = None
     prompt_with_templating: Optional[str] = None
@@ -65,7 +65,7 @@ def do_get_sequence(
 ) -> list[Message]:
     messages_list = []
 
-    last_seen_model: InferenceConfigRecordOrm | None = None
+    last_seen_model: InferenceModelRecordOrm | None = None
     sequence_id: ChatSequenceID = id
     while sequence_id is not None:
         logger.debug(f"Checking for sequence {id} => ancestor {sequence_id}")
@@ -84,7 +84,7 @@ def do_get_sequence(
 
         # For "debug" purposes, compute the diffs even if we don't render them
         if message_row[2] is not None:
-            this_model = fetch_model_info(message_row[2])
+            this_model = lookup_inference_model(message_row[2], history_db)
             if last_seen_model is not None:
                 # Since we're iterating in child-to-parent order, dump diffs backwards if something changed.
                 mdiff = translate_model_info_diff(last_seen_model, this_model)
@@ -135,34 +135,17 @@ def construct_router():
         )
 
     @router.post("/models/{model_record_id:int}/inference-events")
-    def construct_inference_job(
+    def construct_inference_event(
             response: fastapi.Response,
             model_record_id: InferenceModelRecordID,
-            ijob_in: InferenceJobIn,
+            inference_event_in: InferenceEventIn,
             history_db: HistoryDB = Depends(get_history_db),
     ) -> InferenceJobAddResponse:
-        """
-        TODO: Confirm that this function is idempotent-enough for chat imports.
-        """
-        sorted_response_info = None
-        if ijob_in.response_info:
-            sorted_response_info = orjson.loads(
-                orjson.dumps(ijob_in.response_info, option=orjson.OPT_SORT_KEYS)
-            )
-        elif ijob_in.response_info_str:
-            # TODO: This is a really dumb way of sorting, seek a better way.
-            sorted_response_info = orjson.loads(
-                orjson.dumps(
-                    orjson.loads(ijob_in.response_info_str),
-                    option=orjson.OPT_SORT_KEYS,
-                )
-            )
-
         # Check for matches
         filtered_inference_event_in = {
             "model_record_id": model_record_id,
         }
-        for k, v in ijob_in.model_dump().items():
+        for k, v in inference_event_in.model_dump().items():
             # SQL NULL always compares not equal, so skip those items
             if v:
                 filtered_inference_event_in[k] = v

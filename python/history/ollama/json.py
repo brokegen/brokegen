@@ -175,9 +175,22 @@ class OllamaEventBuilder:
             *on_done_fns: Callable[[OllamaResponseContentJSON], Awaitable[Any]],
     ) -> starlette.responses.Response:
         content = upstream_response.content
-        self.response_content_json = orjson.loads(content)
-        self.wrapped_event.response_content = self.response_content_json
-        self._try_commit()
+        if upstream_response.is_success and content:
+            try:
+                self.response_content_json = orjson.loads(content)
+                self.wrapped_event.response_content = self.response_content_json
+                self._try_commit()
+            except Exception as e:
+                logger.error(f"Failed to parse response content, forwarding response to client anyway: {e}")
+        else:
+            self.wrapped_event.response_info = {
+                "status_code": upstream_response.status_code,
+                "reason_phrase": upstream_response.reason_phrase,
+                "content": content.decode(),
+                "headers": dict(upstream_response.headers),
+                "http_version": upstream_response.http_version,
+            }
+            self._try_commit()
 
         async def post_forward_cleanup():
             for on_done_fn in on_done_fns:
@@ -201,6 +214,7 @@ class OllamaEventBuilder:
             *on_done_fns: Callable[[OllamaResponseContentJSON], Awaitable[Any]],
     ) -> starlette.responses.StreamingResponse:
         async def reconsolidate(chunks: Iterable[bytes | str]):
+            """Turns a synchronous Iterable into async, because that's easier than rewriting consolidate_stream."""
             done_marker = object()
             it = iter(chunks)
 
@@ -220,14 +234,20 @@ class OllamaEventBuilder:
                 yield chunk0
                 all_chunks.append(chunk0)
 
-            self.response_content_json = await consolidate_stream(reconsolidate(all_chunks))
             if upstream_response.is_success and self.response_content_json:
-                self.wrapped_event.response_content = self.response_content_json
-                self._try_commit()
+                try:
+                    self.response_content_json = await consolidate_stream(reconsolidate(all_chunks))
+                    self.wrapped_event.response_content = self.response_content_json
+                    self._try_commit()
+                except Exception as e:
+                    logger.error(f"Failed to parse streaming response content, forwarding response to client anyway: {e}")
             else:
                 self.wrapped_event.response_content = {
                     "status_code": upstream_response.status_code,
-                    "headers": upstream_response.headers,
+                    "reason_phrase": upstream_response.reason_phrase,
+                    "content": [chunk0.decode() for chunk0 in all_chunks],
+                    "headers": dict(upstream_response.headers),
+                    "http_version": upstream_response.http_version,
                 }
                 self._try_commit()
 

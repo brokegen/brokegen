@@ -2,12 +2,10 @@ import json
 import logging
 
 from pydantic import BaseModel
-from sqlalchemy import select
 
 from history.chat.database import Message
-from providers.inference_models.database import get_db as get_history_db
-from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm
 from inference.prompting.models import RoleName, PromptText
+from providers.inference_models.orm import InferenceModelRecordOrm
 
 logger = logging.getLogger(__name__)
 
@@ -22,20 +20,6 @@ class InfoMessageOut(BaseModel):
     """
     role: RoleName = 'model info'
     content: PromptText
-
-
-def fetch_model_info(ij_id) -> InferenceModelRecordOrm | None:
-    if ij_id is None:
-        return None
-
-    # NB Usually, running a query during iteration would need a second SQLAlchemy cursor-session-thing.
-    history_db = next(get_history_db())
-    return history_db.execute(
-        select(InferenceConfigRecordOrm)
-        .join(InferenceEventOrm, InferenceEventOrm.model_record_id == InferenceConfigRecordOrm.id)
-        .where(InferenceEventOrm.id == ij_id)
-        .limit(1)
-    ).scalar_one_or_none()
 
 
 def translate_model_info(model0: InferenceModelRecordOrm | None) -> Message:
