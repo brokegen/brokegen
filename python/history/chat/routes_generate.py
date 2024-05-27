@@ -11,7 +11,7 @@ from sqlalchemy import select
 import history.ollama
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
-from history.chat.database import Message, ChatSequence
+from history.chat.database import ChatMessage, ChatSequence
 from _util.typing import ChatSequenceID, PromptText, InferenceModelHumanID
 from history.chat.routes_sequence import do_get_sequence
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
@@ -44,7 +44,7 @@ def install_routes(app: FastAPI):
         messages_list = do_get_sequence(params.sequence_id, history_db, include_model_info_diffs=False)
         # And append our user message as its own message
         # TODO: Commit this message and/or check for duplicates
-        messages_list.append(Message(
+        messages_list.append(ChatMessage(
             role='user',
             content=params.user_prompt,
             created_at=datetime.now(tz=timezone.utc),

@@ -5,7 +5,7 @@ from _util.typing import MessageID, ChatSequenceID, PromptText, RoleName
 from providers.inference_models.database import Base
 
 
-class Message(Base):
+class ChatMessage(Base):
     __tablename__ = 'Messages'
 
     id: MessageID = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
@@ -20,7 +20,7 @@ class Message(Base):
     """
 
     def as_json(self) -> JSONDict:
-        cols = Message.__mapper__.columns
+        cols = ChatMessage.__mapper__.columns
         return dict([
             (col.name, getattr(self, col.name)) for col in cols
         ])

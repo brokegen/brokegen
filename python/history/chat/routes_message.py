@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from _util.json import JSONDict
-from history.chat.database import Message
+from history.chat.database import ChatMessage
 from _util.typing import MessageID, PromptText, RoleName
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 
@@ -50,7 +50,7 @@ def install_routes(app: FastAPI):
     ) -> MessageAddResponse:
         if not allow_duplicates:
             maybe_message_id = history_db.execute(
-                select(Message.id)
+                select(ChatMessage.id)
                 .filter_by(role=message.role, content=message.content)
                 .limit(1)
             ).scalar_one_or_none()
@@ -60,7 +60,7 @@ def install_routes(app: FastAPI):
                     just_created=False,
                 )
 
-        new_object = Message(
+        new_object = ChatMessage(
             role=message.role,
             content=message.content,
             created_at=message.created_at,
@@ -82,7 +82,7 @@ def install_routes(app: FastAPI):
             history_db: HistoryDB = Depends(get_history_db),
     ) -> MessageOut:
         match_object = history_db.execute(
-            select(Message)
+            select(ChatMessage)
             .filter_by(id=id)
         ).scalar_one_or_none()
         if match_object is None:
