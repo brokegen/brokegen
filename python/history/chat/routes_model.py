@@ -32,7 +32,7 @@ def fetch_model_info(ij_id) -> InferenceModelRecordOrm | None:
     history_db = next(get_history_db())
     return history_db.execute(
         select(InferenceConfigRecordOrm)
-        .join(InferenceEventOrm, InferenceEventOrm.model_config == InferenceConfigRecordOrm.id)
+        .join(InferenceEventOrm, InferenceEventOrm.model_record_id == InferenceConfigRecordOrm.id)
         .where(InferenceEventOrm.id == ij_id)
         .limit(1)
     ).scalar_one_or_none()

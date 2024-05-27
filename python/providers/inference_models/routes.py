@@ -69,13 +69,17 @@ def install_routes(app: FastAPI):
         response_model=InferenceModelAddResponse,
     )
     async def create_model(
+            response: fastapi.Response,
             model_in: InferenceModelAddRequest,
             provider_in: ProviderAddRequest,
             history_db: HistoryDB = Depends(get_history_db),
     ) -> InferenceModelAddResponse:
         provider_record: ProviderRecord = make_provider_record(provider_in, "POST /models", history_db)
+        # Replace the model_in's provider_identifiers with a sorted one
+        model_in.provider_identifiers = provider_record.identifiers
+
         maybe_model = lookup_inference_model_record(provider_record, model_in.human_id, history_db)
-        if maybe_model is None:
+        if maybe_model is not None:
             # Check in-depth to see if we have anything actually-identical
             maybe_model1 = lookup_inference_model_record_detailed(model_in, history_db)
             if maybe_model1 is not None:
@@ -94,6 +98,7 @@ def install_routes(app: FastAPI):
         history_db.add(new_model)
         history_db.commit()
 
+        response.status_code = fastapi.status.HTTP_201_CREATED
         return InferenceModelAddResponse(
             model_id=new_model.id,
             just_created=True

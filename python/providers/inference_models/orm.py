@@ -1,8 +1,8 @@
 from datetime import datetime
 from typing import TypeAlias, Optional, Self
 
-from pydantic import PositiveInt, BaseModel, ConfigDict, create_model
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, JSON, Double, select
+from pydantic import PositiveInt, BaseModel, ConfigDict
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, JSON, Double, select, UniqueConstraint
 
 from inference.prompting.models import TemplatedPromptText
 from providers.inference_models.database import Base, HistoryDB
@@ -25,7 +25,7 @@ class InferenceModelLabel(BaseModel):
 
 
 class InferenceModelRecord(BaseModel):
-    id: Optional[InferenceModelRecordID] = None
+    id: InferenceModelRecordID
     human_id: InferenceModelHumanID
 
     first_seen_at: Optional[datetime] = None
@@ -43,14 +43,23 @@ class InferenceModelRecord(BaseModel):
     )
 
 
-InferenceModelAddRequest = create_model(
-    'InferenceModelAddRequest',
-    __base__=InferenceModelRecord,
-)
+class InferenceModelAddRequest(BaseModel):
+    """
+    TODO: This should really inherit from the normal Record class, but:
 
-# TODO: Neither of these truly work
-InferenceModelAddRequest.__fields__['provider_identifiers'].exclude = True
-del InferenceModelAddRequest.__fields__['provider_identifiers']
+    - frozen=True needs to get unset
+    - provider_identifiers should be nullable, since model requests always come with Provider.identifiers
+    """
+    human_id: InferenceModelHumanID
+
+    first_seen_at: Optional[datetime] = None
+    last_seen: Optional[datetime] = None
+
+    provider_identifiers: Optional[str] = None
+    """WARNING: This field is generally not-sorted, and should be, for realistic use."""
+    model_identifiers: Optional[dict] = str
+
+    combined_inference_parameters: Optional[dict] = str
 
 
 class InferenceModelRecordOrm(Base):
@@ -84,6 +93,11 @@ class InferenceModelRecordOrm(Base):
     These will be important to surface to the user, but that's _because_ they were
     assumed to be changed in response to user actions.
     """
+
+    __table_args__ = (
+        UniqueConstraint("human_id", "provider_identifiers", "model_identifiers", "combined_inference_parameters",
+                         name="all columns"),
+    )
 
     def merge_in_updates(self, model_in: InferenceModelRecord) -> Self:
         # Update the last-seen date, if needed
@@ -131,16 +145,20 @@ def lookup_inference_model_record_detailed(
         model_in: InferenceModelAddRequest,
         history_db: HistoryDB,
 ) -> InferenceModelRecordOrm | None:
+    where_clauses = [
+        InferenceModelRecordOrm.human_id == model_in.human_id,
+        InferenceModelRecordOrm.provider_identifiers == model_in.provider_identifiers,
+    ]
+    # NULL will always return not equal in SQL, so check only if there's something to check
+    if model_in.model_identifiers:
+        where_clauses.append(InferenceModelRecordOrm.model_identifiers == model_in.model_identifiers)
+    if model_in.combined_inference_parameters:
+        where_clauses.append(
+            InferenceModelRecordOrm.combined_inference_parameters == model_in.combined_inference_parameters)
+
     return history_db.execute(
         select(InferenceModelRecordOrm)
-        .filter_by(
-            human_id=model_in.human_id,
-            provider_identifiers=model_in.provider_identifiers,
-            model_identifiers=model_in.model_identifiers,
-            combined_inference_parameters=model_in.combined_inference_parameters,
-        )
-        .order_by(InferenceModelRecordOrm.last_seen.desc())
-        .limit(1)
+        .where(*where_clauses)
     ).scalar_one_or_none()
 
 
@@ -154,7 +172,7 @@ class InferenceEventOrm(Base):
     __tablename__ = 'InferenceEvents'
 
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-    model_config: InferenceModelRecordID = Column(Integer, nullable=False)
+    model_record_id: InferenceModelRecordID = Column(Integer, nullable=False)
 
     prompt_tokens = Column(Integer)
     prompt_eval_time = Column(Double)
@@ -179,3 +197,9 @@ class InferenceEventOrm(Base):
     """
     Freeform field, for additional data from the Provider.
     """
+
+    __table_args__ = (
+        UniqueConstraint("model_record_id", "prompt_tokens", "prompt_eval_time", "prompt_with_templating",
+                         "response_created_at", "response_tokens", "response_eval_time", "response_error",
+                         "response_info", name="all columns"),
+    )

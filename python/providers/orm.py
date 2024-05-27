@@ -3,7 +3,7 @@ from typing import Optional, TypeAlias
 
 import orjson
 from pydantic import BaseModel, ConfigDict, create_model
-from sqlalchemy import Column, String, DateTime, JSON
+from sqlalchemy import Column, String, DateTime, JSON, UniqueConstraint
 
 from providers.inference_models.database import Base
 
@@ -69,3 +69,7 @@ class ProviderRecordOrm(Base):
 
     machine_info = Column(JSON)
     human_info = Column(String)
+
+    __table_args__ = (
+        UniqueConstraint("identifiers", "machine_info", name="all columns"),
+    )

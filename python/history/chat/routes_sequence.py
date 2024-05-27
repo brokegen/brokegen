@@ -6,14 +6,14 @@ from typing import Optional
 import fastapi.routing
 import orjson
 from fastapi import FastAPI, Depends
-from pydantic import BaseModel, Json, Field
+from pydantic import BaseModel, Json
 from sqlalchemy import select, Row
 
 from history.chat.database import MessageID, Message, ChatSequenceID, ChatSequence
 from history.chat.routes_model import fetch_model_info, translate_model_info_diff, translate_model_info
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
+from providers.inference_models.orm import InferenceEventOrm
 from providers.inference_models.orm import InferenceModelRecordID, InferenceEventID
-from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +37,6 @@ class SequenceAddResponse(BaseModel):
 
 
 class InferenceJobIn(BaseModel):
-    model_config_id: InferenceModelRecordID = Field(alias='model_config_id_')
-
     prompt_tokens: Optional[int] = None
     prompt_eval_time: Optional[float] = None
     prompt_with_templating: Optional[str] = None
@@ -108,6 +106,7 @@ def install_routes(app: FastAPI):
 
     @router.post("/sequences")
     async def post_sequence(
+            response: fastapi.Response,
             seq_in: SequenceIn,
             history_db: HistoryDB = Depends(get_history_db),
     ) -> SequenceAddResponse:
@@ -125,26 +124,20 @@ def install_routes(app: FastAPI):
                 just_created=False,
             )
 
-        new_object = ChatSequence(
-            human_desc=seq_in.human_desc,
-            user_pinned=seq_in.user_pinned,
-            current_message=seq_in.current_message,
-            parent_sequence=seq_in.parent_sequence,
-            generated_at=seq_in.generated_at,
-            generation_complete=seq_in.generation_complete,
-            inference_job_id=seq_in.inference_job_id,
-            inference_error=seq_in.inference_error,
-        )
+        new_object = ChatSequence(**seq_in.model_dump())
         history_db.add(new_object)
         history_db.commit()
 
+        response.status_code = fastapi.status.HTTP_201_CREATED
         return SequenceAddResponse(
             sequence_id=new_object.id,
             just_created=True,
         )
 
-    @router.post("/sequences/none/inference-job")
+    @router.post("/models/{model_record_id:int}/inference-events")
     def construct_inference_job(
+            response: fastapi.Response,
+            model_record_id: InferenceModelRecordID,
             ijob_in: InferenceJobIn,
             history_db: HistoryDB = Depends(get_history_db),
     ) -> InferenceJobAddResponse:
@@ -165,19 +158,23 @@ def install_routes(app: FastAPI):
                 )
             )
 
+        # Check for matches
+        filtered_inference_event_in = {
+            "model_record_id": model_record_id,
+        }
+        for k, v in ijob_in.model_dump().items():
+            # SQL NULL always compares not equal, so skip those items
+            if v:
+                filtered_inference_event_in[k] = v
+
+        if "response_info_str" in filtered_inference_event_in:
+            if not filtered_inference_event_in.get("response_info", None):
+                filtered_inference_event_in["response_info"] = filtered_inference_event_in["response_info_str"]
+                del filtered_inference_event_in["response_info_str"]
+
         match_object = history_db.execute(
             select(InferenceEventOrm.id)
-            .filter_by(
-                model_config=ijob_in.model_config_id,
-                prompt_tokens=ijob_in.prompt_tokens,
-                prompt_eval_time=ijob_in.prompt_eval_time,
-                prompt_with_templating=ijob_in.prompt_with_templating,
-                response_created_at=ijob_in.response_created_at,
-                response_tokens=ijob_in.response_tokens,
-                response_eval_time=ijob_in.response_eval_time,
-                response_error=ijob_in.response_error,
-                response_info=sorted_response_info,
-            )
+            .filter_by(**filtered_inference_event_in)
         ).scalar_one_or_none()
         if match_object is not None:
             return InferenceJobAddResponse(
@@ -185,20 +182,11 @@ def install_routes(app: FastAPI):
                 just_created=False,
             )
 
-        new_object = InferenceEventOrm(
-            model_config=ijob_in.model_config_id,
-            prompt_tokens=ijob_in.prompt_tokens,
-            prompt_eval_time=ijob_in.prompt_eval_time,
-            prompt_with_templating=ijob_in.prompt_with_templating,
-            response_created_at=ijob_in.response_created_at,
-            response_tokens=ijob_in.response_tokens,
-            response_eval_time=ijob_in.response_eval_time,
-            response_error=ijob_in.response_error,
-            response_info=sorted_response_info,
-        )
+        new_object = InferenceEventOrm(**filtered_inference_event_in)
         history_db.add(new_object)
         history_db.commit()
 
+        response.status_code = fastapi.status.HTTP_201_CREATED
         return InferenceJobAddResponse(
             ijob_id=new_object.id,
             just_created=True,

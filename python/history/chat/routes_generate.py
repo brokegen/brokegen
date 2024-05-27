@@ -58,7 +58,7 @@ def install_routes(app: FastAPI):
 
         model_name = history_db.execute(
             select(InferenceModelRecordOrm.human_id)
-            .join(InferenceEventOrm, InferenceEventOrm.model_config == InferenceModelRecordOrm.id)
+            .join(InferenceEventOrm, InferenceEventOrm.model_record_id == InferenceModelRecordOrm.id)
             .where(InferenceEventOrm.id == ijob_id)
         ).scalar_one()
 
