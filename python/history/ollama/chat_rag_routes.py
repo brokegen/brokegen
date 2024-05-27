@@ -18,7 +18,7 @@ from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJ
 from inference.embeddings.retrieval import RetrievalPolicy
 from inference.prompting.templating import apply_llm_template, PromptText, TemplatedPromptText
 from providers.inference_models.database import HistoryDB
-from providers.inference_models.orm import InferenceEventOrm
+from providers.inference_models.orm import InferenceEventOrm, InferenceReason
 from providers.ollama import _real_ollama_client
 
 logger = logging.getLogger(__name__)
@@ -32,6 +32,7 @@ async def do_generate_raw_templated(
         request_cookies: httpx.Cookies | None,
         history_db: HistoryDB,
         audit_db: AuditDB,
+        inference_reason: InferenceReason | None = None,
         on_done_fn: Callable[[OllamaResponseContentJSON], Awaitable[Any]] | None = None,
 ):
     intercept = OllamaEventBuilder("ollama:/api/generate", audit_db)
@@ -45,6 +46,7 @@ async def do_generate_raw_templated(
     inference_job = InferenceEventOrm(
         model_record_id=model.id,
         prompt_with_templating=request_content['prompt'],
+        reason=inference_reason,
     )
     history_db.add(inference_job)
     history_db.commit()
@@ -259,6 +261,7 @@ async def do_proxy_chat_rag(
             system_message: PromptText | None,
             user_prompt: PromptText | None,
             assistant_response: PromptText | None = None,
+            inference_reason: InferenceReason | None = None,
     ) -> PromptText:
         model, executor_record = await lookup_model_offline(
             request_content_json['model'],
@@ -295,6 +298,7 @@ async def do_proxy_chat_rag(
             request_cookies=None,
             history_db=history_db,
             audit_db=audit_db,
+            inference_reason=inference_reason,
         )
 
         content_chunks = []
@@ -304,8 +308,9 @@ async def do_proxy_chat_rag(
         response0_json = orjson.loads(''.join(content_chunks))
         return response0_json['response']
 
-    prompt_override = await retrieval_policy.parse_chat_history(chat_messages, generate_helper_fn,
-                                                                generate_retrieval_str)
+    prompt_override = await retrieval_policy.parse_chat_history(
+        chat_messages, generate_helper_fn, generate_retrieval_str
+    )
 
     ollama_response = await convert_chat_to_generate(
         original_request,

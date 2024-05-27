@@ -8,6 +8,7 @@ from langchain_core.documents import Document
 
 from inference.embeddings.knowledge import KnowledgeSingleton
 from inference.prompting.models import ChatMessage, PromptText, TemplatedPromptText
+from providers.inference_models.orm import InferenceReason
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -82,7 +83,7 @@ class CustomRetrievalPolicy(RetrievalPolicy):
     async def parse_chat_history(
             self,
             messages: List[ChatMessage],
-            generate_helper_fn: Callable[[PromptText, PromptText, PromptText], Awaitable[PromptText]],
+            generate_helper_fn: Callable[[PromptText, PromptText, PromptText, InferenceReason], Awaitable[PromptText]],
             _: Callable[[TemplatedPromptText], Awaitable[PromptText]] | None,
     ) -> PromptText | None:
         latest_message_content = messages[-1]['content']
@@ -106,6 +107,7 @@ class CustomRetrievalPolicy(RetrievalPolicy):
                 retrieval_str = await generate_helper_fn(
                     system_message="Summarize the most important and unique terms in the following query",
                     user_prompt=latest_message_content,
+                    inference_reason="summarize prompt for retrieval",
                 )
                 # If the summary is blank or shorter than a tweet, skip.
                 if not retrieval_str.strip() or len(retrieval_str) < 140:
@@ -149,6 +151,7 @@ Provide a concise summary of the provided document. Call out any sections that s
 {matching_docs0[n].page_content}
 </document>""",
                     assistant_response="Summary of the returned document: ",
+                    inference_reason="summarize document",
                 )
                 # If the summary is blank or shorter than a tweet, skip.
                 if not summarized_doc.strip() or len(summarized_doc) < 140:

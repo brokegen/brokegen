@@ -1,14 +1,9 @@
-from typing import TypeAlias
-
-import pydantic
 from sqlalchemy import Column, String, DateTime, Integer, Boolean
 
 from _util.json import JSONDict
+from _util.typing import MessageID, ChatSequenceID
 from inference.prompting.models import RoleName, PromptText
 from providers.inference_models.database import Base
-
-MessageID: TypeAlias = pydantic.PositiveInt
-ChatSequenceID: TypeAlias = pydantic.PositiveInt
 
 
 class Message(Base):

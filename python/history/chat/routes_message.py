@@ -9,7 +9,8 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from _util.json import JSONDict
-from history.chat.database import MessageID, Message
+from history.chat.database import Message
+from _util.typing import MessageID
 from inference.prompting.models import RoleName, PromptText
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 

@@ -2,16 +2,19 @@ from datetime import datetime
 from typing import TypeAlias, Optional, Self
 
 from pydantic import PositiveInt, BaseModel, ConfigDict
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, JSON, Double, select, UniqueConstraint
+from sqlalchemy import Column, Integer, String, DateTime, JSON, Double, select, UniqueConstraint
 
+from _util.typing import ChatSequenceID
 from inference.prompting.models import TemplatedPromptText
 from providers.inference_models.database import Base, HistoryDB
-from providers.orm import ProviderRecord, ProviderLabel
+from providers.orm import ProviderLabel
 
 InferenceModelRecordID: TypeAlias = PositiveInt
 InferenceModelHumanID: TypeAlias = str
 
 InferenceEventID: TypeAlias = PositiveInt
+InferenceReason: TypeAlias = str
+"""TODO: Should be an enum, but enums for SQLAlchemy take some work"""
 
 
 class InferenceModelLabel(BaseModel):
@@ -72,7 +75,7 @@ class InferenceModelRecordOrm(Base):
     last_seen = Column(DateTime)
 
     # TODO: ForeignKey('ProviderRecords.identifiers')
-    provider_identifiers: str = Column(String,  nullable=False)
+    provider_identifiers: str = Column(String, nullable=False)
     model_identifiers = Column(JSON)
     """
     Contains parameters that are not something our client can change,
@@ -199,10 +202,28 @@ class InferenceEventOrm(Base):
     Freeform field, for additional data from the Provider.
     """
 
+    parent_sequence: ChatSequenceID = Column(Integer)
+    """
+    Useful for collating information across several inference jobs, to determine \"actual\" cost of a query
+    """
+    reason: InferenceReason = Column(String)
+    """
+    Should be an enum, but open-ended.
+    
+    Planned types:
+
+    - `prompt` means it was the direct/final user prompt, maybe handled with manual templating
+    - `prompt+rag` means extra context added to the user prompt,
+       check for other InferenceEvents with the same `parent_sequence`
+    - `summarize prompt for retrieval` means a given prompt seemed too long/complex, summarize (or split it) for retrieval
+    - `summarize document` means a retrieval doc was too long, we made another query to summarize that
+    - `summarize chat` means there were too many tokens provided for the requested context window size
+    """
+
     __table_args__ = (
         UniqueConstraint("model_record_id", "prompt_tokens", "prompt_eval_time", "prompt_with_templating",
                          "response_created_at", "response_tokens", "response_eval_time", "response_error",
-                         "response_info", name="all columns"),
+                         "response_info", name="stats columns"),
     )
 
 

@@ -20,6 +20,7 @@ from inference.embeddings.knowledge import KnowledgeSingleton, get_knowledge_dep
 from inference.embeddings.retrieval import SkipRetrievalPolicy, CustomRetrievalPolicy
 from inference.prompting.templating import TemplatedPromptText, apply_llm_template
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
+from providers.inference_models.orm import InferenceReason
 
 logger = logging.getLogger(__name__)
 
@@ -167,10 +168,11 @@ def install_forwards(app: FastAPI, enable_rag: bool):
     @ollama_forwarder.post("/ollama-proxy/api/generate")
     async def proxy_generate(
             request: Request,
+            inference_reason: InferenceReason = "prompt",
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
     ):
-        return await do_proxy_generate(request, history_db, audit_db)
+        return await do_proxy_generate(request, inference_reason, history_db, audit_db)
 
     @ollama_forwarder.post("/ollama-proxy/api/chat")
     async def proxy_chat_rag(

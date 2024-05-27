@@ -12,7 +12,7 @@ from history.ollama.model_routes import do_api_show
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, lookup_inference_model_record, \
-    InferenceModelHumanID
+    InferenceModelHumanID, InferenceReason
 from providers.ollama import _real_ollama_client
 from providers.orm import ProviderLabel, ProviderRecord
 from providers.registry import ProviderRegistry
@@ -48,6 +48,7 @@ async def lookup_model(
 
 async def do_proxy_generate(
         original_request: Request,
+        inference_reason: InferenceReason,
         history_db: HistoryDB,
         audit_db: AuditDB,
 ):
@@ -63,6 +64,7 @@ async def do_proxy_generate(
     inference_job = InferenceEventOrm(
         model_config=model.id,
         overridden_inference_params=request_content_json.get('options', None),
+        reason=inference_reason,
     )
     history_db.add(inference_job)
     history_db.commit()

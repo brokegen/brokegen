@@ -11,7 +11,8 @@ from sqlalchemy import select
 import history.ollama
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
-from history.chat.database import Message, ChatSequenceID, ChatSequence
+from history.chat.database import Message, ChatSequence
+from _util.typing import ChatSequenceID
 from history.chat.routes_sequence import do_get_sequence
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, InferenceEventID, \
