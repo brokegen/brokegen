@@ -151,7 +151,7 @@ def run_proxy(
         if not isinstance(ollama, providers.ollama.OllamaProvider):
             raise HTTPException(501, "Only ollama is supported")
 
-        available_models = await do_list_available_models(
+        return await do_list_available_models(
             cast(providers.ollama.OllamaProvider, ollama),
             history_db,
             audit_db,
