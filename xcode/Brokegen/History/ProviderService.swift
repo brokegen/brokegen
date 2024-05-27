@@ -25,6 +25,9 @@ public struct InferenceModel: Identifiable {
 
     public let combinedInferenceParameters: JSONObject?
 
+    /// Additional inference stats, added if available.
+    /// Surfaced to client for the sake of sorting models + choosing ones they'd probably want.
+    public let stats: JSONObject?
 }
 
 extension InferenceModel {
@@ -52,8 +55,9 @@ extension InferenceModel {
             firstSeenAt: firstSeenAt0,
             lastSeen: lastSeen0,
             providerIdentifiers: jsonDict["provider_identifiers"] as! String,
-            modelIdentifiers: jsonDict["model_identifiers"] as! [String : Any],
-            combinedInferenceParameters: jsonDict["combined_inference_parameters"] as? JSONObject
+            modelIdentifiers: (jsonDict["model_identifiers"] as! [String : Any]),
+            combinedInferenceParameters: jsonDict["combined_inference_parameters"] as? JSONObject,
+            stats: jsonDict["stats"] as? JSONObject
         )
     }
 }
@@ -99,34 +103,36 @@ class ProviderService: Observable, ObservableObject {
 
     private func getDataAsJsonArray(_ endpoint: String) async -> [Any]? {
         let data = await getData(endpoint)
+        guard data != nil else {
+            print("GET \(endpoint) returned nil data")
+            return nil
+        }
+
         do {
-            if data != nil {
-                let jsonArray = try JSONSerialization.jsonObject(with: data!, options: []) as! [Any]
-                return jsonArray
-            }
-            else {
-                return nil
-            }
+            let jsonArray = try JSONSerialization.jsonObject(with: data!, options: []) as! [Any]
+            return jsonArray
         }
         catch {
-            print("GET \(endpoint) decoding failed: \(String(describing: data))")
+            let dataDesc = String(data: data!, encoding: .utf8) ?? String(describing: data)
+            print("GET \(endpoint) decoding as array failed: \(dataDesc)")
             return nil
         }
     }
 
     private func getDataAsJsonDict(_ endpoint: String) async -> [String : Any]? {
         let data = await getData(endpoint)
+        guard data != nil else {
+            print("GET \(endpoint) returned nil data")
+            return nil
+        }
+
         do {
-            if data != nil {
-                let jsonDict = try JSONSerialization.jsonObject(with: data!, options: []) as! [String : Any]
-                return jsonDict
-            }
-            else {
-                return nil
-            }
+            let jsonDict = try JSONSerialization.jsonObject(with: data!, options: []) as! [String : Any]
+            return jsonDict
         }
         catch {
-            print("GET \(endpoint) decoding failed: \(String(describing: data))")
+            let dataDesc = String(data: data!, encoding: .utf8) ?? String(describing: data)
+            print("GET \(endpoint) decoding as dict failed: \(dataDesc)")
             return nil
         }
     }

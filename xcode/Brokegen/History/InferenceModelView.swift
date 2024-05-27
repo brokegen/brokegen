@@ -12,16 +12,19 @@ struct InferenceModelView: View {
                         .monospaced()
                         .padding(.bottom, 8)
 
-                    Text(model.providerIdentifiers)
+                    if let lastSeen = model.lastSeen {
+                        Text(String(describing: lastSeen))
+                            .font(.subheadline)
+                    }
+
+                    Divider()
+
+                    Text(String(describing: model.stats))
                         .monospaced()
 
                     Text(String(describing: model.modelIdentifiers))
                         .monospaced()
 
-                    if let lastSeen = model.lastSeen {
-                        Text(String(describing: lastSeen))
-                            .font(.subheadline)
-                    }
                 }
                 .padding(12)
                 .lineLimit(4)
