@@ -27,7 +27,7 @@ public struct InferenceModel: Identifiable {
 
     /// Additional inference stats, added if available.
     /// Surfaced to client for the sake of sorting models + choosing ones they'd probably want.
-    public let stats: JSONObject?
+    public let stats: [String : Any]?
 }
 
 extension InferenceModel {
@@ -57,7 +57,7 @@ extension InferenceModel {
             providerIdentifiers: jsonDict["provider_identifiers"] as! String,
             modelIdentifiers: (jsonDict["model_identifiers"] as! [String : Any]),
             combinedInferenceParameters: jsonDict["combined_inference_parameters"] as? JSONObject,
-            stats: jsonDict["stats"] as? JSONObject
+            stats: (jsonDict["stats"] as! [String : Any])
         )
     }
 }

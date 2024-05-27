@@ -1,5 +1,6 @@
 import logging
-from typing import cast
+import operator
+from typing import cast, Any
 
 import httpx
 import orjson
@@ -35,7 +36,7 @@ async def do_list_available_models(
         provider: OllamaProvider,
         history_db: HistoryDB,
         audit_db: AuditDB,
-) -> dict[InferenceModelRecordID, InferenceModelRecord]:
+) -> dict[InferenceModelRecordID, InferenceModelRecord | Any]:
     intercept = OllamaEventBuilder("ollama:/api/tags", audit_db)
     cached_accessed_at = intercept.wrapped_event.accessed_at
 
@@ -55,9 +56,10 @@ async def do_list_available_models(
         orjson.loads(response.body),
         history_db=history_db,
     )
-    available_models = inject_inference_stats(available_models_generator, history_db, days=90)
+    models_and_sort_keys = inject_inference_stats(available_models_generator, history_db)
+    sorted_masks = sorted(models_and_sort_keys, key=operator.itemgetter(1), reverse=True)
     return dict(
-        [(model.id, model) for model in available_models]
+        [(mask[0].id, mask[0]) for mask in sorted_masks]
     )
 
 

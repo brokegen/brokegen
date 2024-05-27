@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import TypeAlias, Optional, Self, Iterable
+from typing import TypeAlias, Optional, Self, Iterable, Any, cast
 
 from pydantic import PositiveInt, BaseModel, ConfigDict
-from sqlalchemy import Column, Integer, String, DateTime, JSON, Double, select, UniqueConstraint
+from sqlalchemy import Column, Integer, String, DateTime, JSON, Double, select, UniqueConstraint, func, or_
 
 from _util.typing import ChatSequenceID, TemplatedPromptText, InferenceModelRecordID, InferenceModelHumanID
 from providers.inference_models.database import Base, HistoryDB
@@ -39,6 +39,15 @@ class InferenceModelRecord(BaseModel):
         extra='forbid',
         from_attributes=True,
         frozen=True,
+    )
+
+
+class InferenceModelWithStats(InferenceModelRecord):
+    stats: Optional[dict] = None
+
+    model_config = ConfigDict(
+        extra='allow',
+        frozen=False,
     )
 
 
@@ -120,11 +129,19 @@ class InferenceModelRecordOrm(Base):
 
         return self
 
+    def model_dump(self) -> Iterable[tuple[str, Any]]:
+        for column in InferenceModelRecordOrm.__mapper__.columns:
+            yield column.name, getattr(self, column.name)
+
     def as_json(self):
-        cols = InferenceModelRecordOrm.__mapper__.columns
-        return dict([
-            (col.name, getattr(self, col.name)) for col in cols
-        ])
+        result_dict = {}
+        for name, value in self.model_dump():
+            if isinstance(value, datetime):
+                result_dict[name] = value.isoformat()
+            else:
+                result_dict[name] = value
+
+        return result_dict
 
 
 def lookup_inference_model_record(
@@ -237,7 +254,60 @@ def lookup_inference_model(
 def inject_inference_stats(
         models: Iterable[InferenceModelRecord],
         history_db: HistoryDB,
-        days: int,
-) -> Iterable[InferenceModelRecord]:
+) -> Iterable[tuple[InferenceModelWithStats, tuple]]:
     for inference_model in models:
-        yield inference_model
+        query = (
+            select(
+                func.count(InferenceEventOrm.id),
+                func.sum(InferenceEventOrm.prompt_tokens),
+                func.sum(InferenceEventOrm.prompt_eval_time),
+                func.sum(InferenceEventOrm.response_tokens),
+                func.sum(InferenceEventOrm.response_eval_time),
+            )
+            .where(
+                InferenceEventOrm.model_record_id == inference_model.id,
+                or_(
+                    InferenceEventOrm.response_error.is_(None),
+                    InferenceEventOrm.response_error.is_("null")
+                ),
+            )
+        )
+        query_result = history_db.execute(query).one()
+        print(f"[DEBUG] model {inference_model.id}: {query_result=}")
+
+        stats_dict = {}
+        if query_result is not None:
+            stats_dict = {
+                "inference events count": query_result[0],
+            }
+
+            if query_result[1] is not None:
+                stats_dict["prompt tokens evaluated"] = query_result[1]
+            if query_result[2] is not None:
+                stats_dict["prompt evaluation time"] = query_result[2]
+            if query_result[1] and query_result[2]:
+                stats_dict["prompt sec/token"] = query_result[2] / query_result[1]
+
+            if query_result[3] is not None:
+                stats_dict["response tokens returned"] = query_result[3]
+            if query_result[4] is not None:
+                stats_dict["response inference time"] = query_result[4]
+            if query_result[3] and query_result[4]:
+                stats_dict["response sec/token"] = query_result[4] / query_result[3]
+
+            if query_result[1] is not None and query_result[3] is not None:
+                stats_dict["total tokens"] = query_result[1] + query_result[3]
+
+        statsed = InferenceModelWithStats(**inference_model.model_dump())
+        statsed.stats = stats_dict
+
+        sort_keys = (
+            # Sort by number of tokens, if we can
+            query_result[1] + query_result[3] if (query_result and query_result[1] and query_result[3]) else -1,
+            # Then sort by number of jobs
+            query_result[0] if query_result else -1,
+            # Finally-ish, by last_seen
+            inference_model.last_seen.timestamp() if inference_model.last_seen else 0,
+        )
+
+        yield statsed, sort_keys
