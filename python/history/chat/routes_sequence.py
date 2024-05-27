@@ -9,7 +9,7 @@ from fastapi import Depends
 from pydantic import BaseModel, Json
 from sqlalchemy import select, Row
 
-from history.chat.database import ChatMessage, ChatSequence
+from history.chat.database import ChatMessageOrm, ChatSequence
 from _util.typing import MessageID, ChatSequenceID, InferenceModelRecordID
 from history.chat.routes_model import translate_model_info_diff, translate_model_info
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
@@ -67,17 +67,17 @@ def do_get_sequence(
         id: ChatSequenceID,
         history_db: HistoryDB,
         include_model_info_diffs: bool,
-) -> list[ChatMessage]:
+) -> list[ChatMessageOrm]:
     messages_list = []
 
     last_seen_model: InferenceModelRecordOrm | None = None
     sequence_id: ChatSequenceID = id
     while sequence_id is not None:
         logger.debug(f"Checking for sequence {id} => ancestor {sequence_id}")
-        message_row: Row[ChatMessage, ChatSequenceID | None, int] | None
+        message_row: Row[ChatMessageOrm, ChatSequenceID | None, int] | None
         message_row = history_db.execute(
-            select(ChatMessage, ChatSequence.parent_sequence, ChatSequence.inference_job_id)
-            .join(ChatMessage, ChatMessage.id == ChatSequence.current_message)
+            select(ChatMessageOrm, ChatSequence.parent_sequence, ChatSequence.inference_job_id)
+            .join(ChatMessageOrm, ChatMessageOrm.id == ChatSequence.current_message)
             .where(ChatSequence.id == sequence_id)
         ).one_or_none()
         if message_row is None:

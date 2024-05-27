@@ -1,11 +1,27 @@
-from sqlalchemy import Column, String, DateTime, Integer, Boolean
+from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict
+from sqlalchemy import Column, String, DateTime, Integer, Boolean, select
 
 from _util.json import JSONDict
 from _util.typing import MessageID, ChatSequenceID, PromptText, RoleName
-from providers.inference_models.database import Base
+from providers.inference_models.database import Base, HistoryDB
 
 
-class ChatMessage(Base):
+class ChatMessageAddRequest(BaseModel):
+    role: RoleName
+    content: PromptText
+    created_at: Optional[datetime] = None
+
+    model_config = ConfigDict(
+        extra='forbid',
+        from_attributes=True,
+        frozen=True,
+    )
+
+
+class ChatMessageOrm(Base):
     __tablename__ = 'Messages'
 
     id: MessageID = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
@@ -20,13 +36,30 @@ class ChatMessage(Base):
     """
 
     def as_json(self) -> JSONDict:
-        cols = ChatMessage.__mapper__.columns
+        cols = ChatMessageOrm.__mapper__.columns
         return dict([
             (col.name, getattr(self, col.name)) for col in cols
         ])
 
     def __str__(self) -> str:
         return f"<ChatMessage#{self.id} role={self.role} content={self.content}>"
+
+
+def lookup_chat_message(
+        message_in: ChatMessageAddRequest,
+        history_db: HistoryDB,
+) -> ChatMessageOrm | None:
+    where_clauses = [
+        ChatMessageOrm.role == message_in.role,
+        ChatMessageOrm.content == message_in.content,
+    ]
+    if message_in.created_at is not None:
+        where_clauses.append(ChatMessageOrm.created_at == message_in.created_at)
+
+    return history_db.execute(
+        select(ChatMessageOrm)
+        .where(*where_clauses)
+    ).scalar_one_or_none()
 
 
 class ChatSequence(Base):

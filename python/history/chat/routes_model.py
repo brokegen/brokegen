@@ -3,7 +3,7 @@ import logging
 
 from pydantic import BaseModel
 
-from history.chat.database import ChatMessage
+from history.chat.database import ChatMessageOrm
 from _util.typing import PromptText, RoleName
 from providers.inference_models.orm import InferenceModelRecordOrm
 
@@ -22,14 +22,14 @@ class InfoMessageOut(BaseModel):
     content: PromptText
 
 
-def translate_model_info(model0: InferenceModelRecordOrm | None) -> ChatMessage:
+def translate_model_info(model0: InferenceModelRecordOrm | None) -> ChatMessageOrm:
     if model0 is None:
-        return ChatMessage(
+        return ChatMessageOrm(
             role='model config',
             content="no info available",
         )
 
-    return ChatMessage(
+    return ChatMessageOrm(
         role='model config',
         content=f"ModelConfigRecord: {json.dumps(model0.as_json(), indent=2)}"
     )
@@ -48,7 +48,7 @@ def translate_model_info_diff(
     if model0.as_json() == model1.as_json():
         return None
 
-    return ChatMessage(
+    return ChatMessageOrm(
         role='model config',
         # TODO: pip install jsondiff would make this simpler, and also dumber
         content=f"ModelRecordConfigs changed:\n"

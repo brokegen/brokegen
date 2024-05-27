@@ -6,7 +6,8 @@ import pytest
 from starlette.testclient import TestClient
 
 import history.chat.routes_message
-from providers.models.database import HistoryDB
+import providers.inference_models.database
+from providers.inference_models.database import HistoryDB
 
 
 @pytest.fixture(scope='session')
@@ -14,7 +15,7 @@ def chat_test_app():
     test_app = fastapi.FastAPI()
     history.chat.routes_generate.install_routes(test_app)
     history.chat.routes_message.install_routes(test_app)
-    history.chat.routes_sequence.install_routes(test_app)
+    history.chat.install_routes(test_app)
 
     yield test_app
 
@@ -26,9 +27,9 @@ def test_client(chat_test_app):
 
 @pytest.fixture(scope="function", autouse=True)
 def history_db() -> HistoryDB:
-    inference.models.database.load_db_models_pytest()
-    yield inference.models.database.get_db()
-    inference.models.database.SessionLocal = None
+    providers.inference_models.database.load_db_models_pytest()
+    yield providers.inference_models.database.get_db()
+    providers.inference_models.database.SessionLocal = None
 
 
 def test_early_read(test_client):
@@ -42,7 +43,7 @@ def test_unchecked_write(test_client, history_db):
         "content": "test_write_read() is great content",
     }))
 
-    assert response0.status_code == 200
+    assert response0.status_code == 201
     new_id: int = response0.json()['message_id']
     assert new_id > 0
 
@@ -56,7 +57,7 @@ def test_write_read(test_client):
         "content": test_content,
     }))
 
-    assert response0.status_code == 200
+    assert response0.status_code == 201
     new_id: int = response0.json()['message_id']
     assert new_id > 0
 

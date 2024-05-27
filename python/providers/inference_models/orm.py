@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TypeAlias, Optional, Self, Iterable, Any, cast
+from typing import TypeAlias, Optional, Self, Iterable, Any
 
 from pydantic import PositiveInt, BaseModel, ConfigDict
 from sqlalchemy import Column, Integer, String, DateTime, JSON, Double, select, UniqueConstraint, func, or_
@@ -39,6 +39,7 @@ class InferenceModelRecord(BaseModel):
         extra='forbid',
         from_attributes=True,
         frozen=True,
+        protected_namespaces=(),
     )
 
 
@@ -68,6 +69,10 @@ class InferenceModelAddRequest(BaseModel):
     model_identifiers: Optional[dict] = None
 
     combined_inference_parameters: Optional[dict] = None
+
+    model_config = ConfigDict(
+        protected_namespaces=(),
+    )
 
 
 class InferenceModelRecordOrm(Base):

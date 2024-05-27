@@ -50,7 +50,7 @@ ProviderAddRequest = create_model(
 )
 
 # TODO: This doesn't work, either
-ProviderAddRequest.__fields__['identifiers'].annotation = dict
+ProviderAddRequest.model_fields['identifiers'].annotation = dict
 
 
 class ProviderRecordOrm(Base):

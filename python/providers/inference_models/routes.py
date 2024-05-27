@@ -17,8 +17,6 @@ class InferenceModelAddResponse(BaseModel):
     model_id: InferenceModelRecordID
     just_created: bool
 
-    # Disable Pydantic warning where `model_` prefixed items are reserved.
-    # TODO: Figure out how to use Field(alias=...)
     model_config = ConfigDict(
         protected_namespaces=(),
     )
