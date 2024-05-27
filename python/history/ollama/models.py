@@ -52,7 +52,7 @@ def build_models_from_api_tags(
             first_seen_at=model_modified_at,
             last_seen=model_modified_at,
             provider_identifiers=provider_record.identifiers,
-            model_identifiers=orjson.dumps(sorted_model_json['details'], option=orjson.OPT_SORT_KEYS),
+            model_identifiers=sorted_model_json['details'],
             # combined_inference_parameters=None,
         )
 

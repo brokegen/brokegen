@@ -128,12 +128,19 @@ struct AppView: View {
                 Divider()
                 MiniJobsSidebar()
 
+                NavigationLink(destination: InferenceModelView()) {
+                    Text("Inference Models")
+                        .font(.title2)
+                        .foregroundStyle(.primary)
+                        .padding(6)
+                }
+
                 NavigationLink(destination: SystemInfoView()) {
                     Text("System Info")
                         .font(.title2)
                         .lineLimit(3)
+                        .padding(6)
                 }
-                .padding(32)
             }
             .listStyle(.sidebar)
             .frame(minWidth: 200, idealWidth: 400, maxHeight: .infinity)
