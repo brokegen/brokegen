@@ -12,7 +12,7 @@ public enum JSONObject: Codable {
     case null
 }
 
-public struct InferenceModel: Identifiable, Codable {
+public struct InferenceModel: Identifiable {
     public let id: UUID = UUID()
     public let serverId: Int
 
@@ -21,7 +21,7 @@ public struct InferenceModel: Identifiable, Codable {
     public let lastSeen: Date?
 
     public let providerIdentifiers: String
-    public let modelIdentifiers: JSONObject?
+    public let modelIdentifiers: [String : Any]?
 
     public let combinedInferenceParameters: JSONObject?
 
@@ -52,7 +52,7 @@ extension InferenceModel {
             firstSeenAt: firstSeenAt0,
             lastSeen: lastSeen0,
             providerIdentifiers: jsonDict["provider_identifiers"] as! String,
-            modelIdentifiers: jsonDict["model_identifiers"] as? JSONObject,
+            modelIdentifiers: jsonDict["model_identifiers"] as! [String : Any],
             combinedInferenceParameters: jsonDict["combined_inference_parameters"] as? JSONObject
         )
     }
