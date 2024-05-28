@@ -142,14 +142,12 @@ class ChatSyncService: Observable, ObservableObject {
         return Alamofire.Session(configuration: configuration)
     }()
 
-    private func getData(_ endpoint: String, parameters: [String : Any]? = nil) async -> Data? {
+    private func getData(_ endpoint: String) async -> Data? {
         do {
             return try await withCheckedThrowingContinuation { continuation in
                 session.request(
                     serverBaseURL + endpoint,
-                    method: .get,
-                    parameters: parameters,
-                    encoding: JSONEncoding.default
+                    method: .get
                 )
                 .response { r in
                     switch r.result {
@@ -198,9 +196,14 @@ class ChatSyncService: Observable, ObservableObject {
 
     var loadedSequences: [ChatSequence] = []
 
-    func fetchPinnedSequences() {
+    func fetchPinnedSequences(_ limit: Int? = nil) {
         Task.init {
-            let jsonDict = await getDataAsJson("/sequences/pinned")
+            var limitQuery = ""
+            if limit != nil {
+                limitQuery = "?limit=\(limit!)"
+            }
+
+            let jsonDict = await getDataAsJson("/sequences/pinned\(limitQuery)")
             guard jsonDict != nil else { return }
 
             // Clear out the entire set of existing sequences

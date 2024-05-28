@@ -93,7 +93,8 @@ struct SequenceRow: View {
 }
 
 func dateToSectionName(_ date: Date?) -> String {
-    guard date != nil else { return "[no date]" }
+    // NB This "default" name should sort later than the ones starting 2024-wwXX
+    guard date != nil else { return "no date" }
 
     let sectionName = dateToISOWeekStartingMonday(date!)
 
@@ -134,11 +135,19 @@ struct MultiSequenceView: View {
     }
 
     var body: some View {
-        Button("Refresh", systemImage: "paperplane") {
-            chatService.fetchPinnedSequences()
-        }
+        HStack {
+            Button("Refresh", systemImage: "paperplane") {
+                chatService.fetchPinnedSequences()
+            }
             .buttonStyle(.accessoryBar)
             .padding(36)
+
+            Button("Refresh 200", systemImage: "paperplane") {
+                chatService.fetchPinnedSequences(200)
+            }
+            .buttonStyle(.accessoryBar)
+            .padding(36)
+        }
 
         List(sectionedSequences, id: \.0) { pair in
             let (sectionName, sectionSequences) = pair
