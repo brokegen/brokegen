@@ -250,6 +250,8 @@ class OllamaEventBuilder:
                     "http_version": upstream_response.http_version,
                 }
                 self._try_commit()
+                # NB This is a lot of extra compute, but we don't really care.
+                self.response_content_json = orjson.loads(b''.join(all_chunks))
 
         async def post_forward_cleanup():
             await upstream_response.aclose()
