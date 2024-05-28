@@ -27,6 +27,29 @@ logger = logging.getLogger(__name__)
 OllamaModelName: TypeAlias = str
 
 
+def finalize_inference_job(
+        inference_job: InferenceEventOrm,
+        response_content_json: OllamaResponseContentJSON,
+):
+    if safe_get(response_content_json, 'prompt_eval_count'):
+        inference_job.prompt_tokens = safe_get(response_content_json, 'prompt_eval_count')
+    if safe_get(response_content_json, 'prompt_eval_duration'):
+        inference_job.prompt_eval_time = safe_get(response_content_json, 'prompt_eval_duration') / 1e9
+
+    if safe_get(response_content_json, 'created_at'):
+        inference_job.response_created_at = datetime.fromisoformat(safe_get(response_content_json, 'created_at'))
+    if safe_get(response_content_json, 'eval_count'):
+        inference_job.response_tokens = safe_get(response_content_json, 'eval_count')
+    if safe_get(response_content_json, 'eval_duration'):
+        inference_job.response_eval_time = safe_get(response_content_json, 'eval_duration') / 1e9
+
+    # TODO: I'm not sure this is even the actual field to check
+    if safe_get(response_content_json, 'error'):
+        inference_job.response_error = safe_get(response_content_json, 'error')
+
+    inference_job.response_info = dict(response_content_json)
+
+
 async def do_generate_raw_templated(
         request_content: OllamaRequestContentJSON,
         request_headers: starlette.datastructures.Headers,
@@ -60,25 +83,9 @@ async def do_generate_raw_templated(
         cookies=request_cookies,
     )
 
-    async def finalize_inference_job(response_content_json: OllamaResponseContentJSON):
+    async def do_finalize_inference_job(response_content_json: OllamaResponseContentJSON):
         merged_job = history_db.merge(inference_job)
-        if safe_get(response_content_json, 'prompt_eval_count'):
-            merged_job.prompt_tokens = safe_get(response_content_json, 'prompt_eval_count')
-        if safe_get(response_content_json, 'prompt_eval_duration'):
-            merged_job.prompt_eval_time = safe_get(response_content_json, 'prompt_eval_duration') / 1e9
-
-        if safe_get(response_content_json, 'created_at'):
-            merged_job.response_created_at = datetime.fromisoformat(safe_get(response_content_json, 'created_at'))
-        if safe_get(response_content_json, 'eval_count'):
-            merged_job.response_tokens = safe_get(response_content_json, 'eval_count')
-        if safe_get(response_content_json, 'eval_duration'):
-            merged_job.response_eval_time = safe_get(response_content_json, 'eval_duration') / 1e9
-
-        # TODO: I'm not sure this is even the actual field to check
-        if safe_get(response_content_json, 'error'):
-            merged_job.response_error = safe_get(response_content_json, 'error')
-
-        merged_job.response_info = dict(response_content_json)
+        finalize_inference_job(merged_job, response_content_json)
 
         history_db.add(merged_job)
         history_db.commit()
@@ -86,7 +93,7 @@ async def do_generate_raw_templated(
     with HttpxLogger(_real_ollama_client, audit_db):
         upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
 
-    return await intercept.wrap_entire_streaming_response(upstream_response, finalize_inference_job, on_done_fn)
+    return await intercept.wrap_entire_streaming_response(upstream_response, do_finalize_inference_job, on_done_fn)
 
 
 async def convert_chat_to_generate(

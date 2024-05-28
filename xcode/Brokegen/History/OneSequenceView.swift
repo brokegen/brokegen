@@ -113,8 +113,10 @@ struct OneSequenceView: View {
                         }
 
                         if let done = jsonDict["done"] as? Bool {
-                            if done {
-                                print("[DEBUG] Should update to new sequence_id: \(jsonDict["new_sequence_id"] ?? -2)")
+                            let newSequenceId: Int? = jsonDict["new_sequence_id"] as? Int
+                            if done && newSequenceId != nil {
+                                print("[DEBUG] Should update to new sequence_id: \(newSequenceId)")
+                                chatService.replaceSequence(sequence.serverId!, with: newSequenceId!)
                             }
                         }
                     }

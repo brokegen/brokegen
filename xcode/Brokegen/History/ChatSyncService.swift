@@ -210,6 +210,21 @@ class ChatSyncService: Observable, ObservableObject {
             }
         }
     }
+
+    func replaceSequence(_ originalSequenceId: Int, with updatedSequenceId: Int) {
+        Task.init {
+            loadedSequences.removeAll { $0.serverId == originalSequenceId }
+            do {
+                if let entireSequence = await getData("/sequences/\(updatedSequenceId)") {
+                    let newSeq = try ChatSequence(updatedSequenceId, data: entireSequence)
+                    self.loadedSequences.insert(newSeq, at: 0)
+                }
+            }
+            catch {
+                print("[ERROR] Failed to add updated sequence \(originalSequenceId) => \(updatedSequenceId)")
+            }
+        }
+    }
 }
 
 /// Finally, something to submit new chat requests

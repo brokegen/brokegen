@@ -233,6 +233,7 @@ class InferenceEventOrm(Base):
     - `prompt` means it was the direct/final user prompt, maybe handled with manual templating
     - `prompt+rag` means extra context added to the user prompt,
        check for other InferenceEvents with the same `parent_sequence`
+    - `chat` means we passed in messages (with role + content like OpenAI's final API endpoint)
     - `summarize prompt for retrieval` means a given prompt seemed too long/complex, summarize (or split it) for retrieval
     - `summarize document` means a retrieval doc was too long, we made another query to summarize that
     - `summarize chat` means there were too many tokens provided for the requested context window size
