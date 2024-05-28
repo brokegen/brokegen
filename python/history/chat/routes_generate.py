@@ -142,7 +142,7 @@ def construct_router():
 
             inference_job = InferenceEventOrm(
                 model_record_id=inference_model.id,
-                reason="chat",
+                reason="chat sequence",
             )
 
             finalize_inference_job(inference_job, response_content_json)
@@ -179,7 +179,10 @@ def construct_router():
             response_sequence.generated_at = inference_job.response_created_at
             response_sequence.generation_complete = response_content_json["done"]
             response_sequence.inference_job_id = inference_job.id
-            response_sequence.inference_error = None
+            response_sequence.inference_error = (
+                "this is a duplicate InferenceEvent, because do_generate_raw_templated will dump its own raws in. "
+                "we're keeping this one because it's tied into the actual ChatSequence."
+            )
 
             history_db.add(response_sequence)
             history_db.commit()

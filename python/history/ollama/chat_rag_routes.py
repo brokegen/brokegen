@@ -192,7 +192,8 @@ async def convert_chat_to_generate(
         httpx.Cookies(original_request.cookies),
         history_db,
         audit_db,
-        inference_reason="chat",
+        # TODO: The top-level call also includes inference details
+        inference_reason="chat raw",
     )
 
     async def translate_generate_to_chat(
