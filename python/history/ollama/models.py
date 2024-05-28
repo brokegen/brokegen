@@ -8,7 +8,7 @@ from _util.json import safe_get
 from history.ollama.json import OllamaResponseContentJSON
 from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceModelRecordOrm, InferenceModelRecord, \
-    InferenceModelAddRequest, lookup_inference_model_record_detailed
+    InferenceModelAddRequest, lookup_inference_model_detailed
 from _util.typing import InferenceModelRecordID, InferenceModelHumanID
 from providers.orm import ProviderRecordOrm, ProviderRecord
 
@@ -56,7 +56,7 @@ def build_models_from_api_tags(
             # combined_inference_parameters=None,
         )
 
-        maybe_model = lookup_inference_model_record_detailed(model_in, history_db)
+        maybe_model = lookup_inference_model_detailed(model_in, history_db)
         if maybe_model is not None:
             maybe_model.merge_in_updates(model_in)
             history_db.add(maybe_model)
@@ -134,7 +134,7 @@ def build_model_from_api_show(
     )
 
     # Quick check for more precise matches
-    maybe_model1 = lookup_inference_model_record_detailed(model_in, history_db)
+    maybe_model1 = lookup_inference_model_detailed(model_in, history_db)
     if maybe_model1:
         return maybe_model1
 

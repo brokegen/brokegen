@@ -9,10 +9,11 @@ from sqlalchemy import Row
 from sqlalchemy import select
 
 from _util.typing import ChatSequenceID, RoleName, PromptText
-from history.chat.database import ChatMessageOrm
+from history.chat.database import ChatMessageOrm, lookup_sequence_parents
 from history.chat.database import ChatSequence
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import InferenceModelRecordOrm, lookup_inference_model
+from providers.inference_models.orm import InferenceModelRecordOrm, lookup_inference_model_for_event_id, \
+    lookup_inference_model
 
 logger = logging.getLogger(__name__)
 
@@ -70,27 +71,20 @@ def do_get_sequence(
         include_model_info_diffs: bool,
 ) -> list[ChatMessageOrm]:
     messages_list = []
-
     last_seen_model: InferenceModelRecordOrm | None = None
-    sequence_id: ChatSequenceID = id
-    while sequence_id is not None:
-        logger.debug(f"Checking for sequence {id} => ancestor {sequence_id}")
-        message_row: Row[ChatMessageOrm, ChatSequenceID | None, int] | None
-        message_row = history_db.execute(
-            select(ChatMessageOrm, ChatSequence.parent_sequence, ChatSequence.inference_job_id)
-            .join(ChatMessageOrm, ChatMessageOrm.id == ChatSequence.current_message)
-            .where(ChatSequence.id == sequence_id)
-        ).one_or_none()
-        if message_row is None:
-            break
 
-        message, parent_id, _ = message_row
-        messages_list.append(message)
-        sequence_id = parent_id
+    sequence: ChatSequence
+    for sequence in lookup_sequence_parents(id, history_db):
+        message = history_db.execute(
+            select(ChatMessageOrm)
+            .where(ChatMessageOrm.id == sequence.current_message)
+        ).scalar_one_or_none()
+        if message is not None:
+            messages_list.append(message)
 
         # For "debug" purposes, compute the diffs even if we don't render them
-        if message_row[2] is not None:
-            this_model = lookup_inference_model(message_row[2], history_db)
+        if sequence.inference_job_id is not None:
+            this_model = lookup_inference_model_for_event_id(sequence.inference_job_id, history_db)
             if last_seen_model is not None:
                 # Since we're iterating in child-to-parent order, dump diffs backwards if something changed.
                 mdiff = translate_model_info_diff(last_seen_model, this_model)
@@ -108,19 +102,27 @@ def do_get_sequence(
 
 
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
-    @router_ish.get("/sequences/{id:int}")
+    @router_ish.get("/sequences/{sequence_id:int}")
     def get_sequence(
-            id: ChatSequenceID,
+            sequence_id: ChatSequenceID,
             history_db: HistoryDB = Depends(get_history_db),
     ):
         match_object = history_db.execute(
             select(ChatSequence)
-            .filter_by(id=id)
+            .filter_by(id=sequence_id)
         ).scalar_one_or_none()
         if match_object is None:
             raise HTTPException(400, "No matching object")
 
         # This modifies the SQLAlchemy object, when we should really have turned it into a JSON first.
         # TODO: Turn the `match_object` into a JSON object first.
-        match_object.messages = do_get_sequence(id, history_db, include_model_info_diffs=True)
+        match_object.messages = do_get_sequence(sequence_id, history_db, include_model_info_diffs=True)
+
+        # Stick latest model name onto SequenceID, for client ease-of-display
+        for sequence in lookup_sequence_parents(sequence_id, history_db):
+            model = lookup_inference_model_for_event_id(sequence.inference_job_id, history_db)
+            if model is not None:
+                match_object.inference_model_id = model.id
+                break
+
         return match_object

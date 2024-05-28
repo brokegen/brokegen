@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import InferenceModelRecordOrm, lookup_inference_model_record, lookup_inference_model_record_detailed, InferenceModelAddRequest
+from providers.inference_models.orm import InferenceModelRecordOrm, lookup_inference_model, lookup_inference_model_detailed, InferenceModelAddRequest
 from _util.typing import InferenceModelRecordID
 from providers.orm import ProviderRecordOrm, ProviderRecord, ProviderAddRequest
 
@@ -76,10 +76,10 @@ def install_routes(app: FastAPI):
         # Replace the model_in's provider_identifiers with a sorted one
         model_in.provider_identifiers = provider_record.identifiers
 
-        maybe_model = lookup_inference_model_record(model_in.human_id, provider_record.identifiers, history_db)
+        maybe_model = lookup_inference_model(model_in.human_id, provider_record.identifiers, history_db)
         if maybe_model is not None:
             # Check in-depth to see if we have anything actually-identical
-            maybe_model1 = lookup_inference_model_record_detailed(model_in, history_db)
+            maybe_model1 = lookup_inference_model_detailed(model_in, history_db)
             if maybe_model1 is not None:
                 maybe_model1.merge_in_updates(model_in)
                 history_db.add(maybe_model)

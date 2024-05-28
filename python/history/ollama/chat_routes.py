@@ -11,7 +11,7 @@ from history.ollama.json import OllamaEventBuilder
 from history.ollama.model_routes import do_api_show
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB
-from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, lookup_inference_model_record, \
+from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, lookup_inference_model, \
     InferenceReason
 from _util.typing import InferenceModelHumanID
 from providers.ollama import _real_ollama_client
@@ -27,7 +27,7 @@ async def lookup_model_offline(
 ) -> Tuple[InferenceModelRecordOrm, ProviderRecord]:
     provider = await ProviderRegistry().make(ProviderLabel(type="ollama", id="http://localhost:11434"))
     provider_record = await provider.make_record()
-    model = lookup_inference_model_record(model_name, provider_record.identifiers, history_db)
+    model = lookup_inference_model(model_name, provider_record.identifiers, history_db)
     if not model:
         raise HTTPException(400, "Trying to look up model that doesn't exist, you should create it first")
     if not safe_get(model.combined_inference_parameters, 'template'):

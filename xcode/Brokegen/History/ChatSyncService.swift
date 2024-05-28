@@ -95,6 +95,7 @@ class ChatSequence: Identifiable, Codable {
     let userPinned: Bool
 
     var messages: [Message] = []
+    let inferenceModelId: Int?
 
     init(_ serverId: Int? = nil, data: Data) throws {
         self.serverId = serverId
@@ -125,6 +126,8 @@ class ChatSequence: Identifiable, Codable {
             print("[DEBUG] Added message \(newMessage.serverId ?? -1) to Sequence#\(self.serverId!)")
             messages.append(newMessage)
         }
+
+        inferenceModelId = jsonDict["inference_model_id"] as? Int
     }
 
     var lastMessageDate: Date? {

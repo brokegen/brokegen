@@ -51,6 +51,7 @@ fileprivate func dateToISOWeekStartingMonday(_ date: Date) -> String {
 }
 
 struct SequenceRow: View {
+    @Environment(ProviderService.self) private var providerService
     let sequence: ChatSequence
 
     init(_ sequence: ChatSequence) {
@@ -64,6 +65,17 @@ struct SequenceRow: View {
         else {
             return nil
         }
+    }
+
+    func displayInferenceModel() -> String? {
+        guard sequence.inferenceModelId != nil else { return nil }
+
+        if let model = providerService.availableModels.first(where: {
+            $0.serverId == sequence.inferenceModelId!
+        }) {
+            return model.humanId
+        }
+        return nil
     }
 
     var body: some View {
@@ -87,6 +99,15 @@ struct SequenceRow: View {
                 }
 
                 Text("\(sequence.messages.count) messages")
+
+                if let modelName = displayInferenceModel() {
+                    Spacer()
+
+                    Text(modelName)
+                        .monospaced()
+                        // TODO: What we need is to dim the other rows, not brighten this one
+                        .foregroundStyle(Color(.controlAccentColor))
+                }
             }
         }
     }

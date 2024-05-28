@@ -90,6 +90,7 @@ def lookup_sequence_parents(
         current_id: ChatSequenceID,
         history_db: HistoryDB,
 ) -> Iterator[ChatSequence]:
+    # TODO: We should take advantage of the ORM relationship, rather than doing this
     while current_id is not None:
         sequence = history_db.execute(
             select(ChatSequence)

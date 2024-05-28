@@ -149,7 +149,7 @@ class InferenceModelRecordOrm(Base):
         return result_dict
 
 
-def lookup_inference_model_record(
+def lookup_inference_model(
         human_id: InferenceModelHumanID,
         provider_identifiers: str,
         history_db: HistoryDB,
@@ -163,7 +163,7 @@ def lookup_inference_model_record(
     ).scalar_one_or_none()
 
 
-def lookup_inference_model_record_detailed(
+def lookup_inference_model_detailed(
         model_in: InferenceModelAddRequest,
         history_db: HistoryDB,
 ) -> InferenceModelRecordOrm | None:
@@ -246,7 +246,7 @@ class InferenceEventOrm(Base):
     )
 
 
-def lookup_inference_model(
+def lookup_inference_model_for_event_id(
         inference_id: InferenceEventID,
         history_db: HistoryDB,
 ) -> InferenceModelRecordOrm | None:
