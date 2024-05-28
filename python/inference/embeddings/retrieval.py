@@ -5,9 +5,9 @@ from typing import List, Callable, Awaitable
 
 import orjson
 from langchain_core.documents import Document
+from langchain_core.messages import ChatMessage
 
 from inference.embeddings.knowledge import KnowledgeSingleton
-from inference.prompting.models import ChatMessage
 from _util.typing import PromptText, TemplatedPromptText
 from providers.inference_models.orm import InferenceReason
 

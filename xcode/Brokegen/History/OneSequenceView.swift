@@ -68,7 +68,13 @@ struct OneSequenceView: View {
             /// TODO: Avoid race conditions by migrating to actor
             submitting = true
 
-            receivingStreamer = await chatService.streamGenerate(promptInEdit, id: sequence.serverId!)
+            let nextMessage = Message(
+                role: "user",
+                content: promptInEdit,
+                createdAt: Date.now
+            )
+
+            receivingStreamer = await chatService.sequenceExtend(nextMessage, id: sequence.serverId!)
                 .sink(receiveCompletion: { completion in
                     switch completion {
                     case .finished:
@@ -94,12 +100,7 @@ struct OneSequenceView: View {
                 }, receiveValue: { data in
                     // On first data received, end "submitting" phase
                     if submitting {
-                        let submittedMessage = Message(
-                            role: "user",
-                            content: promptInEdit,
-                            createdAt: Date.now
-                        )
-                        sequence.messages.append(submittedMessage)
+                        sequence.messages.append(nextMessage)
 
                         promptInEdit = ""
                         submitting = false

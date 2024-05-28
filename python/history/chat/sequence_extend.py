@@ -11,10 +11,10 @@ from sqlalchemy import select
 
 import history.ollama
 from _util.json import JSONStreamingResponse, safe_get
-from _util.typing import ChatSequenceID, PromptText, InferenceModelRecordID
+from _util.typing import ChatSequenceID, InferenceModelRecordID
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
-from history.chat.database import ChatMessageOrm, ChatSequence, lookup_chat_message, ChatMessageAddRequest, \
+from history.chat.database import ChatMessageOrm, ChatSequence, lookup_chat_message, ChatMessage, \
     lookup_sequence_parents
 from history.chat.sequence_get import do_get_sequence
 from history.ollama.chat_rag_routes import finalize_inference_job
@@ -27,8 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class GenerateIn(BaseModel):
-    user_prompt: PromptText
-    sequence_id: ChatSequenceID
+    next_message: ChatMessage
     continuation_model_id: Optional[InferenceModelRecordID] = None
 
 
@@ -63,21 +62,22 @@ def select_continuation_model(
 
 
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
-    @router_ish.post("/chat")
+    @router_ish.post("/sequences/{sequence_id:int}/extend")
     async def sequence_extend(
             empty_request: starlette.requests.Request,
+            sequence_id: ChatSequenceID,
             params: GenerateIn,
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
     ) -> JSONStreamingResponse:
         original_sequence = history_db.execute(
             select(ChatSequence)
-            .filter_by(id=params.sequence_id)
+            .filter_by(id=sequence_id)
         ).scalar_one()
 
         # Manually fetch the message + model config history from our requests
         messages_list: list[ChatMessageOrm] = \
-            do_get_sequence(params.sequence_id, history_db, include_model_info_diffs=False)
+            do_get_sequence(sequence_id, history_db, include_model_info_diffs=False)
 
         # First, store the message that was painstakingly generated for us.
         user_sequence = ChatSequence(
@@ -87,35 +87,30 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             generation_complete=False,
         )
 
-        if params.user_prompt and params.user_prompt.strip():
-            new_message = ChatMessageOrm(
-                role='user',
-                content=params.user_prompt,
-                created_at=user_sequence.generated_at,
-            )
-            maybe_message = lookup_chat_message(ChatMessageAddRequest.from_orm(new_message), history_db)
-            if maybe_message is not None:
-                messages_list.append(maybe_message)
-                user_sequence.current_message = maybe_message.id
-                user_sequence.generation_complete = True
-            else:
-                history_db.add(new_message)
-                history_db.commit()
-                messages_list.append(new_message)
-                user_sequence.current_message = new_message.id
-                user_sequence.generation_complete = True
-
-            # Mark this user response as the current up-to-date
-            user_sequence.user_pinned = original_sequence.user_pinned
-            original_sequence.user_pinned = False
-
-            history_db.add(original_sequence)
-            history_db.add(user_sequence)
+        maybe_message = lookup_chat_message(params.next_message, history_db)
+        if maybe_message is not None:
+            messages_list.append(maybe_message)
+            user_sequence.current_message = maybe_message.id
+            user_sequence.generation_complete = True
+        else:
+            new_message = ChatMessageOrm(**params.next_message.model_dump())
+            history_db.add(new_message)
             history_db.commit()
+            messages_list.append(new_message)
+            user_sequence.current_message = new_message.id
+            user_sequence.generation_complete = True
+
+        # Mark this user response as the current up-to-date
+        user_sequence.user_pinned = original_sequence.user_pinned
+        original_sequence.user_pinned = False
+
+        history_db.add(original_sequence)
+        history_db.add(user_sequence)
+        history_db.commit()
 
         # Figure out how to continue inference for this sequence
         inference_model: InferenceModelRecordOrm = \
-            select_continuation_model(params.sequence_id, params.continuation_model_id, history_db)
+            select_continuation_model(sequence_id, params.continuation_model_id, history_db)
 
         constructed_ollama_body = {
             "messages": [m.as_json() for m in messages_list],

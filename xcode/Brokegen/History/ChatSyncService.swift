@@ -9,8 +9,12 @@ class Message: Identifiable, Codable {
 
     let role: String
     let content: String
-
     let createdAt: Date?
+
+    // TODO: See if we need to handle serverId's correctly, this is basically a dirty stopgap/workaround
+    private enum CodingKeys: String, CodingKey {
+        case role, content, createdAt
+    }
 
     init(_ serverId: Int? = nil, data: Data) throws {
         self.serverId = serverId
@@ -250,45 +254,53 @@ class ChatSyncService: Observable, ObservableObject {
 
 /// Finally, something to submit new chat requests
 extension ChatSyncService {
-    public func streamGenerate(
-        _ userPrompt: String,
-        id sequenceId: Int
+    public func sequenceExtend(
+        _ nextMessage: Message,
+        id sequenceId: Int,
+        model continuationModelId: Int? = nil
     ) async -> AnyPublisher<Data, AFError> {
         let subject = PassthroughSubject<Data, AFError>()
 
         struct Parameters: Codable {
-            var userPrompt: String
-            var sequenceId: Int
+            let nextMessage: Message
+            let continuationModelId: Int?
         }
+        let parameters = Parameters(nextMessage: nextMessage, continuationModelId: continuationModelId)
 
-        let parameters = Parameters(userPrompt: userPrompt, sequenceId: sequenceId)
         let encoder = JSONEncoder()
         encoder.keyEncodingStrategy = .convertToSnakeCase
 
-        _ = session.streamRequest(
-            serverBaseURL + "/chat"
-        ) { urlRequest in
-            urlRequest.method = .post
-            urlRequest.headers = [
-                "Content-Type": "application/json"
-            ]
-            urlRequest.httpBody = try encoder.encode(parameters)
-        }
-        .responseStream { stream in
-            switch stream.event {
-            case let .stream(result):
-                switch result {
-                case let .success(data):
-                    subject.send(data)
-                }
-            case let .complete(completion):
-                if completion.error == nil {
-                    subject.send(completion: .finished)
-                }
-                else {
-                    subject.send(completion: .failure(completion.error!))
+        do {
+            print("[DEBUG] POST /sequences/\(sequenceId)/extend <= \(String(data: try encoder.encode(parameters), encoding: .utf8)!)")
+
+            _ = session.streamRequest(
+                serverBaseURL + "/sequences/\(sequenceId)/extend"
+            ) { urlRequest in
+                urlRequest.method = .post
+                urlRequest.headers = [
+                    "Content-Type": "application/json"
+                ]
+                urlRequest.httpBody = try encoder.encode(parameters)
+            }
+            .responseStream { stream in
+                switch stream.event {
+                case let .stream(result):
+                    switch result {
+                    case let .success(data):
+                        subject.send(data)
+                    }
+                case let .complete(completion):
+                    if completion.error == nil {
+                        subject.send(completion: .finished)
+                    }
+                    else {
+                        subject.send(completion: .failure(completion.error!))
+                    }
                 }
             }
+        }
+        catch {
+            print("[ERROR] Failed to sequenceExtend ChatSequence#\(sequenceId) with \(String(describing: parameters))")
         }
 
         return subject.eraseToAnyPublisher()

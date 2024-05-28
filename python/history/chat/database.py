@@ -9,10 +9,11 @@ from _util.typing import ChatMessageID, ChatSequenceID, PromptText, RoleName
 from providers.inference_models.database import Base, HistoryDB
 
 
-class ChatMessageAddRequest(BaseModel):
+class ChatMessage(BaseModel):
     role: RoleName
     content: PromptText
-    created_at: Optional[datetime] = None
+    created_at: Optional[datetime]
+    "This is a required field for all future events"
 
     model_config = ConfigDict(
         extra='forbid',
@@ -46,7 +47,7 @@ class ChatMessageOrm(Base):
 
 
 def lookup_chat_message(
-        message_in: ChatMessageAddRequest,
+        message_in: ChatMessage,
         history_db: HistoryDB,
 ) -> ChatMessageOrm | None:
     where_clauses = [
