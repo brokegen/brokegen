@@ -114,6 +114,7 @@ func dateToSectionName(_ date: Date?) -> String {
 
 struct MultiSequenceView: View {
     @Environment(ChatSyncService.self) private var chatService
+    @State private var hoveredSequence: ChatSequence? = nil
 
     private var sectionedSequences: [(String, [ChatSequence])] {
         let sectionedSequences = Dictionary(grouping: chatService.loadedSequences) {
@@ -139,28 +140,40 @@ struct MultiSequenceView: View {
 
     var body: some View {
         HStack {
-            Button("Refresh", systemImage: "paperplane") {
+            Button("Refresh", systemImage: "arrow.clockwise") {
                 chatService.fetchPinnedSequences()
             }
             .buttonStyle(.accessoryBar)
-            .padding(36)
+            .padding(12)
 
-            Button("Refresh 200", systemImage: "paperplane") {
+            Button("Refresh 200", systemImage: "arrow.clockwise") {
                 chatService.fetchPinnedSequences(200)
             }
             .buttonStyle(.accessoryBar)
-            .padding(36)
+            .padding(12)
+
+            Spacer()
+
+            NavigationLink(destination: InferenceModelView()) {
+                Label("New Chat", systemImage: "plus")
+                    .buttonStyle(.accessoryBar)
+                    .padding(12)
+            }
         }
+        .padding(24)
+        .frame(maxWidth: 1000)
+
+        let hoverColor = Color(.windowFrameTextColor)
 
         List(sectionedSequences, id: \.0) { pair in
             let (sectionName, sectionSequences) = pair
 
             Section(header:
-                Text(sectionName)
-                    .font(.title)
-                    .monospaced()
-                    .foregroundColor(.accentColor)
-                    .padding(.top, 36)
+                        Text(sectionName)
+                .font(.title)
+                .monospaced()
+                .foregroundColor(.accentColor)
+                .padding(.top, 36)
             ) {
                 ForEach(sectionSequences) { sequence in
                     NavigationLink(destination: OneSequenceView(sequence)) {
@@ -168,6 +181,21 @@ struct MultiSequenceView: View {
                     }
                     .padding(12)
                     .lineLimit(4)
+
+                    // TODO: This is extremely non-performant, above 10-ish items
+                    .onHover { isAbove in
+                        if isAbove {
+                            hoveredSequence = sequence
+                        }
+                        else if hoveredSequence?.id == sequence.id {
+                            hoveredSequence = nil
+                        }
+                    }
+                    .background(
+                        hoveredSequence?.id == sequence.id
+                        ? Color(.windowBackgroundColor)
+                        : Color(.controlBackgroundColor)
+                    )
                 }
             }
             .padding(8)

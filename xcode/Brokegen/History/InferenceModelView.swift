@@ -17,36 +17,52 @@ struct InferenceModelView: View {
         List {
             ForEach(providerService.availableModels) { model in
                 VStack(alignment: .leading) {
-                    Text(model.humanId)
-                        .font(.title)
-                        .monospaced()
-                        .lineLimit(2)
-                        .padding(.bottom, 8)
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading) {
+                            Text(model.humanId)
+                                .font(.title)
+                                .monospaced()
+                                .foregroundColor(.accentColor)
+                                .lineLimit(2)
+                                .padding(.bottom, 8)
 
-                    if let lastSeen = model.lastSeen {
-                        Text("Last seen: " + String(describing: lastSeen))
-                            .font(.subheadline)
+                            if let lastSeen = model.lastSeen {
+                                Text("Last seen: " + String(describing: lastSeen))
+                                    .font(.subheadline)
+                            }
+                        }
+
+                        Spacer()
+
+                        NavigationLink(destination: BlankOneSequenceView(model)) {
+                            Image(systemName: "plus.message")
+                                .resizable()
+                                .frame(width: 48, height: 48)
+                        }
                     }
 
                     Divider()
 
-                    if model.stats != nil {
-                        Text("stats: \n" + formatJson(model.stats!, indent: 2))
+                    Group {
+                        if model.stats != nil {
+                            Text("stats: \n" + formatJson(model.stats!, indent: 2))
+                                .lineLimit(1...)
+                                .monospaced()
+                                .padding(4)
+                        }
+
+                        Text(formatJson(model.modelIdentifiers!))
                             .lineLimit(1...)
                             .monospaced()
                             .padding(4)
                     }
-
-                    Text(formatJson(model.modelIdentifiers!))
-                        .lineLimit(1...)
-                        .monospaced()
-                        .padding(4)
-
+                    .background(Color(.controlBackgroundColor))
                 }
                 .padding(12)
-                .lineLimit(4)
+                .background(Color(.controlBackgroundColor))
+                .listRowSeparator(.hidden)
+                .padding(.bottom, 48)
             }
-            .padding(8)
         }
         .frame(maxWidth: 800)
         .onAppear {

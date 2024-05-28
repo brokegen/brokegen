@@ -104,36 +104,31 @@ struct AppView: View {
         NavigationSplitView(sidebar: {
             List {
                 Section(header: Text("Chats")
-                    .font(.title2)
+                    .font(.largeTitle)
                     .foregroundStyle(.primary)
                     .padding(6)
                 ) {
                     NavigationLink(destination: MultiSequenceView()) {
                         Spacer()
-                        Label("[All Chats]", systemImage: "slider.horizontal.3")
+                        Text("Recent Chats")
+                            .font(.title2)
+                            .padding(6)
+                        Image(systemName: "slider.horizontal.3")
                     }
                     .frame(maxWidth: .infinity)
 
-                    NavigationLink(destination: MultiSequenceView()) {
+                    NavigationLink(destination: InferenceModelView()) {
                         Spacer()
-                        Label("Import", systemImage: "paperplane")
-                            .onAppear {
-                                chatService.fetchPinnedSequences()
-                            }
+                        Text("Available Models")
+                            .font(.title2)
+                            .foregroundStyle(.primary)
+                            .padding(6)
+                        Image(systemName: "plus.message")
                     }
-                    .frame(maxWidth: .infinity)
                 }
-                .padding(12)
 
                 Divider()
                 MiniJobsSidebar()
-
-                NavigationLink(destination: InferenceModelView()) {
-                    Text("Inference Models")
-                        .font(.title2)
-                        .foregroundStyle(.primary)
-                        .padding(6)
-                }
 
                 NavigationLink(destination: SystemInfoView()) {
                     Text("System Info")
@@ -146,7 +141,9 @@ struct AppView: View {
             .frame(minWidth: 200, idealWidth: 400, maxHeight: .infinity)
             .toolbar(.hidden)
         }, detail: {
-            MultiSequenceView()
+            InferenceModelView()
+                // TODO: colors gross
+                .background(Color(.controlBackgroundColor))
         })
         .navigationTitle("")
     }

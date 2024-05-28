@@ -34,25 +34,22 @@ struct OneSequenceView: View {
     @Environment(ChatSyncService.self) private var chatService
     let sequence: ChatSequence
 
-    @State var promptInEdit: String
+    @State var promptInEdit: String = ""
     /// When done submitting, migrate promptInEdit into a new Message
-    @State var submitting: Bool
+    @State var submitting: Bool = false
 
     @State var responseInEdit: Message? = nil
     /// When done receiving, migrate responseInEdit into a new Message
-    @State var receiving: Bool
+    @State var receiving: Bool = false
     @State var receivingStreamer: AnyCancellable? = nil
 
     init(_ sequence: ChatSequence) {
         self.sequence = sequence
-        self._promptInEdit = State(initialValue: "")
-        self._submitting = State(initialValue: false)
-        self._receiving = State(initialValue: false)
     }
 
     func submit() {
         Task.init {
-            /// TODO: Figure out how to avoid race conditions and run this only once
+            /// TODO: Avoid race conditions by migrating to actor
             submitting = true
 
             receivingStreamer = await chatService.streamGenerate(promptInEdit, id: sequence.serverId!)
