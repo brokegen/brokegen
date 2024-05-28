@@ -9,6 +9,7 @@ from fastapi import Depends
 from pydantic import BaseModel, Json
 from sqlalchemy import select, Row
 
+from _util.json import safe_get
 from history.chat.database import ChatMessageOrm, ChatSequence
 from _util.typing import ChatMessageID, ChatSequenceID, InferenceModelRecordID
 from history.chat.routes_model import translate_model_info_diff, translate_model_info
@@ -176,6 +177,9 @@ def construct_router():
                 ijob_id=match_object,
                 just_created=False,
             )
+
+        if not safe_get(filtered_inference_event_in, "reason"):
+            filtered_inference_event_in["reason"] = "[api import]"
 
         new_object = InferenceEventOrm(**filtered_inference_event_in)
         history_db.add(new_object)

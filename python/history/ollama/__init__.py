@@ -158,6 +158,7 @@ which bypasses censoring for tested models.""")
             None,
             history_db,
             audit_db,
+            inference_reason="[endpoint: /generate.raw]",
         )
 
     app.include_router(router, prefix="/ollama")
