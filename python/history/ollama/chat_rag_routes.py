@@ -46,6 +46,8 @@ def finalize_inference_job(
     # TODO: I'm not sure this is even the actual field to check
     if safe_get(response_content_json, 'error'):
         inference_job.response_error = safe_get(response_content_json, 'error')
+    else:
+        inference_job.response_error = None
 
     inference_job.response_info = dict(response_content_json)
 
@@ -70,6 +72,7 @@ async def do_generate_raw_templated(
     inference_job = InferenceEventOrm(
         model_record_id=model.id,
         prompt_with_templating=request_content['prompt'],
+        response_error="[haven't received/finalized response info yet]",
         reason=inference_reason,
     )
     history_db.add(inference_job)
@@ -86,6 +89,9 @@ async def do_generate_raw_templated(
     async def do_finalize_inference_job(response_content_json: OllamaResponseContentJSON):
         merged_job = history_db.merge(inference_job)
         finalize_inference_job(merged_job, response_content_json)
+
+        if not merged_job.response_error:
+            merged_job.response_error = "[ignore do_generate_raw_templated() InferenceEvent in stats, since it's generally duplicated]"
 
         history_db.add(merged_job)
         history_db.commit()
@@ -192,8 +198,7 @@ async def convert_chat_to_generate(
         httpx.Cookies(original_request.cookies),
         history_db,
         audit_db,
-        # TODO: The top-level call also includes inference details
-        inference_reason="chat raw",
+        inference_reason="ollama: /chat to /generate raw",
     )
 
     async def translate_generate_to_chat(

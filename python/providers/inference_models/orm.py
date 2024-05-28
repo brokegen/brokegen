@@ -208,7 +208,7 @@ class InferenceEventOrm(Base):
     we should have enough info across other tables to reconstruct the \"raw\" prompt
     """
 
-    response_created_at = Column(DateTime)
+    response_created_at = Column(DateTime, nullable=False)
     response_tokens = Column(Integer)
     response_eval_time = Column(Double)
     "Total time in seconds"
