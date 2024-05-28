@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timezone
+from typing import Optional
 
 import fastapi.routing
 import orjson
@@ -10,10 +11,11 @@ from sqlalchemy import select
 
 import history.ollama
 from _util.json import JSONStreamingResponse, safe_get
-from _util.typing import ChatSequenceID, PromptText
+from _util.typing import ChatSequenceID, PromptText, InferenceModelRecordID
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
-from history.chat.database import ChatMessageOrm, ChatSequence, lookup_chat_message, ChatMessageAddRequest
+from history.chat.database import ChatMessageOrm, ChatSequence, lookup_chat_message, ChatMessageAddRequest, \
+    lookup_sequence_parents
 from history.chat.routes_sequence import do_get_sequence
 from history.ollama.chat_rag_routes import finalize_inference_job
 from history.ollama.json import consolidate_stream_sync
@@ -27,6 +29,37 @@ logger = logging.getLogger(__name__)
 class GenerateIn(BaseModel):
     user_prompt: PromptText
     sequence_id: ChatSequenceID
+    continuation_model_id: Optional[InferenceModelRecordID] = None
+
+
+def select_continuation_model(
+        sequence_id: ChatSequenceID,
+        requested_model_id: InferenceModelRecordID | None,
+        history_db: HistoryDB,
+) -> InferenceEventOrm | None:
+    if requested_model_id is not None:
+        # TODO: Take this opportunity to confirm the InferenceModel is online.
+        #       Though, maybe the inference events later on should be robust enough to handle errors.
+        return history_db.execute(
+            select(InferenceModelRecordOrm)
+            .where(InferenceModelRecordOrm.id == requested_model_id)
+        ).scalar_one()
+
+    # Iterate over all sequence nodes until we find enough model info.
+    # (ChatSequences can be missing inference_job_ids if they're user prompts, or errored out)
+    for sequence in lookup_sequence_parents(sequence_id, history_db):
+        if sequence.inference_job_id is None:
+            continue
+
+        inference_model: InferenceModelRecordOrm = history_db.execute(
+            select(InferenceModelRecordOrm)
+            .join(InferenceEventOrm, InferenceEventOrm.model_record_id == InferenceModelRecordOrm.id)
+            .where(InferenceEventOrm.id == sequence.inference_job_id)
+        ).scalar_one()
+
+        return inference_model
+
+    return None
 
 
 def construct_router():
@@ -82,18 +115,9 @@ def construct_router():
             history_db.add(user_sequence)
             history_db.commit()
 
-        # Fetch the InferenceModelHumanID from latest ChatSequence
-        inference_id: InferenceEventID = history_db.execute(
-            select(InferenceEventOrm.id)
-            .join(ChatSequence, ChatSequence.inference_job_id == InferenceEventOrm.id)
-            .where(ChatSequence.id == params.sequence_id)
-        ).scalar_one()
-
-        inference_model: InferenceModelRecordOrm = history_db.execute(
-            select(InferenceModelRecordOrm)
-            .join(InferenceEventOrm, InferenceEventOrm.model_record_id == InferenceModelRecordOrm.id)
-            .where(InferenceEventOrm.id == inference_id)
-        ).scalar_one()
+        # Figure out how to continue inference for this sequence
+        inference_model: InferenceModelRecordOrm = \
+            select_continuation_model(params.sequence_id, params.continuation_model_id, history_db)
 
         constructed_ollama_body = {
             "messages": [m.as_json() for m in messages_list],

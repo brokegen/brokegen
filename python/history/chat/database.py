@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Iterator
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Column, String, DateTime, Integer, Boolean, select
@@ -81,8 +81,22 @@ class ChatSequence(Base):
 
     generated_at = Column(DateTime)
     generation_complete = Column(Boolean)
-    inference_job_id = Column(Integer)
+    inference_job_id = Column(Integer)  # InferenceEventOrm.id
     inference_error = Column(String)
+
+
+def lookup_sequence_parents(
+        current_id: ChatSequenceID,
+        history_db: HistoryDB,
+) -> Iterator[ChatSequence]:
+    while current_id is not None:
+        sequence = history_db.execute(
+            select(ChatSequence)
+            .where(ChatSequence.id == current_id)
+        ).scalar_one()
+
+        yield sequence
+        current_id = sequence.parent_sequence
 
 
 class VisibleSequence:
