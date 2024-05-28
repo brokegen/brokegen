@@ -129,6 +129,14 @@ class ChatSequence: Identifiable, Codable {
     }
 }
 
+actor CachedChatMessages {
+    var cachedChatMessages: [Message] = []
+
+    func append(_ message: Message) {
+        cachedChatMessages.append(message)
+    }
+}
+
 @Observable
 class ChatSyncService: Observable, ObservableObject {
     var serverBaseURL: String = "http://127.0.0.1:6635"
@@ -183,13 +191,13 @@ class ChatSyncService: Observable, ObservableObject {
         }
     }
 
-    var loadedMessages: [Message] = []
+    var loadedMessages: CachedChatMessages = CachedChatMessages()
 
     func fetchMessage(id: Int) {
         Task.init {
             if let data = await getData("/messages/\(id)") {
                 let message = try Message(id, data: data)
-                self.loadedMessages.append(message)
+                await self.loadedMessages.append(message)
             }
         }
     }

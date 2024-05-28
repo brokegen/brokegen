@@ -94,7 +94,7 @@ struct SequenceRow: View {
 
 func dateToSectionName(_ date: Date?) -> String {
     // NB This "default" name should sort later than the ones starting 2024-wwXX
-    guard date != nil else { return "no date" }
+    guard date != nil else { return "0000 no date" }
 
     let sectionName = dateToISOWeekStartingMonday(date!)
 
@@ -116,7 +116,10 @@ struct MultiSequenceView: View {
     @Environment(ChatSyncService.self) private var chatService
 
     private var sectionedSequences: [(String, [ChatSequence])] {
-        let sectionedSequences = Dictionary(grouping: chatService.loadedSequences) { dateToSectionName($0.lastMessageDate) }
+        let sectionedSequences = Dictionary(grouping: chatService.loadedSequences) {
+            dateToSectionName($0.lastMessageDate)
+        }
+
         return Array(sectionedSequences)
             .map {
                 // Sorts the individual ChatSequences within a section
@@ -152,8 +155,12 @@ struct MultiSequenceView: View {
         List(sectionedSequences, id: \.0) { pair in
             let (sectionName, sectionSequences) = pair
 
-            Section(header: Text(sectionName)
-                .font(.title)
+            Section(header:
+                Text(sectionName)
+                    .font(.title)
+                    .monospaced()
+                    .foregroundColor(.accentColor)
+                    .padding(.top, 36)
             ) {
                 ForEach(sectionSequences) { sequence in
                     NavigationLink(destination: OneSequenceView(sequence)) {
