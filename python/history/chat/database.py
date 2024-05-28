@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Column, String, DateTime, Integer, Boolean, select
 
 from _util.json import JSONDict
-from _util.typing import MessageID, ChatSequenceID, PromptText, RoleName
+from _util.typing import ChatMessageID, ChatSequenceID, PromptText, RoleName
 from providers.inference_models.database import Base, HistoryDB
 
 
@@ -24,7 +24,7 @@ class ChatMessageAddRequest(BaseModel):
 class ChatMessageOrm(Base):
     __tablename__ = 'Messages'
 
-    id: MessageID = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    id: ChatMessageID = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     role: RoleName = Column(String, nullable=False)
     content: PromptText = Column(String, nullable=False)
 
@@ -76,7 +76,7 @@ class ChatSequence(Base):
     Double duty as top-of-thread and also regular-branching-point.
     """
 
-    current_message: MessageID = Column(Integer, nullable=False)
+    current_message: ChatMessageID = Column(Integer, nullable=False)
     parent_sequence: ChatSequenceID = Column(Integer)
 
     generated_at = Column(DateTime)

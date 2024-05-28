@@ -20,7 +20,7 @@ Using a non-standard role makes it easier to bypass model censoring, since chat-
 LLMs are usually trained with ChatML surrounding the 'assistant' token.
 """
 
-MessageID: TypeAlias = pydantic.PositiveInt
+ChatMessageID: TypeAlias = pydantic.PositiveInt
 ChatSequenceID: TypeAlias = pydantic.PositiveInt
 
 InferenceModelRecordID: TypeAlias = PositiveInt

@@ -10,7 +10,7 @@ from pydantic import BaseModel, Json
 from sqlalchemy import select, Row
 
 from history.chat.database import ChatMessageOrm, ChatSequence
-from _util.typing import MessageID, ChatSequenceID, InferenceModelRecordID
+from _util.typing import ChatMessageID, ChatSequenceID, InferenceModelRecordID
 from history.chat.routes_model import translate_model_info_diff, translate_model_info
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceEventOrm, lookup_inference_model, InferenceModelRecordOrm, \
@@ -24,7 +24,7 @@ class SequenceIn(BaseModel):
     human_desc: Optional[str] = None
     user_pinned: Optional[bool] = None
 
-    current_message: MessageID
+    current_message: ChatMessageID
     parent_sequence: Optional[ChatSequenceID] = None
 
     generated_at: Optional[datetime] = None

@@ -6,7 +6,7 @@ from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from _util.typing import MessageID
+from _util.typing import ChatMessageID
 from history.chat.database import ChatMessageOrm, ChatMessageAddRequest, lookup_chat_message
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class MessageAddResponse(BaseModel):
-    message_id: MessageID
+    message_id: ChatMessageID
     just_created: bool
 
 
@@ -49,7 +49,7 @@ def install_routes(app: FastAPI):
 
     @router.get("/messages/{id:int}")
     def get_message(
-            id: MessageID,
+            id: ChatMessageID,
             history_db: HistoryDB = Depends(get_history_db),
     ):
         match_object = history_db.execute(
