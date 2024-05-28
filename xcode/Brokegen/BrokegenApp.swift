@@ -12,7 +12,7 @@ struct BrokegenApp: App {
         self.jobsService = JobsManagerService()
         self.providerService = ProviderService()
 
-        for n in 1...15 {
+        for n in 1...10 {
             self.chatService.fetchMessage(id: n)
         }
     }

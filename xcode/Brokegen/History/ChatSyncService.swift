@@ -122,6 +122,11 @@ class ChatSequence: Identifiable, Codable {
             messages.append(newMessage)
         }
     }
+
+    var lastMessageDate: Date? {
+        guard !messages.isEmpty else { return nil }
+        return messages.last!.createdAt
+    }
 }
 
 @Observable
@@ -137,12 +142,14 @@ class ChatSyncService: Observable, ObservableObject {
         return Alamofire.Session(configuration: configuration)
     }()
 
-    private func getData(_ endpoint: String) async -> Data? {
+    private func getData(_ endpoint: String, parameters: [String : Any]? = nil) async -> Data? {
         do {
             return try await withCheckedThrowingContinuation { continuation in
                 session.request(
                     serverBaseURL + endpoint,
-                    method: .get
+                    method: .get,
+                    parameters: parameters,
+                    encoding: JSONEncoding.default
                 )
                 .response { r in
                     switch r.result {
@@ -195,6 +202,9 @@ class ChatSyncService: Observable, ObservableObject {
         Task.init {
             let jsonDict = await getDataAsJson("/sequences/pinned")
             guard jsonDict != nil else { return }
+
+            // Clear out the entire set of existing sequences
+            self.loadedSequences = []
 
             let sequenceIds: [Int] = jsonDict!["sequence_ids"] as? [Int] ?? []
             for seqId in sequenceIds {
