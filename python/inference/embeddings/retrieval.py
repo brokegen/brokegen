@@ -20,8 +20,7 @@ class RetrievalPolicy:
     async def parse_chat_history(
             self,
             messages: List[ChatMessage],
-            _: Callable[[PromptText, PromptText, PromptText], Awaitable[PromptText]],
-            generate_retrieval_str_fn: Callable[[TemplatedPromptText], Awaitable[PromptText]] | None,
+            _: Callable[[PromptText, PromptText, PromptText, InferenceReason], Awaitable[PromptText]],
     ) -> PromptText | None:
         raise NotImplementedError()
 
@@ -30,8 +29,7 @@ class SkipRetrievalPolicy(RetrievalPolicy):
     async def parse_chat_history(
             self,
             messages: List[ChatMessage],
-            _: Callable[[PromptText, PromptText, PromptText], Awaitable[PromptText]],
-            generate_retrieval_str_fn: Callable[[TemplatedPromptText], Awaitable[PromptText]] | None,
+            _: Callable[[PromptText, PromptText, PromptText, InferenceReason], Awaitable[PromptText]],
     ) -> PromptText | None:
         return None
 
@@ -43,8 +41,7 @@ class DefaultRetrievalPolicy(RetrievalPolicy):
     async def parse_chat_history(
             self,
             messages: List[ChatMessage],
-            _: Callable[[PromptText, PromptText, PromptText], Awaitable[PromptText]],
-            generate_retrieval_str_fn: Callable[[TemplatedPromptText], Awaitable[PromptText]] | None,
+            _: Callable[[PromptText, PromptText, PromptText, InferenceReason], Awaitable[PromptText]],
     ) -> PromptText | None:
         latest_message_content = messages[-1]['content']
         retrieval_str = latest_message_content
@@ -85,7 +82,6 @@ class CustomRetrievalPolicy(RetrievalPolicy):
             self,
             messages: List[ChatMessage],
             generate_helper_fn: Callable[[PromptText, PromptText, PromptText, InferenceReason], Awaitable[PromptText]],
-            _: Callable[[TemplatedPromptText], Awaitable[PromptText]] | None,
     ) -> PromptText | None:
         latest_message_content = messages[-1]['content']
 
@@ -106,9 +102,9 @@ class CustomRetrievalPolicy(RetrievalPolicy):
             # Only summarize the query if it's real long
             if len(retrieval_str) > 4_000:
                 retrieval_str = await generate_helper_fn(
+                    inference_reason="summarize prompt for retrieval",
                     system_message="Summarize the most important and unique terms in the following query",
                     user_prompt=latest_message_content,
-                    inference_reason="summarize prompt for retrieval",
                 )
                 # If the summary is blank or shorter than a tweet, skip.
                 if not retrieval_str.strip() or len(retrieval_str) < 140:
@@ -141,6 +137,7 @@ class CustomRetrievalPolicy(RetrievalPolicy):
             matching_docs1 = []
             for n in range(len(matching_docs0)):
                 summarized_doc = await generate_helper_fn(
+                    inference_reason="summarize document",
                     system_message="""\
 Provide a concise summary of the provided document. Call out any sections that seem closely related to the original query.""",
                     user_prompt=f"""\
@@ -152,7 +149,6 @@ Provide a concise summary of the provided document. Call out any sections that s
 {matching_docs0[n].page_content}
 </document>""",
                     assistant_response="Summary of the returned document: ",
-                    inference_reason="summarize document",
                 )
                 # If the summary is blank or shorter than a tweet, skip.
                 if not summarized_doc.strip() or len(summarized_doc) < 140:

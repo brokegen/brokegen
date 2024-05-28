@@ -227,7 +227,7 @@ class InferenceEventOrm(Base):
     reason: InferenceReason = Column(String)
     """
     Should be an enum, but open-ended.
-    
+
     Planned types:
 
     - `prompt` means it was the direct/final user prompt, maybe handled with manual templating

@@ -246,32 +246,11 @@ async def do_proxy_chat_rag(
     if not chat_messages:
         raise RuntimeError("No 'messages' provided in call to /api/chat")
 
-    async def generate_retrieval_str(retrieval_query: TemplatedPromptText) -> PromptText:
-        response0 = await do_generate_raw_templated(
-            request_content={
-                'model': request_content_json['model'],
-                'prompt': retrieval_query,
-                'raw': False,
-                'stream': False,
-            },
-            request_headers=starlette.datastructures.Headers(),
-            request_cookies=None,
-            history_db=history_db,
-            audit_db=audit_db,
-        )
-
-        content_chunks = []
-        async for chunk in response0.body_iterator:
-            content_chunks.append(chunk)
-
-        response0_json = orjson.loads(''.join(content_chunks))
-        return response0_json['response']
-
     async def generate_helper_fn(
+            inference_reason: InferenceReason,
             system_message: PromptText | None,
             user_prompt: PromptText | None,
             assistant_response: PromptText | None = None,
-            inference_reason: InferenceReason | None = None,
     ) -> PromptText:
         model, executor_record = await lookup_model_offline(
             request_content_json['model'],
@@ -319,7 +298,7 @@ async def do_proxy_chat_rag(
         return response0_json['response']
 
     prompt_override = await retrieval_policy.parse_chat_history(
-        chat_messages, generate_helper_fn, generate_retrieval_str
+        chat_messages, generate_helper_fn,
     )
 
     ollama_response = await convert_chat_to_generate(
