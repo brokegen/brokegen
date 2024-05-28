@@ -31,6 +31,7 @@ async def lookup_model_offline(
     if not model:
         raise HTTPException(400, "Trying to look up model that doesn't exist, you should create it first")
     if not safe_get(model.combined_inference_parameters, 'template'):
+        logger.error(f"No Ollama template info for {model.human_id}, fill it in with an /api/show proxy call")
         raise HTTPException(500, "No model template available, confirm that InferenceModelRecords are complete")
 
     return model, provider_record

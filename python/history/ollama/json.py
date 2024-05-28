@@ -234,9 +234,11 @@ class OllamaEventBuilder:
                 yield chunk0
                 all_chunks.append(chunk0)
 
+            logger.debug(f"Done with upstream JSONStreamingResponse, deciding whether to consolidate {len(all_chunks)} chunks")
             if upstream_response.is_success and self.response_content_json:
                 try:
                     self.response_content_json = await consolidate_stream(reconsolidate(all_chunks))
+                    logger.debug(f"Done consolidating, final JSON is {len(self.response_content_json)=}")
                     self.wrapped_event.response_content = self.response_content_json
                     self._try_commit()
                 except Exception as e:
@@ -259,6 +261,7 @@ class OllamaEventBuilder:
 
             for on_done_fn in on_done_fns:
                 if on_done_fn is not None:
+                    logger.debug(f"Calling {on_done_fn=}")
                     await on_done_fn(self.response_content_json or {})
 
         return starlette.responses.StreamingResponse(
