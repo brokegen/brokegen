@@ -2,7 +2,7 @@ import logging
 from http.client import HTTPException
 
 import fastapi.routing
-from fastapi import FastAPI, Depends
+from fastapi import Depends
 from pydantic import BaseModel
 from sqlalchemy import select
 
@@ -18,10 +18,8 @@ class MessageAddResponse(BaseModel):
     just_created: bool
 
 
-def install_routes(app: FastAPI):
-    router = fastapi.routing.APIRouter()
-
-    @router.post(
+def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
+    @router_ish.post(
         "/messages",
         response_model=MessageAddResponse,
     )
@@ -47,7 +45,7 @@ def install_routes(app: FastAPI):
             just_created=True,
         )
 
-    @router.get("/messages/{id:int}")
+    @router_ish.get("/messages/{id:int}")
     def get_message(
             id: ChatMessageID,
             history_db: HistoryDB = Depends(get_history_db),
@@ -60,5 +58,3 @@ def install_routes(app: FastAPI):
             raise HTTPException(400, "No matching object")
 
         return match_object
-
-    app.include_router(router)

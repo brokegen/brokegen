@@ -16,12 +16,12 @@ from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
 from history.chat.database import ChatMessageOrm, ChatSequence, lookup_chat_message, ChatMessageAddRequest, \
     lookup_sequence_parents
-from history.chat.add_sequence import do_get_sequence
+from history.chat.sequence_get import do_get_sequence
 from history.ollama.chat_rag_routes import finalize_inference_job
 from history.ollama.json import consolidate_stream_sync
 from inference.embeddings.retrieval import SkipRetrievalPolicy
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, InferenceEventID
+from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm
 
 logger = logging.getLogger(__name__)
 
@@ -62,11 +62,9 @@ def select_continuation_model(
     return None
 
 
-def construct_router():
-    router = fastapi.routing.APIRouter()
-
-    @router.post("/chat")
-    async def get_simple_chat(
+def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
+    @router_ish.post("/chat")
+    async def sequence_extend(
             empty_request: starlette.requests.Request,
             params: GenerateIn,
             history_db: HistoryDB = Depends(get_history_db),
@@ -234,5 +232,3 @@ def construct_router():
                 history_db,
                 audit_db,
             ))
-
-    return router

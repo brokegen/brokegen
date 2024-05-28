@@ -1,8 +1,11 @@
 from fastapi import FastAPI
 
-from . import database, routes, add_message, routes_model, add_sequence
+from . import add_message, add_sequence, database, sequence_events, sequence_extend, sequence_get
 
 
-def install_routes(app: FastAPI):
-    app.include_router(routes.construct_router())
-    app.include_router(add_sequence.construct_router())
+def install_routes(app: FastAPI) -> None:
+    add_message.install_routes(app)
+    add_sequence.install_routes(app)
+    sequence_events.install_routes(app)
+    sequence_extend.install_routes(app)
+    sequence_get.install_routes(app)

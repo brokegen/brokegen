@@ -13,7 +13,6 @@ from providers.inference_models.database import HistoryDB
 @pytest.fixture(scope='session')
 def chat_test_app():
     test_app = fastapi.FastAPI()
-    history.chat.add_message.install_routes(test_app)
     history.chat.install_routes(test_app)
 
     yield test_app
