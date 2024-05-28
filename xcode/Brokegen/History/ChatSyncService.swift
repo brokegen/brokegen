@@ -245,7 +245,7 @@ extension ChatSyncService {
         encoder.keyEncodingStrategy = .convertToSnakeCase
 
         _ = session.streamRequest(
-            serverBaseURL + "/generate"
+            serverBaseURL + "/chat"
         ) { urlRequest in
             urlRequest.method = .post
             urlRequest.headers = [

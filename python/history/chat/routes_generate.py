@@ -65,7 +65,7 @@ def select_continuation_model(
 def construct_router():
     router = fastapi.routing.APIRouter()
 
-    @router.post("/generate")
+    @router.post("/chat")
     async def get_simple_chat(
             empty_request: starlette.requests.Request,
             params: GenerateIn,
@@ -203,15 +203,15 @@ def construct_router():
                         all_chunks.append(chunk)
                         continue
                 except Exception:
-                    logger.exception(f"/generate: Response decode to JSON failed, {len(all_chunks)=}")
+                    logger.exception(f"/chat: Response decode to JSON failed, {len(all_chunks)=}")
 
                 yield chunk
                 all_chunks.append(chunk)
                 if done_signaled > 0:
-                    logger.warning(f"/generate: Still yielding chunks after `done=True`")
+                    logger.warning(f"/chat: Still yielding chunks after `done=True`")
 
             if not done_signaled:
-                logger.warning(f"Finished /generate streaming response without hitting `done=True`")
+                logger.warning(f"/chat: Finished streaming response without hitting `done=True`")
 
             # Construct our actual suffix
             consolidated_response = await consolidate_stream_sync(all_chunks, logger.warning)
