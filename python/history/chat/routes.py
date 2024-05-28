@@ -16,7 +16,7 @@ from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
 from history.chat.database import ChatMessageOrm, ChatSequence, lookup_chat_message, ChatMessageAddRequest, \
     lookup_sequence_parents
-from history.chat.routes_sequence import do_get_sequence
+from history.chat.add_sequence import do_get_sequence
 from history.ollama.chat_rag_routes import finalize_inference_job
 from history.ollama.json import consolidate_stream_sync
 from inference.embeddings.retrieval import SkipRetrievalPolicy
