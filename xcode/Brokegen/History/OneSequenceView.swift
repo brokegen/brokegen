@@ -3,13 +3,15 @@ import SwiftUI
 
 struct InlineTextInput: View {
     @Binding var textInEdit: String
+    @State var isHovered: Bool = false
+    /// Crossover length where we swap implementations to a TextEditor
     let textFieldMaxChars: Int
 
     init(
-        textInEdit: Binding<String>,
+        _ textInEdit: Binding<String>,
         textFieldMaxChars: Int = 280
     ) {
-        self._textInEdit = textInEdit
+        _textInEdit = textInEdit
         self.textFieldMaxChars = textFieldMaxChars
     }
 
@@ -17,15 +19,29 @@ struct InlineTextInput: View {
         if textInEdit.count <= textFieldMaxChars {
             TextField("Enter your message", text: $textInEdit, axis: .vertical)
                 .textFieldStyle(.plain)
-                .monospaced()
                 .lineSpacing(240)
+                .monospaced()
                 .lineLimit(4...40)
+                .background(
+                    isHovered ? Color(.controlColor) : Color(.controlBackgroundColor)
+                )
+                .onHover { isHovered in
+                    self.isHovered = isHovered
+                }
+                .padding(6)
         }
         else {
             TextEditor(text: $textInEdit)
+                .scrollDisabled(true)
                 .monospaced()
                 .lineLimit(4...40)
-                .scrollDisabled(true)
+                .background(
+                    isHovered ? Color(.controlColor) : Color(.controlBackgroundColor)
+                )
+                .onHover { isHovered in
+                    self.isHovered = isHovered
+                }
+                .padding(6)
         }
     }
 }
@@ -147,7 +163,7 @@ struct OneSequenceView: View {
             }
 
             HStack {
-                InlineTextInput(textInEdit: $promptInEdit)
+                InlineTextInput($promptInEdit)
                     .padding(.top, 24)
                     .padding(.bottom, 24)
                     .border(.blue)

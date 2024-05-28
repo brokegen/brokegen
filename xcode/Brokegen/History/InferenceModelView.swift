@@ -38,6 +38,7 @@ struct InferenceModelView: View {
                             Image(systemName: "plus.message")
                                 .resizable()
                                 .frame(width: 48, height: 48)
+                                .padding(6)
                         }
                     }
 
