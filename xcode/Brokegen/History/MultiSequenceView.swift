@@ -202,9 +202,6 @@ struct MultiSequenceView: View {
                         .onTapGesture {
                             pathHost.push(sequence)
                         }
-//                    .navigationDestination(for: ChatSequence.self) { sequence in
-//                        OneSequenceView(sequence)
-//                    }
 
                     // TODO: This is extremely non-performant, above 10-ish items
                     .onHover { isAbove in

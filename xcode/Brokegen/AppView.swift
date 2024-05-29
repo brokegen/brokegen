@@ -172,9 +172,15 @@ struct AppView: View {
                 // TODO: colors gross
                     .background(Color(.controlBackgroundColor))
             })
-            .navigationDestination(for: ChatSequence.self) { sequence in
+            .navigationDestination(for: ChatSequenceParameters.self) { params in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {
-                    OneSequenceView(sequence)
+                    if params.sequence != nil {
+                        OneSequenceView(params.sequence!)
+                            .submitWithoutPrompt(model: params.continuationModelId)
+                    }
+                    else {
+                        OneSequenceView(params.sequence!)
+                    }
                 })
             }
         }
