@@ -169,6 +169,10 @@ class ChatSyncService: Observable, ObservableObject {
     }
 
     var loadedSequences: [ChatSequence] = []
+
+    public func ping() {
+        print("ChatSyncService ping at \(Date.now)")
+    }
 }
 
 /// These let us add a new Sequence

@@ -152,7 +152,7 @@ class PathHost {
 
     public func push<V>(_ pather: V) -> Void where V:Hashable {
         path.append(pather)
-        printIt("[DEBUG] PathHost.push ]")
+        printIt("[DEBUG] PathHost.push ")
     }
 
     public func pop(_ k: Int = 1) {
@@ -161,9 +161,15 @@ class PathHost {
     }
 }
 
-struct AppView: View {
+struct BrokegenAppView: View {
     @Environment(ChatSyncService.self) private var chatService
-    @State private var pathHost: PathHost = PathHost()
+    @Binding private var pathHost: PathHost
+
+    init(pathHost: Binding<PathHost>) {
+        _chatService = Environment(ChatSyncService.self)
+        /// This Environment var has to be here and not the Scene, because we need to bind it directly to the NavigationStack it's for
+        _pathHost = pathHost
+    }
 
     var body: some View {
         NavigationStack(path: $pathHost.path) {
@@ -174,17 +180,39 @@ struct AppView: View {
             })
             .navigationDestination(for: ChatSequenceParameters.self) { params in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {
-                    if params.sequence != nil {
+                    if false {
+                        OneSequenceView2(
+                            ChatSequenceClientModel(params.sequence!, chatService: chatService)
+                                .submitWithoutPrompt(model: params.continuationModelId)
+                        )
+                    }
+                    else if params.sequence != nil {
                         OneSequenceView(params.sequence!)
-                            .submitWithoutPrompt(model: params.continuationModelId)
+                            .environmentObject(chatService)
                     }
                     else {
+                        // TODO: Pass in the right parameters for this
                         OneSequenceView(params.sequence!)
+                            .environmentObject(chatService)
                     }
                 })
+                .environment(chatService)
+                .environment(pathHost)
+            }
+            .navigationDestination(for: ChatSequence.self) { sequence in
+                NavigationSplitView(sidebar: { AppSidebar() }, detail: {
+                        OneSequenceView2(
+                            ChatSequenceClientModel(sequence, chatService: chatService)
+                        )
+                    }
+                )
+                .environment(chatService)
+                .environment(pathHost)
             }
         }
+        .environment(chatService)
         .environment(pathHost)
+        .onAppear { self.chatService.ping() }
     }
 }
 
@@ -193,5 +221,13 @@ struct AppView: View {
 }
 
 #Preview(traits: .fixedLayout(width: 1024, height: 1024)) {
-    AppView()
+    struct ViewHolder: View {
+        @State private var pathHost = PathHost()
+
+        var body: some View {
+            BrokegenAppView(pathHost: $pathHost)
+        }
+    }
+
+    return ViewHolder()
 }

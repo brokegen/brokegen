@@ -74,8 +74,11 @@ struct OneSequenceView: View {
             submitting = true
 
             receivingStreamer = await chatService.sequenceContinue(
-                ChatSequenceParameters(nextMessage: nil, sequenceId: sequence.serverId!, sequence: nil, continuationModelId: continuationModelId)
-            )
+                ChatSequenceParameters(
+                    nextMessage: nil,
+                    sequenceId: sequence.serverId!,
+                    sequence: nil,
+                    continuationModelId: continuationModelId))
                 .sink(receiveCompletion: { completion in
                     switch completion {
                     case .finished:
@@ -149,8 +152,11 @@ struct OneSequenceView: View {
             )
 
             receivingStreamer = await chatService.sequenceExtend(
-                ChatSequenceParameters(nextMessage: nextMessage, sequenceId: sequence.serverId!, sequence: nil, continuationModelId: nil)
-            )
+                ChatSequenceParameters(
+                    nextMessage: nextMessage,
+                    sequenceId: sequence.serverId!,
+                    sequence: nil,
+                    continuationModelId: nil))
                 .sink(receiveCompletion: { completion in
                     switch completion {
                     case .finished:

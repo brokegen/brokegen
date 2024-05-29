@@ -136,6 +136,7 @@ func dateToSectionName(_ date: Date?) -> String {
 struct MultiSequenceView: View {
     @Environment(ChatSyncService.self) private var chatService
     @Environment(PathHost.self) private var pathHost
+
     @State private var hoveredSequence: ChatSequence? = nil
 
     private var sectionedSequences: [(String, [ChatSequence])] {
@@ -188,8 +189,7 @@ struct MultiSequenceView: View {
         List(sectionedSequences, id: \.0) { pair in
             let (sectionName, sectionSequences) = pair
 
-            Section(header:
-                        Text(sectionName)
+            Section(header: Text(sectionName)
                 .font(.title)
                 .monospaced()
                 .foregroundColor(.accentColor)
@@ -200,7 +200,9 @@ struct MultiSequenceView: View {
                         .padding(12)
                         .lineLimit(4)
                         .onTapGesture {
+                            print("[DEBUG] Pushing new ChatSequence view onto stack: \(sequence)")
                             pathHost.push(sequence)
+                            pathHost.printIt("\(pathHost): ")
                         }
 
                     // TODO: This is extremely non-performant, above 10-ish items

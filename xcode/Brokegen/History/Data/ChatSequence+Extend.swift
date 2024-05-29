@@ -100,3 +100,195 @@ extension ChatSyncService {
         return subject.eraseToAnyPublisher()
     }
 }
+
+@Observable
+class ChatSequenceClientModel: Observable, ObservableObject {
+    let sequence: ChatSequence
+    let chatService: ChatSyncService
+
+    var promptInEdit: String = ""
+    var submitting: Bool = false
+
+    var responseInEdit: Message? = nil
+    var receiving: Bool = false
+    var receivingStreamer: AnyCancellable? = nil
+
+    init(_ sequence: ChatSequence, chatService: ChatSyncService) {
+        self.sequence = sequence
+        self.chatService = chatService
+    }
+
+    func submitWithoutPrompt(model continuationModelId: InferenceModelRecordID?) -> Self {
+        print("[INFO] ChatSequenceClientModel.submiwTithoutPrompt(\(continuationModelId))")
+        return self
+    }
+
+    func submitWithoutPrompt2(
+        model continuationModelId: InferenceModelRecordID? = nil
+    ) -> Self {
+        Task.init {
+            guard submitting == false else {
+                print("[ERROR] OneSequenceView.submitWithoutPrompt during another submission")
+                return
+            }
+            submitting = true
+
+            receivingStreamer = await chatService.sequenceContinue(
+                ChatSequenceParameters(
+                    nextMessage: nil,
+                    sequenceId: sequence.serverId!,
+                    sequence: nil,
+                    continuationModelId: continuationModelId))
+                .sink(receiveCompletion: { [self] completion in
+                    switch completion {
+                    case .finished:
+                        if responseInEdit == nil {
+                            print("[ERROR] ChatSyncService.sequenceContinue completed without any response data")
+                        }
+                        else {
+                            sequence.messages.append(responseInEdit!)
+                            responseInEdit = nil
+                        }
+                        stopSubmitAndReceive()
+                    case .failure(let error):
+                        let errorMessage = Message(
+                            role: "[ERROR] ChatSyncService.sequenceContinue: \(error.localizedDescription)",
+                            content: responseInEdit?.content ?? "",
+                            createdAt: Date.now
+                        )
+                        sequence.messages.append(errorMessage)
+                        responseInEdit = nil
+
+                        stopSubmitAndReceive()
+                    }
+                }, receiveValue: { [self] data in
+                    // On first data received, end "submitting" phase
+                    submitting = false
+                    receiving = true
+
+                    do {
+                        let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
+                        if let message = jsonDict["message"] as? [String : Any] {
+                            if let fragment = message["content"] {
+                                let newResponse = Message(
+                                    role: responseInEdit!.role,
+                                    content: responseInEdit!.content + (fragment as! String),
+                                    createdAt: responseInEdit!.createdAt
+                                )
+                                responseInEdit = newResponse
+                            }
+                        }
+
+                        if let done = jsonDict["done"] as? Bool {
+                            let newSequenceId: Int? = jsonDict["new_sequence_id"] as? Int
+                            if done && newSequenceId != nil {
+                                print("[DEBUG] Should update to new_sequence_id: \(newSequenceId!)")
+                                chatService.replaceSequence(sequence.serverId!, with: newSequenceId!)
+                            }
+                        }
+                    }
+                    catch {
+                        print("[ERROR] OneSequenceView.submitWithoutPrompt: decoding error or something")
+                    }
+                })
+        }
+
+        return self
+    }
+
+    func submit() {
+        Task.init {
+            /// TODO: Avoid race conditions by migrating to actor
+            guard submitting == false else {
+                print("[ERROR] OneSequenceView.submit during another submission")
+                return
+            }
+            submitting = true
+
+            let nextMessage = Message(
+                role: "user",
+                content: promptInEdit,
+                createdAt: Date.now
+            )
+
+            receivingStreamer = await chatService.sequenceExtend(
+                ChatSequenceParameters(
+                    nextMessage: nextMessage,
+                    sequenceId: sequence.serverId!,
+                    sequence: nil,
+                    continuationModelId: nil))
+                .sink(receiveCompletion: { [self] completion in
+                    switch completion {
+                    case .finished:
+                        if responseInEdit == nil {
+                            print("[ERROR] ChatSyncService.sequenceExtend completed without any response data")
+                        }
+                        else {
+                            sequence.messages.append(responseInEdit!)
+                            responseInEdit = nil
+                        }
+                        stopSubmitAndReceive()
+                    case .failure(let error):
+                        let errorMessage = Message(
+                            role: "[ERROR] ChatSyncService.sequenceExtend: \(error.localizedDescription)",
+                            content: responseInEdit?.content ?? "",
+                            createdAt: Date.now
+                        )
+                        sequence.messages.append(errorMessage)
+                        responseInEdit = nil
+
+                        stopSubmitAndReceive()
+                    }
+                }, receiveValue: { [self] data in
+                    // On first data received, end "submitting" phase
+                    if submitting {
+                        sequence.messages.append(nextMessage)
+
+                        promptInEdit = ""
+                        submitting = false
+
+                        responseInEdit = Message(
+                            role: "assistant",
+                            content: "",
+                            createdAt: Date.now
+                        )
+                    }
+                    receiving = true
+
+                    do {
+                        let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
+                        if let message = jsonDict["message"] as? [String : Any] {
+                            if let fragment = message["content"] {
+                                let newResponse = Message(
+                                    role: responseInEdit!.role,
+                                    content: responseInEdit!.content + (fragment as! String),
+                                    createdAt: responseInEdit!.createdAt
+                                )
+                                responseInEdit = newResponse
+                            }
+                        }
+
+                        if let done = jsonDict["done"] as? Bool {
+                            let newSequenceId: Int? = jsonDict["new_sequence_id"] as? Int
+                            if done && newSequenceId != nil {
+                                print("[DEBUG] Should update to new_sequence_id: \(newSequenceId!)")
+                                chatService.replaceSequence(sequence.serverId!, with: newSequenceId!)
+                            }
+                        }
+                    }
+                    catch {
+                        print("[ERROR] OneSequenceView.submit: decoding error or something")
+                    }
+                })
+        }
+    }
+
+    func stopSubmitAndReceive() {
+        receivingStreamer?.cancel()
+        receivingStreamer = nil
+
+        submitting = false
+        receiving = false
+    }
+
+}

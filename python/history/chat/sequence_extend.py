@@ -126,6 +126,13 @@ async def do_continuation(
         history_db.add(response_sequence)
         history_db.commit()
 
+        # And complete the circular reference that really should be handled in the SQLAlchemy ORM
+        inference_job = history_db.merge(inference_job)
+        inference_job.parent_sequence = response_sequence.id
+
+        history_db.add(inference_job)
+        history_db.commit()
+
         return {
             "new_sequence_id": response_sequence.id,
             "done": True,

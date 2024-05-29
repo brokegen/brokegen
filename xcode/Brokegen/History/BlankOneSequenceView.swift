@@ -99,7 +99,11 @@ struct BlankOneSequenceView: View {
 
             if sequenceId != nil {
                 let nextSequence = await chatService.fetchSequence(sequenceId!)
-                pathHost.push(ChatSequenceParameters(nextMessage: nil, sequenceId: sequenceId!, sequence: nextSequence, continuationModelId: initialModel.serverId))
+                pathHost.push(ChatSequenceParameters(
+                    nextMessage: nil,
+                    sequenceId: sequenceId!,
+                    sequence: nextSequence,
+                    continuationModelId: initialModel.serverId))
             }
             else {
                 print("[ERROR] Couldn't push next ChatSequence view onto NavigationStack")
@@ -131,18 +135,28 @@ struct BlankOneSequenceView: View {
                 InlineTextInput($promptInEdit)
                     .disabled(submitting)
                     .onSubmit {
+                        print("[DEBUG] BlankOSV submitting prompt from TextField: \(promptInEdit)")
                         submit()
                     }
 
                 VStack {
                     Button(action: stopSubmitAndReceive) {
-                        Image(systemName: submitting ? "arrow.up.circle.fill" : "arrow.up.circle")
+                        Image(systemName: submitting ? "stop.fill" : "stop")
                             .resizable()
                             .frame(width: 32, height: 32)
                             .disabled(!submitting)
                     }
                     .buttonStyle(.plain)
                     .help("Stop submitting or receiving")
+
+                    Spacer()
+
+                    Button(action: submit) {
+                        Image(systemName: submitting ? "arrow.up.circle.fill" : "arrow.up.circle")
+                            .resizable()
+                            .frame(width: 32, height: 32)
+                            .disabled(submitting)
+                    }
                 }
                 .padding(.top, 16)
                 .padding(.bottom, 12)
@@ -153,5 +167,6 @@ struct BlankOneSequenceView: View {
         .padding(.leading, 24)
         .padding(.trailing, 24)
         .frame(maxHeight: 800)
+        .onAppear { self.chatService.ping() }
     }
 }
