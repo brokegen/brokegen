@@ -65,7 +65,7 @@ struct OneSequenceView: View {
 
     func submitWithoutPrompt(
         model continuationModelId: InferenceModelRecordID? = nil
-    ) {
+    ) -> OneSequenceView {
         Task.init {
             guard submitting == false else {
                 print("[ERROR] OneSequenceView.submitWithoutPrompt during another submission")
@@ -127,6 +127,8 @@ struct OneSequenceView: View {
                     }
                 })
         }
+
+        return self
     }
 
     func submit() {

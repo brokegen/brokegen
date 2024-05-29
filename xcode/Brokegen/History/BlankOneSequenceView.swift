@@ -32,7 +32,10 @@ struct ChatNameInput: View {
 
 struct BlankOneSequenceView: View {
     @Environment(ChatSyncService.self) private var chatService
-    var sequence: ChatSequence? = nil
+    @Environment(PathHost.self) private var pathHost
+
+    @State var nextSequence: ChatSequence? = nil
+    @State var nextSequenceReady: Bool? = false
     let initialModel: InferenceModel
 
     @State var chatSequenceHumanDesc: String = ""
@@ -97,7 +100,15 @@ struct BlankOneSequenceView: View {
             let sequenceId: ChatSequenceServerID? =
                 await constructUserSequence(id: messageId!)
 
-            print("[ERROR] Not implemented: replace current chat with the new one")
+            if sequenceId != nil {
+                nextSequence = await chatService.fetchSequence(sequenceId!)
+                nextSequenceReady = true
+
+                pathHost.push((nextSequence, initialModel.serverId))
+            }
+            else {
+                print("[ERROR] Couldn't push next ChatSequence view onto NavigationStack")
+            }
         }
     }
 
@@ -117,6 +128,11 @@ struct BlankOneSequenceView: View {
                 Text("Starting a new chat")
                     .foregroundStyle(.secondary)
                     .font(.title)
+
+//                NavigationLink(destination: OneSequenceView(nextSequence!), tag: true, selection: $nextSequenceReady) {
+//                    EmptyView()
+//                }
+                
             }
 
             Spacer()

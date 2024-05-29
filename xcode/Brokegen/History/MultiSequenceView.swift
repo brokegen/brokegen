@@ -135,6 +135,7 @@ func dateToSectionName(_ date: Date?) -> String {
 
 struct MultiSequenceView: View {
     @Environment(ChatSyncService.self) private var chatService
+    @Environment(PathHost.self) private var pathHost
     @State private var hoveredSequence: ChatSequence? = nil
 
     private var sectionedSequences: [(String, [ChatSequence])] {
@@ -176,15 +177,13 @@ struct MultiSequenceView: View {
             Spacer()
 
             NavigationLink(destination: InferenceModelView()) {
-                Label("New Chat", systemImage: "plus")
+                Label("New Chat...", systemImage: "plus")
                     .buttonStyle(.accessoryBar)
                     .padding(12)
             }
         }
         .padding(24)
         .frame(maxWidth: 1000)
-
-        let hoverColor = Color(.windowFrameTextColor)
 
         List(sectionedSequences, id: \.0) { pair in
             let (sectionName, sectionSequences) = pair
@@ -197,11 +196,15 @@ struct MultiSequenceView: View {
                 .padding(.top, 36)
             ) {
                 ForEach(sectionSequences) { sequence in
-                    NavigationLink(destination: OneSequenceView(sequence)) {
-                        SequenceRow(sequence)
-                    }
-                    .padding(12)
-                    .lineLimit(4)
+                    SequenceRow(sequence)
+                        .padding(12)
+                        .lineLimit(4)
+                        .onTapGesture {
+                            pathHost.push(sequence)
+                        }
+//                    .navigationDestination(for: ChatSequence.self) { sequence in
+//                        OneSequenceView(sequence)
+//                    }
 
                     // TODO: This is extremely non-performant, above 10-ish items
                     .onHover { isAbove in

@@ -73,20 +73,20 @@ class Message: Identifiable, Codable {
     }
 }
 
-/// TODO: None of this handles nils correctly. We shouldn't have nil.
 extension Message: Equatable {
     static func == (lhs: Message, rhs: Message) -> Bool {
-        return lhs.id == rhs.id
+        if lhs.serverId == nil || rhs.serverId == nil {
+            return lhs.id == rhs.id
+        }
+
+        return lhs.serverId == rhs.serverId
     }
 }
 
 extension Message: Hashable {
-    func hashValue() -> Int {
-        return id.hashValue
-    }
-
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
+        hasher.combine(serverId)
     }
 }
 
@@ -141,6 +141,23 @@ class ChatSequence: Identifiable, Codable {
     var lastMessageDate: Date? {
         guard !messages.isEmpty else { return nil }
         return messages.last!.createdAt
+    }
+}
+
+extension ChatSequence: Equatable {
+    static func == (lhs: ChatSequence, rhs: ChatSequence) -> Bool {
+        if lhs.serverId == nil || rhs.serverId == nil {
+            return lhs.id == rhs.id
+        }
+
+        return lhs.serverId == rhs.serverId
+    }
+}
+
+extension ChatSequence: Hashable {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(serverId)
     }
 }
 
@@ -225,6 +242,19 @@ class ChatSyncService: Observable, ObservableObject {
 
     var loadedSequences: [ChatSequence] = []
 
+    func fetchSequence(_ sequenceId: ChatSequenceServerID) async -> ChatSequence? {
+        do {
+            if let entireSequence = await getData("/sequences/\(sequenceId)") {
+                return try ChatSequence(sequenceId, data: entireSequence)
+            }
+        }
+        catch {
+            print("[ERROR] GET /sequences/\(sequenceId) failed decode, probably")
+        }
+
+        return nil
+    }
+
     func fetchPinnedSequences(_ limit: Int? = nil) {
         Task.init {
             var limitQuery = ""
@@ -238,16 +268,10 @@ class ChatSyncService: Observable, ObservableObject {
             // Clear out the entire set of existing sequences
             self.loadedSequences = []
 
-            let sequenceIds: [Int] = jsonDict!["sequence_ids"] as? [Int] ?? []
+            let sequenceIds: [ChatSequenceServerID] = jsonDict!["sequence_ids"] as? [Int] ?? []
             for seqId in sequenceIds {
-                do {
-                    if let entireSequence = await getData("/sequences/\(seqId)") {
-                        let newSeq = try ChatSequence(seqId, data: entireSequence)
-                        self.loadedSequences.append(newSeq)
-                    }
-                }
-                catch {
-                    print("[ERROR] Failed to get sequence data for \(seqId)")
+                if let entireSequence = await fetchSequence(seqId) {
+                    self.loadedSequences.append(entireSequence)
                 }
             }
         }

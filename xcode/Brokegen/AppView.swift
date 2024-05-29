@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 
 struct RadialLayout: Layout {
@@ -97,55 +98,87 @@ struct SettingsBlob: View {
     }
 }
 
-struct AppView: View {
-    @Environment(ChatSyncService.self) private var chatService
-
+struct AppSidebar: View {
     var body: some View {
-        NavigationSplitView(sidebar: {
-            List {
-                Section(header: Text("Chats")
-                    .font(.largeTitle)
-                    .foregroundStyle(.primary)
-                    .padding(6)
-                ) {
-                    NavigationLink(destination: MultiSequenceView()) {
-                        Spacer()
-                        Text("Recent Chats")
-                            .font(.title2)
-                            .padding(6)
-                        Image(systemName: "slider.horizontal.3")
-                    }
-                    .frame(maxWidth: .infinity)
-
-                    NavigationLink(destination: InferenceModelView()) {
-                        Spacer()
-                        Text("Available Models")
-                            .font(.title2)
-                            .foregroundStyle(.primary)
-                            .padding(6)
-                        Image(systemName: "plus.message")
-                    }
-                }
-
-                Divider()
-                MiniJobsSidebar()
-
-                NavigationLink(destination: SystemInfoView()) {
-                    Text("System Info")
+        List {
+            Section(header: Text("Chats")
+                .font(.largeTitle)
+                .foregroundStyle(.primary)
+                .padding(6)
+            ) {
+                NavigationLink(destination: MultiSequenceView()) {
+                    Spacer()
+                    Text("Recent Chats")
                         .font(.title2)
-                        .lineLimit(3)
                         .padding(6)
+                    Image(systemName: "slider.horizontal.3")
+                }
+                .frame(maxWidth: .infinity)
+
+                NavigationLink(destination: InferenceModelView()) {
+                    Spacer()
+                    Text("Available Models")
+                        .font(.title2)
+                        .foregroundStyle(.primary)
+                        .padding(6)
+                    Image(systemName: "plus.message")
                 }
             }
-            .listStyle(.sidebar)
-            .frame(minWidth: 200, idealWidth: 400, maxHeight: .infinity)
-            .toolbar(.hidden)
-        }, detail: {
-            InferenceModelView()
+
+            Divider()
+
+            MiniJobsSidebar()
+
+            NavigationLink(destination: SystemInfoView()) {
+                Text("System Info")
+                    .font(.title2)
+                    .lineLimit(3)
+                    .padding(6)
+            }
+        }
+        .listStyle(.sidebar)
+        .frame(minWidth: 200, idealWidth: 400, maxHeight: .infinity)
+        .toolbar(.hidden)
+    }
+}
+
+@Observable
+class PathHost {
+    var path: NavigationPath = NavigationPath()
+
+    public func printIt(_ prefix: String = "") {
+        print(prefix + String(describing: path))
+    }
+
+    public func push<V>(_ pather: V) -> Void where V:Hashable {
+        path.append(pather)
+        printIt("[DEBUG] PathHost.push ]")
+    }
+
+    public func pop(_ k: Int = 1) {
+        printIt("[DEBUG] PathHost.pop ")
+        return path.removeLast(k)
+    }
+}
+
+struct AppView: View {
+    @Environment(ChatSyncService.self) private var chatService
+    @State private var pathHost: PathHost = PathHost()
+
+    var body: some View {
+        NavigationStack(path: $pathHost.path) {
+            NavigationSplitView(sidebar: { AppSidebar() }, detail: {
+                InferenceModelView()
                 // TODO: colors gross
-                .background(Color(.controlBackgroundColor))
-        })
-        .navigationTitle("")
+                    .background(Color(.controlBackgroundColor))
+            })
+            .navigationDestination(for: ChatSequence.self) { sequence in
+                NavigationSplitView(sidebar: { AppSidebar() }, detail: {
+                    OneSequenceView(sequence)
+                })
+            }
+        }
+        .environment(pathHost)
     }
 }
 
