@@ -103,7 +103,7 @@ extension ChatSyncService {
 
 @Observable
 class ChatSequenceClientModel: Observable, ObservableObject {
-    let sequence: ChatSequence
+    var sequence: ChatSequence
     let chatService: ChatSyncService
 
     var promptInEdit: String = ""
@@ -180,10 +180,9 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                         }
 
                         if let done = jsonDict["done"] as? Bool {
-                            let newSequenceId: Int? = jsonDict["new_sequence_id"] as? Int
+                            let newSequenceId: ChatSequenceServerID? = jsonDict["new_sequence_id"] as? Int
                             if done && newSequenceId != nil {
-                                print("[DEBUG] Should update to new_sequence_id: \(newSequenceId!)")
-                                chatService.replaceSequence(sequence.serverId!, with: newSequenceId!)
+                                self.replaceSequence(newSequenceId!)
                             }
                         }
                     }
@@ -269,10 +268,9 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                         }
 
                         if let done = jsonDict["done"] as? Bool {
-                            let newSequenceId: Int? = jsonDict["new_sequence_id"] as? Int
+                            let newSequenceId: ChatSequenceServerID? = jsonDict["new_sequence_id"] as? Int
                             if done && newSequenceId != nil {
-                                print("[DEBUG] Should update to new_sequence_id: \(newSequenceId!)")
-                                chatService.replaceSequence(sequence.serverId!, with: newSequenceId!)
+                                self.replaceSequence(newSequenceId!)
                             }
                         }
                     }
@@ -291,4 +289,18 @@ class ChatSequenceClientModel: Observable, ObservableObject {
         receiving = false
     }
 
+    private func handleStreamingExtendResponse(_ data: Data) {
+        // TODO: Not implemented
+    }
+
+    func replaceSequence(_ newSequenceId: ChatSequenceServerID) {
+        Task.init {
+            print("[DEBUG] Attempting update to new_sequence_id: \(newSequenceId)")
+            chatService.replaceSequence(sequence.serverId!, with: newSequenceId)
+
+            if let newSequence = await chatService.fetchSequence(newSequenceId) {
+                self.sequence = newSequence
+            }
+        }
+    }
 }

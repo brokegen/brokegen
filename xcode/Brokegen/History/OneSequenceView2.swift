@@ -2,18 +2,7 @@ import Combine
 import SwiftUI
 
 struct OneSequenceView2: View {
-    let viewModel: ChatSequenceClientModel
-
-    @State var queuedRequests: [(Self) -> ()] = []
-
-    @State var promptInEdit: String = ""
-    /// When done submitting, migrate promptInEdit into a new Message
-    @State var submitting: Bool = false
-
-    @State var responseInEdit: Message? = nil
-    /// When done receiving, migrate responseInEdit into a new Message
-    @State var receiving: Bool = false
-    @State var receivingStreamer: AnyCancellable? = nil
+    @ObservedObject var viewModel: ChatSequenceClientModel
 
     init(_ viewModel: ChatSequenceClientModel) {
         self.viewModel = viewModel
@@ -27,18 +16,18 @@ struct OneSequenceView2: View {
                     .padding(.top, 16)
             }
 
-            if responseInEdit != nil {
-                OneMessageView(responseInEdit!)
+            if viewModel.responseInEdit != nil {
+                OneMessageView(viewModel.responseInEdit!)
                     .padding(24)
                     .padding(.top, 16)
             }
 
             HStack {
-                InlineTextInput($promptInEdit)
+                InlineTextInput($viewModel.promptInEdit)
                     .padding(.top, 24)
                     .padding(.bottom, 24)
                     .border(.blue)
-                    .disabled(submitting || receiving)
+                    .disabled(viewModel.submitting || viewModel.receiving)
                     .onSubmit {
                         viewModel.submit()
                     }
@@ -46,7 +35,7 @@ struct OneSequenceView2: View {
                 VStack {
                     Button(action: viewModel.stopSubmitAndReceive) {
                         let icon: String = {
-                            if submitting || receiving {
+                            if viewModel.submitting || viewModel.receiving {
                                 return "stop.fill"
                             }
                             else {
@@ -56,7 +45,7 @@ struct OneSequenceView2: View {
                         Image(systemName: icon)
                             .resizable()
                             .frame(width: 32, height: 32)
-                            .disabled(!submitting && !receiving)
+                            .disabled(!viewModel.submitting && !viewModel.receiving)
                     }
                     .buttonStyle(.plain)
                     .help("Stop submitting or receiving")
@@ -64,10 +53,10 @@ struct OneSequenceView2: View {
                     Spacer()
 
                     Button(action: viewModel.submit) {
-                        Image(systemName: submitting ? "arrow.up.circle.fill" : "arrow.up.circle")
+                        Image(systemName: viewModel.submitting ? "arrow.up.circle.fill" : "arrow.up.circle")
                             .resizable()
                             .frame(width: 32, height: 32)
-                            .disabled(submitting || receiving)
+                            .disabled(viewModel.submitting || viewModel.receiving)
                     }
                     .buttonStyle(.plain)
                     .help("Submit")
@@ -79,12 +68,6 @@ struct OneSequenceView2: View {
             }
             .padding(.leading, 24)
             .padding(.trailing, 24)
-        }
-        .onAppear {
-            print("[DEBUG] Iterating through \(queuedRequests.count) OneSequenceView.queuedRequests")
-            for req in queuedRequests {
-                req(self)
-            }
         }
     }
 }
