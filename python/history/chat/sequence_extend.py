@@ -61,6 +61,120 @@ def select_continuation_model(
     return None
 
 
+async def do_continuation(
+        messages_list: list[ChatMessageOrm],
+        original_sequence: ChatSequence,
+        inference_model: InferenceModelRecordOrm,
+        empty_request: starlette.requests.Request,
+        history_db: HistoryDB,
+        audit_db: AuditDB,
+):
+    constructed_ollama_body = {
+        "messages": [m.as_json() for m in messages_list],
+        "model": inference_model.human_id,
+    }
+
+    # Manually construct a Request object, because that's how we pass any data around
+    constructed_request = empty_request
+    # NB This overwrites the internals of the Requests object;
+    # we should really be passing decoded versions throughout the app.
+    constructed_request._body = orjson.dumps(constructed_ollama_body)
+
+    # Wrap the output in a… something that appends new ChatSequence information
+    response_sequence = ChatSequence(
+        human_desc=original_sequence.human_desc,
+        parent_sequence=original_sequence.id,
+    )
+
+    async def construct_response_sequence(response_content_json):
+        nonlocal inference_model
+        inference_model = history_db.merge(inference_model)
+
+        inference_job = InferenceEventOrm(
+            model_record_id=inference_model.id,
+            reason="chat sequence",
+        )
+
+        finalize_inference_job(inference_job, response_content_json)
+        history_db.add(inference_job)
+
+        assistant_response = ChatMessageOrm(
+            role="assistant",
+            content=safe_get(response_content_json, "message", "content"),
+            created_at=inference_job.response_created_at,
+        )
+        history_db.add(assistant_response)
+        history_db.commit()
+
+        # Add what we need for response_sequence
+        original_sequence.user_pinned = False
+        response_sequence.user_pinned = True
+
+        history_db.add(original_sequence)
+        history_db.add(response_sequence)
+
+        response_sequence.current_message = assistant_response.id
+
+        response_sequence.generated_at = inference_job.response_created_at
+        response_sequence.generation_complete = response_content_json["done"]
+        response_sequence.inference_job_id = inference_job.id
+        response_sequence.inference_error = (
+            "this is a duplicate InferenceEvent, because do_generate_raw_templated will dump its own raws in. "
+            "we're keeping this one because it's tied into the actual ChatSequence."
+        )
+
+        history_db.add(response_sequence)
+        history_db.commit()
+
+        return {
+            "new_sequence_id": response_sequence.id,
+            "done": True,
+        }
+
+    async def add_json_suffix(primordial):
+        all_chunks = []
+
+        done_signaled: int = 0
+        async for chunk in primordial:
+            try:
+                chunk_json = orjson.loads(chunk)
+                if chunk_json["done"]:
+                    done_signaled += 1
+                    chunk_json["done"] = False
+                    yield orjson.dumps(chunk_json)
+                    all_chunks.append(chunk)
+                    continue
+            except Exception:
+                logger.exception(f"/chat: Response decode to JSON failed, {len(all_chunks)=}")
+
+            yield chunk
+            all_chunks.append(chunk)
+            if done_signaled > 0:
+                logger.warning(f"/chat: Still yielding chunks after `done=True`")
+
+        if not done_signaled:
+            logger.warning(f"/chat: Finished streaming response without hitting `done=True`")
+
+        # Construct our actual suffix
+        consolidated_response = await consolidate_stream_sync(all_chunks, logger.warning)
+        suffix_chunk = orjson.dumps(await construct_response_sequence(consolidated_response))
+        yield suffix_chunk
+
+    async def wrap_response(
+            upstream_response: JSONStreamingResponse,
+    ) -> JSONStreamingResponse:
+        upstream_response._content_iterable = add_json_suffix(upstream_response._content_iterable)
+        return upstream_response
+
+    return await wrap_response(
+        await history.ollama.chat_rag_routes.do_proxy_chat_rag(
+            constructed_request,
+            SkipRetrievalPolicy(),
+            history_db,
+            audit_db,
+        ))
+
+
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
     @router_ish.post("/sequences/{sequence_id:int}/extend")
     async def sequence_extend(
@@ -108,122 +222,15 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         history_db.add(user_sequence)
         history_db.commit()
 
-        # Figure out how to continue inference for this sequence
+        # Decide how to continue inference for this sequence
         inference_model: InferenceModelRecordOrm = \
             select_continuation_model(sequence_id, params.continuation_model_id, history_db)
 
-        constructed_ollama_body = {
-            "messages": [m.as_json() for m in messages_list],
-            "model": inference_model.human_id,
-        }
-
-        # Manually construct a Request object, because that's how we pass any data around
-        constructed_request = empty_request
-        # NB This overwrites the internals of the Requests object;
-        # we should really be passing decoded versions throughout the app.
-        constructed_request._body = orjson.dumps(constructed_ollama_body)
-
-        # Wrap the output in a… something that appends new ChatSequence information
-        response_sequence = ChatSequence(
-            human_desc=original_sequence.human_desc,
-            parent_sequence=user_sequence.id or original_sequence.id,
+        return await do_continuation(
+            messages_list,
+            original_sequence if user_sequence.id is None else user_sequence,
+            inference_model,
+            empty_request,
+            history_db,
+            audit_db,
         )
-
-        async def construct_response_sequence(response_content_json):
-            nonlocal inference_model
-            inference_model = history_db.merge(inference_model)
-
-            inference_job = InferenceEventOrm(
-                model_record_id=inference_model.id,
-                reason="chat sequence",
-            )
-
-            finalize_inference_job(inference_job, response_content_json)
-            history_db.add(inference_job)
-
-            assistant_response = ChatMessageOrm(
-                role="assistant",
-                content=safe_get(response_content_json, "message", "content"),
-                created_at=inference_job.response_created_at,
-            )
-            history_db.add(assistant_response)
-            history_db.commit()
-
-            # Add what we need for response_sequence
-            nonlocal user_sequence
-            user_sequence = history_db.merge(user_sequence)
-
-            if user_sequence.id is not None:
-                user_sequence.user_pinned = False
-                response_sequence.user_pinned = True
-
-                history_db.add(user_sequence)
-                history_db.add(response_sequence)
-
-            else:
-                original_sequence.user_pinned = False
-                response_sequence.user_pinned = True
-
-                history_db.add(original_sequence)
-                history_db.add(response_sequence)
-
-            response_sequence.current_message = assistant_response.id
-
-            response_sequence.generated_at = inference_job.response_created_at
-            response_sequence.generation_complete = response_content_json["done"]
-            response_sequence.inference_job_id = inference_job.id
-            response_sequence.inference_error = (
-                "this is a duplicate InferenceEvent, because do_generate_raw_templated will dump its own raws in. "
-                "we're keeping this one because it's tied into the actual ChatSequence."
-            )
-
-            history_db.add(response_sequence)
-            history_db.commit()
-
-            return {
-                "new_sequence_id": response_sequence.id,
-                "done": True,
-            }
-
-        async def add_json_suffix(primordial):
-            all_chunks = []
-
-            done_signaled: int = 0
-            async for chunk in primordial:
-                try:
-                    chunk_json = orjson.loads(chunk)
-                    if chunk_json["done"]:
-                        done_signaled += 1
-                        chunk_json["done"] = False
-                        yield orjson.dumps(chunk_json)
-                        all_chunks.append(chunk)
-                        continue
-                except Exception:
-                    logger.exception(f"/chat: Response decode to JSON failed, {len(all_chunks)=}")
-
-                yield chunk
-                all_chunks.append(chunk)
-                if done_signaled > 0:
-                    logger.warning(f"/chat: Still yielding chunks after `done=True`")
-
-            if not done_signaled:
-                logger.warning(f"/chat: Finished streaming response without hitting `done=True`")
-
-            # Construct our actual suffix
-            consolidated_response = await consolidate_stream_sync(all_chunks, logger.warning)
-            suffix_chunk = orjson.dumps(await construct_response_sequence(consolidated_response))
-            yield suffix_chunk
-
-        async def wrap_response(
-                upstream_response: JSONStreamingResponse,
-        ) -> JSONStreamingResponse:
-            upstream_response._content_iterable = add_json_suffix(upstream_response._content_iterable)
-            return upstream_response
-
-        return await wrap_response(
-            await history.ollama.chat_rag_routes.do_proxy_chat_rag(
-                constructed_request,
-                SkipRetrievalPolicy(),
-                history_db,
-                audit_db,
-            ))
