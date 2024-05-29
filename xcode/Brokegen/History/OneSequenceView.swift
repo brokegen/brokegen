@@ -38,7 +38,7 @@ struct OneSequenceView: View {
                         }
                     }
 
-                VStack {
+                Group {
                     Button(action: viewModel.stopSubmitAndReceive) {
                         let icon: String = {
                             if viewModel.submitting || viewModel.responseInEdit != nil {
@@ -56,7 +56,14 @@ struct OneSequenceView: View {
                     .buttonStyle(.plain)
                     .help("Stop submitting or receiving")
 
-                    Spacer()
+                    Button(action: viewModel.requestExtendWithRetrieval) {
+                        Image(systemName: viewModel.submitting ? "arrowshape.up.fill" : "arrowshape.up")
+                            .resizable()
+                            .frame(width: 32, height: 32)
+                            .disabled(viewModel.submitting || viewModel.responseInEdit != nil)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Submit with Retrieval-Augmented Generation")
 
                     Button(action: viewModel.requestExtend) {
                         Image(systemName: viewModel.submitting ? "arrow.up.circle.fill" : "arrow.up.circle")

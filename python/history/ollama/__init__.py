@@ -17,7 +17,7 @@ from history.ollama.forward_routes import forward_request_nodetails, forward_req
 from history.ollama.json import consolidate_stream, OllamaResponseContentJSON, chunk_and_log_output
 from history.ollama.model_routes import do_api_tags, do_api_show_streaming
 from inference.embeddings.knowledge import KnowledgeSingleton, get_knowledge_dependency
-from inference.embeddings.retrieval import SkipRetrievalPolicy, CustomRetrievalPolicy
+from inference.embeddings.retrieval import SkipRetrievalPolicy, CustomRetrievalPolicy, DefaultRetrievalPolicy
 from inference.prompting.templating import apply_llm_template
 from _util.typing import TemplatedPromptText
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
@@ -164,7 +164,7 @@ which bypasses censoring for tested models.""")
     app.include_router(router, prefix="/ollama")
 
 
-def install_forwards(app: FastAPI, enable_rag: bool):
+def install_forwards(app: FastAPI, force_ollama_rag: bool):
     ollama_forwarder = APIRouter()
 
     @ollama_forwarder.post("/ollama-proxy/api/generate")
@@ -186,8 +186,8 @@ def install_forwards(app: FastAPI, enable_rag: bool):
         logger.debug(f"Received /api/chat request, starting processing")
 
         retrieval_policy = SkipRetrievalPolicy()
-        if enable_rag:
-            retrieval_policy = CustomRetrievalPolicy(knowledge)
+        if force_ollama_rag:
+            retrieval_policy = DefaultRetrievalPolicy(knowledge)
 
         return await do_proxy_chat_rag(request, retrieval_policy, history_db, audit_db)
 

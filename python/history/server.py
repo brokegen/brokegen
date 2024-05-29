@@ -89,15 +89,15 @@ async def lifespan_logging(app: FastAPI):
               help='loglevel to pass to Python `logging`')
 @click.option('--trace-sqlalchemy', default=False, type=click.BOOL)
 @click.option('--trace-fastapi', default=True, type=click.BOOL)
-@click.option('--enable-rag', default=False, type=click.BOOL,
-              help='Load FAISS files from --data-dir, and apply them to any /api/chat calls')
+@click.option('--force-ollama-rag', default=True, type=click.BOOL,
+              help='Load FAISS files from --data-dir, and apply them to any ollama-proxy /api/chat calls')
 def run_proxy(
         data_dir,
         bind_port,
         log_level,
         trace_sqlalchemy: bool,
         trace_fastapi: bool,
-        enable_rag,
+        force_ollama_rag,
 ):
     numeric_log_level = getattr(logging, str(log_level).upper(), None)
     logging.getLogger().setLevel(level=numeric_log_level)
@@ -160,15 +160,13 @@ def run_proxy(
     asyncio.run(providers.ollama.discover_servers())
     asyncio.run(providers.llamafile.discover_in('dist'))
 
-    history.ollama.install_forwards(app, enable_rag)
+    history.ollama.install_forwards(app, force_ollama_rag)
     history.ollama.install_test_points(app)
     history.chat.install_routes(app)
     providers.inference_models.routes.install_routes(app)
 
-    if enable_rag:
-        get_knowledge().load_shards_from(data_dir)
-    else:
-        get_knowledge().load_shards_from(None)
+    get_knowledge().load_shards_from(None)
+    get_knowledge().queue_data_dir(data_dir)
 
     config = uvicorn.Config(app, port=bind_port, log_level="debug", reload=False, workers=1)
     server = uvicorn.Server(config)

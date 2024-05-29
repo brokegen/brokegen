@@ -19,7 +19,9 @@ from history.chat.database import ChatMessageOrm, ChatSequence, lookup_chat_mess
 from history.chat.sequence_get import do_get_sequence
 from history.ollama.chat_rag_routes import finalize_inference_job
 from history.ollama.json import consolidate_stream_sync
-from inference.embeddings.retrieval import SkipRetrievalPolicy
+from inference.embeddings.knowledge import get_knowledge
+from inference.embeddings.retrieval import SkipRetrievalPolicy, RetrievalPolicyID, RetrievalPolicy, \
+    DefaultRetrievalPolicy, CustomRetrievalPolicy
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm
 
@@ -28,11 +30,15 @@ logger = logging.getLogger(__name__)
 
 class ContinueRequest(BaseModel):
     continuation_model_id: InferenceModelRecordID
+    retrieval_policy: RetrievalPolicyID = "skip"
+    retrieval_search_args: Optional[str] = None
 
 
 class ExtendRequest(BaseModel):
     next_message: ChatMessage
     continuation_model_id: Optional[InferenceModelRecordID] = None
+    retrieval_policy: RetrievalPolicyID = "skip"
+    retrieval_search_args: Optional[str] = None
 
 
 def select_continuation_model(
@@ -69,6 +75,8 @@ async def do_continuation(
         messages_list: list[ChatMessageOrm],
         original_sequence: ChatSequence,
         inference_model: InferenceModelRecordOrm,
+        retrieval_policy: RetrievalPolicyID,
+        retrieval_search_args: str | None,
         empty_request: starlette.requests.Request,
         history_db: HistoryDB,
         audit_db: AuditDB,
@@ -177,10 +185,24 @@ async def do_continuation(
         upstream_response._content_iterable = add_json_suffix(upstream_response._content_iterable)
         return upstream_response
 
+    real_retrieval_policy: RetrievalPolicy | None = None
+    if retrieval_policy == "skip":
+        real_retrieval_policy = SkipRetrievalPolicy()
+    elif retrieval_policy == "default":
+        real_retrieval_policy = DefaultRetrievalPolicy(get_knowledge())
+    elif retrieval_policy == "custom":
+        init_kwargs = {
+            "knowledge": get_knowledge(),
+        }
+        if retrieval_search_args is not None:
+            init_kwargs["search_args_json"] = retrieval_search_args
+
+        real_retrieval_policy = CustomRetrievalPolicy(**init_kwargs)
+
     return await wrap_response(
         await history.ollama.chat_rag_routes.do_proxy_chat_rag(
             constructed_request,
-            SkipRetrievalPolicy(),
+            real_retrieval_policy or SkipRetrievalPolicy(),
             history_db,
             audit_db,
         ))
@@ -213,6 +235,8 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             messages_list,
             original_sequence,
             inference_model,
+            params.retrieval_policy,
+            params.retrieval_search_args,
             empty_request,
             history_db,
             audit_db,
@@ -274,6 +298,8 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             messages_list,
             original_sequence if user_sequence.id is None else user_sequence,
             inference_model,
+            params.retrieval_policy,
+            params.retrieval_search_args,
             empty_request,
             history_db,
             audit_db,

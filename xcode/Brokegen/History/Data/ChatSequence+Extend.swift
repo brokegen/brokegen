@@ -8,6 +8,8 @@ struct ChatSequenceParameters: Codable, Hashable {
     let sequenceId: ChatSequenceServerID
     let sequence: ChatSequence?
     let continuationModelId: InferenceModelRecordID?
+    var retrievalPolicy: String? = nil
+    var retrievalSearchArgs: String? = nil
 }
 
 /// Finally, something to submit new chat requests
@@ -122,11 +124,11 @@ class ChatSequenceClientModel: Observable, ObservableObject {
     func requestContinue(
         model continuationModelId: InferenceModelRecordID? = nil
     ) -> Self {
-        print("[INFO] ChatSequenceClientModel.submiwTithoutPrompt(\(continuationModelId))")
+        print("[INFO] ChatSequenceClientModel.requestContinue(\(continuationModelId))")
 
         Task.init {
             guard submitting == false else {
-                print("[ERROR] OneSequenceView.submitWithoutPrompt during another submission")
+                print("[ERROR] ChatSequenceClientModel.requestContinue during another submission")
                 return
             }
             submitting = true
@@ -188,7 +190,7 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                         }
                     }
                     catch {
-                        print("[ERROR] OneSequenceView.submitWithoutPrompt: decoding error or something")
+                        print("[ERROR] ChatSequenceClientModel.requestContinue: decoding error or something")
                     }
                 })
         }
@@ -198,9 +200,8 @@ class ChatSequenceClientModel: Observable, ObservableObject {
 
     func requestExtend() {
         Task.init {
-            /// TODO: Avoid race conditions by migrating to actor
             guard submitting == false else {
-                print("[ERROR] OneSequenceView.submit during another submission")
+                print("[ERROR] ChatSequenceClientModel.requestExtend during another submission")
                 return
             }
             submitting = true
@@ -270,7 +271,90 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                         }
                     }
                     catch {
-                        print("[ERROR] OneSequenceView.submit: decoding error or something")
+                        print("[ERROR] ChatSequenceClientModel.sequenceExtend: decoding error or something")
+                    }
+                })
+        }
+    }
+
+    func requestExtendWithRetrieval() {
+        Task.init {
+            guard submitting == false else {
+                print("[ERROR] ChatSequenceClientModel.sequenceExtend during another submission")
+                return
+            }
+            submitting = true
+
+            let nextMessage = Message(
+                role: "user",
+                content: promptInEdit,
+                createdAt: Date.now
+            )
+
+            receivingStreamer = await chatService.sequenceExtend(
+                ChatSequenceParameters(
+                    nextMessage: nextMessage,
+                    sequenceId: sequence.serverId!,
+                    sequence: nil,
+                    continuationModelId: nil,
+                    retrievalPolicy: "custom",
+                    retrievalSearchArgs: "{\"k\": 18}"
+                )
+            )
+                .sink(receiveCompletion: { [self] completion in
+                    switch completion {
+                    case .finished:
+                        if responseInEdit == nil {
+                            print("[ERROR] ChatSyncService.sequenceExtend completed without any response data")
+                        }
+                        else {
+                            sequence.messages.append(responseInEdit!)
+                            responseInEdit = nil
+                        }
+                        stopSubmitAndReceive()
+                    case .failure(let error):
+                        let errorMessage = Message(
+                            role: "[ERROR] ChatSyncService.sequenceExtend: \(error.localizedDescription)",
+                            content: responseInEdit?.content ?? "",
+                            createdAt: Date.now
+                        )
+                        sequence.messages.append(errorMessage)
+                        responseInEdit = nil
+
+                        stopSubmitAndReceive()
+                    }
+                }, receiveValue: { [self] data in
+                    // On first data received, end "submitting" phase
+                    if submitting {
+                        sequence.messages.append(nextMessage)
+
+                        promptInEdit = ""
+                        submitting = false
+
+                        responseInEdit = Message(
+                            role: "assistant",
+                            content: "",
+                            createdAt: Date.now
+                        )
+                    }
+
+                    do {
+                        let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
+                        if let message = jsonDict["message"] as? [String : Any] {
+                            if let fragment = message["content"] as? String {
+                                responseInEdit = responseInEdit!.appendContent(fragment)
+                            }
+                        }
+
+                        if let done = jsonDict["done"] as? Bool {
+                            let newSequenceId: ChatSequenceServerID? = jsonDict["new_sequence_id"] as? Int
+                            if done && newSequenceId != nil {
+                                self.replaceSequence(newSequenceId!)
+                            }
+                        }
+                    }
+                    catch {
+                        print("[ERROR] ChatSequenceClientModel.sequenceExtend: decoding error or something")
                     }
                 })
         }

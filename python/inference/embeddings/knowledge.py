@@ -47,6 +47,9 @@ class RAMEstimator:
 
 class KnowledgeSingleton(_Borg):
     loaded_vectorstores: Dict[EmbedderConfig, VectorStoreReadOnly]
+    data_dirs_queued: set[str]
+    data_dirs_loaded: set[str]
+
     seen_threads: set
     """
     NB This assumes thread ID's are unique across processes.
@@ -57,6 +60,10 @@ class KnowledgeSingleton(_Borg):
         _Borg.__init__(self)
         if not hasattr(self, 'loaded_vectorstores'):
             self.loaded_vectorstores = {}
+        if not hasattr(self, 'data_dirs_queued'):
+            self.data_dirs_queued = set()
+        if not hasattr(self, 'data_dirs_loaded'):
+            self.data_dirs_loaded = set()
         if not hasattr(self, 'seen_threads'):
             self.seen_threads = set()
 
@@ -65,8 +72,20 @@ class KnowledgeSingleton(_Borg):
             logger.info(
                 f"Initializing {self} with process {os.getpid()} / thread {threading.current_thread().ident}")
 
+    def queue_data_dir(self, data_dir: str):
+        self.data_dirs_queued.add(data_dir)
+
+    def load_queued_data_dirs(self, force_reload: bool = False):
+        for data_dir in self.data_dirs_queued:
+            if force_reload or data_dir not in self.data_dirs_loaded:
+                self.load_shards_from(data_dir)
+
+                # Add to the "loaded" list regardless of success, so we don't try to repeatedly load a bad dir
+                self.data_dirs_loaded.add(data_dir)
+
     def load_shards_from(
             self,
+            # None is a special value that just makes us create the structs we need in memory.
             data_dir: str | None,
             embedder_config: EmbedderConfig = EmbedderConfig.nomic,
     ):
@@ -100,6 +119,8 @@ class KnowledgeSingleton(_Borg):
                         shard = self.loaded_vectorstores[embedder_config]._load_from(parent_dir, shard_id)
                         if shard is not None:
                             self.loaded_vectorstores[embedder_config]._copy_in(shard, destructive=True)
+
+            self.data_dirs_loaded.add(data_dir)
 
     def as_retriever(self, **kwargs):
         if len(self.loaded_vectorstores) > 1:

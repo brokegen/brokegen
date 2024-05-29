@@ -1,18 +1,21 @@
 import logging
 import operator
 from abc import abstractmethod
-from typing import List, Callable, Awaitable
+from typing import List, Callable, Awaitable, TypeAlias
 
 import orjson
 from langchain_core.documents import Document
 from langchain_core.messages import ChatMessage
 
-from inference.embeddings.knowledge import KnowledgeSingleton
+from inference.embeddings.knowledge import KnowledgeSingleton, get_knowledge
 from _util.typing import PromptText, TemplatedPromptText
 from providers.inference_models.orm import InferenceReason
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+
+RetrievalPolicyID: TypeAlias = str
 
 
 class RetrievalPolicy:
@@ -36,13 +39,18 @@ class SkipRetrievalPolicy(RetrievalPolicy):
 
 class DefaultRetrievalPolicy(RetrievalPolicy):
     def __init__(self, knowledge: KnowledgeSingleton):
-        self.retriever = knowledge.as_retriever()
+        self.retriever = knowledge.as_retriever(
+            search_type='similarity',
+            search_kwargs={"k": 12},
+        )
 
     async def parse_chat_history(
             self,
             messages: List[ChatMessage],
             _: Callable[[PromptText, PromptText, PromptText, InferenceReason], Awaitable[PromptText]],
     ) -> PromptText | None:
+        get_knowledge().load_queued_data_dirs()
+
         latest_message_content = messages[-1]['content']
         retrieval_str = latest_message_content
 
@@ -83,6 +91,8 @@ class CustomRetrievalPolicy(RetrievalPolicy):
             messages: List[ChatMessage],
             generate_helper_fn: Callable[[PromptText, PromptText, PromptText, InferenceReason], Awaitable[PromptText]],
     ) -> PromptText | None:
+        get_knowledge().load_queued_data_dirs()
+
         latest_message_content = messages[-1]['content']
 
         async def summarize_query():
