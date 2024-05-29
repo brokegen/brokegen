@@ -110,6 +110,7 @@ struct SequenceRow: View {
                 }
             }
         }
+        .contentShape(Rectangle())
     }
 }
 
