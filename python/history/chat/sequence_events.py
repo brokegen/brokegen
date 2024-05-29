@@ -33,7 +33,7 @@ class InferenceEventIn(BaseModel):
     reason: Optional[InferenceReason] = None
 
 
-class InferenceJobAddResponse(BaseModel):
+class InferenceEventAddResponse(BaseModel):
     ijob_id: InferenceEventID
     just_created: bool
 
@@ -46,7 +46,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             model_record_id: InferenceModelRecordID,
             inference_event_in: InferenceEventIn,
             history_db: HistoryDB = Depends(get_history_db),
-    ) -> InferenceJobAddResponse:
+    ) -> InferenceEventAddResponse:
         # Check for matches
         filtered_inference_event_in = {
             "model_record_id": model_record_id,
@@ -73,7 +73,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             .filter_by(**filtered_inference_event_in)
         ).scalar_one_or_none()
         if match_object is not None:
-            return InferenceJobAddResponse(
+            return InferenceEventAddResponse(
                 ijob_id=match_object,
                 just_created=False,
             )
@@ -86,7 +86,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         history_db.commit()
 
         response.status_code = fastapi.status.HTTP_201_CREATED
-        return InferenceJobAddResponse(
+        return InferenceEventAddResponse(
             ijob_id=new_object.id,
             just_created=True,
         )
