@@ -175,7 +175,7 @@ struct BrokegenAppView: View {
         NavigationStack(path: $pathHost.path) {
             NavigationSplitView(sidebar: { AppSidebar() }, detail: {
                 MultiSequenceView()
-            });
+            })
             .navigationDestination(for: ChatSequence.self) { sequence in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {
                     OneSequenceView(
