@@ -121,7 +121,7 @@ class LlamafileProvider(BaseProvider):
 
             return stdout_bytes.decode()
 
-        except OSError as e:
+        except (OSError, subprocess.SubprocessError) as e:
             logger.warning(f"{filename} failed: {e}")
             return None
 

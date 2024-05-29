@@ -53,6 +53,10 @@ class RestartableProcess: Job {
             guard dataAsString!.count > 0 else { return }
 
             DispatchQueue.main.async {
+                if self.displayedOutput.count > 256_000 {
+                    self.displayedOutput = String(self.displayedOutput.suffix(128_000))
+                }
+
                 self.displayedOutput += dataAsString!
                 self.status = .startedWithOutput
             }
