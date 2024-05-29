@@ -12,6 +12,9 @@ public enum JSONObject: Codable {
     case null
 }
 
+typealias InferenceModelRecordID = Int
+typealias InferenceEventID = Int
+
 public struct InferenceModel: Identifiable {
     public let id: UUID = UUID()
     public let serverId: Int

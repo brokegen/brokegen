@@ -26,13 +26,13 @@ from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEve
 logger = logging.getLogger(__name__)
 
 
-class GenerateIn(BaseModel):
+class ExtendRequest(BaseModel):
     next_message: ChatMessage
     continuation_model_id: Optional[InferenceModelRecordID] = None
 
 
 def select_continuation_model(
-        sequence_id: ChatSequenceID,
+        sequence_id: ChatSequenceID | None,
         requested_model_id: InferenceModelRecordID | None,
         history_db: HistoryDB,
 ) -> InferenceEventOrm | None:
@@ -176,11 +176,11 @@ async def do_continuation(
 
 
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
-    @router_ish.post("/sequences/{sequence_id:int}/extend")
-    async def sequence_extend(
+    @router_ish.post("/sequences/{sequence_id:int}/continue")
+    async def sequence_continue(
             empty_request: starlette.requests.Request,
             sequence_id: ChatSequenceID,
-            params: GenerateIn,
+            continuation_model_id: InferenceModelRecordID | None = None,
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
     ) -> JSONStreamingResponse:
@@ -189,11 +189,40 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             .filter_by(id=sequence_id)
         ).scalar_one()
 
+        messages_list: list[ChatMessageOrm] = \
+            do_get_sequence(sequence_id, history_db, include_model_info_diffs=False)
+
+        # Decide how to continue inference for this sequence
+        inference_model: InferenceModelRecordOrm = \
+            select_continuation_model(sequence_id, continuation_model_id, history_db)
+
+        return await do_continuation(
+            messages_list,
+            original_sequence,
+            inference_model,
+            empty_request,
+            history_db,
+            audit_db,
+        )
+
+    @router_ish.post("/sequences/{sequence_id:int}/extend")
+    async def sequence_extend(
+            empty_request: starlette.requests.Request,
+            sequence_id: ChatSequenceID,
+            params: ExtendRequest,
+            history_db: HistoryDB = Depends(get_history_db),
+            audit_db: AuditDB = Depends(get_audit_db),
+    ) -> JSONStreamingResponse:
         # Manually fetch the message + model config history from our requests
         messages_list: list[ChatMessageOrm] = \
             do_get_sequence(sequence_id, history_db, include_model_info_diffs=False)
 
         # First, store the message that was painstakingly generated for us.
+        original_sequence = history_db.execute(
+            select(ChatSequence)
+            .filter_by(id=sequence_id)
+        ).scalar_one()
+
         user_sequence = ChatSequence(
             human_desc=original_sequence.human_desc,
             parent_sequence=original_sequence.id,

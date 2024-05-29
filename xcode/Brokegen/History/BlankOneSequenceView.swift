@@ -32,20 +32,64 @@ struct ChatNameInput: View {
 
 struct BlankOneSequenceView: View {
     @Environment(ChatSyncService.self) private var chatService
-    let model: InferenceModel
+    var sequence: ChatSequence? = nil
+    let initialModel: InferenceModel
 
-    @State var chatHumanDesc: String = ""
+    @State var chatSequenceHumanDesc: String = ""
     @State var promptInEdit: String = ""
     @State var submitting: Bool = false
 
-    init(_ model: InferenceModel) {
-        self.model = model
+    init(_ initialModel: InferenceModel) {
+        self.initialModel = initialModel
+    }
+
+    private func constructUserSequence(id messageID: ChatMessageServerID) async -> ChatSequenceServerID? {
+        struct Parameters: Codable {
+            var humanDesc: String? = nil
+            var userPinned: Bool
+            let currentMessage: ChatMessageServerID
+            var parentSequence: ChatSequenceServerID? = nil
+            var generatedAt: String?
+            var generationComplete: Bool
+            var inferenceJobId: InferenceEventID? = nil
+            var inferenceError: String? = nil
+        }
+        let params = Parameters(
+            humanDesc: chatSequenceHumanDesc,
+            userPinned: true,
+            currentMessage: messageID,
+            // generatedAt: nil,
+            generationComplete: true
+        )
+
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+
+        do {
+            let jsonDict = try await chatService.postData(
+                try encoder.encode(params),
+                endpoint: "/sequences")
+            guard jsonDict != nil else { return nil }
+
+            let sequenceID: ChatMessageServerID? = jsonDict!["sequence_id"] as? Int
+            return sequenceID
+        }
+        catch {
+            return nil
+        }
     }
 
     func submit() {
         Task.init {
-            /// TODO: Figure out how to avoid race conditions and run this only once
             submitting = true
+
+            let messageId: ChatMessageServerID? = await chatService.constructUserMessage(promptInEdit)
+            guard messageId != nil else { return }
+
+            let sequenceId: ChatSequenceServerID? =
+                await constructUserSequence(id: messageId!)
+
+            print("[ERROR] Not implemented: replace current chat with the new one")
         }
     }
 
@@ -58,7 +102,7 @@ struct BlankOneSequenceView: View {
             Spacer()
 
             VStack(spacing: 72) {
-                ChatNameInput($chatHumanDesc)
+                ChatNameInput($chatSequenceHumanDesc)
                     .frame(maxWidth: .infinity)
                     .padding(24)
 

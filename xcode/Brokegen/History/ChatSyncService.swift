@@ -3,6 +3,9 @@ import Combine
 import Foundation
 import SwiftData
 
+typealias ChatMessageServerID = Int
+typealias ChatSequenceServerID = Int
+
 class Message: Identifiable, Codable {
     let id: UUID = UUID()
     var serverId: Int?
@@ -88,7 +91,7 @@ extension Message: Hashable {
 }
 
 class ChatSequence: Identifiable, Codable {
-    let id: UUID = UUID()
+    let id: UUID
     var serverId: Int?
 
     let humanDesc: String?
@@ -97,7 +100,12 @@ class ChatSequence: Identifiable, Codable {
     var messages: [Message] = []
     let inferenceModelId: Int?
 
-    init(_ serverId: Int? = nil, data: Data) throws {
+    convenience init(_ serverId: Int? = nil, data: Data) throws {
+        try self.init(clientId: UUID(), serverId: serverId, data: data)
+    }
+
+    init(clientId: UUID, serverId: Int? = nil, data: Data) throws {
+        self.id = clientId
         self.serverId = serverId
 
         let jsonDict = try JSONSerialization.jsonObject(with: data, options: []) as! [String : Any]
@@ -147,15 +155,21 @@ actor CachedChatMessages {
 @Observable
 class ChatSyncService: Observable, ObservableObject {
     var serverBaseURL: String = "http://127.0.0.1:6635"
-    let session: Alamofire.Session = {
+    let session: Alamofire.Session
+    let dateFormatter: ISO8601DateFormatter
+
+    init() {
         // Increase the TCP timeoutIntervalForRequest to 24 hours (configurable),
         // since we expect Ollama models to sometimes take a long time.
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 24 * 3600.0
         configuration.timeoutIntervalForResource = 7 * 24 * 3600.0
 
-        return Alamofire.Session(configuration: configuration)
-    }()
+        session = Alamofire.Session(configuration: configuration)
+
+        dateFormatter = ISO8601DateFormatter()
+        dateFormatter.formatOptions.insert(.withFractionalSeconds)
+    }
 
     private func getData(_ endpoint: String) async -> Data? {
         do {
@@ -239,12 +253,20 @@ class ChatSyncService: Observable, ObservableObject {
         }
     }
 
-    func replaceSequence(_ originalSequenceId: Int, with updatedSequenceId: Int) {
+    func replaceSequence(_ originalSequenceId: ChatSequenceServerID?, with updatedSequenceId: ChatSequenceServerID) {
         Task.init {
-            loadedSequences.removeAll { $0.serverId == originalSequenceId }
+            var priorSequenceClientId: UUID? = nil
+            if originalSequenceId != nil {
+                if let removalIndex = self.loadedSequences.firstIndex(where: { $0.serverId == originalSequenceId }) {
+                    let oldSequence = loadedSequences[removalIndex]
+                    priorSequenceClientId = oldSequence.id
+                    loadedSequences.remove(at: removalIndex)
+                }
+            }
+
             do {
                 if let entireSequence = await getData("/sequences/\(updatedSequenceId)") {
-                    let newSeq = try ChatSequence(updatedSequenceId, data: entireSequence)
+                    let newSeq = try ChatSequence(clientId: priorSequenceClientId ?? UUID(), serverId: updatedSequenceId, data: entireSequence)
                     self.loadedSequences.insert(newSeq, at: 0)
                 }
             }
@@ -255,18 +277,127 @@ class ChatSyncService: Observable, ObservableObject {
     }
 }
 
+/// These let us add a new Sequence
+extension ChatSyncService {
+    private func prettyDate(_ date: Date?) -> String? {
+        guard date != nil else { return nil }
+        return dateFormatter.string(from: date!)
+    }
+
+    func postData(_ httpBody: Data?, endpoint: String) async throws -> [String : Any]? {
+        return try await withCheckedThrowingContinuation { continuation in
+            session.request(
+                serverBaseURL + endpoint
+            ) { urlRequest in
+                urlRequest.method = .post
+                urlRequest.headers = [
+                    "Content-Type": "application/json"
+                ]
+                urlRequest.httpBody = httpBody
+            }
+            .response { r in
+                switch r.result {
+                case .success(let data):
+                    do {
+                        let jsonDict = try JSONSerialization.jsonObject(with: data!, options: []) as! [String : Any]
+                        print("POST \(endpoint): \(jsonDict)")
+                        continuation.resume(returning: jsonDict)
+                    }
+                    catch {
+                        print("POST \(endpoint) decoding failed: \(String(describing: data))")
+                        continuation.resume(returning: nil)
+                    }
+                case .failure(let error):
+                    print("POST \(endpoint) failed: " + error.localizedDescription)
+                    continuation.resume(returning: nil)
+                }
+            }
+        }
+    }
+
+    private func constructMessage(_ message: Message) async -> ChatMessageServerID? {
+        let parameters: [String : String?] = [
+            "role": message.role,
+            "content": message.content,
+            // TODO: Figure out how to work this into the normal encoding flow
+            "created_at": prettyDate(message.createdAt),
+        ]
+
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+
+        do {
+            let httpBody: Data = try encoder.encode(parameters)
+
+            let jsonDict = try await postData(httpBody, endpoint: "/messages")
+            guard jsonDict != nil else { return nil }
+
+            let messageID: ChatMessageServerID? = jsonDict!["message_id"] as? Int
+            return messageID
+        }
+        catch {
+            return nil
+        }
+    }
+
+    func constructUserMessage(_ userPrompt: String) async -> ChatMessageServerID? {
+        let userMessage = Message(
+            role: "user",
+            content: userPrompt,
+            createdAt: Date.now
+        )
+
+        return await constructMessage(userMessage)
+    }
+}
+
 /// Finally, something to submit new chat requests
 extension ChatSyncService {
+    public func sequenceContinue(
+        _ sequenceId: ChatSequenceServerID
+    ) async -> AnyPublisher<Data, AFError> {
+        let subject = PassthroughSubject<Data, AFError>()
+
+        print("[DEBUG] POST /sequences/\(sequenceId)/continue")
+
+        _ = session.streamRequest(
+            serverBaseURL + "/sequences/\(sequenceId)/continue"
+        ) { urlRequest in
+            urlRequest.method = .post
+            urlRequest.headers = [
+                "Content-Type": "application/json"
+            ]
+        }
+        .responseStream { stream in
+            switch stream.event {
+            case let .stream(result):
+                switch result {
+                case let .success(data):
+                    subject.send(data)
+                }
+            case let .complete(completion):
+                if completion.error == nil {
+                    subject.send(completion: .finished)
+                }
+                else {
+                    subject.send(completion: .failure(completion.error!))
+                }
+            }
+        }
+
+        return subject.eraseToAnyPublisher()
+    }
+
     public func sequenceExtend(
         _ nextMessage: Message,
-        id sequenceId: Int,
-        model continuationModelId: Int? = nil
+        id sequenceId: ChatSequenceServerID,
+        model continuationModelId: InferenceModelRecordID? = nil
     ) async -> AnyPublisher<Data, AFError> {
         let subject = PassthroughSubject<Data, AFError>()
 
         struct Parameters: Codable {
             let nextMessage: Message
-            let continuationModelId: Int?
+            let continuationModelId: InferenceModelRecordID?
         }
         let parameters = Parameters(nextMessage: nextMessage, continuationModelId: continuationModelId)
 
@@ -303,7 +434,7 @@ extension ChatSyncService {
             }
         }
         catch {
-            print("[ERROR] Failed to sequenceExtend ChatSequence#\(sequenceId) with \(String(describing: parameters))")
+            print("[ERROR] /sequences/\(sequenceId)/extend failed, probably encoding error: \(String(describing: parameters))")
         }
 
         return subject.eraseToAnyPublisher()

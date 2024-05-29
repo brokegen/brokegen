@@ -63,9 +63,77 @@ struct OneSequenceView: View {
         self.sequence = sequence
     }
 
+    func submitWithoutPrompt() {
+        Task.init {
+            guard submitting == false else {
+                print("[ERROR] OneSequenceView.submitWithoutPrompt during another submission")
+                return
+            }
+            submitting = true
+
+            receivingStreamer = await chatService.sequenceContinue(sequence.serverId!)
+                .sink(receiveCompletion: { completion in
+                    switch completion {
+                    case .finished:
+                        if responseInEdit == nil {
+                            print("[ERROR] ChatSyncService.sequenceContinue completed without any response data")
+                        }
+                        else {
+                            sequence.messages.append(responseInEdit!)
+                            responseInEdit = nil
+                        }
+                        stopSubmitAndReceive()
+                    case .failure(let error):
+                        let errorMessage = Message(
+                            role: "[ERROR] ChatSyncService.sequenceContinue: \(error.localizedDescription)",
+                            content: responseInEdit?.content ?? "",
+                            createdAt: Date.now
+                        )
+                        sequence.messages.append(errorMessage)
+                        responseInEdit = nil
+
+                        stopSubmitAndReceive()
+                    }
+                }, receiveValue: { data in
+                    // On first data received, end "submitting" phase
+                    submitting = false
+                    receiving = true
+
+                    do {
+                        let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
+                        if let message = jsonDict["message"] as? [String : Any] {
+                            if let fragment = message["content"] {
+                                let newResponse = Message(
+                                    role: responseInEdit!.role,
+                                    content: responseInEdit!.content + (fragment as! String),
+                                    createdAt: responseInEdit!.createdAt
+                                )
+                                responseInEdit = newResponse
+                            }
+                        }
+
+                        if let done = jsonDict["done"] as? Bool {
+                            let newSequenceId: Int? = jsonDict["new_sequence_id"] as? Int
+                            if done && newSequenceId != nil {
+                                print("[DEBUG] Should update to new_sequence_id: \(newSequenceId!)")
+                                chatService.replaceSequence(sequence.serverId!, with: newSequenceId!)
+                            }
+                        }
+                    }
+                    catch {
+                        print("[ERROR] OneSequenceView.submitWithoutPrompt: decoding error or something")
+                    }
+                })
+        }
+    }
+
     func submit() {
         Task.init {
             /// TODO: Avoid race conditions by migrating to actor
+            guard submitting == false else {
+                print("[ERROR] OneSequenceView.submit during another submission")
+                return
+            }
             submitting = true
 
             let nextMessage = Message(
@@ -79,7 +147,7 @@ struct OneSequenceView: View {
                     switch completion {
                     case .finished:
                         if responseInEdit == nil {
-                            print("[ERROR] Completed generation without any response data")
+                            print("[ERROR] ChatSyncService.sequenceExtend completed without any response data")
                         }
                         else {
                             sequence.messages.append(responseInEdit!)
@@ -88,7 +156,7 @@ struct OneSequenceView: View {
                         stopSubmitAndReceive()
                     case .failure(let error):
                         let errorMessage = Message(
-                            role: "assistant // generation error: \(error.localizedDescription)",
+                            role: "[ERROR] ChatSyncService.sequenceExtend: \(error.localizedDescription)",
                             content: responseInEdit?.content ?? "",
                             createdAt: Date.now
                         )
@@ -129,7 +197,7 @@ struct OneSequenceView: View {
                         if let done = jsonDict["done"] as? Bool {
                             let newSequenceId: Int? = jsonDict["new_sequence_id"] as? Int
                             if done && newSequenceId != nil {
-                                print("[DEBUG] Should update to new sequence_id: \(newSequenceId)")
+                                print("[DEBUG] Should update to new_sequence_id: \(newSequenceId!)")
                                 chatService.replaceSequence(sequence.serverId!, with: newSequenceId!)
                             }
                         }

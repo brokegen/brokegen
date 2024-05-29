@@ -87,7 +87,7 @@ class ChatSequence(Base):
 
 
 def lookup_sequence_parents(
-        current_id: ChatSequenceID,
+        current_id: ChatSequenceID | None,
         history_db: HistoryDB,
 ) -> Iterator[ChatSequence]:
     # TODO: We should take advantage of the ORM relationship, rather than doing this
