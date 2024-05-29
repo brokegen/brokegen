@@ -33,10 +33,13 @@ from providers.registry import ProviderRegistry
 logger = logging.getLogger(__name__)
 
 
-def reconfigure_loglevels():
+def reconfigure_loglevels(enable_colorlog: bool):
     root_logger = logging.getLogger()
 
     try:
+        if not enable_colorlog:
+            raise ImportError
+
         import colorlog
         from colorlog import ColoredFormatter
 
@@ -56,14 +59,8 @@ def reconfigure_loglevels():
         logging.basicConfig()
 
 
-# Early call, because I can't figure out why our outputs are hidden
-reconfigure_loglevels()
-
-
 @asynccontextmanager
 async def lifespan_logging(app: FastAPI):
-    reconfigure_loglevels()
-
     # Silence the very annoying logs
     logging.getLogger("httpcore.http11").setLevel(logging.INFO)
     logging.getLogger("httpcore.connection").setLevel(logging.INFO)
@@ -87,6 +84,7 @@ async def lifespan_logging(app: FastAPI):
 @click.option('--log-level', default='DEBUG',
               type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'FATAL'], case_sensitive=False),
               help='loglevel to pass to Python `logging`')
+@click.option('--enable-colorlog', default=False)
 @click.option('--trace-sqlalchemy', default=False, type=click.BOOL)
 @click.option('--trace-fastapi', default=True, type=click.BOOL)
 @click.option('--force-ollama-rag', default=True, type=click.BOOL,
@@ -95,12 +93,16 @@ def run_proxy(
         data_dir,
         bind_port,
         log_level,
+        enable_colorlog: bool,
         trace_sqlalchemy: bool,
         trace_fastapi: bool,
-        force_ollama_rag,
+        force_ollama_rag: bool,
 ):
     numeric_log_level = getattr(logging, str(log_level).upper(), None)
     logging.getLogger().setLevel(level=numeric_log_level)
+
+    if enable_colorlog:
+        reconfigure_loglevels(enable_colorlog)
 
     import asyncio
     import uvicorn

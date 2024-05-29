@@ -300,7 +300,18 @@ async def do_proxy_chat_rag(
         async for chunk in response0.body_iterator:
             content_chunks.append(chunk)
 
-        response0_json = orjson.loads(''.join(content_chunks))
+        # TODO: Get your bytes | str typing in order
+        if not content_chunks:
+            raise NotImplementedError("No content chunks returned during templating")
+
+        if isinstance(content_chunks[0], str):
+            response0_json = orjson.loads(''.join(content_chunks))
+        elif isinstance(content_chunks[0], bytes):
+            response0_json = orjson.loads(b''.join(content_chunks))
+        else:
+            logger.warning(f"Ignoring helper_fn request, {type(content_chunks[0])=}")
+            raise TypeError()
+
         return response0_json['response']
 
     prompt_override = await retrieval_policy.parse_chat_history(

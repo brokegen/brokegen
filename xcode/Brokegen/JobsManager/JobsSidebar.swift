@@ -41,7 +41,7 @@ struct MiniJobsSidebar: View {
         }
 
         ForEach(jobsService.specialJobs) { job in
-            NavigationLink(destination: InteractiveJobOutputView(job: job)) {
+            NavigationLink(destination: JobOutputView(job: job)) {
                 JobsSidebarItem(job: job)
             }
         }

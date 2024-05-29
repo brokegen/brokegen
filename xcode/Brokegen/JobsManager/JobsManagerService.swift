@@ -50,24 +50,11 @@ class JobsManagerService: Observable, ObservableObject {
         )
         renderableJobs.insert(ollamaProxy, at: 8)
 
-        let serverNoRag = RestartableProcess(
-            Bundle.main.url(forResource: "brokegen-server", withExtension: nil)!,
-            [
-                "--data-dir",
-                directoryPath.path(percentEncoded: false),
-                "--enable-rag=false",
-                "--bind-port=6636",
-            ]
-        )
-        specialJobs.append(serverNoRag)
-
         let server = RestartableProcess(
             Bundle.main.url(forResource: "brokegen-server", withExtension: nil)!,
             [
                 "--data-dir",
                 directoryPath.path(percentEncoded: false),
-                "--enable-rag=true",
-                "--bind-port=6637",
             ]
         )
         specialJobs.append(server)

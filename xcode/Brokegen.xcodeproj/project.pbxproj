@@ -188,11 +188,11 @@
 				CE4634DF2BF963210063142E /* BaseJob.swift */,
 				CE4634E12BF97A180063142E /* JobOutputView.swift */,
 				CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */,
+				CEBAA28B2C003F4B00D43E22 /* InteractiveJobOutputView.swift */,
 				CE4634E32BFA5EE10063142E /* Processes */,
 				CEFEB4742BFDA5FB00334522 /* Monitors */,
 				CE4634EE2BFAFA340063142E /* StayAwakeService.swift */,
 				CEFEB4772BFDA6C900334522 /* TimeJob.swift */,
-				CEBAA28B2C003F4B00D43E22 /* InteractiveJobOutputView.swift */,
 			);
 			path = Jobs;
 			sourceTree = "<group>";
