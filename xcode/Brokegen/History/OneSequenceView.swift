@@ -28,7 +28,7 @@ struct OneSequenceView: View {
                     .padding(.top, 24)
                     .padding(.bottom, 24)
                     .border(.blue)
-                    .disabled(viewModel.submitting || viewModel.receiving)
+                    .disabled(viewModel.submitting || viewModel.responseInEdit != nil)
                     .onSubmit {
                         viewModel.requestExtend()
                     }
@@ -41,7 +41,7 @@ struct OneSequenceView: View {
                 VStack {
                     Button(action: viewModel.stopSubmitAndReceive) {
                         let icon: String = {
-                            if viewModel.submitting || viewModel.receiving {
+                            if viewModel.submitting || viewModel.responseInEdit != nil {
                                 return "stop.fill"
                             }
                             else {
@@ -51,7 +51,7 @@ struct OneSequenceView: View {
                         Image(systemName: icon)
                             .resizable()
                             .frame(width: 32, height: 32)
-                            .disabled(!viewModel.submitting && !viewModel.receiving)
+                            .disabled(!viewModel.submitting && viewModel.responseInEdit == nil)
                     }
                     .buttonStyle(.plain)
                     .help("Stop submitting or receiving")
@@ -62,7 +62,7 @@ struct OneSequenceView: View {
                         Image(systemName: viewModel.submitting ? "arrow.up.circle.fill" : "arrow.up.circle")
                             .resizable()
                             .frame(width: 32, height: 32)
-                            .disabled(viewModel.submitting || viewModel.receiving)
+                            .disabled(viewModel.submitting || viewModel.responseInEdit != nil)
                     }
                     .buttonStyle(.plain)
                     .help("Submit")

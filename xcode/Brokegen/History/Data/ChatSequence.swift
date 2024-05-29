@@ -7,19 +7,19 @@ typealias ChatSequenceServerID = Int
 
 class ChatSequence: Identifiable, Codable {
     let id: UUID
-    var serverId: Int?
+    var serverId: ChatSequenceServerID?
 
     let humanDesc: String?
     let userPinned: Bool
 
     var messages: [Message] = []
-    let inferenceModelId: Int?
+    let inferenceModelId: InferenceModelRecordID?
 
-    convenience init(_ serverId: Int? = nil, data: Data) throws {
+    convenience init(_ serverId: ChatSequenceServerID? = nil, data: Data) throws {
         try self.init(clientId: UUID(), serverId: serverId, data: data)
     }
 
-    init(clientId: UUID, serverId: Int? = nil, data: Data) throws {
+    init(clientId: UUID, serverId: ChatSequenceServerID? = nil, data: Data) throws {
         self.id = clientId
         self.serverId = serverId
 
@@ -51,6 +51,33 @@ class ChatSequence: Identifiable, Codable {
         }
 
         inferenceModelId = jsonDict["inference_model_id"] as? Int
+    }
+
+    init(
+        clientId: UUID,
+        serverId: ChatSequenceServerID?,
+        humanDesc: String?,
+        userPinned: Bool,
+        messages: [Message],
+        inferenceModelId: InferenceModelRecordID?
+    ) {
+        self.id = clientId
+        self.serverId = serverId
+        self.humanDesc = humanDesc
+        self.userPinned = userPinned
+        self.messages = messages
+        self.inferenceModelId = inferenceModelId
+    }
+
+    func replaceId(_ newClientId: UUID) -> ChatSequence {
+        return ChatSequence(
+            clientId: newClientId,
+            serverId: self.serverId,
+            humanDesc: self.humanDesc,
+            userPinned: self.userPinned,
+            messages: self.messages,
+            inferenceModelId: self.inferenceModelId
+        )
     }
 
     var lastMessageDate: Date? {
@@ -100,37 +127,65 @@ extension ChatSyncService {
             let jsonDict = await getDataAsJson("/sequences/pinned\(limitQuery)")
             guard jsonDict != nil else { return }
 
-            // Clear out the entire set of existing sequences
-            self.loadedSequences = []
-
-            let sequenceIds: [ChatSequenceServerID] = jsonDict!["sequence_ids"] as? [Int] ?? []
-            for seqId in sequenceIds {
-                if let entireSequence = await fetchSequence(seqId) {
-                    self.loadedSequences.append(entireSequence)
+            let newSequenceIds: [ChatSequenceServerID] = jsonDict!["sequence_ids"] as? [Int] ?? []
+            for newSequenceId in newSequenceIds {
+                if let entireSequence = await fetchSequence(newSequenceId) {
+                    updateSequences(with: entireSequence)
                 }
             }
         }
     }
 
-    func replaceSequence(_ originalSequenceId: ChatSequenceServerID?, with updatedSequenceId: ChatSequenceServerID) {
+    func updateSequences(with updatedSequence: ChatSequence) {
+        // Keep the first ChatSequence's clientId, in case of duplicates
+        var originalClientId: UUID? = nil
+        if let removalIndex = self.loadedSequences.firstIndex(where: {
+            $0.serverId == updatedSequence.serverId
+        }) {
+            originalClientId = loadedSequences[removalIndex].id
+        }
+
+        // Remove all matching ChatSequences
+        self.loadedSequences.removeAll(where: {
+            $0.serverId == updatedSequence.serverId
+        })
+
+        if let clientId = originalClientId {
+            self.loadedSequences.insert(updatedSequence.replaceId(clientId), at: 0)
+        }
+        else {
+            self.loadedSequences.insert(updatedSequence, at: 0)
+        }
+    }
+
+    func replaceSequenceById(_ originalSequenceId: ChatSequenceServerID?, with updatedSequenceId: ChatSequenceServerID) {
         Task.init {
             var priorSequenceClientId: UUID? = nil
             if originalSequenceId != nil {
-                if let removalIndex = self.loadedSequences.firstIndex(where: { $0.serverId == originalSequenceId }) {
-                    let oldSequence = loadedSequences[removalIndex]
-                    priorSequenceClientId = oldSequence.id
-                    loadedSequences.remove(at: removalIndex)
+                if let removalIndex = self.loadedSequences.firstIndex(where: {
+                    $0.serverId == originalSequenceId
+                }) {
+                    priorSequenceClientId = loadedSequences[removalIndex].id
                 }
+
+                self.loadedSequences.removeAll(where: {
+                    $0.serverId == originalSequenceId
+                })
             }
 
             do {
-                if let entireSequence = await getData("/sequences/\(updatedSequenceId)") {
-                    let newSeq = try ChatSequence(clientId: priorSequenceClientId ?? UUID(), serverId: updatedSequenceId, data: entireSequence)
-                    self.loadedSequences.insert(newSeq, at: 0)
+                if let updatedSequenceData = await getData("/sequences/\(updatedSequenceId)") {
+                    let updatedSequence = try ChatSequence(
+                        clientId: priorSequenceClientId ?? UUID(),
+                        serverId: updatedSequenceId,
+                        data: updatedSequenceData)
+
+                    // Insert new ChatSequences in reverse order, newest at the top
+                    self.loadedSequences.insert(updatedSequence, at: 0)
                 }
             }
             catch {
-                print("[ERROR] Failed to add updated sequence \(originalSequenceId) => \(updatedSequenceId)")
+                print("[ERROR] Failed to replaceSequenceById(\(originalSequenceId), with: \(updatedSequenceId))")
             }
         }
     }

@@ -109,8 +109,9 @@ class ChatSequenceClientModel: Observable, ObservableObject {
     var promptInEdit: String = ""
     var submitting: Bool = false
 
+    /// This field does double duty to indicate whether we are currently receiving data.
+    /// `nil` before first data, and then reset to `nil` once we're done receiving.
     var responseInEdit: Message? = nil
-    var receiving: Bool = false
     var receivingStreamer: AnyCancellable? = nil
 
     init(_ sequence: ChatSequence, chatService: ChatSyncService) {
@@ -170,7 +171,6 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                             createdAt: Date.now
                         )
                     }
-                    receiving = true
 
                     do {
                         let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
@@ -253,7 +253,6 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                             createdAt: Date.now
                         )
                     }
-                    receiving = true
 
                     do {
                         let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
@@ -282,13 +281,12 @@ class ChatSequenceClientModel: Observable, ObservableObject {
         receivingStreamer = nil
 
         submitting = false
-        receiving = false
     }
 
     func replaceSequence(_ newSequenceId: ChatSequenceServerID) {
         Task.init {
             print("[DEBUG] Attempting to update ChatSequenceClientModel to new_sequence_id: \(newSequenceId)")
-            chatService.replaceSequence(sequence.serverId!, with: newSequenceId)
+            chatService.replaceSequenceById(sequence.serverId!, with: newSequenceId)
 
             if let newSequence = await chatService.fetchSequence(newSequenceId) {
                 self.sequence = newSequence
