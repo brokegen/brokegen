@@ -63,7 +63,9 @@ struct OneSequenceView: View {
         self.sequence = sequence
     }
 
-    func submitWithoutPrompt() {
+    func submitWithoutPrompt(
+        model continuationModelId: InferenceModelRecordID? = nil
+    ) {
         Task.init {
             guard submitting == false else {
                 print("[ERROR] OneSequenceView.submitWithoutPrompt during another submission")
@@ -71,7 +73,7 @@ struct OneSequenceView: View {
             }
             submitting = true
 
-            receivingStreamer = await chatService.sequenceContinue(sequence.serverId!)
+            receivingStreamer = await chatService.sequenceContinue(sequence.serverId!, model: continuationModelId)
                 .sink(receiveCompletion: { completion in
                     switch completion {
                     case .finished:

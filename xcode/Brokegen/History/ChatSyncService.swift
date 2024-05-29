@@ -131,7 +131,7 @@ class ChatSequence: Identifiable, Codable {
             )
             newMessage.serverId = messageJson["id"] as? Int
 
-            print("[DEBUG] Added message \(newMessage.serverId ?? -1) to Sequence#\(self.serverId!)")
+            //print("[DEBUG] Added message \(newMessage.serverId ?? -1) to Sequence#\(self.serverId!)")
             messages.append(newMessage)
         }
 
@@ -354,35 +354,50 @@ extension ChatSyncService {
 /// Finally, something to submit new chat requests
 extension ChatSyncService {
     public func sequenceContinue(
-        _ sequenceId: ChatSequenceServerID
+        _ sequenceId: ChatSequenceServerID,
+        model continuationModelId: InferenceModelRecordID? = nil
     ) async -> AnyPublisher<Data, AFError> {
         let subject = PassthroughSubject<Data, AFError>()
 
-        print("[DEBUG] POST /sequences/\(sequenceId)/continue")
-
-        _ = session.streamRequest(
-            serverBaseURL + "/sequences/\(sequenceId)/continue"
-        ) { urlRequest in
-            urlRequest.method = .post
-            urlRequest.headers = [
-                "Content-Type": "application/json"
-            ]
+        struct Parameters: Codable {
+            let continuationModelId: InferenceModelRecordID?
         }
-        .responseStream { stream in
-            switch stream.event {
-            case let .stream(result):
-                switch result {
-                case let .success(data):
-                    subject.send(data)
-                }
-            case let .complete(completion):
-                if completion.error == nil {
-                    subject.send(completion: .finished)
-                }
-                else {
-                    subject.send(completion: .failure(completion.error!))
+        let parameters = Parameters(continuationModelId: continuationModelId)
+
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+
+        do {
+            print("[DEBUG] POST /sequences/\(sequenceId)/continue <= \(String(data: try encoder.encode(parameters), encoding: .utf8)!)")
+
+            _ = session.streamRequest(
+                serverBaseURL + "/sequences/\(sequenceId)/continue"
+            ) { urlRequest in
+                urlRequest.method = .post
+                urlRequest.headers = [
+                    "Content-Type": "application/json"
+                ]
+                urlRequest.httpBody = try encoder.encode(parameters)
+            }
+            .responseStream { stream in
+                switch stream.event {
+                case let .stream(result):
+                    switch result {
+                    case let .success(data):
+                        subject.send(data)
+                    }
+                case let .complete(completion):
+                    if completion.error == nil {
+                        subject.send(completion: .finished)
+                    }
+                    else {
+                        subject.send(completion: .failure(completion.error!))
+                    }
                 }
             }
+        }
+        catch {
+            print("[ERROR] /sequences/\(sequenceId)/continue failed, probably encoding error: \(String(describing: parameters))")
         }
 
         return subject.eraseToAnyPublisher()

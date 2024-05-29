@@ -5,7 +5,7 @@ from typing import Optional
 import fastapi.routing
 import orjson
 import starlette.requests
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 
@@ -180,7 +180,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
     async def sequence_continue(
             empty_request: starlette.requests.Request,
             sequence_id: ChatSequenceID,
-            continuation_model_id: InferenceModelRecordID | None = None,
+            continuation_model_id: InferenceModelRecordID,
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
     ) -> JSONStreamingResponse:
@@ -193,8 +193,10 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             do_get_sequence(sequence_id, history_db, include_model_info_diffs=False)
 
         # Decide how to continue inference for this sequence
-        inference_model: InferenceModelRecordOrm = \
+        inference_model: InferenceModelRecordOrm | None = \
             select_continuation_model(sequence_id, continuation_model_id, history_db)
+        if inference_model is None:
+            raise HTTPException(400, f"Could not find model ({continuation_model_id=})")
 
         return await do_continuation(
             messages_list,
@@ -254,6 +256,8 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         # Decide how to continue inference for this sequence
         inference_model: InferenceModelRecordOrm = \
             select_continuation_model(sequence_id, params.continuation_model_id, history_db)
+        if inference_model is None:
+            raise HTTPException(400, f"Could not find model ({params.continuation_model_id=})")
 
         return await do_continuation(
             messages_list,

@@ -43,6 +43,14 @@ struct BlankOneSequenceView: View {
         self.initialModel = initialModel
     }
 
+    private func prettyDate(_ requestedDate: Date? = nil) -> String {
+        let dateFormatter = ISO8601DateFormatter()
+        dateFormatter.formatOptions.insert(.withFractionalSeconds)
+
+        let date = requestedDate ?? Date.now
+        return dateFormatter.string(from: date)
+    }
+
     private func constructUserSequence(id messageID: ChatMessageServerID) async -> ChatSequenceServerID? {
         struct Parameters: Codable {
             var humanDesc: String? = nil
@@ -58,7 +66,7 @@ struct BlankOneSequenceView: View {
             humanDesc: chatSequenceHumanDesc,
             userPinned: true,
             currentMessage: messageID,
-            // generatedAt: nil,
+            generatedAt: prettyDate(),
             generationComplete: true
         )
 
