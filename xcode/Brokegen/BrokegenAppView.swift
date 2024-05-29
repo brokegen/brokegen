@@ -178,41 +178,28 @@ struct BrokegenAppView: View {
                 // TODO: colors gross
                     .background(Color(.controlBackgroundColor))
             })
-            .navigationDestination(for: ChatSequenceParameters.self) { params in
+            .navigationDestination(for: ChatSequence.self) { sequence in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {
-                    if false {
-                        OneSequenceView2(
-                            ChatSequenceClientModel(params.sequence!, chatService: chatService)
-                                .submitWithoutPrompt(model: params.continuationModelId)
-                        )
-                    }
-                    else if params.sequence != nil {
-                        OneSequenceView(params.sequence!)
-                            .environmentObject(chatService)
-                    }
-                    else {
-                        // TODO: Pass in the right parameters for this
-                        OneSequenceView(params.sequence!)
-                            .environmentObject(chatService)
-                    }
+                    OneSequenceView(
+                        ChatSequenceClientModel(sequence, chatService: chatService)
+                    )
                 })
                 .environment(chatService)
                 .environment(pathHost)
             }
-            .navigationDestination(for: ChatSequence.self) { sequence in
+            .navigationDestination(for: ChatSequenceParameters.self) { params in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {
-                        OneSequenceView2(
-                            ChatSequenceClientModel(sequence, chatService: chatService)
-                        )
-                    }
-                )
+                    OneSequenceView(
+                        ChatSequenceClientModel(params.sequence!, chatService: chatService)
+                            .requestContinue(model: params.continuationModelId)
+                    )
+                })
                 .environment(chatService)
                 .environment(pathHost)
             }
         }
         .environment(chatService)
         .environment(pathHost)
-        .onAppear { self.chatService.ping() }
     }
 }
 

@@ -34,6 +34,17 @@ class Message: Identifiable, Codable {
         self.createdAt = createdAt
     }
 
+    func appendContent(_ fragment: String) -> Message {
+        var newMessage = Message(
+            role: self.role,
+            content: self.content + fragment,
+            createdAt: self.createdAt
+        )
+        newMessage.serverId = self.serverId
+
+        return newMessage
+    }
+
     func assignId() throws {
         // Grab an ID from the server.
         var parameters = [
@@ -170,6 +181,8 @@ class ChatSyncService: Observable, ObservableObject {
 
     var loadedSequences: [ChatSequence] = []
 
+    /// Used to check when the @Environment was injected correctly;
+    /// NavigationStack's Views aren't children of each other, so they have to be re-injected.
     public func ping() {
         print("ChatSyncService ping at \(Date.now)")
     }

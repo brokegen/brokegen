@@ -118,14 +118,11 @@ class ChatSequenceClientModel: Observable, ObservableObject {
         self.chatService = chatService
     }
 
-    func submitWithoutPrompt(model continuationModelId: InferenceModelRecordID?) -> Self {
-        print("[INFO] ChatSequenceClientModel.submiwTithoutPrompt(\(continuationModelId))")
-        return self
-    }
-
-    func submitWithoutPrompt2(
+    func requestContinue(
         model continuationModelId: InferenceModelRecordID? = nil
     ) -> Self {
+        print("[INFO] ChatSequenceClientModel.submiwTithoutPrompt(\(continuationModelId))")
+
         Task.init {
             guard submitting == false else {
                 print("[ERROR] OneSequenceView.submitWithoutPrompt during another submission")
@@ -163,19 +160,23 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                     }
                 }, receiveValue: { [self] data in
                     // On first data received, end "submitting" phase
-                    submitting = false
+                    if submitting {
+                        promptInEdit = ""
+                        submitting = false
+
+                        responseInEdit = Message(
+                            role: "assistant",
+                            content: "",
+                            createdAt: Date.now
+                        )
+                    }
                     receiving = true
 
                     do {
                         let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
                         if let message = jsonDict["message"] as? [String : Any] {
-                            if let fragment = message["content"] {
-                                let newResponse = Message(
-                                    role: responseInEdit!.role,
-                                    content: responseInEdit!.content + (fragment as! String),
-                                    createdAt: responseInEdit!.createdAt
-                                )
-                                responseInEdit = newResponse
+                            if let fragment = message["content"] as? String {
+                                responseInEdit = responseInEdit!.appendContent(fragment)
                             }
                         }
 
@@ -195,7 +196,7 @@ class ChatSequenceClientModel: Observable, ObservableObject {
         return self
     }
 
-    func submit() {
+    func requestExtend() {
         Task.init {
             /// TODO: Avoid race conditions by migrating to actor
             guard submitting == false else {
@@ -257,13 +258,8 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                     do {
                         let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
                         if let message = jsonDict["message"] as? [String : Any] {
-                            if let fragment = message["content"] {
-                                let newResponse = Message(
-                                    role: responseInEdit!.role,
-                                    content: responseInEdit!.content + (fragment as! String),
-                                    createdAt: responseInEdit!.createdAt
-                                )
-                                responseInEdit = newResponse
+                            if let fragment = message["content"] as? String {
+                                responseInEdit = responseInEdit!.appendContent(fragment)
                             }
                         }
 
@@ -289,13 +285,9 @@ class ChatSequenceClientModel: Observable, ObservableObject {
         receiving = false
     }
 
-    private func handleStreamingExtendResponse(_ data: Data) {
-        // TODO: Not implemented
-    }
-
     func replaceSequence(_ newSequenceId: ChatSequenceServerID) {
         Task.init {
-            print("[DEBUG] Attempting update to new_sequence_id: \(newSequenceId)")
+            print("[DEBUG] Attempting to update ChatSequenceClientModel to new_sequence_id: \(newSequenceId)")
             chatService.replaceSequence(sequence.serverId!, with: newSequenceId)
 
             if let newSequence = await chatService.fetchSequence(newSequenceId) {

@@ -30,6 +30,51 @@ struct ChatNameInput: View {
     }
 }
 
+struct InlineTextInput: View {
+    @Binding var textInEdit: String
+    @State var isHovered: Bool = false
+    /// Crossover length where we swap implementations to a TextEditor
+    let textFieldMaxChars: Int
+
+    init(
+        _ textInEdit: Binding<String>,
+        textFieldMaxChars: Int = 280
+    ) {
+        _textInEdit = textInEdit
+        self.textFieldMaxChars = textFieldMaxChars
+    }
+
+    var body: some View {
+        if textInEdit.count <= textFieldMaxChars {
+            TextField("Enter your message", text: $textInEdit, axis: .vertical)
+                .textFieldStyle(.plain)
+                .lineSpacing(240)
+                .monospaced()
+                .lineLimit(4...40)
+                .background(
+                    isHovered ? Color(.controlColor) : Color(.controlBackgroundColor)
+                )
+                .onHover { isHovered in
+                    self.isHovered = isHovered
+                }
+                .padding(6)
+        }
+        else {
+            TextEditor(text: $textInEdit)
+                .scrollDisabled(true)
+                .monospaced()
+                .lineLimit(4...40)
+                .background(
+                    isHovered ? Color(.controlColor) : Color(.controlBackgroundColor)
+                )
+                .onHover { isHovered in
+                    self.isHovered = isHovered
+                }
+                .padding(6)
+        }
+    }
+}
+
 struct BlankOneSequenceView: View {
     @Environment(ChatSyncService.self) private var chatService
     @Environment(PathHost.self) private var pathHost
@@ -106,7 +151,7 @@ struct BlankOneSequenceView: View {
                     continuationModelId: initialModel.serverId))
             }
             else {
-                print("[ERROR] Couldn't push next ChatSequence view onto NavigationStack")
+                print("[ERROR] Couldn't push next ChatSequenceParameters onto NavigationStack")
             }
         }
     }
@@ -167,6 +212,5 @@ struct BlankOneSequenceView: View {
         .padding(.leading, 24)
         .padding(.trailing, 24)
         .frame(maxHeight: 800)
-        .onAppear { self.chatService.ping() }
     }
 }

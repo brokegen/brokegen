@@ -26,6 +26,10 @@ from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEve
 logger = logging.getLogger(__name__)
 
 
+class ContinueRequest(BaseModel):
+    continuation_model_id: InferenceModelRecordID
+
+
 class ExtendRequest(BaseModel):
     next_message: ChatMessage
     continuation_model_id: Optional[InferenceModelRecordID] = None
@@ -187,7 +191,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
     async def sequence_continue(
             empty_request: starlette.requests.Request,
             sequence_id: ChatSequenceID,
-            continuation_model_id: InferenceModelRecordID,
+            params: ContinueRequest,
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
     ) -> JSONStreamingResponse:
@@ -201,9 +205,9 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
         # Decide how to continue inference for this sequence
         inference_model: InferenceModelRecordOrm | None = \
-            select_continuation_model(sequence_id, continuation_model_id, history_db)
+            select_continuation_model(sequence_id, params.continuation_model_id, history_db)
         if inference_model is None:
-            raise HTTPException(400, f"Could not find model ({continuation_model_id=})")
+            raise HTTPException(400, f"Could not find model ({params.continuation_model_id=})")
 
         return await do_continuation(
             messages_list,

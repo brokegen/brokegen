@@ -32,13 +32,12 @@
 		CE9867652BF41A3E008D6C41 /* PlaceholderContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867642BF41A3E008D6C41 /* PlaceholderContentView.swift */; };
 		CEAA2B702C070AE3002BEB26 /* ChatSequence+Extend.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA2B6F2C070AE3002BEB26 /* ChatSequence+Extend.swift */; };
 		CEAA2B722C070B2E002BEB26 /* ChatSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA2B712C070B2E002BEB26 /* ChatSequence.swift */; };
-		CEAA2B742C07A8E4002BEB26 /* OneSequenceView2.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA2B732C07A8E4002BEB26 /* OneSequenceView2.swift */; };
+		CEAA2B742C07A8E4002BEB26 /* OneSequenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA2B732C07A8E4002BEB26 /* OneSequenceView.swift */; };
 		CEB773232C0160530051F41C /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = CEB773222C0160530051F41C /* Alamofire */; };
 		CEBAA28C2C003F4B00D43E22 /* InteractiveJobOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEBAA28B2C003F4B00D43E22 /* InteractiveJobOutputView.swift */; };
 		CECA47A82BF6D5B8007A28F2 /* System.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECA47A72BF6D5B8007A28F2 /* System.swift */; };
 		CECA47AA2BF6D62E007A28F2 /* SystemInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECA47A92BF6D62E007A28F2 /* SystemInfoView.swift */; };
 		CEDCF2AB2BFFD623006ABBA9 /* OneMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */; };
-		CEDCF2AD2BFFD63A006ABBA9 /* OneSequenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDCF2AC2BFFD63A006ABBA9 /* OneSequenceView.swift */; };
 		CEFEB4762BFDA67400334522 /* SimplePing.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFEB4752BFDA67400334522 /* SimplePing.swift */; };
 		CEFEB4782BFDA6C900334522 /* TimeJob.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFEB4772BFDA6C900334522 /* TimeJob.swift */; };
 		CEFEB47E2BFE399500334522 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = CEFEB47D2BFE399500334522 /* SwiftTerm */; };
@@ -84,12 +83,11 @@
 		CE9867642BF41A3E008D6C41 /* PlaceholderContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceholderContentView.swift; sourceTree = "<group>"; };
 		CEAA2B6F2C070AE3002BEB26 /* ChatSequence+Extend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChatSequence+Extend.swift"; sourceTree = "<group>"; };
 		CEAA2B712C070B2E002BEB26 /* ChatSequence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSequence.swift; sourceTree = "<group>"; };
-		CEAA2B732C07A8E4002BEB26 /* OneSequenceView2.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneSequenceView2.swift; sourceTree = "<group>"; };
+		CEAA2B732C07A8E4002BEB26 /* OneSequenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneSequenceView.swift; sourceTree = "<group>"; };
 		CEBAA28B2C003F4B00D43E22 /* InteractiveJobOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractiveJobOutputView.swift; sourceTree = "<group>"; };
 		CECA47A72BF6D5B8007A28F2 /* System.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = System.swift; sourceTree = "<group>"; };
 		CECA47A92BF6D62E007A28F2 /* SystemInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemInfoView.swift; sourceTree = "<group>"; };
 		CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneMessageView.swift; sourceTree = "<group>"; };
-		CEDCF2AC2BFFD63A006ABBA9 /* OneSequenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneSequenceView.swift; sourceTree = "<group>"; };
 		CEFEB4752BFDA67400334522 /* SimplePing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimplePing.swift; sourceTree = "<group>"; };
 		CEFEB4772BFDA6C900334522 /* TimeJob.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeJob.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -132,12 +130,11 @@
 			children = (
 				CEAA2B6E2C070AAE002BEB26 /* Data */,
 				CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */,
-				CEDCF2AC2BFFD63A006ABBA9 /* OneSequenceView.swift */,
-				CEAA2B732C07A8E4002BEB26 /* OneSequenceView2.swift */,
+				CE7FFE172C06772400DB7CFA /* BlankOneSequenceView.swift */,
+				CEAA2B732C07A8E4002BEB26 /* OneSequenceView.swift */,
 				CE4634F12BFBB4730063142E /* MultiSequenceView.swift */,
 				CE4634F52BFBB4D00063142E /* ChatsSidebar.swift */,
 				CE7FFE152C04482900DB7CFA /* InferenceModelView.swift */,
-				CE7FFE172C06772400DB7CFA /* BlankOneSequenceView.swift */,
 			);
 			path = History;
 			sourceTree = "<group>";
@@ -331,7 +328,6 @@
 				CE8229AF2BF7306000029DC2 /* JobsManagerService.swift in Sources */,
 				CEFEB4782BFDA6C900334522 /* TimeJob.swift in Sources */,
 				CE4634ED2BFAE3020063142E /* RestartableProcess.swift in Sources */,
-				CEDCF2AD2BFFD63A006ABBA9 /* OneSequenceView.swift in Sources */,
 				CE7FFE162C04482900DB7CFA /* InferenceModelView.swift in Sources */,
 				CE4634F42BFBB4900063142E /* ChatSyncService.swift in Sources */,
 				CE4634EF2BFAFA340063142E /* StayAwakeService.swift in Sources */,
@@ -343,7 +339,7 @@
 				CE4634E52BFA5F890063142E /* SimpleProcess.swift in Sources */,
 				CE4634E02BF963210063142E /* BaseJob.swift in Sources */,
 				CEAA2B722C070B2E002BEB26 /* ChatSequence.swift in Sources */,
-				CEAA2B742C07A8E4002BEB26 /* OneSequenceView2.swift in Sources */,
+				CEAA2B742C07A8E4002BEB26 /* OneSequenceView.swift in Sources */,
 				CEBAA28C2C003F4B00D43E22 /* InteractiveJobOutputView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
