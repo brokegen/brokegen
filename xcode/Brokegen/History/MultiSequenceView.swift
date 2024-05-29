@@ -225,8 +225,5 @@ struct MultiSequenceView: View {
             .padding(8)
         }
         .frame(maxWidth: 800)
-        .onAppear {
-            chatService.fetchPinnedSequences()
-        }
     }
 }

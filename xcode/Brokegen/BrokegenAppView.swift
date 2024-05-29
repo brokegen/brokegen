@@ -163,6 +163,7 @@ class PathHost {
 
 struct BrokegenAppView: View {
     @Environment(ChatSyncService.self) private var chatService
+    @Environment(ProviderService.self) private var providerService
     @Binding private var pathHost: PathHost
 
     init(pathHost: Binding<PathHost>) {
@@ -198,6 +199,11 @@ struct BrokegenAppView: View {
         }
         .environment(chatService)
         .environment(pathHost)
+        .onAppear {
+            // Do on-startup init, because otherwise we store no data and app is empty
+            chatService.fetchPinnedSequences()
+            providerService.fetchAvailableModels()
+        }
     }
 }
 
