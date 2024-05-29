@@ -180,6 +180,7 @@ struct BlankOneSequenceView: View {
                 InlineTextInput($promptInEdit)
                     .disabled(submitting)
                     .onSubmit {
+                        // TODO: This only works when in TextField mode; TextEditor eats the Enter key.
                         print("[DEBUG] BlankOSV submitting prompt from TextField: \(promptInEdit)")
                         submit()
                     }

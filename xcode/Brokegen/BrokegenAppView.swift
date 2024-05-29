@@ -174,9 +174,7 @@ struct BrokegenAppView: View {
     var body: some View {
         NavigationStack(path: $pathHost.path) {
             NavigationSplitView(sidebar: { AppSidebar() }, detail: {
-                InferenceModelView()
-                // TODO: colors gross
-                    .background(Color(.controlBackgroundColor))
+                MultiSequenceView()
             })
             .navigationDestination(for: ChatSequence.self) { sequence in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {

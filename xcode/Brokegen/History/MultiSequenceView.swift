@@ -170,8 +170,8 @@ struct MultiSequenceView: View {
             .buttonStyle(.accessoryBar)
             .padding(12)
 
-            Button("Refresh 200", systemImage: "arrow.clockwise") {
-                chatService.fetchPinnedSequences(200)
+            Button("Refresh 500", systemImage: "arrow.clockwise") {
+                chatService.fetchPinnedSequences(500)
             }
             .buttonStyle(.accessoryBar)
             .padding(12)
@@ -225,5 +225,8 @@ struct MultiSequenceView: View {
             .padding(8)
         }
         .frame(maxWidth: 800)
+        .onAppear {
+            chatService.fetchPinnedSequences()
+        }
     }
 }
