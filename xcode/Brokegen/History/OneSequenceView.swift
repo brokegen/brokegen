@@ -3,6 +3,7 @@ import SwiftUI
 
 struct OneSequenceView: View {
     @ObservedObject var viewModel: ChatSequenceClientModel
+    @FocusState var focusTextInput: Bool?
 
     init(_ viewModel: ChatSequenceClientModel) {
         self.viewModel = viewModel
@@ -23,13 +24,18 @@ struct OneSequenceView: View {
             }
 
             HStack {
-                InlineTextInput($viewModel.promptInEdit)
+                InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
                     .padding(.top, 24)
                     .padding(.bottom, 24)
                     .border(.blue)
                     .disabled(viewModel.submitting || viewModel.receiving)
                     .onSubmit {
                         viewModel.requestExtend()
+                    }
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            self.focusTextInput = true
+                        }
                     }
 
                 VStack {

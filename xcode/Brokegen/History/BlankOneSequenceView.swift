@@ -32,15 +32,19 @@ struct ChatNameInput: View {
 
 struct InlineTextInput: View {
     @Binding var textInEdit: String
+    var isFocused: FocusState<Bool?>.Binding
     @State var isHovered: Bool = false
+
     /// Crossover length where we swap implementations to a TextEditor
     let textFieldMaxChars: Int
 
     init(
         _ textInEdit: Binding<String>,
+        isFocused: FocusState<Bool?>.Binding,
         textFieldMaxChars: Int = 280
     ) {
         _textInEdit = textInEdit
+        self.isFocused = isFocused
         self.textFieldMaxChars = textFieldMaxChars
     }
 
@@ -49,6 +53,9 @@ struct InlineTextInput: View {
             TextField("Enter your message", text: $textInEdit, axis: .vertical)
                 .textFieldStyle(.plain)
                 .lineSpacing(240)
+
+                // Shared styling starts here; duplicated because it's only two entries
+                // and this we don't have to worry about type erasure that comes with ViewModifiers.
                 .monospaced()
                 .lineLimit(4...40)
                 .background(
@@ -58,10 +65,14 @@ struct InlineTextInput: View {
                     self.isHovered = isHovered
                 }
                 .padding(6)
+                .focused(isFocused, equals: true)
         }
         else {
             TextEditor(text: $textInEdit)
                 .scrollDisabled(true)
+
+                // Shared styling starts here; duplicated because it's only two entries
+                // and this we don't have to worry about type erasure that comes with ViewModifiers.
                 .monospaced()
                 .lineLimit(4...40)
                 .background(
@@ -71,6 +82,7 @@ struct InlineTextInput: View {
                     self.isHovered = isHovered
                 }
                 .padding(6)
+                .focused(isFocused, equals: true)
         }
     }
 }
@@ -83,6 +95,8 @@ struct BlankOneSequenceView: View {
     @State var chatSequenceHumanDesc: String = ""
     @State var promptInEdit: String = ""
     @State var submitting: Bool = false
+
+    @FocusState var focusTextInput: Bool?
 
     init(_ initialModel: InferenceModel) {
         self.initialModel = initialModel
@@ -177,12 +191,17 @@ struct BlankOneSequenceView: View {
             Spacer()
 
             HStack {
-                InlineTextInput($promptInEdit)
+                InlineTextInput($promptInEdit, isFocused: $focusTextInput)
                     .disabled(submitting)
                     .onSubmit {
                         // TODO: This only works when in TextField mode; TextEditor eats the Enter key.
                         print("[DEBUG] BlankOSV submitting prompt from TextField: \(promptInEdit)")
                         submit()
+                    }
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            self.focusTextInput = true
+                        }
                     }
 
                 VStack {
