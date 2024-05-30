@@ -7,17 +7,19 @@ import httpx
 import orjson
 import starlette.datastructures
 import starlette.requests
+from sqlalchemy import select
 from starlette.exceptions import HTTPException
 
-from _util.json import JSONStreamingResponse, safe_get, JSONArray
+from _util.json import JSONStreamingResponse, safe_get, JSONArray, safe_get_arrayed
+from _util.typing import PromptText, TemplatedPromptText
 from audit.http import AuditDB
 from audit.http_raw import HttpxLogger
+from history.chat.database import lookup_chat_message, ChatMessage, ChatMessageOrm, ChatSequence
 from history.ollama.chat_routes import lookup_model_offline
 from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, \
     consolidate_stream, OllamaEventBuilder
 from inference.embeddings.retrieval import RetrievalPolicy
 from inference.prompting.templating import apply_llm_template
-from _util.typing import PromptText, TemplatedPromptText
 from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceEventOrm, InferenceReason
 from providers.ollama import _real_ollama_client
@@ -252,6 +254,53 @@ async def do_proxy_chat_rag(
     chat_messages: JSONArray | None = safe_get(request_content_json, 'messages')
     if not chat_messages:
         raise RuntimeError("No 'messages' provided in call to /api/chat")
+
+    # Assume that these are messages from a third-party client, and try to feed them into the history database.
+    prior_sequence: ChatSequence | None = None
+
+    for index in range(len(chat_messages)):
+        if safe_get_arrayed(chat_messages, index, 'images'):
+            logger.error("Client submitted images for upload, ignoring")
+
+        message_in = ChatMessage(
+            role=safe_get_arrayed(chat_messages, index, 'role'),
+            content=safe_get_arrayed(chat_messages, index, 'content'),
+            created_at=None,
+        )
+        message_in_orm = lookup_chat_message(message_in, history_db)
+        if message_in_orm is None:
+            message_in_orm = ChatMessageOrm(**message_in.model_dump())
+            history_db.add(message_in_orm)
+            history_db.commit()
+
+        # And then check for Sequences that might already exist, because we want to surface the new chat in every app
+        sequence_in = history_db.execute(
+            select(ChatSequence)
+            .where(ChatSequence.current_message == message_in_orm.id)
+            .order_by(ChatSequence.generated_at.desc())
+            .limit(1)
+        ).scalar_one_or_none()
+        if sequence_in is not None:
+            prior_sequence = sequence_in
+            continue
+
+        else:
+            sequence_in = ChatSequence(
+                user_pinned=index == len(chat_messages) - 1,
+                current_message=message_in_orm.id,
+                generated_at=datetime.now(tz=timezone.utc),
+                generation_complete=True,
+            )
+            if prior_sequence is not None:
+                sequence_in.human_desc = prior_sequence.human_desc
+                sequence_in.parent_sequence = prior_sequence.id
+                sequence_in.inference_error = "[unknown, skimmed from /api/chat]"
+
+            history_db.add(sequence_in)
+            history_db.commit()
+
+            prior_sequence = sequence_in
+            continue
 
     async def generate_helper_fn(
             inference_reason: InferenceReason,

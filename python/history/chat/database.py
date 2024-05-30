@@ -60,6 +60,8 @@ def lookup_chat_message(
     return history_db.execute(
         select(ChatMessageOrm)
         .where(*where_clauses)
+        .limit(1)
+        .order_by(ChatMessageOrm.created_at.desc())
     ).scalar_one_or_none()
 
 
