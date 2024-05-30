@@ -32,14 +32,14 @@ logger = logging.getLogger(__name__)
 
 class ContinueRequest(BaseModel):
     continuation_model_id: InferenceModelRecordID
-    retrieval_policy: RetrievalPolicyID = "skip"
+    retrieval_policy: Optional[RetrievalPolicyID] = None
     retrieval_search_args: Optional[str] = None
 
 
 class ExtendRequest(BaseModel):
     next_message: ChatMessage
     continuation_model_id: Optional[InferenceModelRecordID] = None
-    retrieval_policy: RetrievalPolicyID = "skip"
+    retrieval_policy: Optional[RetrievalPolicyID] = None
     retrieval_search_args: Optional[str] = None
 
 
@@ -123,7 +123,7 @@ async def do_continuation(
         messages_list: list[ChatMessageOrm],
         original_sequence: ChatSequence,
         inference_model: InferenceModelRecordOrm,
-        retrieval_policy: RetrievalPolicyID,
+        retrieval_policy: RetrievalPolicyID | None,
         retrieval_search_args: str | None,
         empty_request: starlette.requests.Request,
         history_db: HistoryDB,
@@ -260,9 +260,9 @@ async def do_continuation(
     real_retrieval_policy: RetrievalPolicy | None = None
     if retrieval_policy == "skip":
         real_retrieval_policy = SkipRetrievalPolicy()
-    elif retrieval_policy == "default":
+    elif retrieval_policy == "simple":
         real_retrieval_policy = DefaultRetrievalPolicy(get_knowledge())
-    elif retrieval_policy == "custom":
+    elif retrieval_policy == "summarizing":
         init_kwargs = {
             "knowledge": get_knowledge(),
         }
@@ -277,6 +277,7 @@ async def do_continuation(
             real_retrieval_policy or SkipRetrievalPolicy(),
             history_db,
             audit_db,
+            capture_chat_messages=False,
         ))
 
 

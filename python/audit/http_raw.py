@@ -157,6 +157,8 @@ class HttpxLogger:
         async def post_response_wrapper(
                 joined_chunks: bytes,
         ):
+            # DEBUG: This _works_, but it's very redundant.
+            # Originally added because the call below would show that the Session had expired.
             merged = self.audit_db.merge(self.event)
             merged.response_content = joined_chunks
 

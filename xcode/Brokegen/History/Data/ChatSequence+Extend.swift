@@ -306,7 +306,7 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                     sequenceId: sequence.serverId!,
                     sequence: nil,
                     continuationModelId: nil,
-                    retrievalPolicy: "custom",
+                    retrievalPolicy: "simple",
                     retrievalSearchArgs: "{\"k\": 18}"
                 )
             )
