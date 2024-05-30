@@ -110,7 +110,6 @@ struct SequenceRow: View {
                 }
             }
         }
-        .contentShape(Rectangle())
     }
 }
 
@@ -137,8 +136,6 @@ func dateToSectionName(_ date: Date?) -> String {
 struct MultiSequenceView: View {
     @Environment(ChatSyncService.self) private var chatService
     @Environment(PathHost.self) private var pathHost
-
-    @State private var hoveredSequence: ChatSequence? = nil
 
     private var sectionedSequences: [(String, [ChatSequence])] {
         let sectionedSequences = Dictionary(grouping: chatService.loadedSequences) {
@@ -197,29 +194,17 @@ struct MultiSequenceView: View {
                 .padding(.top, 36)
             ) {
                 ForEach(sectionSequences) { sequence in
-                    SequenceRow(sequence)
-                        .padding(12)
-                        .lineLimit(4)
-                        .onTapGesture {
-                            print("[DEBUG] Pushing new ChatSequence view onto stack: \(sequence)")
-                            pathHost.push(sequence)
-                            pathHost.printIt("\(pathHost): ")
-                        }
-
-                    // TODO: This is extremely non-performant, above 10-ish items
-                    .onHover { isAbove in
-                        if isAbove {
-                            hoveredSequence = sequence
-                        }
-                        else if hoveredSequence?.id == sequence.id {
-                            hoveredSequence = nil
-                        }
-                    }
-                    .background(
-                        hoveredSequence?.id == sequence.id
-                        ? Color(.windowBackgroundColor)
-                        : Color(.controlBackgroundColor)
-                    )
+                    Button(action: {
+                        print("[DEBUG] Pushing new ChatSequence view onto stack: \(sequence)")
+                        pathHost.push(sequence)
+                        pathHost.printIt("\(pathHost): ")
+                    }, label: {
+                        SequenceRow(sequence)
+                            .padding(12)
+                            .lineLimit(4)
+                    })
+                    .contentShape(Rectangle())
+                    .background(Color(.controlBackgroundColor))
                 }
             }
             .padding(8)
