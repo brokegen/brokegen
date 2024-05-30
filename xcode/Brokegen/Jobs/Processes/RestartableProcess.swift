@@ -7,13 +7,13 @@ class RestartableProcess: Job {
     let executableURL: URL
     let arguments: [String]
 
-    init(_ launchURL: URL, _ arguments: [String] = []) {
+    init(_ launchURL: URL, _ arguments: [String] = [], sidebarTitle: String? = nil) {
         self.executableURL = launchURL
         self.arguments = arguments
 
         super.init()
 
-        sidebarTitle = launchURL.lastPathComponent
+        self.sidebarTitle = sidebarTitle ?? launchURL.lastPathComponent
         ribbonText = "\(launchURL.path(percentEncoded: false))"
         if arguments.count > 0 {
             ribbonText += "\n\(arguments)"

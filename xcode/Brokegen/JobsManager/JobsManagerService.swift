@@ -57,7 +57,8 @@ class JobsManagerService: Observable, ObservableObject {
                 "--data-dir",
                 directoryPath.path(percentEncoded: false),
                 "--log-level=debug",
-            ]
+            ],
+            sidebarTitle: "brokegen-server (x86 binary)"
         )
         specialJobs.append(server)
 
