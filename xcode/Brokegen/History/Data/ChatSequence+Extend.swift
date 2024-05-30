@@ -21,7 +21,15 @@ extension ChatSyncService {
 
         let encoder = JSONEncoder()
         encoder.keyEncodingStrategy = .convertToSnakeCase
-        encoder.dateEncodingStrategy = .iso8601
+
+        /// TODO: Confirm that ChatMessages get uploaded with a non-1993 date!
+        encoder.dateEncodingStrategy = .custom { date, encoder in
+            let dateFormatter = ISO8601DateFormatter()
+            dateFormatter.formatOptions.insert(.withFractionalSeconds)
+
+            var container = encoder.singleValueContainer()
+            try container.encode(dateFormatter.string(from: date))
+        }
 
         do {
             print("[DEBUG] POST /sequences/\(params.sequenceId)/continue <= \(String(data: try encoder.encode(params), encoding: .utf8)!)")
