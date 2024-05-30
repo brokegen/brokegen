@@ -46,6 +46,7 @@ class JobsManagerService: Observable, ObservableObject {
             [
                 "--data-dir",
                 directoryPath.path(percentEncoded: false),
+                "--log-level=debug",
             ]
         )
         renderableJobs.insert(ollamaProxy, at: 8)
@@ -55,6 +56,7 @@ class JobsManagerService: Observable, ObservableObject {
             [
                 "--data-dir",
                 directoryPath.path(percentEncoded: false),
+                "--log-level=debug",
             ]
         )
         specialJobs.append(server)
