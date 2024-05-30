@@ -90,9 +90,6 @@ async def do_generate_raw_templated(
         merged_job = history_db.merge(inference_job)
         finalize_inference_job(merged_job, response_content_json)
 
-        if not merged_job.response_error:
-            merged_job.response_error = "[ignore do_generate_raw_templated() InferenceEvent in stats, since it's generally duplicated]"
-
         history_db.add(merged_job)
         history_db.commit()
 

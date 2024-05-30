@@ -171,10 +171,12 @@ async def do_continuation(
         inference_job = InferenceEventOrm(
             model_record_id=inference_model.id,
             reason="chat sequence",
+            response_error="[haven't received/finalized response info yet]",
         )
 
         finalize_inference_job(inference_job, response_content_json)
         history_db.add(inference_job)
+        history_db.commit()
 
         assistant_response = ChatMessageOrm(
             role="assistant",
@@ -196,10 +198,8 @@ async def do_continuation(
         response_sequence.generated_at = inference_job.response_created_at
         response_sequence.generation_complete = response_content_json["done"]
         response_sequence.inference_job_id = inference_job.id
-        response_sequence.inference_error = (
-            "this is a duplicate InferenceEvent, because do_generate_raw_templated will dump its own raws in. "
-            "we're keeping this one because it's tied into the actual ChatSequence."
-        )
+        if inference_job.response_error:
+            response_sequence.inference_error = inference_job.response_error
 
         history_db.add(response_sequence)
         history_db.commit()
@@ -207,6 +207,12 @@ async def do_continuation(
         # And complete the circular reference that really should be handled in the SQLAlchemy ORM
         inference_job = history_db.merge(inference_job)
         inference_job.parent_sequence = response_sequence.id
+
+        if not inference_job.response_error:
+            inference_job.response_error = (
+                "this is a duplicate InferenceEvent, because do_generate_raw_templated will dump its own raws in. "
+                "we're keeping this one because it's tied into the actual ChatSequence."
+            )
 
         history_db.add(inference_job)
         history_db.commit()
