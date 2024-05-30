@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Generator
 
 import orjson
@@ -50,7 +50,7 @@ def build_models_from_api_tags(
         model_in = InferenceModelAddRequest(
             human_id=safe_get(sorted_model_json, 'name'),
             first_seen_at=model_modified_at,
-            last_seen=model_modified_at,
+            last_seen=datetime.now(tz=timezone.utc),
             provider_identifiers=provider_record.identifiers,
             model_identifiers=sorted_model_json['details'],
             # combined_inference_parameters=None,
@@ -132,6 +132,8 @@ def build_model_from_api_show(
         model_identifiers=model_identifiers,
         combined_inference_parameters=updated_inference_parameters,
     )
+    if model_in.last_seen is None:
+        model_in.last_seen = datetime.now(tz=timezone.utc)
 
     # Quick check for more precise matches
     maybe_model1 = lookup_inference_model_detailed(model_in, history_db)
@@ -143,7 +145,7 @@ def build_model_from_api_show(
     # which only seems to be true testing a few models with `ollama --version` `0.1.33+e9ae607e`.
     #
     # Beyond that, though, it's not _terrible_ to have two sets of models, mapping to each call.
-    maybe_model2 = history_db.execute(
+    maybe_model2: InferenceModelRecordOrm | None = history_db.execute(
         select(InferenceModelRecordOrm)
             .where(InferenceModelRecordOrm.human_id == model_in.human_id,
                    InferenceModelRecordOrm.provider_identifiers == model_in.provider_identifiers,

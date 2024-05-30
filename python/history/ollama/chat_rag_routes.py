@@ -1,6 +1,6 @@
 import logging
 from collections.abc import AsyncIterable
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TypeAlias, Callable, Awaitable, Any, AsyncIterator
 
 import httpx
@@ -72,6 +72,7 @@ async def do_generate_raw_templated(
     inference_job = InferenceEventOrm(
         model_record_id=model.id,
         prompt_with_templating=request_content['prompt'],
+        response_created_at=datetime.now(tz=timezone.utc),
         response_error="[haven't received/finalized response info yet]",
         reason=inference_reason,
     )
