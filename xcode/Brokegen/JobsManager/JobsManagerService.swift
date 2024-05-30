@@ -4,15 +4,19 @@ import SwiftUI
 
 
 class JobsManagerService: Observable, ObservableObject {
-    @Published var renderableJobs: [Job]
-    @Published var specialJobs: [Job]
+    @Published var sidebarRenderableJobs: [Job]
+    @Published var storedJobs: [Job]
 
     init(startPingsImmediately: Bool = false) {
-        renderableJobs = [
+        let importantJobs = [
             // Use prime numbers for these, because we can
             SimplePing("brokegen-server heartbeat", "http://localhost:6635", timeInterval: 5).launch(),
             SimplePing("ollama heartbeat", "http://localhost:11434", timeInterval: 13).launch(),
             StayAwakeService(),
+        ]
+
+        self.sidebarRenderableJobs = importantJobs
+        self.storedJobs = importantJobs + [
             SimplePing("ping rag-proxy", "http://localhost:6635", timeInterval: 17),
             SimplePing("ping brokegen-server:norag", "http://localhost:6636", timeInterval: 7),
             SimplePing("ping brokegen-server+rag", "http://localhost:6637", timeInterval: 11),
@@ -24,8 +28,6 @@ class JobsManagerService: Observable, ObservableObject {
             SimpleProcess("/usr/bin/man", ["man"]),
             TimeJob("infinitimer", maxTimesFired: -1).launch(),
         ]
-
-        specialJobs = []
 
         let fileManager = FileManager.default
         let applicationSupportDirectory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -49,7 +51,7 @@ class JobsManagerService: Observable, ObservableObject {
                 "--log-level=debug",
             ]
         )
-        renderableJobs.insert(ollamaProxy, at: 8)
+        storedJobs.append(ollamaProxy)
 
         let server = RestartableProcess(
             Bundle.main.url(forResource: "brokegen-server", withExtension: nil)!,
@@ -60,10 +62,11 @@ class JobsManagerService: Observable, ObservableObject {
             ],
             sidebarTitle: "brokegen-server (x86 binary)"
         )
-        specialJobs.append(server)
+        self.sidebarRenderableJobs.insert(server, at: 0)
+        self.storedJobs.insert(server, at: 0)
 
         if startPingsImmediately {
-            for job in renderableJobs {
+            for job in storedJobs {
                 if job is SimplePing {
                     _ = job.launch()
                 }

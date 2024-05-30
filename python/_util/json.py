@@ -53,7 +53,7 @@ def safe_get_arrayed(
         try:
             next_json_ish = next_json_ish[key]
             continue
-        except IndexError:
+        except (IndexError, KeyError):
             return None
 
     return next_json_ish

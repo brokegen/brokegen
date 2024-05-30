@@ -52,7 +52,7 @@ class StayAwakeService: Job {
 
     override init() {
         super.init()
-        sidebarTitle = "Stay Awake"
+        sidebarTitle = "stay awake"
         ribbonText = "StayAwakeService: PreventUserIdleSystemSleep\n(keep macOS awake while this job is running)"
 
         displayedStatus = String(describing: JobStatus.notStarted)

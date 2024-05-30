@@ -106,16 +106,20 @@ struct AppSidebar: View {
                 .padding(6)
             ) {
                 NavigationLink(destination: MultiSequenceView()) {
-                    Text("Recent Chats")
+                    Image(systemName: "slider.horizontal.3")
+                    Text("Recent")
                         .font(.title2)
                         .padding(6)
-                    Image(systemName: "slider.horizontal.3")
+                    Spacer()
+                    Image(systemName: "chevron.right")
                 }
 
                 NavigationLink(destination: InferenceModelView()) {
+                    Image(systemName: "slider.horizontal.3")
                     Text("Available Models")
                         .font(.title2)
                         .padding(6)
+                    Spacer()
                     Image(systemName: "plus.message")
                 }
             }
@@ -123,6 +127,8 @@ struct AppSidebar: View {
             Divider()
 
             MiniJobsSidebar()
+
+            Divider()
 
             NavigationLink(destination: SystemInfoView()) {
                 Text("System Info")

@@ -27,44 +27,30 @@ struct MiniJobsSidebar: View {
     }
 
     var body: some View {
-        let bigLink = NavigationLink(
-            destination: NavigationSplitView(sidebar: {
-                TallJobsSidebar()
-            }, detail:{
-                AllJobs(jobsService.renderableJobs)
+        Section(header: Text("Jobs")
+            .font(.largeTitle)
+            .padding(6)
+        ) {
+            NavigationLink(destination: AllJobs(jobsService.storedJobs)) {
+                Image(systemName: "slider.horizontal.3")
+                Text("Available Jobs")
+                    .font(.title2)
+                    .padding(6)
+                Spacer()
+                Image(systemName: "chevron.right")
             }
-        )) {
-            Text("Active Jobs")
-                .font(.title2)
-                .foregroundStyle(.primary)
-                .padding(6)
-        }
 
-        ForEach(jobsService.specialJobs) { job in
-            NavigationLink(destination: JobOutputView(job: job)) {
-                JobsSidebarItem(job: job)
-            }
-        }
+            if !jobsService.sidebarRenderableJobs.isEmpty && navLimit > 0 {
+                Divider()
 
-        Section(header: bigLink) {
-            ForEach(jobsService.renderableJobs.prefix(navLimit)) { job in
-                NavigationLink(destination: JobOutputView(job: job)) {
-                    JobsSidebarItem(job: job)
+                ForEach(jobsService.sidebarRenderableJobs.prefix(navLimit)) { job in
+                    NavigationLink(destination: JobOutputView(job: job)) {
+                        JobsSidebarItem(job: job)
+                    }
                 }
             }
         }
 
-        Divider()
-
-        NavigationLink(destination: AllJobs(jobsService.renderableJobs)
-            .padding(32)
-        ) {
-            HStack {
-                Text("[All Jobs]")
-                    .font(.title2)
-                    .padding(6)
-            }
-        }
     }
 }
 
@@ -77,13 +63,7 @@ struct TallJobsSidebar: View {
             .foregroundStyle(.primary)
             .padding(6)
         ) {
-            ForEach(jobsService.renderableJobs) { job in
-                NavigationLink(destination: JobOutputView(job: job)) {
-                    JobsSidebarItem(job: job)
-                }
-            }
-
-            ForEach(jobsService.specialJobs) { job in
+            ForEach(jobsService.storedJobs) { job in
                 NavigationLink(destination: InteractiveJobOutputView(job: job)) {
                     JobsSidebarItem(job: job)
                 }
