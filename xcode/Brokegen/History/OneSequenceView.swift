@@ -3,6 +3,7 @@ import SwiftUI
 
 struct OneSequenceView: View {
     @ObservedObject var viewModel: ChatSequenceClientModel
+
     @FocusState var focusTextInput: Bool
 
     init(_ viewModel: ChatSequenceClientModel) {
@@ -10,77 +11,95 @@ struct OneSequenceView: View {
     }
 
     var body: some View {
-        List {
-            ForEach(viewModel.sequence.messages) { message in
-                OneMessageView(message)
-                    .padding(24)
-                    .padding(.top, 16)
-            }
+        ScrollViewReader { proxy in
+            ScrollView(.vertical) {
+                if viewModel.sequence.humanDesc != nil {
+                    HStack {
+                        Text(viewModel.sequence.humanDesc!)
+                            .font(.system(size: 36))
+                            .padding(.leading, 24)
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
 
-            if viewModel.responseInEdit != nil {
-                OneMessageView(viewModel.responseInEdit!)
-                    .padding(24)
-                    .padding(.top, 16)
-            }
-
-            HStack {
-                InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
-                    .padding(.top, 24)
-                    .padding(.bottom, 24)
-                    .border(.blue)
-                    .disabled(viewModel.submitting || viewModel.responseInEdit != nil)
-                    .onSubmit {
-                        viewModel.requestExtend()
+                        Spacer()
                     }
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            self.focusTextInput = true
-                        }
-                    }
-
-                Group {
-                    Button(action: viewModel.stopSubmitAndReceive) {
-                        let icon: String = {
-                            if viewModel.submitting || viewModel.responseInEdit != nil {
-                                return "stop.fill"
-                            }
-                            else {
-                                return "stop"
-                            }
-                        }()
-                        Image(systemName: icon)
-                            .resizable()
-                            .frame(width: 32, height: 32)
-                            .disabled(!viewModel.submitting && viewModel.responseInEdit == nil)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Stop submitting or receiving")
-
-                    Button(action: viewModel.requestExtendWithRetrieval) {
-                        Image(systemName: viewModel.submitting ? "arrowshape.up.fill" : "arrowshape.up")
-                            .resizable()
-                            .frame(width: 32, height: 32)
-                            .disabled(viewModel.submitting || viewModel.responseInEdit != nil)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Submit with Retrieval-Augmented Generation")
-
-                    Button(action: viewModel.requestExtend) {
-                        Image(systemName: viewModel.submitting ? "arrow.up.circle.fill" : "arrow.up.circle")
-                            .resizable()
-                            .frame(width: 32, height: 32)
-                            .disabled(viewModel.submitting || viewModel.responseInEdit != nil)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Submit")
                 }
-                .padding(.top, 16)
-                .padding(.bottom, 12)
-                .padding(.leading, 12)
-                .padding(.trailing, -12)
+
+                ForEach(viewModel.sequence.messages) { message in
+                    OneMessageView(message)
+                        .padding(24)
+                        .padding(.top, 16)
+                }
+
+                if viewModel.responseInEdit != nil {
+                    OneMessageView(viewModel.responseInEdit!)
+                        .padding(24)
+                        .padding(.top, 16)
+                }
+
+                HStack {
+                    InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
+                        .padding(.top, 24)
+                        .padding(.bottom, 24)
+                        .border(.blue)
+                        .disabled(viewModel.submitting || viewModel.responseInEdit != nil)
+                        .onSubmit {
+                            viewModel.requestExtend()
+                        }
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                self.focusTextInput = true
+                            }
+                        }
+
+                    Group {
+                        Button(action: viewModel.stopSubmitAndReceive) {
+                            let icon: String = {
+                                if viewModel.submitting || viewModel.responseInEdit != nil {
+                                    return "stop.fill"
+                                }
+                                else {
+                                    return "stop"
+                                }
+                            }()
+                            Image(systemName: icon)
+                                .resizable()
+                                .frame(width: 32, height: 32)
+                                .disabled(!viewModel.submitting && viewModel.responseInEdit == nil)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Stop submitting or receiving")
+
+                        Button(action: viewModel.requestExtendWithRetrieval) {
+                            Image(systemName: viewModel.submitting ? "arrowshape.up.fill" : "arrowshape.up")
+                                .resizable()
+                                .frame(width: 32, height: 32)
+                                .disabled(viewModel.submitting || viewModel.responseInEdit != nil)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Submit with Retrieval-Augmented Generation")
+
+                        Button(action: viewModel.requestExtend) {
+                            Image(systemName: viewModel.submitting ? "arrow.up.circle.fill" : "arrow.up.circle")
+                                .resizable()
+                                .frame(width: 32, height: 32)
+                                .disabled(viewModel.submitting || viewModel.responseInEdit != nil)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Submit")
+                    }
+                    .padding(.top, 16)
+                    .padding(.bottom, 12)
+                    .padding(.leading, 12)
+                    .padding(.trailing, -12)
+                }
+                .padding(.leading, 24)
+                .padding(.trailing, 24)
+                .onChange(of: viewModel.sequence.messages.count) {
+                    proxy.scrollTo(viewModel.sequence.messages.last)
+                }
             }
-            .padding(.leading, 24)
-            .padding(.trailing, 24)
+            .defaultScrollAnchor(.bottom)
         }
     }
 }
