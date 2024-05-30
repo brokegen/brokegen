@@ -5,6 +5,14 @@ import SwiftData
 
 typealias ChatMessageServerID = Int
 
+func packageDateForServer(_ date: Date?) -> String? {
+    let dateFormatter = ISO8601DateFormatter()
+    dateFormatter.formatOptions.insert(.withFractionalSeconds)
+
+    guard date != nil else { return nil }
+    return dateFormatter.string(from: date!)
+}
+
 class Message: Identifiable, Codable {
     let id: UUID = UUID()
     var serverId: Int?
@@ -52,10 +60,8 @@ class Message: Identifiable, Codable {
             "content": content,
         ]
 
-        if let createdAt = createdAt {
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions.insert(.withFractionalSeconds)
-            parameters["created_at"] = formatter.string(from: createdAt)
+        if let createdAt = packageDateForServer(createdAt) {
+            parameters["created_at"] = createdAt
         }
 
         AF.request(
