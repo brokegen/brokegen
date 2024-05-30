@@ -179,7 +179,7 @@ def run_proxy(
         port=bind_port,
         log_level="debug",
         reload=False,
-        workers=1,
+        workers=4,
     )
     server = uvicorn.Server(config)
 
