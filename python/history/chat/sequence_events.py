@@ -41,7 +41,6 @@ class InferenceEventAddResponse(BaseModel):
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
     @router_ish.post("/models/{model_record_id:int}/inference-events")
     def construct_inference_event(
-            fastapi,
             response: fastapi.Response,
             model_record_id: InferenceModelRecordID,
             inference_event_in: InferenceEventIn,
