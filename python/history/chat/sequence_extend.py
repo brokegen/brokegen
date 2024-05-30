@@ -4,6 +4,7 @@ from typing import Optional
 
 import fastapi.routing
 import orjson
+import starlette.datastructures
 import starlette.requests
 from fastapi import Depends, HTTPException
 from pydantic import BaseModel
@@ -11,19 +12,20 @@ from sqlalchemy import select
 
 import history.ollama
 from _util.json import JSONStreamingResponse, safe_get
-from _util.typing import ChatSequenceID, InferenceModelRecordID
+from _util.typing import ChatSequenceID, InferenceModelRecordID, PromptText
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
 from history.chat.database import ChatMessageOrm, ChatSequence, lookup_chat_message, ChatMessage, \
     lookup_sequence_parents
 from history.chat.sequence_get import do_get_sequence
-from history.ollama.chat_rag_routes import finalize_inference_job
+from history.ollama.chat_rag_routes import finalize_inference_job, do_generate_raw_templated
 from history.ollama.json import consolidate_stream_sync
 from inference.embeddings.knowledge import get_knowledge
 from inference.embeddings.retrieval import SkipRetrievalPolicy, RetrievalPolicyID, RetrievalPolicy, \
     DefaultRetrievalPolicy, CustomRetrievalPolicy
+from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm
+from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, InferenceReason
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +73,52 @@ def select_continuation_model(
     return None
 
 
+async def ollama_generate_helper_fn(
+        inference_model: InferenceModelRecordOrm,
+        history_db: HistoryDB,
+        audit_db: AuditDB,
+        inference_reason: InferenceReason,
+        system_message: PromptText | None,
+        user_prompt: PromptText | None,
+        assistant_response: PromptText | None = None,
+) -> PromptText:
+    model_template = safe_get(inference_model.combined_inference_parameters, 'template')
+
+    final_system_message = (
+            system_message
+            or safe_get(inference_model.combined_inference_parameters, 'system')
+            or None
+    )
+
+    templated_query = await apply_llm_template(
+        model_template=model_template,
+        system_message=final_system_message,
+        user_prompt=user_prompt,
+        assistant_response=assistant_response,
+        break_early_on_response=True)
+
+    response0 = await do_generate_raw_templated(
+        request_content={
+            'model': inference_model.human_id,
+            'prompt': templated_query,
+            'raw': False,
+            'stream': False,
+        },
+        request_headers=starlette.datastructures.Headers(),
+        request_cookies=None,
+        history_db=history_db,
+        audit_db=audit_db,
+        inference_reason=inference_reason,
+    )
+
+    content_chunks = []
+    async for chunk in response0.body_iterator:
+        content_chunks.append(chunk)
+
+    response0_json = orjson.loads(b''.join(content_chunks))
+    return response0_json['response']
+
+
 async def do_continuation(
         messages_list: list[ChatMessageOrm],
         original_sequence: ChatSequence,
@@ -97,6 +145,22 @@ async def do_continuation(
         human_desc=original_sequence.human_desc,
         parent_sequence=original_sequence.id,
     )
+
+    if not original_sequence.human_desc:
+        machine_desc: str = await ollama_generate_helper_fn(
+            inference_model,
+            history_db,
+            audit_db,
+            inference_reason="ChatSequence.human_desc",
+            # NB This only works as a system message on models that respect that.
+            #    So, append it to both.
+            system_message="Provide a summary of the provided text in a few words, suitable as a short description for a tab.",
+            user_prompt="Provide a summary of the provided text in a few words, suitable as a short description for a tab." +
+                        '\n'.join([m.content for m in messages_list]),
+        )
+        machine_desc = machine_desc.strip('"')
+        logger.info(f"Auto-generated chat title is {len(machine_desc)} chars: {machine_desc=}")
+        response_sequence.human_desc = machine_desc
 
     async def construct_response_sequence(response_content_json):
         nonlocal inference_model

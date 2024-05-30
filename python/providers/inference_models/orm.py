@@ -124,7 +124,9 @@ class InferenceModelRecordOrm(Base):
             if self.last_seen is None:
                 self.last_seen = model_in.last_seen
             else:
-                self.last_seen = min(model_in.last_seen, self.last_seen)
+                # SQL results are naive datetimes?
+                requested_last_seen = model_in.last_seen.replace(tzinfo=None)
+                self.last_seen = min(requested_last_seen, self.last_seen)
 
         if not self.model_identifiers or self.model_identifiers == 'null':
             self.model_identifiers = model_in.model_identifiers

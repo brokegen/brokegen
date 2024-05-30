@@ -57,10 +57,8 @@ struct InferenceModelView: View {
                             .monospaced()
                             .padding(4)
                     }
-                    .background(Color(.controlBackgroundColor))
                 }
                 .padding(12)
-                .background(Color(.controlBackgroundColor))
                 .listRowSeparator(.hidden)
                 .padding(.bottom, 48)
             }

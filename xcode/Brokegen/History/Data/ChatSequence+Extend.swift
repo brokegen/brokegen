@@ -21,6 +21,7 @@ extension ChatSyncService {
 
         let encoder = JSONEncoder()
         encoder.keyEncodingStrategy = .convertToSnakeCase
+        encoder.dateEncodingStrategy = .iso8601
 
         do {
             print("[DEBUG] POST /sequences/\(params.sequenceId)/continue <= \(String(data: try encoder.encode(params), encoding: .utf8)!)")

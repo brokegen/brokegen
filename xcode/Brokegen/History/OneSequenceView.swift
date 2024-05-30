@@ -3,7 +3,7 @@ import SwiftUI
 
 struct OneSequenceView: View {
     @ObservedObject var viewModel: ChatSequenceClientModel
-    @FocusState var focusTextInput: Bool?
+    @FocusState var focusTextInput: Bool
 
     init(_ viewModel: ChatSequenceClientModel) {
         self.viewModel = viewModel

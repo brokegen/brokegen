@@ -10,7 +10,7 @@ struct ChatNameInput: View {
     }
 
     var body: some View {
-        TextField("Enter a chat name", text: $textInEdit, axis: .vertical)
+        TextField("", text: $textInEdit, axis: .vertical)
             .font(.system(size: 72))
             .textFieldStyle(.plain)
             .monospaced()
@@ -21,8 +21,9 @@ struct ChatNameInput: View {
             .onHover { isHovered in
                 self.isHovered = isHovered
             }
-            .padding(6)
-            .padding(.top, 48)
+            .padding(EdgeInsets(top: 48, leading: 24, bottom: 12, trailing: 24))
+//            .padding(6)
+//            .padding(.top, 48)
             // Draws a single baseline bar at the bottom of the control
             .overlay(
                 Divider().background(Color.accentColor), alignment: .bottom
@@ -32,7 +33,7 @@ struct ChatNameInput: View {
 
 struct InlineTextInput: View {
     @Binding var textInEdit: String
-    var isFocused: FocusState<Bool?>.Binding
+    var isFocused: FocusState<Bool>.Binding
     @State var isHovered: Bool = false
 
     /// Crossover length where we swap implementations to a TextEditor
@@ -40,7 +41,7 @@ struct InlineTextInput: View {
 
     init(
         _ textInEdit: Binding<String>,
-        isFocused: FocusState<Bool?>.Binding,
+        isFocused: FocusState<Bool>.Binding,
         textFieldMaxChars: Int = 280
     ) {
         _textInEdit = textInEdit
@@ -96,7 +97,7 @@ struct BlankOneSequenceView: View {
     @State var promptInEdit: String = ""
     @State var submitting: Bool = false
 
-    @FocusState var focusTextInput: Bool?
+    @FocusState var focusTextInput: Bool
 
     init(_ initialModel: InferenceModel) {
         self.initialModel = initialModel
@@ -174,24 +175,68 @@ struct BlankOneSequenceView: View {
         submitting = false
     }
 
+    private func formatJson(_ jsonDict: [String : Any], indent: Int = 0) -> String {
+        var stringMaker = ""
+        for (k, v) in jsonDict {
+            if v != nil {
+                stringMaker += String(repeating: " ", count: indent)
+                stringMaker += "\(k): \(v)\n"
+            }
+        }
+
+        return stringMaker
+    }
+
     var body: some View {
         VStack {
-            Spacer()
+            ChatNameInput($chatSequenceHumanDesc)
+                .frame(maxWidth: .infinity)
+                .padding(24)
 
-            VStack(spacing: 72) {
-                ChatNameInput($chatSequenceHumanDesc)
-                    .frame(maxWidth: .infinity)
-                    .padding(24)
-
-                Text("Starting a new chat")
-                    .foregroundStyle(.secondary)
+            // Display the model info, because otherwise there's nothing to see
+            VStack(alignment: .leading) {
+                Text(initialModel.humanId)
                     .font(.title)
+                    .monospaced()
+                    .foregroundColor(.accentColor)
+                    .lineLimit(2)
+                    .padding(.bottom, 8)
+
+                if let lastSeen = initialModel.lastSeen {
+                    Text("Last seen: " + String(describing: lastSeen))
+                        .font(.subheadline)
+                }
+
+                Divider()
+
+                Group {
+                    if initialModel.stats != nil {
+                        Text("stats: \n" + formatJson(initialModel.stats!, indent: 2))
+                            .lineLimit(1...)
+                            .monospaced()
+                            .padding(4)
+                    }
+
+                    Text(formatJson(initialModel.modelIdentifiers!))
+                        .lineLimit(1...)
+                        .monospaced()
+                        .padding(4)
+                }
             }
+            .padding(12)
+            .listRowSeparator(.hidden)
+            .padding(.bottom, 48)
+            .frame(maxWidth: 800)
+
+            Text("Starting a new chat")
+                .foregroundStyle(.secondary)
+                .font(.title)
 
             Spacer()
 
             HStack {
                 InlineTextInput($promptInEdit, isFocused: $focusTextInput)
+                    .focused($focusTextInput)
                     .disabled(submitting)
                     .onSubmit {
                         // TODO: This only works when in TextField mode; TextEditor eats the Enter key.
@@ -231,6 +276,9 @@ struct BlankOneSequenceView: View {
         }
         .padding(.leading, 24)
         .padding(.trailing, 24)
-        .frame(maxHeight: 800)
+        .frame(maxHeight: .infinity)
+        .onTapGesture {
+            focusTextInput = true
+        }
     }
 }

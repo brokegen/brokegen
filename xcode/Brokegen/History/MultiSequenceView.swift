@@ -89,6 +89,7 @@ struct SequenceRow: View {
             Text(longTitle)
                 .font(.title)
                 .padding(.bottom, 8)
+                .lineLimit(1...4)
 
             Spacer()
 
@@ -194,21 +195,14 @@ struct MultiSequenceView: View {
                 .padding(.top, 36)
             ) {
                 ForEach(sectionSequences) { sequence in
-                    Button(action: {
-                        print("[DEBUG] Pushing new ChatSequence view onto stack: \(sequence)")
-                        pathHost.push(sequence)
-                        pathHost.printIt("\(pathHost): ")
-                    }, label: {
+                    NavigationLink(value: sequence) {
                         SequenceRow(sequence)
                             .padding(12)
-                            .lineLimit(4)
-                    })
+                    }
                     .contentShape(Rectangle())
-                    .background(Color(.controlBackgroundColor))
                 }
             }
             .padding(8)
         }
-        .frame(maxWidth: 800)
     }
 }
