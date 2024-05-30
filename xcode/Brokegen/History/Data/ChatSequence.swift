@@ -137,24 +137,26 @@ extension ChatSyncService {
     }
 
     func updateSequences(with updatedSequence: ChatSequence) {
-        // Keep the first ChatSequence's clientId, in case of duplicates
-        var originalClientId: UUID? = nil
-        if let removalIndex = self.loadedSequences.firstIndex(where: {
-            $0.serverId == updatedSequence.serverId
-        }) {
-            originalClientId = loadedSequences[removalIndex].id
-        }
+        self.sequencesWriteLock.withLock {
+            // Keep the first ChatSequence's clientId, in case of duplicates
+            var originalClientId: UUID? = nil
+            if let removalIndex = self._cachedChatSequences.firstIndex(where: {
+                $0.serverId == updatedSequence.serverId
+            }) {
+                originalClientId = loadedSequences[removalIndex].id
+            }
 
-        // Remove all matching ChatSequences
-        self.loadedSequences.removeAll(where: {
-            $0.serverId == updatedSequence.serverId
-        })
+            // Remove all matching ChatSequences
+            self._cachedChatSequences.removeAll(where: {
+                $0.serverId == updatedSequence.serverId
+            })
 
-        if let clientId = originalClientId {
-            self.loadedSequences.insert(updatedSequence.replaceId(clientId), at: 0)
-        }
-        else {
-            self.loadedSequences.insert(updatedSequence, at: 0)
+            if let clientId = originalClientId {
+                self._cachedChatSequences.insert(updatedSequence.replaceId(clientId), at: 0)
+            }
+            else {
+                self._cachedChatSequences.insert(updatedSequence, at: 0)
+            }
         }
     }
 
@@ -162,15 +164,17 @@ extension ChatSyncService {
         Task.init {
             var priorSequenceClientId: UUID? = nil
             if originalSequenceId != nil {
-                if let removalIndex = self.loadedSequences.firstIndex(where: {
-                    $0.serverId == originalSequenceId
-                }) {
-                    priorSequenceClientId = loadedSequences[removalIndex].id
-                }
+                self.sequencesWriteLock.withLock {
+                    if let removalIndex = self._cachedChatSequences.firstIndex(where: {
+                        $0.serverId == originalSequenceId
+                    }) {
+                        priorSequenceClientId = self._cachedChatSequences[removalIndex].id
+                    }
 
-                self.loadedSequences.removeAll(where: {
-                    $0.serverId == originalSequenceId
-                })
+                    self._cachedChatSequences.removeAll(where: {
+                        $0.serverId == originalSequenceId
+                    })
+                }
             }
 
             do {
@@ -180,8 +184,10 @@ extension ChatSyncService {
                         serverId: updatedSequenceId,
                         data: updatedSequenceData)
 
-                    // Insert new ChatSequences in reverse order, newest at the top
-                    self.loadedSequences.insert(updatedSequence, at: 0)
+                    self.sequencesWriteLock.withLock {
+                        // Insert new ChatSequences in reverse order, newest at the top
+                        self._cachedChatSequences.insert(updatedSequence, at: 0)
+                    }
                 }
             }
             catch {

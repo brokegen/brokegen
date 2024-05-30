@@ -179,7 +179,12 @@ class ChatSyncService: Observable, ObservableObject {
         }
     }
 
-    var loadedSequences: [ChatSequence] = []
+    var _cachedChatSequences: [ChatSequence] = []
+    var sequencesWriteLock = NSLock()
+
+    public var loadedSequences: [ChatSequence] {
+        return _cachedChatSequences
+    }
 
     /// Used to check when the @Environment was injected correctly;
     /// NavigationStack's Views aren't children of each other, so they have to be re-injected.
