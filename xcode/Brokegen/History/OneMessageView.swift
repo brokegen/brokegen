@@ -59,7 +59,6 @@ struct OneMessageView: View {
             }
 
             Text(message.content)
-                .monospaced()
                 .lineSpacing(6)
                 .textSelection(.enabled)
         }

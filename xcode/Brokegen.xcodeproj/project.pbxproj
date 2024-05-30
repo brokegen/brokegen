@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CE2988322C09101F00A997A1 /* SequenceViewTwo.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE2988312C09101F00A997A1 /* SequenceViewTwo.swift */; };
 		CE4634DE2BF937320063142E /* JobsSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634DD2BF937320063142E /* JobsSidebar.swift */; };
 		CE4634E02BF963210063142E /* BaseJob.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634DF2BF963210063142E /* BaseJob.swift */; };
 		CE4634E22BF97A180063142E /* JobOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634E12BF97A180063142E /* JobOutputView.swift */; };
@@ -19,6 +20,7 @@
 		CE4634F22BFBB4730063142E /* MultiSequenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634F12BFBB4730063142E /* MultiSequenceView.swift */; };
 		CE4634F42BFBB4900063142E /* ChatSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634F32BFBB4900063142E /* ChatSyncService.swift */; };
 		CE4634F62BFBB4D00063142E /* ChatsSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634F52BFBB4D00063142E /* ChatsSidebar.swift */; };
+		CE67A9E52C091709008BFA1D /* CustomTabView in Frameworks */ = {isa = PBXBuildFile; productRef = CE67A9E42C091709008BFA1D /* CustomTabView */; };
 		CE6D8A7F2BF6DF1800A7934D /* RibbonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */; };
 		CE7FFE142C04435D00DB7CFA /* ProviderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE132C04435D00DB7CFA /* ProviderService.swift */; };
 		CE7FFE162C04482900DB7CFA /* InferenceModelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE152C04482900DB7CFA /* InferenceModelView.swift */; };
@@ -57,6 +59,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		CE2988312C09101F00A997A1 /* SequenceViewTwo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequenceViewTwo.swift; sourceTree = "<group>"; };
 		CE4634DD2BF937320063142E /* JobsSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsSidebar.swift; sourceTree = "<group>"; };
 		CE4634DF2BF963210063142E /* BaseJob.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseJob.swift; sourceTree = "<group>"; };
 		CE4634E12BF97A180063142E /* JobOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobOutputView.swift; sourceTree = "<group>"; };
@@ -99,6 +102,7 @@
 			files = (
 				CEB773232C0160530051F41C /* Alamofire in Frameworks */,
 				CEFEB47E2BFE399500334522 /* SwiftTerm in Frameworks */,
+				CE67A9E52C091709008BFA1D /* CustomTabView in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -132,6 +136,7 @@
 				CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */,
 				CE7FFE172C06772400DB7CFA /* BlankOneSequenceView.swift */,
 				CEAA2B732C07A8E4002BEB26 /* OneSequenceView.swift */,
+				CE2988312C09101F00A997A1 /* SequenceViewTwo.swift */,
 				CE4634F12BFBB4730063142E /* MultiSequenceView.swift */,
 				CE4634F52BFBB4D00063142E /* ChatsSidebar.swift */,
 				CE7FFE152C04482900DB7CFA /* InferenceModelView.swift */,
@@ -252,6 +257,7 @@
 			packageProductDependencies = (
 				CEFEB47D2BFE399500334522 /* SwiftTerm */,
 				CEB773222C0160530051F41C /* Alamofire */,
+				CE67A9E42C091709008BFA1D /* CustomTabView */,
 			);
 			productName = Brokegen;
 			productReference = CE98674D2BF4047C008D6C41 /* Brokegen.app */;
@@ -284,6 +290,7 @@
 			packageReferences = (
 				CEFEB4792BFDAABC00334522 /* XCRemoteSwiftPackageReference "Alamofire" */,
 				CEFEB47C2BFE399500334522 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
+				CE67A9E32C091709008BFA1D /* XCRemoteSwiftPackageReference "SwiftUI-CustomTabView" */,
 			);
 			productRefGroup = CE98674E2BF4047C008D6C41 /* Products */;
 			projectDirPath = "";
@@ -314,6 +321,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CE4634E72BFA6A050063142E /* JobsSidebarItem.swift in Sources */,
+				CE2988322C09101F00A997A1 /* SequenceViewTwo.swift in Sources */,
 				CE6D8A7F2BF6DF1800A7934D /* RibbonView.swift in Sources */,
 				CECA47AA2BF6D62E007A28F2 /* SystemInfoView.swift in Sources */,
 				CEFEB4762BFDA67400334522 /* SimplePing.swift in Sources */,
@@ -561,6 +569,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		CE67A9E32C091709008BFA1D /* XCRemoteSwiftPackageReference "SwiftUI-CustomTabView" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/NicFontana/SwiftUI-CustomTabView";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 		CEFEB4792BFDAABC00334522 /* XCRemoteSwiftPackageReference "Alamofire" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Alamofire/Alamofire.git";
@@ -580,6 +596,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		CE67A9E42C091709008BFA1D /* CustomTabView */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CE67A9E32C091709008BFA1D /* XCRemoteSwiftPackageReference "SwiftUI-CustomTabView" */;
+			productName = CustomTabView;
+		};
 		CEB773222C0160530051F41C /* Alamofire */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = CEFEB4792BFDAABC00334522 /* XCRemoteSwiftPackageReference "Alamofire" */;

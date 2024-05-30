@@ -10,7 +10,7 @@ class JobsManagerService: Observable, ObservableObject {
     init(startPingsImmediately: Bool = false) {
         let importantJobs = [
             // Use prime numbers for these, because we can
-            SimplePing("brokegen-server heartbeat", "http://localhost:6635", timeInterval: 5).launch(),
+            SimplePing("brokegen-server heartbeat", "http://localhost:6635", timeInterval: 23),
             SimplePing("ollama heartbeat", "http://localhost:11434", timeInterval: 13).launch(),
             StayAwakeService(),
         ]
