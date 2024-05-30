@@ -25,8 +25,10 @@ class RawHttpEvent(Base):
     __tablename__ = 'RawHttpEvents'
     __bind_key__ = 'access'
 
-    accessed_at = Column(DateTime, primary_key=True, nullable=False)
-    request_url = Column(String, primary_key=True, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+
+    accessed_at = Column(DateTime, nullable=False)
+    request_url = Column(String, nullable=False)
     request_method = Column(String, nullable=False)
     request_headers = Column(JSON)
     request_cookies = Column(JSON)
