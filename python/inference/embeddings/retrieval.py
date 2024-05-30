@@ -37,7 +37,7 @@ class SkipRetrievalPolicy(RetrievalPolicy):
         return None
 
 
-class DefaultRetrievalPolicy(RetrievalPolicy):
+class SimpleRetrievalPolicy(RetrievalPolicy):
     def __init__(self, knowledge: KnowledgeSingleton):
         self.retriever = knowledge.as_retriever(
             search_type='similarity',
@@ -73,7 +73,7 @@ Question: {latest_message_content}"""
         return big_prompt
 
 
-class CustomRetrievalPolicy(RetrievalPolicy):
+class SummarizingRetrievalPolicy(RetrievalPolicy):
     def __init__(
             self,
             knowledge: KnowledgeSingleton,

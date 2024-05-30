@@ -17,7 +17,7 @@ from history.ollama.forward_routes import forward_request_nodetails, forward_req
 from history.ollama.json import consolidate_stream, OllamaResponseContentJSON, chunk_and_log_output
 from history.ollama.model_routes import do_api_tags, do_api_show_streaming
 from inference.embeddings.knowledge import KnowledgeSingleton, get_knowledge_dependency
-from inference.embeddings.retrieval import SkipRetrievalPolicy, CustomRetrievalPolicy, DefaultRetrievalPolicy
+from inference.embeddings.retrieval import SkipRetrievalPolicy, SummarizingRetrievalPolicy, SimpleRetrievalPolicy
 from inference.prompting.templating import apply_llm_template
 from _util.typing import TemplatedPromptText
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
@@ -187,7 +187,7 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
 
         retrieval_policy = SkipRetrievalPolicy()
         if force_ollama_rag:
-            retrieval_policy = DefaultRetrievalPolicy(knowledge)
+            retrieval_policy = SimpleRetrievalPolicy(knowledge)
 
         return await do_proxy_chat_rag(request, retrieval_policy, history_db, audit_db)
 

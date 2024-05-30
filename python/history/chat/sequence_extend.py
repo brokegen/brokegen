@@ -22,7 +22,7 @@ from history.ollama.chat_rag_routes import finalize_inference_job, do_generate_r
 from history.ollama.json import consolidate_stream_sync
 from inference.embeddings.knowledge import get_knowledge
 from inference.embeddings.retrieval import SkipRetrievalPolicy, RetrievalPolicyID, RetrievalPolicy, \
-    DefaultRetrievalPolicy, CustomRetrievalPolicy
+    SimpleRetrievalPolicy, SummarizingRetrievalPolicy
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, InferenceReason
@@ -261,7 +261,7 @@ async def do_continuation(
     if retrieval_policy == "skip":
         real_retrieval_policy = SkipRetrievalPolicy()
     elif retrieval_policy == "simple":
-        real_retrieval_policy = DefaultRetrievalPolicy(get_knowledge())
+        real_retrieval_policy = SimpleRetrievalPolicy(get_knowledge())
     elif retrieval_policy == "summarizing":
         init_kwargs = {
             "knowledge": get_knowledge(),
@@ -269,7 +269,7 @@ async def do_continuation(
         if retrieval_search_args is not None:
             init_kwargs["search_args_json"] = retrieval_search_args
 
-        real_retrieval_policy = CustomRetrievalPolicy(**init_kwargs)
+        real_retrieval_policy = SummarizingRetrievalPolicy(**init_kwargs)
 
     return await wrap_response(
         await history.ollama.chat_rag_routes.do_proxy_chat_rag(
