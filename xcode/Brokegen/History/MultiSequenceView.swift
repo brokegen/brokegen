@@ -195,11 +195,14 @@ struct MultiSequenceView: View {
                 .padding(.top, 36)
             ) {
                 ForEach(sectionSequences) { sequence in
-                    NavigationLink(value: sequence) {
-                        SequenceRow(sequence)
-                            .padding(12)
-                    }
-                    .contentShape(Rectangle())
+                    SequenceRow(sequence)
+                        .padding(12)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            print("[DEBUG] Pushing new ChatSequence view onto stack: \(sequence)")
+                            pathHost.push(sequence)
+                            pathHost.printIt("\(pathHost): ")
+                        }
                 }
             }
             .padding(8)
