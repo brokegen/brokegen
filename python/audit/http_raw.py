@@ -134,6 +134,9 @@ class HttpxLogger:
         self.event = RawHttpEvent()
 
     async def request_logger(self, request: httpx.Request):
+        # Stay bound to a session
+        self.event = self.audit_db.merge(self.event)
+
         self.event.accessed_at = datetime.now(tz=timezone.utc)
         self.event.request_url = str(request.url)
         self.event.request_method = request.method

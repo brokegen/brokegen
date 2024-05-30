@@ -158,7 +158,9 @@ async def do_continuation(
             user_prompt="Provide a summary of the provided text in a few words, suitable as a short description for a tab." +
                         '\n'.join([m.content for m in messages_list]),
         )
-        machine_desc = machine_desc.strip('"')
+        # Only strip when both leading and trailing, otherwise we're probably just dropping half of a set.
+        if machine_desc[0] == '"' and machine_desc[-1] == '"':
+            machine_desc = machine_desc.strip('"')
         logger.info(f"Auto-generated chat title is {len(machine_desc)} chars: {machine_desc=}")
         response_sequence.human_desc = machine_desc
 

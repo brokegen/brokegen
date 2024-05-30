@@ -222,6 +222,10 @@ async def convert_chat_to_generate(
 
             yield orjson.dumps(chunk1)
 
+            # TODO: Make everything upstream/downstream handle this well, particularly logging
+            if await original_request.is_disconnected() and not chunk1['done']:
+                logger.warning(f"Detected client disconnection! Ignoring.")
+
     # DEBUG: content-length is also still not correct, sometimes?
     # I would guess this only happens for `stream=false` requests, because otherwise how would this make sense?
     converted_response_headers = dict(generate_response.headers)
