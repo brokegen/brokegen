@@ -387,6 +387,7 @@ async def do_proxy_chat_rag(
 
         upstream_response._content_iterable = identity_proxy(upstream_response._content_iterable)
         upstream_response._content_iterable = identity_proxy(upstream_response._content_iterable)
+        upstream_response._content_iterable = identity_proxy(upstream_response._content_iterable)
 
         if not log_output:
             return upstream_response

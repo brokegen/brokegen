@@ -32,7 +32,8 @@ async def forward_request_nolog(
         method=original_request.method,
         url=endpoint_url,
         content=original_request.stream(),
-        headers=original_request.headers,
+        # Purposely ignore the headers, because we don't want to pass the `host` around.
+        headers=None,
         cookies=original_request.cookies,
     )
 
@@ -81,7 +82,7 @@ async def forward_request(
         method=original_request.method,
         url=urlpath_noprefix,
         content=intercept.wrap_req(original_request.stream()),
-        headers=original_request.headers,
+        headers=None,
         cookies=original_request.cookies,
     )
 
