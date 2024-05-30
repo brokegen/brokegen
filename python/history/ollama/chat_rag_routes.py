@@ -250,7 +250,10 @@ def do_capture_chat_messages(
         message_copy = dict(chat_messages[index])
         if safe_get_arrayed(chat_messages, index, 'images'):
             logger.error("Client submitted images for upload, ignoring")
+        if 'images' in message_copy:
             del message_copy['images']
+        if 'created_at' not in message_copy:
+            message_copy['created_at'] = None
 
         message_in = ChatMessage(**message_copy)
         message_in_orm = lookup_chat_message(message_in, history_db)
