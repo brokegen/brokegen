@@ -79,6 +79,8 @@ async def lifespan_logging(app: FastAPI):
 @click.option('--data-dir', default='data/',
               help='Filesystem directory to store/read data from',
               type=click.Path(exists=True, writable=True, file_okay=False))
+@click.option('--bind-host', default="127.0.0.1",
+              help='uvicorn bind host')
 @click.option('--bind-port', default=6635, type=click.IntRange(0, 65535),
               help='uvicorn bind port')
 @click.option('--log-level', default='DEBUG',
@@ -87,10 +89,11 @@ async def lifespan_logging(app: FastAPI):
 @click.option('--enable-colorlog', default=False)
 @click.option('--trace-sqlalchemy', default=False, type=click.BOOL)
 @click.option('--trace-fastapi', default=True, type=click.BOOL)
-@click.option('--force-ollama-rag', default=True, type=click.BOOL,
+@click.option('--force-ollama-rag', default=False, type=click.BOOL,
               help='Load FAISS files from --data-dir, and apply them to any ollama-proxy /api/chat calls')
 def run_proxy(
         data_dir,
+        bind_host,
         bind_port,
         log_level,
         enable_colorlog: bool,
@@ -170,7 +173,14 @@ def run_proxy(
     get_knowledge().load_shards_from(None)
     get_knowledge().queue_data_dir(data_dir)
 
-    config = uvicorn.Config(app, port=bind_port, log_level="debug", reload=False, workers=1)
+    config = uvicorn.Config(
+        app,
+        host=bind_host,
+        port=bind_port,
+        log_level="debug",
+        reload=False,
+        workers=1,
+    )
     server = uvicorn.Server(config)
 
     try:

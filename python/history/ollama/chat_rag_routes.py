@@ -66,8 +66,7 @@ async def do_generate_raw_templated(
     model, executor_record = await lookup_model_offline(request_content['model'], history_db)
 
     if safe_get(request_content, 'options'):
-        raise NotImplementedError(
-            "Haven't implemented handling of override options! Need to construct a new ModelConfig.")
+        logger.warning(f"Ignoring Ollama options! {request_content['options']=}")
 
     inference_job = InferenceEventOrm(
         model_record_id=model.id,
@@ -356,9 +355,9 @@ async def do_proxy_chat_rag(
                     chunk0_json = orjson.loads(chunk0)
                     if len(buffered_text) >= 120:
                         print(buffered_text)
-                        buffered_text = safe_get(chunk0_json, 'message', 'content')
+                        buffered_text = safe_get(chunk0_json, 'message', 'content') or ""
                     else:
-                        buffered_text += safe_get(chunk0_json, 'message', 'content')
+                        buffered_text += safe_get(chunk0_json, 'message', 'content') or ""
 
                 if buffered_text:
                     print(buffered_text)
