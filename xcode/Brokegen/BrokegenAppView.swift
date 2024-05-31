@@ -202,9 +202,8 @@ struct BrokegenAppView: View {
         .environment(pathHost)
         .onAppear {
             // Do on-startup init, because otherwise we store no data and app is empty
-            // DEBUG: Stop doing network calls all the time, esp on previews
-//            chatService.fetchPinnedSequences()
-//            providerService.fetchAvailableModels()
+            chatService.fetchPinnedSequences()
+            providerService.fetchAvailableModels()
         }
     }
 }

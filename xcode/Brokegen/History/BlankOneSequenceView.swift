@@ -51,48 +51,50 @@ struct InlineTextInput: View {
     }
 
     var body: some View {
-        if textInEdit.count <= textFieldMaxChars {
-            TextField("Enter your message", text: $textInEdit, axis: .vertical)
-                .textFieldStyle(.plain)
-                .lineSpacing(240)
+        ZStack {
+            if textInEdit.count <= textFieldMaxChars {
+                TextField("Enter your message", text: $textInEdit, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .lineSpacing(6)
 
                 // Shared styling starts here; duplicated because it's only two entries
                 // and this we don't have to worry about type erasure that comes with ViewModifiers.
-                .monospaced()
-                .lineLimit(4...40)
-                .padding(6)
-                .onHover { isHovered in
-                    self.isHovered = isHovered
-                }
-                .focused(isFocused, equals: true)
-                .disabled(isDisabled)
-                .background(
-                    isDisabled ? Color(.clear) :
-                    (isHovered ? Color(.controlAccentColor) : Color(.controlBackgroundColor))
-                )
-        }
-        else {
-            TextEditor(text: $textInEdit)
-                .scrollDisabled(true)
+                    .monospaced()
+                    .lineLimit(8...40)
+                    .padding(6)
+                    .onHover { isHovered in
+                        self.isHovered = isHovered
+                    }
+                    .focused(isFocused, equals: true)
+                    .background(isHovered ? Color(.selectedControlColor) : Color(.controlBackgroundColor))
+                    .foregroundStyle(isDisabled ? Color(.disabledControlTextColor) : Color(.controlTextColor))
+            }
+            else {
+                TextEditor(text: $textInEdit)
+                    .lineSpacing(6)
 
                 // Shared styling starts here; duplicated because it's only two entries
                 // and this we don't have to worry about type erasure that comes with ViewModifiers.
-                .monospaced()
-                .lineLimit(4...40)
-                .padding(6)
-                .onHover { isHovered in
-                    self.isHovered = isHovered
-                }
-                .focused(isFocused, equals: true)
-                .disabled(isDisabled)
-                .background(
-                    isDisabled ? Color(.clear) :
-                    (isHovered ? Color(.controlAccentColor) : Color(.controlBackgroundColor))
-                )
+                    .monospaced()
+                    .lineLimit(8...40)
+                    .padding(6)
+                    .onHover { isHovered in
+                        self.isHovered = isHovered
+                    }
+                    .focused(isFocused, equals: true)
+                // TODO: Neither of these style correctly
+                    .background(isHovered ? Color(.selectedControlColor) : Color(.controlBackgroundColor))
+                    .foregroundStyle(isDisabled ? Color(.disabledControlTextColor) : Color(.controlTextColor))
+            }
+
+            ProgressView()
+                .frame(maxHeight: .infinity)
+                .opacity(isDisabled ? 1.0 : 0.0)
         }
     }
 
-    func disable(_ isDisabled: Bool) -> Self {
+    // TODO: This doesn't make the ProgressView show
+    func setDisabled(_ isDisabled: Bool) -> Self {
         self.isDisabled = isDisabled
         return self
     }

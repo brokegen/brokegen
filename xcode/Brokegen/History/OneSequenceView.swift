@@ -37,13 +37,6 @@ struct OneSequenceView: View {
                     OneMessageView(viewModel.responseInEdit!)
                         .padding(24)
                         .padding(.top, 16)
-                        .onAppear {
-                            proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
-                        }
-                        .onChange(of: viewModel.responseInEdit!.content) {
-                            // TODO: Replace this with a GeometryReader that merely nudges us, if we're already close to the bottom
-                            proxy.scrollTo(viewModel.responseInEdit, anchor: .bottom)
-                        }
                 }
 
                 if viewModel.submitting || viewModel.responseInEdit != nil || viewModel.displayedStatus != nil {
@@ -73,7 +66,8 @@ struct OneSequenceView: View {
                     let disableControls: Bool = viewModel.submitting || viewModel.responseInEdit != nil
 
                     InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
-                        .disable(disableControls)
+                        .setDisabled(disableControls)
+                        .disabled(disableControls)
                         .onSubmit {
                             viewModel.requestExtend()
                         }
@@ -128,8 +122,15 @@ struct OneSequenceView: View {
                 .frame(maxHeight: 400)
             }
             .defaultScrollAnchor(.bottom)
-            .onChange(of: viewModel.sequence.messages.count) {
+            .onAppear {
                 proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+            }
+            .onChange(of: viewModel.sequence.messages) { old, new in
+                proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+            }
+            .onChange(of: viewModel.responseInEdit?.content) {
+                // TODO: Replace this with a GeometryReader that merely nudges us, if we're already close to the bottom
+                proxy.scrollTo(viewModel.responseInEdit, anchor: .bottom)
             }
         }
     }
