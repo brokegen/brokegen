@@ -230,7 +230,8 @@ async def do_continuation(
         async for chunk in primordial:
             if chunk is None:
                 yield orjson.dumps({
-                    "model": inference_model.human_id,
+                    # Look this up in the JSON object, because the SQLAlchemy objects have long-expired.
+                    "model": constructed_ollama_body["model"],
                     "created_at": datetime.now(tz=timezone.utc),
                     "response": "",
                     "done": False,
