@@ -5,6 +5,8 @@ Ideally, we would use something like `structlog` or `logging.handlers.HTTPHandle
 but this will work for the small scale we have (one user, no automation of LLM requests).
 """
 import logging
+import sys
+import traceback
 from datetime import timezone, datetime
 from typing import AsyncIterable, Sequence, AsyncIterator
 
@@ -137,7 +139,10 @@ class HttpxLogger:
 
     async def request_logger(self, request: httpx.Request):
         # Stay bound to a session
-        self.event = self.audit_db.merge(self.event)
+        if sqlalchemy.inspect(self.event).detached:
+            logger.debug(f"RawHttpEvent seems detached, merging back into audit_db")
+            traceback.print_stack(file=sys.stdout)
+            self.event = self.audit_db.merge(self.event)
 
         self.event.accessed_at = datetime.now(tz=timezone.utc)
         self.event.request_url = str(request.url)
