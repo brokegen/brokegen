@@ -253,12 +253,18 @@ def do_capture_chat_messages(
         if 'images' in message_copy:
             del message_copy['images']
         if 'created_at' not in message_copy:
+            # set to None for the purposes of search + model_dump, since 'del' wouldn't work
             message_copy['created_at'] = None
 
         message_in = ChatMessage(**message_copy)
         message_in_orm = lookup_chat_message(message_in, history_db)
         if message_in_orm is None:
             message_in_orm = ChatMessageOrm(**message_in.model_dump())
+            message_in_orm.created_at = (
+                    safe_get_arrayed(chat_messages, index, 'created_at')
+                    or message_in_orm.created_at
+                    or datetime.now(tz=timezone.utc)
+            )
             history_db.add(message_in_orm)
             history_db.commit()
 
