@@ -1,6 +1,8 @@
 import Combine
 import SwiftUI
 
+let inputBackgroundStyle = Color(.controlBackgroundColor)
+
 struct OneSequenceView: View {
     @ObservedObject var viewModel: ChatSequenceClientModel
 
@@ -35,14 +37,43 @@ struct OneSequenceView: View {
                     OneMessageView(viewModel.responseInEdit!)
                         .padding(24)
                         .padding(.top, 16)
+                        .onAppear {
+                            proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+                        }
+                        .onChange(of: viewModel.responseInEdit!.content) {
+                            // TODO: Replace this with a GeometryReader that merely nudges us, if we're already close to the bottom
+                            proxy.scrollTo(viewModel.responseInEdit, anchor: .bottom)
+                        }
+                }
+
+                if viewModel.submitting || viewModel.responseInEdit != nil || viewModel.displayedStatus != nil {
+                    // TODO: This doesn't seem like the right UI move, but I don't understand colors yet
+                    Divider()
+
+                    HStack {
+                        if viewModel.displayedStatus != nil {
+                            // TODO: Find a way to persist any changes for at least a few seconds
+                            Text(viewModel.displayedStatus ?? "")
+                                .foregroundStyle(Color(.disabledControlTextColor))
+                        }
+
+                        Spacer()
+
+                        if viewModel.submitting || viewModel.responseInEdit != nil {
+                            ProgressView()
+                                .progressViewStyle(.linear)
+                                .frame(maxWidth: 120)
+                        }
+                    }
+                    .padding(.leading, 24)
+                    .padding(.trailing, 24)
                 }
 
                 HStack {
+                    let disableControls: Bool = viewModel.submitting || viewModel.responseInEdit != nil
+
                     InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
-                        .padding(.top, 24)
-                        .padding(.bottom, 24)
-                        .border(.blue)
-                        .disabled(viewModel.submitting || viewModel.responseInEdit != nil)
+                        .disable(disableControls)
                         .onSubmit {
                             viewModel.requestExtend()
                         }
@@ -51,60 +82,55 @@ struct OneSequenceView: View {
                                 self.focusTextInput = true
                             }
                         }
+                        .backgroundStyle(inputBackgroundStyle)
 
                     Group {
-                        let disableControls: Bool = viewModel.submitting || viewModel.responseInEdit != nil
-
-                        Button(action: viewModel.stopSubmitAndReceive) {
-                            let icon: String = {
-                                if viewModel.submitting || viewModel.responseInEdit != nil {
-                                    return "stop.fill"
-                                }
-                                else {
-                                    return "stop"
-                                }
-                            }()
-                            Image(systemName: icon)
-                                .resizable()
-                                .frame(width: 32, height: 32)
+                        Button(action: {
+                            viewModel.stopSubmitAndReceive(userRequested: true)
+                        }) {
+                            Image(systemName: viewModel.responseInEdit != nil ? "stop.fill" : "stop")
+                                .font(.system(size: 32))
                                 .disabled(!disableControls)
                                 .foregroundStyle(!disableControls ? Color(.disabledControlTextColor) : Color(.controlTextColor))
                         }
                         .buttonStyle(.plain)
                         .help("Stop submitting or receiving")
+                        .padding(.leading, 12)
 
                         Button(action: viewModel.requestExtendWithRetrieval) {
-                            Image(systemName: viewModel.submitting ? "arrowshape.up.fill" : "arrowshape.up")
-                                .resizable()
-                                .frame(width: 32, height: 32)
+                            Image(systemName: "arrow.up.doc")
+                                .font(.system(size: 32))
                                 .disabled(disableControls)
                                 .foregroundStyle(disableControls ? Color(.disabledControlTextColor) : Color(.controlTextColor))
                         }
                         .buttonStyle(.plain)
                         .help("Submit with Retrieval-Augmented Generation")
 
-                        Button(action: viewModel.requestExtend) {
+                        Button(action: {
+                            if viewModel.promptInEdit.isEmpty {
+                                _ = viewModel.requestContinue()
+                            }
+                            else {
+                                viewModel.requestExtend()
+                            }
+                        }) {
                             Image(systemName: viewModel.submitting ? "arrow.up.circle.fill" : "arrow.up.circle")
-                                .resizable()
-                                .frame(width: 32, height: 32)
+                                .font(.system(size: 32))
                                 .disabled(disableControls)
                                 .foregroundStyle(disableControls ? Color(.disabledControlTextColor) : Color(.controlTextColor))
                         }
                         .buttonStyle(.plain)
                         .help("Submit")
                     }
-                    .padding(.top, 16)
-                    .padding(.bottom, 12)
-                    .padding(.leading, 12)
-                    .padding(.trailing, -12)
+                    .padding(.trailing, 12)
                 }
-                .padding(.leading, 24)
-                .padding(.trailing, 24)
-                .onChange(of: viewModel.sequence.messages.count) {
-                    proxy.scrollTo(viewModel.sequence.messages.last)
-                }
+                .background(inputBackgroundStyle)
+                .frame(maxHeight: 400)
             }
             .defaultScrollAnchor(.bottom)
+            .onChange(of: viewModel.sequence.messages.count) {
+                proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+            }
         }
     }
 }

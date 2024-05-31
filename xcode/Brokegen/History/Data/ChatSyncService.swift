@@ -263,6 +263,8 @@ extension ChatSyncService {
     }
 
     func constructUserMessage(_ userPrompt: String) async -> ChatMessageServerID? {
+        guard !userPrompt.isEmpty else { return nil }
+
         let userMessage = Message(
             role: "user",
             content: userPrompt,

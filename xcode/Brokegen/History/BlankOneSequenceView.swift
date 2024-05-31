@@ -35,6 +35,7 @@ struct InlineTextInput: View {
     @Binding var textInEdit: String
     var isFocused: FocusState<Bool>.Binding
     @State var isHovered: Bool = false
+    @State public var isDisabled: Bool = false
 
     /// Crossover length where we swap implementations to a TextEditor
     let textFieldMaxChars: Int
@@ -59,14 +60,16 @@ struct InlineTextInput: View {
                 // and this we don't have to worry about type erasure that comes with ViewModifiers.
                 .monospaced()
                 .lineLimit(4...40)
-                .background(
-                    isHovered ? Color(.controlColor) : Color(.controlBackgroundColor)
-                )
+                .padding(6)
                 .onHover { isHovered in
                     self.isHovered = isHovered
                 }
-                .padding(6)
                 .focused(isFocused, equals: true)
+                .disabled(isDisabled)
+                .background(
+                    isDisabled ? Color(.clear) :
+                    (isHovered ? Color(.controlAccentColor) : Color(.controlBackgroundColor))
+                )
         }
         else {
             TextEditor(text: $textInEdit)
@@ -76,15 +79,22 @@ struct InlineTextInput: View {
                 // and this we don't have to worry about type erasure that comes with ViewModifiers.
                 .monospaced()
                 .lineLimit(4...40)
-                .background(
-                    isHovered ? Color(.controlColor) : Color(.controlBackgroundColor)
-                )
+                .padding(6)
                 .onHover { isHovered in
                     self.isHovered = isHovered
                 }
-                .padding(6)
                 .focused(isFocused, equals: true)
+                .disabled(isDisabled)
+                .background(
+                    isDisabled ? Color(.clear) :
+                    (isHovered ? Color(.controlAccentColor) : Color(.controlBackgroundColor))
+                )
         }
+    }
+
+    func disable(_ isDisabled: Bool) -> Self {
+        self.isDisabled = isDisabled
+        return self
     }
 }
 
@@ -152,7 +162,10 @@ struct BlankOneSequenceView: View {
             submitting = true
 
             let messageId: ChatMessageServerID? = await chatService.constructUserMessage(promptInEdit)
-            guard messageId != nil else { return }
+            guard messageId != nil else {
+                submitting = false
+                return
+            }
 
             let sequenceId: ChatSequenceServerID? =
                 await constructUserSequence(id: messageId!)

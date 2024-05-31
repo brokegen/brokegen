@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 class ContinueRequest(BaseModel):
-    continuation_model_id: InferenceModelRecordID
+    continuation_model_id: Optional[InferenceModelRecordID] = None
     retrieval_policy: Optional[RetrievalPolicyID] = None
     retrieval_search_args: Optional[str] = None
 

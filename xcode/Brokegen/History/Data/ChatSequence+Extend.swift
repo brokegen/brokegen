@@ -12,12 +12,21 @@ struct ChatSequenceParameters: Codable, Hashable {
     var retrievalSearchArgs: String? = nil
 }
 
+struct AFErrorAndData: Error {
+    let error: AFError
+    let data: Data?
+
+    public var localizedDescription: String {
+        get { return error.localizedDescription }
+    }
+}
+
 /// Finally, something to submit new chat requests
 extension ChatSyncService {
     public func sequenceContinue(
         _ params: ChatSequenceParameters
-    ) async -> AnyPublisher<Data, AFError> {
-        let subject = PassthroughSubject<Data, AFError>()
+    ) async -> AnyPublisher<Data, AFErrorAndData> {
+        let subject = PassthroughSubject<Data, AFErrorAndData>()
 
         let encoder = JSONEncoder()
         encoder.keyEncodingStrategy = .convertToSnakeCase
@@ -31,37 +40,53 @@ extension ChatSyncService {
             try container.encode(dateFormatter.string(from: date))
         }
 
+        var encodedParams: Data? = nil
         do {
-            print("[DEBUG] POST /sequences/\(params.sequenceId)/continue <= \(String(data: try encoder.encode(params), encoding: .utf8)!)")
-
-            _ = session.streamRequest(
-                serverBaseURL + "/sequences/\(params.sequenceId)/continue"
-            ) { urlRequest in
-                urlRequest.method = .post
-                urlRequest.headers = [
-                    "Content-Type": "application/json"
-                ]
-                urlRequest.httpBody = try encoder.encode(params)
-            }
-            .responseStream { stream in
-                switch stream.event {
-                case let .stream(result):
-                    switch result {
-                    case let .success(data):
-                        subject.send(data)
-                    }
-                case let .complete(completion):
-                    if completion.error == nil {
-                        subject.send(completion: .finished)
-                    }
-                    else {
-                        subject.send(completion: .failure(completion.error!))
-                    }
-                }
-            }
+            encodedParams = try encoder.encode(params)
         }
         catch {
             print("[ERROR] /sequences/\(params.sequenceId)/continue failed, probably encoding error: \(String(describing: params))")
+            return subject.eraseToAnyPublisher()
+        }
+
+        print("[DEBUG] POST /sequences/\(params.sequenceId)/continue <= \(String(data: encodedParams!, encoding: .utf8)!)")
+        var responseStatusCode: Int? = nil
+
+        _ = session.streamRequest(
+            serverBaseURL + "/sequences/\(params.sequenceId)/continue"
+        ) { urlRequest in
+            urlRequest.method = .post
+            urlRequest.headers = [
+                "Content-Type": "application/json"
+            ]
+            urlRequest.httpBody = encodedParams!
+        }
+        .onHTTPResponse { response in
+            // Status code comes early on, but we need to wait for a .response handler to get body data.
+            // Store the status code until the later handler can deal with it.
+            responseStatusCode = response.statusCode
+        }
+        .responseStream { stream in
+            switch stream.event {
+            case let .stream(result):
+                switch result {
+                case let .success(data):
+                    if responseStatusCode != nil && !(200..<400).contains(responseStatusCode!) {
+                        let error = AFError.responseValidationFailed(reason: .unacceptableStatusCode(code: responseStatusCode!))
+                        subject.send(completion: .failure(AFErrorAndData(error: error, data: data)))
+                    }
+                    else {
+                        subject.send(data)
+                    }
+                }
+            case let .complete(completion):
+                if completion.error == nil {
+                    subject.send(completion: .finished)
+                }
+                else {
+                    subject.send(completion: .failure(AFErrorAndData(error: completion.error!, data: nil)))
+                }
+            }
         }
 
         return subject.eraseToAnyPublisher()
@@ -69,43 +94,68 @@ extension ChatSyncService {
 
     public func sequenceExtend(
         _ params: ChatSequenceParameters
-    ) async -> AnyPublisher<Data, AFError> {
-        let subject = PassthroughSubject<Data, AFError>()
+    ) async -> AnyPublisher<Data, AFErrorAndData> {
+        let subject = PassthroughSubject<Data, AFErrorAndData>()
 
         let encoder = JSONEncoder()
         encoder.keyEncodingStrategy = .convertToSnakeCase
 
-        do {
-            print("[DEBUG] POST /sequences/\(params.sequenceId)/extend <= \(String(data: try encoder.encode(params), encoding: .utf8)!)")
+        /// TODO: Confirm that ChatMessages get uploaded with a non-1993 date!
+        encoder.dateEncodingStrategy = .custom { date, encoder in
+            let dateFormatter = ISO8601DateFormatter()
+            dateFormatter.formatOptions.insert(.withFractionalSeconds)
 
-            _ = session.streamRequest(
-                serverBaseURL + "/sequences/\(params.sequenceId)/extend"
-            ) { urlRequest in
-                urlRequest.method = .post
-                urlRequest.headers = [
-                    "Content-Type": "application/json"
-                ]
-                urlRequest.httpBody = try encoder.encode(params)
-            }
-            .responseStream { stream in
-                switch stream.event {
-                case let .stream(result):
-                    switch result {
-                    case let .success(data):
-                        subject.send(data)
-                    }
-                case let .complete(completion):
-                    if completion.error == nil {
-                        subject.send(completion: .finished)
-                    }
-                    else {
-                        subject.send(completion: .failure(completion.error!))
-                    }
-                }
-            }
+            var container = encoder.singleValueContainer()
+            try container.encode(dateFormatter.string(from: date))
+        }
+
+        var encodedParams: Data? = nil
+        do {
+            encodedParams = try encoder.encode(params)
         }
         catch {
             print("[ERROR] /sequences/\(params.sequenceId)/extend failed, probably encoding error: \(String(describing: params))")
+            return subject.eraseToAnyPublisher()
+        }
+
+        print("[DEBUG] POST /sequences/\(params.sequenceId)/extend <= \(String(data: encodedParams!, encoding: .utf8)!)")
+        var responseStatusCode: Int? = nil
+
+        _ = session.streamRequest(
+            serverBaseURL + "/sequences/\(params.sequenceId)/extend"
+        ) { urlRequest in
+            urlRequest.method = .post
+            urlRequest.headers = [
+                "Content-Type": "application/json"
+            ]
+            urlRequest.httpBody = encodedParams!
+        }
+        .onHTTPResponse { response in
+            // Status code comes early on, but we need to wait for a .response handler to get body data.
+            // Store the status code until the later handler can deal with it.
+            responseStatusCode = response.statusCode
+        }
+        .responseStream { stream in
+            switch stream.event {
+            case let .stream(result):
+                switch result {
+                case let .success(data):
+                    if responseStatusCode != nil && !(200..<400).contains(responseStatusCode!) {
+                        let error = AFError.responseValidationFailed(reason: .unacceptableStatusCode(code: responseStatusCode!))
+                        subject.send(completion: .failure(AFErrorAndData(error: error, data: data)))
+                    }
+                    else {
+                        subject.send(data)
+                    }
+                }
+            case let .complete(completion):
+                if completion.error == nil {
+                    subject.send(completion: .finished)
+                }
+                else {
+                    subject.send(completion: .failure(AFErrorAndData(error: completion.error!, data: nil)))
+                }
+            }
         }
 
         return subject.eraseToAnyPublisher()
@@ -125,6 +175,8 @@ class ChatSequenceClientModel: Observable, ObservableObject {
     var responseInEdit: Message? = nil
     var receivingStreamer: AnyCancellable? = nil
 
+    var displayedStatus: String? = nil
+
     init(_ sequence: ChatSequence, chatService: ChatSyncService) {
         self.sequence = sequence
         self.chatService = chatService
@@ -141,6 +193,7 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                 return
             }
             submitting = true
+            displayedStatus = "/sequences/\(sequence.serverId!)/continue: submitting request"
 
             receivingStreamer = await chatService.sequenceContinue(
                 ChatSequenceParameters(
@@ -159,16 +212,22 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                             responseInEdit = nil
                         }
                         stopSubmitAndReceive()
-                    case .failure(let error):
+                    case .failure(let errorAndData):
+                        responseInEdit = nil
+                        stopSubmitAndReceive()
+
+                        let errorDesc: String = (
+                            String(data: errorAndData.data ?? Data(), encoding: .utf8)
+                            ?? errorAndData.localizedDescription
+                        )
+                        displayedStatus = "[\(Date.now)] /sequences/\(sequence.serverId!)/extend failure: " + errorDesc
+
                         let errorMessage = Message(
-                            role: "[ERROR] ChatSyncService.sequenceContinue: \(error.localizedDescription)",
-                            content: responseInEdit?.content ?? "",
+                            role: "[ERROR] ChatSyncService.sequenceContinue: \(errorAndData.localizedDescription)",
+                            content: responseInEdit?.content ?? errorDesc,
                             createdAt: Date.now
                         )
                         sequence.messages.append(errorMessage)
-                        responseInEdit = nil
-
-                        stopSubmitAndReceive()
                     }
                 }, receiveValue: { [self] data in
                     // On first data received, end "submitting" phase
@@ -183,6 +242,7 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                         )
                     }
 
+                    displayedStatus = "/sequences/\(sequence.serverId!)/continue response: (\(responseInEdit!.content.count) characters so far)"
                     do {
                         let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
                         if let message = jsonDict["message"] as? [String : Any] {
@@ -209,11 +269,13 @@ class ChatSequenceClientModel: Observable, ObservableObject {
 
     func requestExtend() {
         Task.init {
+            guard !self.promptInEdit.isEmpty else { return }
             guard submitting == false else {
                 print("[ERROR] ChatSequenceClientModel.requestExtend during another submission")
                 return
             }
             submitting = true
+            displayedStatus = "/sequences/\(sequence.serverId!)/extend: submitting request"
 
             let nextMessage = Message(
                 role: "user",
@@ -239,15 +301,10 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                         }
                         stopSubmitAndReceive()
                     case .failure(let error):
-                        let errorMessage = Message(
-                            role: "[ERROR] ChatSyncService.sequenceExtend: \(error.localizedDescription)",
-                            content: responseInEdit?.content ?? "",
-                            createdAt: Date.now
-                        )
-                        sequence.messages.append(errorMessage)
                         responseInEdit = nil
-
                         stopSubmitAndReceive()
+
+                        displayedStatus = "[\(Date.now)] /sequences/\(sequence.serverId!)/extend failure: " + error.localizedDescription
                     }
                 }, receiveValue: { [self] data in
                     // On first data received, end "submitting" phase
@@ -264,6 +321,7 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                         )
                     }
 
+                    displayedStatus = "/sequences/\(sequence.serverId!)/extend response: (\(responseInEdit!.content.count) characters so far)"
                     do {
                         let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
                         if let message = jsonDict["message"] as? [String : Any] {
@@ -288,11 +346,13 @@ class ChatSequenceClientModel: Observable, ObservableObject {
 
     func requestExtendWithRetrieval() {
         Task.init {
+            guard !self.promptInEdit.isEmpty else { return }
             guard submitting == false else {
-                print("[ERROR] ChatSequenceClientModel.sequenceExtend during another submission")
+                print("[ERROR] ChatSequenceClientModel.requestExtendWithRetrieval during another submission")
                 return
             }
             submitting = true
+            displayedStatus = "/sequences/\(sequence.serverId!)/extend: submitting request"
 
             let nextMessage = Message(
                 role: "user",
@@ -322,15 +382,10 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                         }
                         stopSubmitAndReceive()
                     case .failure(let error):
-                        let errorMessage = Message(
-                            role: "[ERROR] ChatSyncService.sequenceExtend: \(error.localizedDescription)",
-                            content: responseInEdit?.content ?? "",
-                            createdAt: Date.now
-                        )
-                        sequence.messages.append(errorMessage)
                         responseInEdit = nil
-
                         stopSubmitAndReceive()
+
+                        displayedStatus = "[\(Date.now)] /sequences/\(sequence.serverId!)/extend failure: " + error.localizedDescription
                     }
                 }, receiveValue: { [self] data in
                     // On first data received, end "submitting" phase
@@ -347,6 +402,7 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                         )
                     }
 
+                    displayedStatus = "/sequences/\(sequence.serverId!)/extend response: (\(responseInEdit!.content.count) characters so far)"
                     do {
                         let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
                         if let message = jsonDict["message"] as? [String : Any] {
@@ -369,11 +425,21 @@ class ChatSequenceClientModel: Observable, ObservableObject {
         }
     }
 
-    func stopSubmitAndReceive() {
+    func stopSubmitAndReceive(userRequested: Bool = false) {
         receivingStreamer?.cancel()
         receivingStreamer = nil
 
         submitting = false
+        displayedStatus = nil
+
+        if responseInEdit != nil {
+            sequence.messages.append(responseInEdit!)
+            responseInEdit = nil
+
+            if userRequested {
+                displayedStatus = "[WARNING] Requested stop of receive, but TODO: Ollama/server don't actually stop inference"
+            }
+        }
     }
 
     func replaceSequence(_ newSequenceId: ChatSequenceServerID) {
