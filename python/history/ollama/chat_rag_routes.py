@@ -1,7 +1,8 @@
+import asyncio
 import logging
 from collections.abc import AsyncIterable
 from datetime import datetime, timezone
-from typing import TypeAlias, Callable, Awaitable, Any, AsyncIterator
+from typing import TypeAlias, Callable, Awaitable, Any, AsyncIterator, TypeVar
 
 import httpx
 import orjson
@@ -300,12 +301,74 @@ def do_capture_chat_messages(
         continue
 
 
+async def complex_nothing_chain(inference_model_human_id):
+    async def fake_timeout() -> AsyncIterator[str]:
+        await asyncio.sleep(90)
+        yield orjson.dumps({
+            "model": inference_model_human_id,
+            "created_at": datetime.now(tz=timezone.utc),
+            "message": {
+                "content": f"\nInference timeout: {inference_model_human_id}",
+                "role": "assistant",
+            },
+            "done": True,
+        })
+
+    T = TypeVar('T')
+
+    async def emit_keepalive_chunks(
+            primordial: AsyncIterator[str],
+            timeout: float | None,
+            sentinel: T,
+    ) -> AsyncIterator[T]:
+        start_time = datetime.now(tz=timezone.utc)
+
+        try:
+            maybe_next = asyncio.ensure_future(primordial.__anext__())
+            while True:
+                try:
+                    yield await asyncio.wait_for(asyncio.shield(maybe_next), timeout)
+                    maybe_next = asyncio.ensure_future(primordial.__anext__())
+                except asyncio.TimeoutError:
+                    current_time = datetime.now(tz=timezone.utc)
+                    logger.debug(
+                        f"emit_keepalive_chunks(): emitting sentinel type after {current_time - start_time}")
+                    yield sentinel
+
+        except StopAsyncIteration:
+            pass
+
+        finally:
+            maybe_next.cancel()
+
+    # Final chunk for what we're returning
+    async for chunk in emit_keepalive_chunks(fake_timeout(), 1.0, None):
+        if chunk is None:
+            yield orjson.dumps({
+                "model": inference_model_human_id,
+                "created_at": datetime.now(tz=timezone.utc),
+                "message": {
+                    # On testing, we don't even need this field, so empty string is fine
+                    "content": ".",
+                    "role": "assistant",
+                },
+                # Add random fields, since clients seem robust
+                "response": ".",
+                "status": "Waiting for Ollama response",
+                "done": False,
+            })
+            continue
+
+        yield chunk
+
+
 async def do_proxy_chat_rag(
         original_request: starlette.requests.Request,
         retrieval_policy: RetrievalPolicy,
         history_db: HistoryDB,
         audit_db: AuditDB,
         capture_chat_messages: bool = True,
+        do_complex_nothing: bool = True,
 ) -> JSONStreamingResponse:
     request_content_bytes: bytes = await original_request.body()
     request_content_json: OllamaRequestContentJSON = orjson.loads(request_content_bytes)
@@ -317,8 +380,15 @@ async def do_proxy_chat_rag(
         raise RuntimeError("No 'messages' provided in call to /api/chat")
 
     # Assume that these are messages from a third-party client, and try to feed them into the history database.
-    if capture_chat_messages:
+    if capture_chat_messages and not do_complex_nothing:
         do_capture_chat_messages(chat_messages, history_db)
+
+    # DEBUG: Risk it all and just return a constant stream of "ok maybe soon"
+    if do_complex_nothing:
+        return JSONStreamingResponse(
+            content=complex_nothing_chain(safe_get(request_content_json, 'model')),
+            status_code=200,
+        )
 
     async def generate_helper_fn(
             inference_reason: InferenceReason,
