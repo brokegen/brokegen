@@ -12,7 +12,7 @@ from sqlalchemy import select
 from starlette.exceptions import HTTPException
 
 from _util.json import JSONStreamingResponse, safe_get, JSONArray, safe_get_arrayed
-from _util.typing import PromptText, TemplatedPromptText
+from _util.typing import PromptText, TemplatedPromptText, InferenceModelHumanID
 from audit.http import AuditDB
 from audit.http_raw import HttpxLogger
 from history.chat.database import lookup_chat_message, ChatMessage, ChatMessageOrm, ChatSequence
@@ -301,14 +301,31 @@ def do_capture_chat_messages(
         continue
 
 
-async def complex_nothing_chain(inference_model_human_id):
-    async def fake_timeout() -> AsyncIterator[str]:
-        await asyncio.sleep(90)
+async def complex_nothing_chain(
+        inference_model_human_id: InferenceModelHumanID,
+        is_disconnected: Callable[[], Awaitable[bool]],
+):
+    async def fake_timeout(
+            bigsleep_sec: float = 30.1,
+            bigsleep_times: int = 3,
+    ) -> AsyncIterator[str]:
+        for _ in range(bigsleep_times):
+            await asyncio.sleep(bigsleep_sec)
+            yield orjson.dumps({
+                "model": inference_model_human_id,
+                "created_at": datetime.now(tz=timezone.utc),
+                "message": {
+                    "content": f"!",
+                    "role": "assistant",
+                },
+                "done": False,
+            })
+
         yield orjson.dumps({
             "model": inference_model_human_id,
             "created_at": datetime.now(tz=timezone.utc),
             "message": {
-                "content": f"\nInference timeout: {inference_model_human_id}",
+                "content": f"\nInference timeout after {bigsleep_sec} seconds: {inference_model_human_id}",
                 "role": "assistant",
             },
             "done": True,
@@ -322,6 +339,7 @@ async def complex_nothing_chain(inference_model_human_id):
             sentinel: T,
     ) -> AsyncIterator[T]:
         start_time = datetime.now(tz=timezone.utc)
+        maybe_next: asyncio.Future[str] | None = None
 
         try:
             maybe_next = asyncio.ensure_future(primordial.__anext__())
@@ -339,23 +357,27 @@ async def complex_nothing_chain(inference_model_human_id):
             pass
 
         finally:
-            maybe_next.cancel()
+            if maybe_next is not None:
+                maybe_next.cancel()
 
     # Final chunk for what we're returning
-    async for chunk in emit_keepalive_chunks(fake_timeout(), 1.0, None):
+    async for chunk in emit_keepalive_chunks(fake_timeout(), 0.5, None):
+        if await is_disconnected():
+            logger.debug(f"Somehow detected a client disconnect! (Expected client to just stop iteration)")
+
         if chunk is None:
             yield orjson.dumps({
                 "model": inference_model_human_id,
                 "created_at": datetime.now(tz=timezone.utc),
                 "message": {
                     # On testing, we don't even need this field, so empty string is fine
-                    "content": ".",
+                    "content": "",
                     "role": "assistant",
                 },
-                # Add random fields, since clients seem robust
-                "response": ".",
-                "status": "Waiting for Ollama response",
                 "done": False,
+                # Add random fields, since clients seem robust
+                "response": "",
+                "status": "Waiting for Ollama response",
             })
             continue
 
@@ -368,7 +390,7 @@ async def do_proxy_chat_rag(
         history_db: HistoryDB,
         audit_db: AuditDB,
         capture_chat_messages: bool = True,
-        do_complex_nothing: bool = True,
+        do_complex_nothing: bool = False,
 ) -> JSONStreamingResponse:
     request_content_bytes: bytes = await original_request.body()
     request_content_json: OllamaRequestContentJSON = orjson.loads(request_content_bytes)
@@ -386,7 +408,10 @@ async def do_proxy_chat_rag(
     # DEBUG: Risk it all and just return a constant stream of "ok maybe soon"
     if do_complex_nothing:
         return JSONStreamingResponse(
-            content=complex_nothing_chain(safe_get(request_content_json, 'model')),
+            content=complex_nothing_chain(
+                safe_get(request_content_json, 'model'),
+                original_request.is_disconnected,
+            ),
             status_code=200,
         )
 
