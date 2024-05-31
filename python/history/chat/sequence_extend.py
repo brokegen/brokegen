@@ -1,6 +1,7 @@
+import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, AsyncIterator, TypeVar
 
 import fastapi.routing
 import orjson
@@ -227,6 +228,15 @@ async def do_continuation(
 
         done_signaled: int = 0
         async for chunk in primordial:
+            if chunk is None:
+                yield orjson.dumps({
+                    "model": inference_model.human_id,
+                    "created_at": datetime.now(tz=timezone.utc),
+                    "response": "",
+                    "done": False,
+                })
+                continue
+
             try:
                 chunk_json = orjson.loads(chunk)
                 if chunk_json["done"]:
@@ -254,6 +264,34 @@ async def do_continuation(
     async def wrap_response(
             upstream_response: JSONStreamingResponse,
     ) -> JSONStreamingResponse:
+        T = TypeVar('T')
+
+        async def emit_keepalive_chunks(
+                primordial: AsyncIterator[str],
+                timeout: float | None,
+                sentinel: T,
+        ) -> AsyncIterator[T]:
+            start_time = datetime.now(tz=timezone.utc)
+
+            try:
+                maybe_next = asyncio.ensure_future(primordial.__anext__())
+                while True:
+                    try:
+                        yield await asyncio.wait_for(asyncio.shield(maybe_next), timeout)
+                        maybe_next = asyncio.ensure_future(primordial.__anext__())
+                    except asyncio.TimeoutError:
+                        current_time = datetime.now(tz=timezone.utc)
+                        logger.debug(
+                            f"emit_keepalive_chunks(): emitting sentinel type after {current_time - start_time}")
+                        yield sentinel
+
+            except StopAsyncIteration:
+                pass
+
+            finally:
+                maybe_next.cancel()
+
+        upstream_response._content_iterable = emit_keepalive_chunks(upstream_response._content_iterable, 2.0, None)
         upstream_response._content_iterable = add_json_suffix(upstream_response._content_iterable)
         return upstream_response
 
