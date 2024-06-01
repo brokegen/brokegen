@@ -155,9 +155,10 @@ async def do_continuation(
             inference_reason="ChatSequence.human_desc",
             # NB This only works as a system message on models that respect that.
             #    So, append it to both.
-            system_message="Provide a summary of the provided text in a few words, suitable as a short description for a tab.",
-            user_prompt="Provide a summary of the provided text in a few words, suitable as a short description for a tab." +
+            system_message="You are a concise summarizer, seizing on easily identifiable + distinguishing factors of the text.",
+            user_prompt="Provide a summary of the provided text in a few words, suitable as a short description for a tab title." +
                         '\n'.join([m.content for m in messages_list]),
+            assistant_response="Tab title: "
         )
         # Only strip when both leading and trailing, otherwise we're probably just dropping half of a set.
         if machine_desc[0] == '"' and machine_desc[-1] == '"':
