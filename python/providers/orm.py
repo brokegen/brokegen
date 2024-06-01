@@ -20,6 +20,9 @@ class ProviderLabel(BaseModel):
         frozen=True,
     )
 
+    def __str__(self):
+        return f"<ProviderLabel type={repr(self.type)} id={repr(self.id)}>"
+
 
 class ProviderRecord(BaseModel):
     identifiers: str

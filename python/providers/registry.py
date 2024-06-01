@@ -63,11 +63,14 @@ class ProviderRegistry(_Borg):
 
     async def make(self, label: ProviderLabel) -> BaseProvider | None:
         for try_make_fn in self._factories:
-            result = await try_make_fn(label)
-            if result is not None:
-                logger.info(f"ProviderRegistry.make succeeded: {label}")
-                self.by_label[label] = result
-                self.by_record[await result.make_record()] = result
-                return result
+            try:
+                result = await try_make_fn(label)
+                if result is not None:
+                    logger.info(f"ProviderRegistry.make succeeded: {label}")
+                    self.by_label[label] = result
+                    self.by_record[await result.make_record()] = result
+                    return result
+            except Exception as e:
+                logger.error(f"Could not load {label}: {e}")
 
         return None
