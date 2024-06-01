@@ -66,9 +66,7 @@ struct OneSequenceView: View {
                     let disableControls: Bool = viewModel.submitting || viewModel.responseInEdit != nil
 
                     InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
-                        .setDisabled(disableControls)
                         .focused($focusTextInput)
-                        .disabled(disableControls)
                         .onAppear {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                 self.focusTextInput = true

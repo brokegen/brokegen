@@ -34,7 +34,6 @@ struct InlineTextInput: View {
     @Binding var textInEdit: String
     var isFocused: FocusState<Bool>.Binding
     @State var isHovered: Bool = false
-    @State public var isDisabled: Bool = false
 
     /// Crossover length where we swap implementations to a TextEditor
     let textFieldMaxChars: Int
@@ -66,7 +65,6 @@ struct InlineTextInput: View {
                     }
                     .focused(isFocused, equals: true)
                     .background(isHovered ? Color(.selectedControlColor) : Color(.controlBackgroundColor))
-                    .foregroundStyle(isDisabled ? Color(.disabledControlTextColor) : Color(.controlTextColor))
             }
             else {
                 // TODO: TextEditor eats the Enter key when submitting.
@@ -82,22 +80,9 @@ struct InlineTextInput: View {
                         self.isHovered = isHovered
                     }
                     .focused(isFocused, equals: true)
-                // TODO: Neither of these style correctly
                     .background(isHovered ? Color(.selectedControlColor) : Color(.controlBackgroundColor))
-                    .foregroundStyle(isDisabled ? Color(.disabledControlTextColor) : Color(.controlTextColor))
-            }
-
-            // TODO: Make this show up sometimes
-            if false && !isDisabled {
-                ProgressView()
             }
         }
-    }
-
-    // TODO: This doesn't make the ProgressView show
-    func setDisabled(_ isDisabled: Bool) -> Self {
-        self.isDisabled = isDisabled
-        return self
     }
 }
 
@@ -269,12 +254,7 @@ struct BlankOneSequenceView: View {
 
             HStack {
                 InlineTextInput($promptInEdit, isFocused: $focusTextInput)
-                    .setDisabled(submitting)
                     .focused($focusTextInput)
-                    .disabled(submitting)
-                    .onSubmit {
-                        submit()
-                    }
                     .onAppear {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             self.focusTextInput = true
