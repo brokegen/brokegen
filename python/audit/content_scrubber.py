@@ -16,7 +16,7 @@ async def scrub_json(
         remove_images: bool = False,
 ):
     if remove_images:
-        for message in safe_get(content_json, "messages"):
+        for message in safe_get(content_json, "messages") or []:
             if "images" in message and message["images"]:
                 message["images"] = _summarize(message["images"])
 
