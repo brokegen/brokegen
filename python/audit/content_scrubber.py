@@ -1,3 +1,4 @@
+import base64
 from typing import Callable, Any
 
 import orjson
@@ -6,8 +7,12 @@ from _util.json import safe_get
 
 
 def _summarize(images_array: list[str]) -> str:
-    image_sizes = map(len, images_array)
-    return f"{len(images_array)} images scrubbed, image base64-encoded sizes: {list(image_sizes)}"
+    def decoded_size(encoded_image: str) -> str:
+        bytes = base64.b64decode(encoded_image)
+        return f"{len(bytes):_}"
+
+    image_sizes = map(decoded_size, images_array)
+    return f"{len(images_array)} image(s) scrubbed, image sizes: {list(image_sizes)}"
 
 
 async def scrub_json(
