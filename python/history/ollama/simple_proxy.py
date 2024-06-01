@@ -110,13 +110,14 @@ app: FastAPI = FastAPI(
 
 
 @click.command()
-@click.option(
-    '--data-dir',
-    default='data',
-    show_default=True,
-    help='Filesystem directory to store/read data from',
-    type=click.Path(exists=True, writable=True, file_okay=False),
-)
+@click.option('--data-dir', default='data/', show_default=True,
+              help='Filesystem directory to store/read data from',
+              type=click.Path(exists=True, writable=True, file_okay=False))
+@click.option('--bind-host', default="127.0.0.1", show_default=True,
+              help='uvicorn bind host')
+@click.option('--bind-port', default=6633, show_default=True,
+              help='uvicorn bind port',
+              type=click.IntRange(0, 65535))
 @click.option(
     '--install-timing-middleware',
     default=False,
@@ -129,6 +130,8 @@ app: FastAPI = FastAPI(
 )
 def run_proxy(
         data_dir,
+        bind_host,
+        bind_port,
         install_timing_middleware: bool,
         install_logging_middleware: bool,
 ):
@@ -143,7 +146,14 @@ def run_proxy(
         try_install_logging_middleware(app)
 
     # NB Forget it, no multiprocess'd workers, I can't figure out what to do with them from within PyInstaller
-    config = uvicorn.Config(app, port=6633, log_level="debug", reload=False, workers=1)
+    config = uvicorn.Config(
+        app,
+        host=bind_host,
+        port=bind_port,
+        log_level="debug",
+        reload=False,
+        workers=4,
+    )
     server = uvicorn.Server(config)
 
     try:
