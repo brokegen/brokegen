@@ -279,7 +279,7 @@ struct BlankOneSequenceView: View {
                         .foregroundStyle(true ? Color(.disabledControlTextColor) : Color(.controlTextColor))
                 }
                 .buttonStyle(.plain)
-                .help("Submit with Retrieval-Augmented Generation")
+                .help("RAG not available in this view")
 
                 Button(action: submit) {
                     Image(systemName: submitting ? "arrow.up.circle.fill" : "arrow.up.circle")
