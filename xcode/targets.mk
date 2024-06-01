@@ -6,6 +6,7 @@ build/xcode-macos-export-options.plist:
 	plutil -insert "method" -string "mac-application" "$@"
 
 .PHONY: dist-xcode
+dist: dist-xcode
 dist-xcode: build-xcode
 dist-xcode: build/xcode-macos-export-options.plist
 	xcodebuild \

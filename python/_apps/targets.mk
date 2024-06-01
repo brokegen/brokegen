@@ -19,6 +19,7 @@ server: $(pyinstaller_venv)
 			--specpath dist \
 			--onefile --name "brokegen-server" \
 			$(python_root)_apps/server.py
+	# TODO: Check that the size of the target file hasn't dropped by too much
 
 .PHONY: run-server
 run-server:
