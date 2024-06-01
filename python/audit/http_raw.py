@@ -18,6 +18,7 @@ from sqlalchemy.orm import AttributeState
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import StreamingResponse
 
+from audit.content_scrubber import scrub_bytes
 from audit.http import Base, AuditDB
 
 logger = logging.getLogger(__name__)
@@ -93,6 +94,7 @@ class SqlLoggingMiddleware(BaseHTTPMiddleware):
             self,
             request,
             call_next,
+            remove_images: bool = True,
     ):
         event = RawHttpEvent()
         # Query params are expected to remain encoded here
@@ -105,6 +107,10 @@ class SqlLoggingMiddleware(BaseHTTPMiddleware):
         # NB This is fine because Starlette calls Middleware with starlette.middleware.base._CachedRequest,
         #    so we can't actually modify the Request that gets sent out.
         event.request_content = await request.body()
+
+        maybe_content = await scrub_bytes(event.request_content, logger.warning, remove_images)
+        if maybe_content is not None:
+            event.request_content = maybe_content
 
         response = await call_next(request)
         event.response_status_code = response.status_code
@@ -137,7 +143,7 @@ class HttpxLogger:
 
         self.event = RawHttpEvent()
 
-    async def request_logger(self, request: httpx.Request):
+    async def request_logger(self, request: httpx.Request, remove_images: bool = True):
         # Stay bound to a session
         if sqlalchemy.inspect(self.event).detached:
             logger.debug(f"RawHttpEvent seems detached, merging back into audit_db")
@@ -152,6 +158,11 @@ class HttpxLogger:
 
         # TODO: This will be a very long, slow call. Is it worth reading _here_?
         self.event.request_content = await request.aread()
+
+        maybe_content = await scrub_bytes(self.event.request_content, logger.warning, remove_images)
+        if maybe_content is not None:
+            self.event.request_content = maybe_content
+
         # Write the content right back to the request. No longer streaming, but we couldn't afford that anyway.
         request._content = self.event.request_content
 

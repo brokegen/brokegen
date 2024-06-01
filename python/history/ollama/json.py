@@ -10,6 +10,7 @@ import starlette.responses
 from starlette.background import BackgroundTask
 
 from _util.json import JSONDict, safe_get
+from audit.content_scrubber import scrub_json
 from audit.http import AuditDB, get_db, HttpEvent
 
 OllamaRequestContentJSON: TypeAlias = JSONDict
@@ -95,8 +96,21 @@ async def sync_to_async(chunks: Iterable[bytes | str]):
     done_marker = object()
     it = iter(chunks)
 
+    current_consolidation = []
+
     while (value := await asyncio.to_thread(next, it, done_marker)) is not done_marker:
-        yield orjson.loads(value)
+        try:
+            if current_consolidation:
+                current_consolidation.append(value)
+                yield orjson.loads(b''.join(current_consolidation))
+
+                current_consolidation = []
+            else:
+                yield orjson.loads(value)
+
+        except orjson.JSONDecodeError:
+            # On some failures, try to… consolidate chunks, and hope the consolidation goes better
+            current_consolidation.append(value)
 
 
 async def consolidate_stream_sync(
@@ -167,6 +181,7 @@ class OllamaEventBuilder:
     async def wrap_req(
             self,
             primordial: AsyncIterator[bytes],
+            remove_images: bool = True,
     ) -> AsyncIterator[bytes]:
         """
         TODO: On unexpected client disconnect, an error is thrown somewhere here.
@@ -181,6 +196,10 @@ class OllamaEventBuilder:
         if joined_chunks:
             request_json = orjson.loads(joined_chunks)
             self.wrapped_event.request_info = request_json
+
+            if remove_images:
+                maybe_content = await scrub_json(request_json, logger.warning, remove_images)
+                self.wrapped_event.request_info = maybe_content
 
         # Do a preliminary commit, because partial info is what we'd need for debugging
         self._try_commit()
