@@ -1,12 +1,9 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
-from history.ollama.model_routes import do_list_available_models
-
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
     # https://pyinstaller.org/en/latest/common-issues-and-pitfalls.html
     import multiprocessing
-
     multiprocessing.freeze_support()
 
 import logging
@@ -25,6 +22,7 @@ import history.ollama
 import providers.ollama
 from audit.http import get_db as get_audit_db, AuditDB
 from audit.http_raw import SqlLoggingMiddleware
+from history.ollama.model_routes import do_list_available_models
 from inference.embeddings.knowledge import get_knowledge
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.orm import ProviderLabel

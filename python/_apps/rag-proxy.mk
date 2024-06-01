@@ -15,6 +15,7 @@ rag-proxy: $(pyinstaller_venv)
 			--console \
 			--noconfirm \
 			--hidden-import colorlog \
+			--paths $(python_root) \
 			--specpath dist \
 			--onefile --name "brokegen-rag-proxy" \
 			$(python_root)_apps/rag_proxy.py

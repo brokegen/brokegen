@@ -15,6 +15,7 @@ server: $(pyinstaller_venv)
 			--noupx --console \
 			--noconfirm \
 			--hidden-import colorlog \
+			--paths $(python_root) \
 			--specpath dist \
 			--onefile --name "brokegen-server" \
 			$(python_root)_apps/server.py
@@ -37,6 +38,7 @@ ollama-proxy: $(pyinstaller_venv)
 			--noupx --console \
 			--noconfirm \
 			--hidden-import colorlog \
+			--paths $(python_root) \
 			--specpath dist \
 			--onefile --name "brokegen-ollama-proxy" \
 			$(python_root)_apps/simple_proxy.py
