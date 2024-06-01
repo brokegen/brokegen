@@ -17,13 +17,13 @@ rag-proxy: $(pyinstaller_venv)
 			--hidden-import colorlog \
 			--specpath dist \
 			--onefile --name "brokegen-rag-proxy" \
-			$(python_root)inference/_apps/rag_proxy.py
+			$(python_root)_apps/rag_proxy.py
 
 .PHONY: run-rag-proxy
 run-rag-proxy:
 	[ -d data2/ ] || mkdir data2/
 	PYTHONPATH=$(python_root) \
-		python $(python_root)inference/_apps/rag_proxy.py --data-dir data2/
+		python $(python_root)_apps/rag_proxy.py --data-dir data2/
 
 
 

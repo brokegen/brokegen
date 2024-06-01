@@ -17,13 +17,13 @@ server: $(pyinstaller_venv)
 			--hidden-import colorlog \
 			--specpath dist \
 			--onefile --name "brokegen-server" \
-			$(python_root)history/server.py
+			$(python_root)_apps/server.py
 
 .PHONY: run-server
 run-server:
 	[ -d data2/ ] || mkdir data2/
 	PYTHONPATH=$(python_root) \
-		python $(python_root)history/server.py --data-dir data2 --log-level debug
+		python $(python_root)_apps/server.py --data-dir data2 --log-level debug
 
 
 
@@ -39,10 +39,10 @@ ollama-proxy: $(pyinstaller_venv)
 			--hidden-import colorlog \
 			--specpath dist \
 			--onefile --name "brokegen-ollama-proxy" \
-			$(python_root)history/ollama/simple_proxy.py
+			$(python_root)_apps/simple_proxy.py
 
 .PHONY: run-ollama-proxy
 run-ollama-proxy:
 	[ -d data2/ ] || mkdir data2/
 	PYTHONPATH=$(python_root) \
-		python $(python_root)history/ollama/simple_proxy.py --data-dir data2/
+		python $(python_root)_apps/simple_proxy.py --data-dir data2/

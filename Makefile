@@ -17,8 +17,8 @@ test:
 
 
 
--include python/history/targets.mk
--include python/inference/targets.mk
+-include python/_apps/rag-proxy.mk
+-include python/_apps/targets.mk
 -include python/ingest/targets.mk
 
 venv:
