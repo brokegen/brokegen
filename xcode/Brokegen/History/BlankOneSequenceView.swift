@@ -15,13 +15,14 @@ struct ChatNameInput: View {
             .textFieldStyle(.plain)
             .monospaced()
             .lineSpacing(240)
+            .lineLimit(1...2)
             .background(
                 isHovered ? Color(.controlColor) : Color(.controlBackgroundColor)
             )
             .onHover { isHovered in
                 self.isHovered = isHovered
             }
-            .padding(EdgeInsets(top: 48, leading: 24, bottom: 12, trailing: 24))
+            .padding(.bottom, 12)
             // Draws a single baseline bar at the bottom of the control
             .overlay(
                 Divider().background(Color.accentColor), alignment: .bottom
@@ -86,9 +87,10 @@ struct InlineTextInput: View {
                     .foregroundStyle(isDisabled ? Color(.disabledControlTextColor) : Color(.controlTextColor))
             }
 
-            ProgressView()
-                .frame(maxHeight: .infinity)
-                .opacity(isDisabled ? 1.0 : 0.0)
+            // TODO: Make this show up sometimes
+            if false && !isDisabled {
+                ProgressView()
+            }
         }
     }
 
@@ -241,31 +243,29 @@ struct BlankOneSequenceView: View {
             .listRowSeparator(.hidden)
             .padding(.bottom, 48)
             .frame(maxWidth: 800)
-            .layoutPriority(0.5)
+            .layoutPriority(0.2)
 
-            Spacer()
-                .layoutPriority(0.2)
+            VStack {
+                Spacer()
+            }
+            .frame(maxHeight: .infinity)
 
-            Text("Starting a new chat")
-                .foregroundStyle(.secondary)
-                .font(.title)
+            Divider()
 
-            Spacer()
-                .layoutPriority(0.2)
+            HStack {
+                Text("Starting a new chat")
+                    .foregroundStyle(Color(.disabledControlTextColor))
 
-            if submitting {
-                Divider()
+                Spacer()
 
-                HStack {
-                    Spacer()
-
+                if submitting {
                     ProgressView()
                         .progressViewStyle(.linear)
                         .frame(maxWidth: 120)
                 }
-                .padding(.leading, 24)
-                .padding(.trailing, 24)
             }
+            .padding(.leading, 24)
+            .padding(.trailing, 24)
 
             HStack {
                 InlineTextInput($promptInEdit, isFocused: $focusTextInput)
@@ -282,40 +282,36 @@ struct BlankOneSequenceView: View {
                     }
                     .backgroundStyle(inputBackgroundStyle)
 
-                Group {
-                    Button(action: stopSubmitAndReceive) {
-                        Image(systemName: submitting ? "stop.fill" : "stop")
-                            .font(.system(size: 32))
-                            .disabled(!submitting)
-                            .foregroundStyle(!submitting ? Color(.disabledControlTextColor) : Color(.controlTextColor))
-                    }
-                    .buttonStyle(.plain)
-                    .help("Stop submitting or receiving")
-                    .padding(.leading, 12)
-
-                    Button(action: submit) {
-                        Image(systemName: "arrow.up.doc")
-                            .font(.system(size: 32))
-                            .disabled(true)
-                            .foregroundStyle(true ? Color(.disabledControlTextColor) : Color(.controlTextColor))
-                    }
-                    .buttonStyle(.plain)
-                    .help("Submit with Retrieval-Augmented Generation")
-
-                    Button(action: submit) {
-                        Image(systemName: submitting ? "arrow.up.circle.fill" : "arrow.up.circle")
-                            .font(.system(size: 32))
-                            .disabled(submitting)
-                            .foregroundStyle(submitting ? Color(.disabledControlTextColor) : Color(.controlTextColor))
-                    }
-                    .buttonStyle(.plain)
-                    .help("Submit")
+                Button(action: stopSubmitAndReceive) {
+                    Image(systemName: submitting ? "stop.fill" : "stop")
+                        .font(.system(size: 32))
+                        .disabled(!submitting)
+                        .foregroundStyle(!submitting ? Color(.disabledControlTextColor) : Color(.controlTextColor))
                 }
-                .padding(.trailing, 12)
+                .buttonStyle(.plain)
+                .help("Stop submitting or receiving")
+                .padding(.leading, 12)
+
+                Button(action: submit) {
+                    Image(systemName: "arrow.up.doc")
+                        .font(.system(size: 32))
+                        .disabled(true)
+                        .foregroundStyle(true ? Color(.disabledControlTextColor) : Color(.controlTextColor))
+                }
+                .buttonStyle(.plain)
+                .help("Submit with Retrieval-Augmented Generation")
+
+                Button(action: submit) {
+                    Image(systemName: submitting ? "arrow.up.circle.fill" : "arrow.up.circle")
+                        .font(.system(size: 32))
+                        .disabled(submitting)
+                        .foregroundStyle(submitting ? Color(.disabledControlTextColor) : Color(.controlTextColor))
+                }
+                .buttonStyle(.plain)
+                .help("Submit")
             }
+            .padding(.trailing, 12)
             .background(inputBackgroundStyle)
-            .frame(maxHeight: 400)
-            .layoutPriority(0.2)
         }
         .frame(maxHeight: .infinity)
         .onTapGesture {
