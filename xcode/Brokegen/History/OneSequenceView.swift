@@ -69,9 +69,6 @@ struct OneSequenceView: View {
                         .setDisabled(disableControls)
                         .focused($focusTextInput)
                         .disabled(disableControls)
-                        .onSubmit {
-                            viewModel.requestExtend()
-                        }
                         .onAppear {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                 self.focusTextInput = true

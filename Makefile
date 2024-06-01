@@ -61,4 +61,3 @@ dist/llava-v1.5-7b-q4.llamafile:
 dist/mistral-7b-instruct-v0.2.Q8_0.llamafile:
 	cd dist && curl -L -O https://huggingface.co/Mozilla/Mistral-7B-Instruct-v0.2-llamafile/resolve/main/mistral-7b-instruct-v0.2.Q8_0.llamafile?download=true
 	chmod +x "$@"
-
