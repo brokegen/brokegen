@@ -22,8 +22,6 @@ struct ChatNameInput: View {
                 self.isHovered = isHovered
             }
             .padding(EdgeInsets(top: 48, leading: 24, bottom: 12, trailing: 24))
-//            .padding(6)
-//            .padding(.top, 48)
             // Draws a single baseline bar at the bottom of the control
             .overlay(
                 Divider().background(Color.accentColor), alignment: .bottom
@@ -70,6 +68,7 @@ struct InlineTextInput: View {
                     .foregroundStyle(isDisabled ? Color(.disabledControlTextColor) : Color(.controlTextColor))
             }
             else {
+                // TODO: TextEditor eats the Enter key when submitting.
                 TextEditor(text: $textInEdit)
                     .lineSpacing(6)
 
@@ -242,20 +241,38 @@ struct BlankOneSequenceView: View {
             .listRowSeparator(.hidden)
             .padding(.bottom, 48)
             .frame(maxWidth: 800)
+            .layoutPriority(0.5)
+
+            Spacer()
+                .layoutPriority(0.2)
 
             Text("Starting a new chat")
                 .foregroundStyle(.secondary)
                 .font(.title)
 
             Spacer()
+                .layoutPriority(0.2)
+
+            if submitting {
+                Divider()
+
+                HStack {
+                    Spacer()
+
+                    ProgressView()
+                        .progressViewStyle(.linear)
+                        .frame(maxWidth: 120)
+                }
+                .padding(.leading, 24)
+                .padding(.trailing, 24)
+            }
 
             HStack {
                 InlineTextInput($promptInEdit, isFocused: $focusTextInput)
+                    .setDisabled(submitting)
                     .focused($focusTextInput)
                     .disabled(submitting)
                     .onSubmit {
-                        // TODO: This only works when in TextField mode; TextEditor eats the Enter key.
-                        print("[DEBUG] BlankOSV submitting prompt from TextField: \(promptInEdit)")
                         submit()
                     }
                     .onAppear {
@@ -263,34 +280,43 @@ struct BlankOneSequenceView: View {
                             self.focusTextInput = true
                         }
                     }
+                    .backgroundStyle(inputBackgroundStyle)
 
-                VStack {
+                Group {
                     Button(action: stopSubmitAndReceive) {
                         Image(systemName: submitting ? "stop.fill" : "stop")
-                            .resizable()
-                            .frame(width: 32, height: 32)
+                            .font(.system(size: 32))
                             .disabled(!submitting)
+                            .foregroundStyle(!submitting ? Color(.disabledControlTextColor) : Color(.controlTextColor))
                     }
                     .buttonStyle(.plain)
                     .help("Stop submitting or receiving")
+                    .padding(.leading, 12)
 
-                    Spacer()
+                    Button(action: submit) {
+                        Image(systemName: "arrow.up.doc")
+                            .font(.system(size: 32))
+                            .disabled(true)
+                            .foregroundStyle(true ? Color(.disabledControlTextColor) : Color(.controlTextColor))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Submit with Retrieval-Augmented Generation")
 
                     Button(action: submit) {
                         Image(systemName: submitting ? "arrow.up.circle.fill" : "arrow.up.circle")
-                            .resizable()
-                            .frame(width: 32, height: 32)
+                            .font(.system(size: 32))
                             .disabled(submitting)
+                            .foregroundStyle(submitting ? Color(.disabledControlTextColor) : Color(.controlTextColor))
                     }
+                    .buttonStyle(.plain)
+                    .help("Submit")
                 }
-                .padding(.top, 16)
-                .padding(.bottom, 12)
-                .padding(.leading, 12)
-                .padding(.trailing, -12)
+                .padding(.trailing, 12)
             }
+            .background(inputBackgroundStyle)
+            .frame(maxHeight: 400)
+            .layoutPriority(0.2)
         }
-        .padding(.leading, 24)
-        .padding(.trailing, 24)
         .frame(maxHeight: .infinity)
         .onTapGesture {
             focusTextInput = true

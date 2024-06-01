@@ -67,6 +67,7 @@ struct OneSequenceView: View {
 
                     InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
                         .setDisabled(disableControls)
+                        .focused($focusTextInput)
                         .disabled(disableControls)
                         .onSubmit {
                             viewModel.requestExtend()
