@@ -137,6 +137,7 @@ async def convert_chat_to_generate(
     # TODO: Due to how Ollama templating is implemented, we basically need to bundle user/assistant requests together.
     #       Rather than doing this, just expect the user to have overridden the default templates, for now.
     #       Otherwise, we can check what happens with a null-every string message vs a non-null-assistant message.
+    # TODO: Are chat models even trained on multi-turn conversation?
     for count, message in enumerate(ollama_chat_messages):
         is_first_message = count == 0
         is_last_message = (
