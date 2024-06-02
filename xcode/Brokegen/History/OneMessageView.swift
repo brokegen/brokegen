@@ -23,12 +23,13 @@ struct PrettyDate: View {
 struct OneMessageView: View {
     let message: Message
     let sequence: ChatSequence?
-    @State var expandDetails: Bool
+    let stillUpdating: Bool
+    @State var expandDetails: Bool = false
 
-    init(_ message: Message, sequence: ChatSequence? = nil) {
+    init(_ message: Message, sequence: ChatSequence? = nil, stillUpdating: Bool = false) {
         self.message = message
         self.sequence = sequence
-        self._expandDetails = State(initialValue: false)
+        self.stillUpdating = stillUpdating
     }
 
     var body: some View {
@@ -38,6 +39,12 @@ struct OneMessageView: View {
                 Text(message.role)
                     .font(.title3.weight(.semibold))
                     .foregroundColor(.accentColor)
+
+                if stillUpdating {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .controlSize(.mini)
+                }
 
                 Spacer()
 

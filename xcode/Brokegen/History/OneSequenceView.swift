@@ -34,7 +34,7 @@ struct OneSequenceView: View {
                 }
 
                 if viewModel.responseInEdit != nil {
-                    OneMessageView(viewModel.responseInEdit!)
+                    OneMessageView(viewModel.responseInEdit!, stillUpdating: true)
                         .padding(24)
                         .padding(.top, 16)
                 }
