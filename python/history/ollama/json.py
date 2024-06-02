@@ -165,28 +165,14 @@ async def keepalive_wrapper(
         inference_model_human_id: InferenceModelHumanID,
         real_response_maker: Awaitable[JSONStreamingResponse],
 ) -> JSONStreamingResponse:
-    async def nonblocking_response_maker(
-            timeout: float = 0.7,
-    ) -> AsyncIterable[str | bytes]:
-        """
-        Rather than doing a straight "await", poll, so we don't block
-        """
-        while True:
-            try:
-                # TODO: Hopefully the `await` here is enough for other coroutines to execute
-                real_response = await asyncio.wait_for(asyncio.shield(real_response_maker), timeout)
-                return real_response.body_iterator
-            except asyncio.TimeoutError:
-                pass
-
-    async def blocking_response_maker() -> AsyncIterable[str | bytes]:
-        real_response = await real_response_maker
-        return real_response.body_iterator
+    async def nonblocking_response_maker():
+        async for item in (await real_response_maker).body_iterator:
+            yield item
 
     async def do_keepalive(
-            primordial: AsyncIterable[str | bytes],
+            primordial: AsyncIterator[str | bytes],
     ) -> AsyncGenerator[str | bytes, None]:
-        async for chunk in emit_keepalive_chunks(primordial.__aiter__(), 0.5, None):
+        async for chunk in emit_keepalive_chunks(primordial, 5, None):
             if chunk is None:
                 yield orjson.dumps({
                     "model": inference_model_human_id,
@@ -206,7 +192,7 @@ async def keepalive_wrapper(
             yield chunk
 
     return JSONStreamingResponse(
-        content=do_keepalive(await blocking_response_maker()),
+        content=do_keepalive(nonblocking_response_maker()),
         status_code=218,
     )
 
