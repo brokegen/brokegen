@@ -1,12 +1,13 @@
 import logging
 import operator
 from abc import abstractmethod
-from typing import List, Callable, Awaitable, TypeAlias
+from typing import List, Callable, Awaitable, TypeAlias, Any
 
 import orjson
 from langchain_core.documents import Document
 from langchain_core.messages import ChatMessage
 
+from _util.status import ServerStatusHolder
 from inference.embeddings.knowledge import KnowledgeSingleton, get_knowledge
 from _util.typing import PromptText, TemplatedPromptText
 from providers.inference_models.orm import InferenceReason
@@ -24,6 +25,7 @@ class RetrievalPolicy:
             self,
             messages: List[ChatMessage],
             _: Callable[[PromptText, PromptText, PromptText, InferenceReason], Awaitable[PromptText]],
+            status_holder: ServerStatusHolder | None = None,
     ) -> PromptText | None:
         raise NotImplementedError()
 
@@ -33,6 +35,7 @@ class SkipRetrievalPolicy(RetrievalPolicy):
             self,
             messages: List[ChatMessage],
             _: Callable[[PromptText, PromptText, PromptText, InferenceReason], Awaitable[PromptText]],
+            status_holder: ServerStatusHolder | None = None,
     ) -> PromptText | None:
         return None
 
@@ -48,8 +51,13 @@ class SimpleRetrievalPolicy(RetrievalPolicy):
             self,
             messages: List[ChatMessage],
             _: Callable[[PromptText, PromptText, PromptText, InferenceReason], Awaitable[PromptText]],
+            status_holder: ServerStatusHolder | None = None,
     ) -> PromptText | None:
+        if status_holder is not None:
+            status_holder.push("Loading retrieval databases…")
         get_knowledge().load_queued_data_dirs()
+        if status_holder is not None:
+            status_holder.pop()
 
         latest_message_content = messages[-1]['content']
         retrieval_str = latest_message_content
@@ -60,13 +68,13 @@ class SimpleRetrievalPolicy(RetrievalPolicy):
         )
 
         big_prompt = f"""\
-Use context where you can, but don't rely on it overmuch:
+Use the provided context where applicable. Ignore irrelevant context.
 
 <context>
 {formatted_docs}
 </context>
 
-Reasoning: Let's think step by step in order to produce the answer.
+Reasoning: Let's think step by step in order to produce the answer. Take a deep breath and do your best.
 
 Question: {latest_message_content}"""
 
@@ -90,6 +98,7 @@ class SummarizingRetrievalPolicy(RetrievalPolicy):
             self,
             messages: List[ChatMessage],
             generate_helper_fn: Callable[[PromptText, PromptText, PromptText, InferenceReason], Awaitable[PromptText]],
+            status_holder: ServerStatusHolder | None = None,
     ) -> PromptText | None:
         get_knowledge().load_queued_data_dirs()
 

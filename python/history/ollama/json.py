@@ -11,6 +11,7 @@ from starlette.background import BackgroundTask
 
 from _util.json import JSONDict, safe_get
 from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks
+from _util.status import ServerStatusHolder
 from _util.typing import InferenceModelHumanID
 from audit.content_scrubber import scrub_json
 from audit.http import AuditDB, get_db, HttpEvent
@@ -164,6 +165,7 @@ async def chunk_and_log_output(
 async def keepalive_wrapper(
         inference_model_human_id: InferenceModelHumanID,
         real_response_maker: Awaitable[JSONStreamingResponse],
+        status_holder: ServerStatusHolder,
 ) -> JSONStreamingResponse:
     async def nonblocking_response_maker():
         async for item in (await real_response_maker).body_iterator:
@@ -174,6 +176,7 @@ async def keepalive_wrapper(
     ) -> AsyncGenerator[str | bytes, None]:
         async for chunk in emit_keepalive_chunks(primordial, 5, None):
             if chunk is None:
+                logger.info(f"Ollama keepalive: " + status_holder.get())
                 yield orjson.dumps({
                     "model": inference_model_human_id,
                     "created_at": datetime.now(tz=timezone.utc),
@@ -185,7 +188,7 @@ async def keepalive_wrapper(
                     "done": False,
                     # Add random fields, since clients seem robust
                     "response": "",
-                    "status": "Waiting for Ollama response",
+                    "status": status_holder.get(),
                 })
                 continue
 

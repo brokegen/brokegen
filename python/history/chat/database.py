@@ -87,6 +87,9 @@ class ChatSequence(Base):
     inference_job_id = Column(Integer)  # InferenceEventOrm.id
     inference_error = Column(String)
 
+    def __str__(self) -> str:
+        return f"<ChatSequence#{self.id} current_message={self.current_message} parent_sequence={self.parent_sequence}>"
+
 
 def lookup_sequence_parents(
         current_id: ChatSequenceID | None,

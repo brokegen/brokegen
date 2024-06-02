@@ -1,8 +1,7 @@
-import asyncio
 import logging
 from collections.abc import AsyncIterable
 from datetime import datetime, timezone
-from typing import TypeAlias, Callable, Awaitable, Any, AsyncIterator, TypeVar
+from typing import TypeAlias, Callable, Awaitable, Any
 
 import httpx
 import orjson
@@ -13,13 +12,14 @@ from starlette.exceptions import HTTPException
 
 from _util.json import safe_get, JSONArray, safe_get_arrayed
 from _util.json_streaming import JSONStreamingResponse, tee_stream_to_log_and_callback, consolidate_stream_to_json
-from _util.typing import PromptText, TemplatedPromptText, InferenceModelHumanID
+from _util.typing import PromptText, TemplatedPromptText
 from audit.http import AuditDB
 from audit.http_raw import HttpxLogger
 from history.chat.database import lookup_chat_message, ChatMessage, ChatMessageOrm, ChatSequence
 from history.ollama.chat_routes import lookup_model_offline
 from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, \
     consolidate_stream, OllamaEventBuilder
+from _util.status import ServerStatusHolder
 from inference.embeddings.retrieval import RetrievalPolicy
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB
@@ -285,6 +285,9 @@ def do_capture_chat_messages(
                 prior_sequence = sequence_in
                 continue
 
+        logger.info(f"Constructing new ChatSequence from ChatMessage#{message_in_orm.id}"
+                    f" because {sequence_in=} and {prior_sequence=}")
+
         sequence_in = ChatSequence(
             user_pinned=index == len(chat_messages) - 1,
             current_message=message_in_orm.id,
@@ -309,6 +312,7 @@ async def do_proxy_chat_rag(
         history_db: HistoryDB,
         audit_db: AuditDB,
         capture_chat_messages: bool = True,
+        status_holder: ServerStatusHolder | None = None,
 ) -> JSONStreamingResponse:
     request_content_bytes: bytes = await original_request.body()
     request_content_json: OllamaRequestContentJSON = orjson.loads(request_content_bytes)
@@ -371,9 +375,15 @@ async def do_proxy_chat_rag(
         response0_json = await consolidate_stream_to_json(response0.body_iterator)
         return response0_json['response']
 
+    if status_holder is not None:
+        status_holder.set(f"Applying {retrieval_policy=}")
+
     prompt_override = await retrieval_policy.parse_chat_history(
         chat_messages, generate_helper_fn,
     )
+
+    if status_holder is not None:
+        status_holder.set(f"Forwarding {len(chat_messages)} messages to ollama /api/generate")
 
     ollama_response = await convert_chat_to_generate(
         original_request,
@@ -396,5 +406,8 @@ async def do_proxy_chat_rag(
                 consolidate_stream,
             )
             return upstream_response
+
+    if status_holder is not None:
+        status_holder.set(f"Running Ollama response")
 
     return await wrap_response(ollama_response)

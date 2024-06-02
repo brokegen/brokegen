@@ -15,6 +15,7 @@ from history.ollama.chat_rag_routes import do_proxy_chat_rag, convert_chat_to_ge
 from history.ollama.chat_routes import do_proxy_generate, lookup_model_offline
 from history.ollama.forward_routes import forward_request_nodetails, forward_request, forward_request_nolog
 from history.ollama.json import consolidate_stream, OllamaResponseContentJSON, chunk_and_log_output, keepalive_wrapper
+from _util.status import ServerStatusHolder
 from history.ollama.model_routes import do_api_tags, do_api_show_streaming
 from inference.embeddings.knowledge import KnowledgeSingleton, get_knowledge_dependency
 from inference.embeddings.retrieval import SkipRetrievalPolicy, SummarizingRetrievalPolicy, SimpleRetrievalPolicy
@@ -174,7 +175,14 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
     ):
-        return await do_proxy_generate(request, inference_reason, history_db, audit_db)
+        inference_model_human_id = safe_get(orjson.loads(await request.body()), "model")
+        status_holder = ServerStatusHolder(f"Received /api/generate request for {inference_model_human_id}, processing")
+
+        return await keepalive_wrapper(
+            inference_model_human_id,
+            do_proxy_generate(request, inference_reason, history_db, audit_db),
+            status_holder,
+        )
 
     @ollama_forwarder.post("/ollama-proxy/api/chat")
     async def proxy_chat_rag(
@@ -183,15 +191,23 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
             audit_db: AuditDB = Depends(get_audit_db),
             knowledge: KnowledgeSingleton = Depends(get_knowledge_dependency),
     ):
-        logger.debug(f"Received /api/chat request, starting processing")
+        inference_model_human_id = safe_get(orjson.loads(await request.body()), "model")
+        status_holder = ServerStatusHolder(f"Received /api/chat request for {inference_model_human_id}, processing")
 
         retrieval_policy = SkipRetrievalPolicy()
         if force_ollama_rag:
             retrieval_policy = SimpleRetrievalPolicy(knowledge)
 
         return await keepalive_wrapper(
-            safe_get(orjson.loads(await request.body()), "model"),
-            do_proxy_chat_rag(request, retrieval_policy, history_db, audit_db),
+            inference_model_human_id,
+            do_proxy_chat_rag(
+                request,
+                retrieval_policy,
+                history_db,
+                audit_db,
+                status_holder=status_holder,
+            ),
+            status_holder,
         )
 
     # TODO: Using a router prefix breaks this, somehow
