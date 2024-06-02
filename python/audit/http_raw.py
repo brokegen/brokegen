@@ -63,26 +63,36 @@ class RawHttpEvent(Base):
     def __str__(self):
         return "\n".join(self.dump_as_str())
 
+    def _try_commit(self, audit_db: AuditDB | None) -> None:
+        if audit_db is None:
+            return
+
+        try:
+            audit_db.add(self)
+            audit_db.commit()
+        except sqlalchemy.exc.SQLAlchemyError:
+            logger.exception(f"Failed to commit StreamingResponse, {len(self.response_content)=}")
+            audit_db.rollback()
+
     async def wrap_response_content_stream(
             self,
             primordial: AsyncIterable[str | bytes],
             audit_db: AuditDB | None,
+            commit_cadence: int = 4_096,
     ) -> AsyncIterable[str | bytes]:
         self.response_content = b''
+        last_commit_size = -1
+
         async for chunk0 in primordial:
             yield chunk0
             self.response_content += chunk0
             # Add a newline to delineate the data, since all JSON (NDJSON) content should have escaped newlines anyway
             self.response_content += b'\n'
 
-        try:
-            if audit_db is not None:
-                audit_db.add(self)
-                audit_db.commit()
-        except sqlalchemy.exc.SQLAlchemyError:
-            logger.exception(f"Failed to commit StreamingResponse, {len(self.response_content)=}")
-            if audit_db is not None:
-                audit_db.rollback()
+            if len(self.response_content) - last_commit_size > commit_cadence:
+                self._try_commit(audit_db)
+
+        self._try_commit(audit_db)
 
 
 class SqlLoggingMiddleware(BaseHTTPMiddleware):
@@ -189,12 +199,16 @@ class HttpxLogger:
 
         async def response_wrapper(
                 primordial: AsyncIterator[bytes],
+                commit_cadence: int = 5,
         ) -> AsyncIterator[bytes]:
             all_chunks = []
 
             async for chunk0 in primordial:
                 yield chunk0
                 all_chunks.append(chunk0)
+
+                if len(all_chunks) % commit_cadence == 0:
+                    await post_response_wrapper(b''.join(all_chunks))
 
             await post_response_wrapper(b''.join(all_chunks))
 
