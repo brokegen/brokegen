@@ -11,7 +11,7 @@ class JobsManagerService: Observable, ObservableObject {
         let importantJobs = [
             // Use prime numbers for these, because we can
             SimplePing("brokegen-server heartbeat", "http://localhost:6635", timeInterval: 23),
-            SimplePing("ollama heartbeat", "http://localhost:11434", timeInterval: 13).launch(),
+            SimplePing("ollama heartbeat", "http://localhost:11434", timeInterval: 13),
             StayAwakeService(),
         ]
 
@@ -22,7 +22,7 @@ class JobsManagerService: Observable, ObservableObject {
             SimplePing("ping brokegen-server+rag", "http://localhost:6637", timeInterval: 11),
             TimeJob("quick timer", timeInterval: 0.2, maxTimesFired: 48),
             SimplePing("ping ollama-proxy", "http://localhost:6633", timeInterval: 19),
-            SimpleProcess("/usr/bin/pmset", ["-g", "rawlog"]),
+            SimpleProcess("/usr/bin/pmset", ["-g", "rawlog"]).launch(),
             SimpleProcess("/sbin/ifconfig"),
             SimpleProcess("/bin/date"),
             SimpleProcess("/usr/bin/man", ["man"]),
