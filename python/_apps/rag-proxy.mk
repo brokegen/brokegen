@@ -21,10 +21,9 @@ rag-proxy: $(pyinstaller_venv)
 			$(python_root)_apps/rag_proxy.py
 
 .PHONY: run-rag-proxy
-run-rag-proxy:
-	[ -d data2/ ] || mkdir data2/
+run-rag-proxy: data/
 	PYTHONPATH=$(python_root) \
-		python $(python_root)_apps/rag_proxy.py --data-dir data2/
+		python $(python_root)_apps/rag_proxy.py --data-dir data/
 
 
 

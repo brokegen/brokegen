@@ -110,7 +110,7 @@ class VectorStoreReadOnly:
             )
 
         if overlap:
-            logger.debug(f"Clearing {len(overlap)} potential embeddings overlaps from self.unified_vectordb")
+            logger.debug(f"Clearing {len(overlap):_} potential embeddings overlaps from self.unified_vectordb")
             self.unified_vectordb.delete([*overlap])
 
         try:

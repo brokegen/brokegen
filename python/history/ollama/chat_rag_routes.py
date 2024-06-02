@@ -170,8 +170,8 @@ async def convert_chat_to_generate(
             existing_content = sum(map(len, templated_messages))
             logging.debug(
                 f"Existing chat history is {existing_content} chars, "
-                f"adding prompt_override with length {len(prompt_override)}:\n"
-                f"{prompt_override[:120]}"
+                f"adding prompt_override with {len(prompt_override):_} chars:\n"
+                f"{prompt_override[:280]}"
             )
 
             templated_messages.append(await apply_llm_template(

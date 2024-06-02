@@ -22,10 +22,9 @@ server: $(pyinstaller_venv)
 	# TODO: Check that the size of the target file hasn't dropped by too much
 
 .PHONY: run-server
-run-server:
-	[ -d data2/ ] || mkdir data2/
+run-server: data/
 	PYTHONPATH=$(python_root) \
-		python $(python_root)_apps/server.py --data-dir data2 --log-level debug
+		python $(python_root)_apps/server.py --data-dir data/ --log-level debug
 
 
 
@@ -45,7 +44,6 @@ ollama-proxy: $(pyinstaller_venv)
 			$(python_root)_apps/simple_proxy.py
 
 .PHONY: run-ollama-proxy
-run-ollama-proxy:
-	[ -d data2/ ] || mkdir data2/
+run-ollama-proxy: data/
 	PYTHONPATH=$(python_root) \
-		python $(python_root)_apps/simple_proxy.py --data-dir data2/
+		python $(python_root)_apps/simple_proxy.py --data-dir data/

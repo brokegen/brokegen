@@ -33,6 +33,11 @@ endif
 		&& python -m pip \
 			install --editable ".[inference,ingest,testing]"
 
+data%/:
+	[ -d $@/ ] || mkdir $@/
+	echo "PRAGMA journal_model=wal" | sqlite3 $@/audit.db
+	echo "PRAGMA journal_model=wal" | sqlite3 $@/requests-history.db
+
 .PHONY: python-test
 test: python-test
 python-test: venv
