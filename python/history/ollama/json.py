@@ -174,9 +174,12 @@ async def keepalive_wrapper(
     async def do_keepalive(
             primordial: AsyncIterator[str | bytes],
     ) -> AsyncGenerator[str | bytes, None]:
-        async for chunk in emit_keepalive_chunks(primordial, 2, None):
+        """
+        Screen timeout for an iOS device with FaceID is 30 seconds (which maps to network timeout for simple iOS apps),
+        so set the keepalive to be a fraction of that.
+        """
+        async for chunk in emit_keepalive_chunks(primordial, 9.5, None):
             if chunk is None:
-                logger.info(f"Ollama keepalive: " + status_holder.get())
                 yield orjson.dumps({
                     "model": inference_model_human_id,
                     "created_at": datetime.now(tz=timezone.utc),
