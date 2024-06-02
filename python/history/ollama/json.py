@@ -165,7 +165,7 @@ async def keepalive_wrapper(
         inference_model_human_id: InferenceModelHumanID,
         real_response_maker: Awaitable[JSONStreamingResponse],
 ) -> JSONStreamingResponse:
-    async def delayed_response_maker(
+    async def nonblocking_response_maker(
             timeout: float = 0.7,
     ) -> AsyncIterable[str | bytes]:
         """
@@ -179,9 +179,13 @@ async def keepalive_wrapper(
             except asyncio.TimeoutError:
                 pass
 
+    async def blocking_response_maker() -> AsyncIterable[str | bytes]:
+        real_response = await real_response_maker
+        return real_response.body_iterator
+
     async def do_keepalive(
             primordial: AsyncIterable[str | bytes],
-    ) -> AsyncGenerator[str | bytes]:
+    ) -> AsyncGenerator[str | bytes, None]:
         async for chunk in emit_keepalive_chunks(primordial.__aiter__(), 0.5, None):
             if chunk is None:
                 yield orjson.dumps({
@@ -202,8 +206,8 @@ async def keepalive_wrapper(
             yield chunk
 
     return JSONStreamingResponse(
-        content=do_keepalive(await delayed_response_maker()),
-        status_code=200,
+        content=do_keepalive(await blocking_response_maker()),
+        status_code=218,
     )
 
 
