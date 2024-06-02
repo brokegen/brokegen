@@ -11,7 +11,8 @@ import starlette.requests
 from sqlalchemy import select
 from starlette.exceptions import HTTPException
 
-from _util.json import JSONStreamingResponse, safe_get, JSONArray, safe_get_arrayed
+from _util.json import safe_get, JSONArray, safe_get_arrayed
+from _util.json_streaming import JSONStreamingResponse, log_stream_to_console, consolidate_stream_to_json
 from _util.typing import PromptText, TemplatedPromptText, InferenceModelHumanID
 from audit.http import AuditDB
 from audit.http_raw import HttpxLogger
@@ -302,96 +303,12 @@ def do_capture_chat_messages(
         continue
 
 
-async def complex_nothing_chain(
-        inference_model_human_id: InferenceModelHumanID,
-        is_disconnected: Callable[[], Awaitable[bool]],
-):
-    async def fake_timeout(
-            bigsleep_sec: float = 30.1,
-            bigsleep_times: int = 3,
-    ) -> AsyncIterator[str]:
-        for _ in range(bigsleep_times):
-            await asyncio.sleep(bigsleep_sec)
-            yield orjson.dumps({
-                "model": inference_model_human_id,
-                "created_at": datetime.now(tz=timezone.utc),
-                "message": {
-                    "content": f"!",
-                    "role": "assistant",
-                },
-                "done": False,
-            })
-
-        yield orjson.dumps({
-            "model": inference_model_human_id,
-            "created_at": datetime.now(tz=timezone.utc),
-            "message": {
-                "content": f"\nInference timeout after {bigsleep_sec} seconds: {inference_model_human_id}",
-                "role": "assistant",
-            },
-            "done": True,
-        })
-
-    T = TypeVar('T')
-
-    async def emit_keepalive_chunks(
-            primordial: AsyncIterator[str],
-            timeout: float | None,
-            sentinel: T,
-    ) -> AsyncIterator[T]:
-        start_time = datetime.now(tz=timezone.utc)
-        maybe_next: asyncio.Future[str] | None = None
-
-        try:
-            maybe_next = asyncio.ensure_future(primordial.__anext__())
-            while True:
-                try:
-                    yield await asyncio.wait_for(asyncio.shield(maybe_next), timeout)
-                    maybe_next = asyncio.ensure_future(primordial.__anext__())
-                except asyncio.TimeoutError:
-                    current_time = datetime.now(tz=timezone.utc)
-                    logger.debug(
-                        f"emit_keepalive_chunks(): emitting sentinel type after {current_time - start_time}")
-                    yield sentinel
-
-        except StopAsyncIteration:
-            pass
-
-        finally:
-            if maybe_next is not None:
-                maybe_next.cancel()
-
-    # Final chunk for what we're returning
-    async for chunk in emit_keepalive_chunks(fake_timeout(), 0.5, None):
-        if await is_disconnected():
-            logger.debug(f"Somehow detected a client disconnect! (Expected client to just stop iteration)")
-
-        if chunk is None:
-            yield orjson.dumps({
-                "model": inference_model_human_id,
-                "created_at": datetime.now(tz=timezone.utc),
-                "message": {
-                    # On testing, we don't even need this field, so empty string is fine
-                    "content": "",
-                    "role": "assistant",
-                },
-                "done": False,
-                # Add random fields, since clients seem robust
-                "response": "",
-                "status": "Waiting for Ollama response",
-            })
-            continue
-
-        yield chunk
-
-
 async def do_proxy_chat_rag(
         original_request: starlette.requests.Request,
         retrieval_policy: RetrievalPolicy,
         history_db: HistoryDB,
         audit_db: AuditDB,
         capture_chat_messages: bool = True,
-        do_complex_nothing: bool = False,
 ) -> JSONStreamingResponse:
     request_content_bytes: bytes = await original_request.body()
     request_content_json: OllamaRequestContentJSON = orjson.loads(request_content_bytes)
@@ -403,18 +320,8 @@ async def do_proxy_chat_rag(
         raise RuntimeError("No 'messages' provided in call to /api/chat")
 
     # Assume that these are messages from a third-party client, and try to feed them into the history database.
-    if capture_chat_messages and not do_complex_nothing:
+    if capture_chat_messages:
         do_capture_chat_messages(chat_messages, history_db)
-
-    # DEBUG: Risk it all and just return a constant stream of "ok maybe soon"
-    if do_complex_nothing:
-        return JSONStreamingResponse(
-            content=complex_nothing_chain(
-                safe_get(request_content_json, 'model'),
-                original_request.is_disconnected,
-            ),
-            status_code=200,
-        )
 
     async def generate_helper_fn(
             inference_reason: InferenceReason,
@@ -446,6 +353,7 @@ async def do_proxy_chat_rag(
             user_prompt=user_prompt,
             assistant_response=assistant_response,
             break_early_on_response=True)
+
         response0 = await do_generate_raw_templated(
             request_content={
                 'model': request_content_json['model'],
@@ -460,22 +368,7 @@ async def do_proxy_chat_rag(
             inference_reason=inference_reason,
         )
 
-        content_chunks = []
-        async for chunk in response0.body_iterator:
-            content_chunks.append(chunk)
-
-        # TODO: Get your bytes | str typing in order
-        if not content_chunks:
-            raise NotImplementedError("No content chunks returned during templating")
-
-        if isinstance(content_chunks[0], str):
-            response0_json = orjson.loads(''.join(content_chunks))
-        elif isinstance(content_chunks[0], bytes):
-            response0_json = orjson.loads(b''.join(content_chunks))
-        else:
-            logger.warning(f"Ignoring helper_fn request, {type(content_chunks[0])=}")
-            raise TypeError()
-
+        response0_json = await consolidate_stream_to_json(response0.body_iterator)
         return response0_json['response']
 
     prompt_override = await retrieval_policy.parse_chat_history(
@@ -494,51 +387,11 @@ async def do_proxy_chat_rag(
             upstream_response: JSONStreamingResponse,
             log_output: bool = True,
     ) -> JSONStreamingResponse:
-        async def identity_proxy(primordial):
-            """This mostly exists for regression testing/checking, unfortunately"""
-            async for chunk in primordial:
-                yield chunk
-
-        upstream_response._content_iterable = identity_proxy(upstream_response._content_iterable)
-        upstream_response._content_iterable = identity_proxy(upstream_response._content_iterable)
-        upstream_response._content_iterable = identity_proxy(upstream_response._content_iterable)
-
         if not log_output:
             return upstream_response
 
         if log_output:
-            # TODO: Make sure this doesn't block execution, or whatever.
-            # TODO: Figure out how to trigger two AsyncIterators at once, but we've already burned a day on it.
-            async def big_fake_tee(primordial: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
-                stored_chunks = []
-                buffered_text = ''
-
-                async for chunk0 in primordial:
-                    yield chunk0
-                    stored_chunks.append(chunk0)
-
-                    chunk0_json = orjson.loads(chunk0)
-                    if len(buffered_text) >= 120:
-                        print(buffered_text)
-                        buffered_text = safe_get(chunk0_json, 'message', 'content') or ""
-                    else:
-                        buffered_text += safe_get(chunk0_json, 'message', 'content') or ""
-
-                if buffered_text:
-                    print(buffered_text)
-                    del buffered_text
-
-                async def replay_chunks():
-                    for chunk in stored_chunks:
-                        yield chunk
-
-                async def to_json(primo: AsyncIterable) -> AsyncIterable[OllamaResponseContentJSON]:
-                    async for chunk in primo:
-                        yield orjson.loads(chunk)
-
-                _ = await consolidate_stream(to_json(replay_chunks()))
-
-            upstream_response._content_iterable = big_fake_tee(upstream_response._content_iterable)
+            upstream_response._content_iterable = log_stream_to_console(upstream_response._content_iterable)
             return upstream_response
 
     return await wrap_response(ollama_response)

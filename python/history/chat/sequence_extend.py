@@ -12,7 +12,8 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 import history.ollama
-from _util.json import JSONStreamingResponse, safe_get
+from _util.json import safe_get
+from _util.json_streaming import JSONStreamingResponse
 from _util.typing import ChatSequenceID, InferenceModelRecordID, PromptText
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db

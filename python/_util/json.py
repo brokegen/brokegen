@@ -1,9 +1,4 @@
-from typing import Iterable, AsyncIterable, TypeAlias, Any, AnyStr, Dict, List
-
-import starlette.datastructures
-from starlette.background import BackgroundTask
-from starlette.concurrency import iterate_in_threadpool
-from starlette.responses import StreamingResponse, JSONResponse
+from typing import TypeAlias, Any, AnyStr, Dict, List
 
 # These types aren't strictly defined because they get weirdly recursive
 # (can contain themselves/each other/JSONObject).
@@ -57,32 +52,3 @@ def safe_get_arrayed(
             return None
 
     return next_json_ish
-
-
-class JSONStreamingResponse(StreamingResponse, JSONResponse):
-    def __init__(
-            self,
-            content: Iterable | AsyncIterable,
-            status_code: int = 200,
-            headers: starlette.datastructures.MutableHeaders | dict[str, str] | None = None,
-            media_type: str | None = None,
-            background: BackgroundTask | None = None,
-    ) -> None:
-        if isinstance(content, AsyncIterable):
-            self._content_iterable: AsyncIterable = content
-        else:
-            self._content_iterable = iterate_in_threadpool(content)
-
-        async def body_iterator() -> AsyncIterable[bytes]:
-            async for content_ in self._content_iterable:
-                if isinstance(content_, bytes):
-                    yield content_
-                else:
-                    yield self.render(content_)
-
-        self.body_iterator = body_iterator()
-        self.status_code = status_code
-        if media_type is not None:
-            self.media_type = media_type
-        self.background = background
-        self.init_headers(headers)
