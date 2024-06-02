@@ -214,7 +214,8 @@ async def do_continuation(
         inference_job = history_db.merge(inference_job)
         inference_job.parent_sequence = response_sequence.id
 
-        if not inference_job.response_error:
+        # TODO: This is disabled while we figure out why the duplicate InferenceEvent never commits its response content
+        if False and not inference_job.response_error:
             inference_job.response_error = (
                 "this is a duplicate InferenceEvent, because do_generate_raw_templated will dump its own raws in. "
                 "we're keeping this one because it's tied into the actual ChatSequence."
