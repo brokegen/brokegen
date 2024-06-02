@@ -174,7 +174,7 @@ async def keepalive_wrapper(
     async def do_keepalive(
             primordial: AsyncIterator[str | bytes],
     ) -> AsyncGenerator[str | bytes, None]:
-        async for chunk in emit_keepalive_chunks(primordial, 5, None):
+        async for chunk in emit_keepalive_chunks(primordial, 2, None):
             if chunk is None:
                 logger.info(f"Ollama keepalive: " + status_holder.get())
                 yield orjson.dumps({

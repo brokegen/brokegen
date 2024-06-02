@@ -7,7 +7,7 @@ import orjson
 from langchain_core.documents import Document
 from langchain_core.messages import ChatMessage
 
-from _util.status import ServerStatusHolder
+from _util.status import ServerStatusHolder, StatusContext
 from inference.embeddings.knowledge import KnowledgeSingleton, get_knowledge
 from _util.typing import PromptText, TemplatedPromptText
 from providers.inference_models.orm import InferenceReason
@@ -57,11 +57,8 @@ class SimpleRetrievalPolicy(RetrievalPolicy):
             _: Callable[[PromptText, PromptText, PromptText, InferenceReason], Awaitable[PromptText]],
             status_holder: ServerStatusHolder | None = None,
     ) -> PromptText | None:
-        if status_holder is not None:
-            status_holder.push("Loading retrieval databases…")
-        get_knowledge().load_queued_data_dirs()
-        if status_holder is not None:
-            status_holder.pop()
+        with StatusContext("Loading retrieval databases…", status_holder):
+            await get_knowledge().load_queued_data_dirs(status_holder)
 
         latest_message_content = messages[-1]['content']
         retrieval_str = latest_message_content
@@ -104,7 +101,8 @@ class SummarizingRetrievalPolicy(RetrievalPolicy):
             generate_helper_fn: Callable[[PromptText, PromptText, PromptText, InferenceReason], Awaitable[PromptText]],
             status_holder: ServerStatusHolder | None = None,
     ) -> PromptText | None:
-        get_knowledge().load_queued_data_dirs()
+        with StatusContext("Loading retrieval databases…", status_holder):
+            await get_knowledge().load_queued_data_dirs(status_holder)
 
         latest_message_content = messages[-1]['content']
 

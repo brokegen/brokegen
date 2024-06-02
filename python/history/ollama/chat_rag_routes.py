@@ -19,7 +19,7 @@ from history.chat.database import lookup_chat_message, ChatMessage, ChatMessageO
 from history.ollama.chat_routes import lookup_model_offline
 from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, \
     consolidate_stream, OllamaEventBuilder
-from _util.status import ServerStatusHolder
+from _util.status import ServerStatusHolder, StatusContext
 from inference.embeddings.retrieval import RetrievalPolicy
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB
@@ -375,23 +375,19 @@ async def do_proxy_chat_rag(
         response0_json = await consolidate_stream_to_json(response0.body_iterator)
         return response0_json['response']
 
-    if status_holder is not None:
-        status_holder.set(f"Applying {retrieval_policy=}")
+    with StatusContext(f"Applying {retrieval_policy}", status_holder):
+        prompt_override = await retrieval_policy.parse_chat_history(
+            chat_messages, generate_helper_fn, status_holder,
+        )
 
-    prompt_override = await retrieval_policy.parse_chat_history(
-        chat_messages, generate_helper_fn,
-    )
-
-    if status_holder is not None:
-        status_holder.set(f"Forwarding {len(chat_messages)} messages to ollama /api/generate")
-
-    ollama_response = await convert_chat_to_generate(
-        original_request,
-        request_content_json,
-        prompt_override,
-        history_db,
-        audit_db,
-    )
+    with StatusContext(f"Forwarding {len(chat_messages)} ChatMessages to ollama /api/generate", status_holder):
+        ollama_response = await convert_chat_to_generate(
+            original_request,
+            request_content_json,
+            prompt_override,
+            history_db,
+            audit_db,
+        )
 
     async def wrap_response(
             upstream_response: JSONStreamingResponse,

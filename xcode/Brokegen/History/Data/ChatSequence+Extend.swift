@@ -247,6 +247,10 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                     displayedStatus = "/sequences/\(sequence.serverId!)/continue response: (\(responseInEdit!.content.count) characters so far)"
                     do {
                         let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
+                        if let status = jsonDict["status"] as? String {
+                            displayedStatus = status
+                        }
+
                         if let message = jsonDict["message"] as? [String : Any] {
                             if let fragment = message["content"] as? String {
                                 responseInEdit = responseInEdit!.appendContent(fragment)
@@ -326,6 +330,10 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                     displayedStatus = "/sequences/\(sequence.serverId!)/extend response: (\(responseInEdit!.content.count) characters so far)"
                     do {
                         let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
+                        if let status = jsonDict["status"] as? String {
+                            displayedStatus = status
+                        }
+
                         if let message = jsonDict["message"] as? [String : Any] {
                             if let fragment = message["content"] as? String {
                                 responseInEdit = responseInEdit!.appendContent(fragment)
@@ -407,6 +415,10 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                     displayedStatus = "/sequences/\(sequence.serverId!)/extend response: (\(responseInEdit!.content.count) characters so far)"
                     do {
                         let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
+                        if let status = jsonDict["status"] as? String {
+                            displayedStatus = status
+                        }
+
                         if let message = jsonDict["message"] as? [String : Any] {
                             if let fragment = message["content"] as? String {
                                 responseInEdit = responseInEdit!.appendContent(fragment)

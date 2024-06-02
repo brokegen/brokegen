@@ -1,7 +1,6 @@
-import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Optional, AsyncIterator, TypeVar
+from typing import Optional
 
 import fastapi.routing
 import orjson
@@ -14,6 +13,7 @@ from sqlalchemy import select
 import history.ollama
 from _util.json import safe_get
 from _util.json_streaming import JSONStreamingResponse
+from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import ChatSequenceID, InferenceModelRecordID, PromptText
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
@@ -21,7 +21,7 @@ from history.chat.database import ChatMessageOrm, ChatSequence, lookup_chat_mess
     lookup_sequence_parents
 from history.chat.sequence_get import do_get_sequence
 from history.ollama.chat_rag_routes import finalize_inference_job, do_generate_raw_templated
-from history.ollama.json import consolidate_stream_sync
+from history.ollama.json import consolidate_stream_sync, keepalive_wrapper
 from inference.embeddings.knowledge import get_knowledge
 from inference.embeddings.retrieval import SkipRetrievalPolicy, RetrievalPolicyID, RetrievalPolicy, \
     SimpleRetrievalPolicy, SummarizingRetrievalPolicy
@@ -122,17 +122,18 @@ async def ollama_generate_helper_fn(
 
 
 async def do_continuation(
-        messages_list: list[ChatMessageOrm],
+        messages_list: list[ChatMessage],
         original_sequence: ChatSequence,
         inference_model: InferenceModelRecordOrm,
         retrieval_policy: RetrievalPolicyID | None,
         retrieval_search_args: str | None,
+        status_holder: ServerStatusHolder,
         empty_request: starlette.requests.Request,
         history_db: HistoryDB,
         audit_db: AuditDB,
 ):
     constructed_ollama_body = {
-        "messages": [m.as_json() for m in messages_list],
+        "messages": [m.model_dump() for m in messages_list],
         "model": inference_model.human_id,
     }
 
@@ -149,18 +150,20 @@ async def do_continuation(
     )
 
     if not original_sequence.human_desc:
-        machine_desc: str = await ollama_generate_helper_fn(
-            inference_model,
-            history_db,
-            audit_db,
-            inference_reason="ChatSequence.human_desc",
-            # NB This only works as a system message on models that respect that.
-            #    So, append it to both.
-            system_message="You are a concise summarizer, seizing on easily identifiable + distinguishing factors of the text.",
-            user_prompt="Provide a summary of the provided text in a few words, suitable as a short description for a tab title." +
-                        '\n'.join([m.content for m in messages_list]),
-            assistant_response="Tab title: "
-        )
+        with StatusContext("summarizing prompt as tab name", status_holder):
+            machine_desc: str = await ollama_generate_helper_fn(
+                inference_model,
+                history_db,
+                audit_db,
+                inference_reason="ChatSequence.human_desc",
+                # NB This only works as a system message on models that respect that.
+                #    So, append it to both.
+                system_message="You are a concise summarizer, seizing on easily identifiable + distinguishing factors of the text.",
+                user_prompt="Provide a summary of the provided text in a few words, suitable as a short description for a tab title." +
+                            '\n'.join([m.content for m in messages_list]),
+                assistant_response="Tab title: "
+            )
+
         # Only strip when both leading and trailing, otherwise we're probably just dropping half of a set.
         if machine_desc[0] == '"' and machine_desc[-1] == '"':
             machine_desc = machine_desc.strip('"')
@@ -267,34 +270,6 @@ async def do_continuation(
     async def wrap_response(
             upstream_response: JSONStreamingResponse,
     ) -> JSONStreamingResponse:
-        T = TypeVar('T')
-
-        async def emit_keepalive_chunks(
-                primordial: AsyncIterator[str],
-                timeout: float | None,
-                sentinel: T,
-        ) -> AsyncIterator[T]:
-            start_time = datetime.now(tz=timezone.utc)
-
-            try:
-                maybe_next = asyncio.ensure_future(primordial.__anext__())
-                while True:
-                    try:
-                        yield await asyncio.wait_for(asyncio.shield(maybe_next), timeout)
-                        maybe_next = asyncio.ensure_future(primordial.__anext__())
-                    except asyncio.TimeoutError:
-                        current_time = datetime.now(tz=timezone.utc)
-                        logger.debug(
-                            f"emit_keepalive_chunks(): emitting sentinel type after {current_time - start_time}")
-                        yield sentinel
-
-            except StopAsyncIteration:
-                pass
-
-            finally:
-                maybe_next.cancel()
-
-        upstream_response._content_iterable = emit_keepalive_chunks(upstream_response._content_iterable, 2.0, None)
         upstream_response._content_iterable = add_json_suffix(upstream_response._content_iterable)
         return upstream_response
 
@@ -319,6 +294,7 @@ async def do_continuation(
             history_db,
             audit_db,
             capture_chat_messages=False,
+            status_holder=status_holder,
         ))
 
 
@@ -336,7 +312,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             .filter_by(id=sequence_id)
         ).scalar_one()
 
-        messages_list: list[ChatMessageOrm] = \
+        messages_list: list[ChatMessage] = \
             do_get_sequence(sequence_id, history_db, include_model_info_diffs=False)
 
         # Decide how to continue inference for this sequence
@@ -345,15 +321,23 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         if inference_model is None:
             raise HTTPException(400, f"Could not find model ({params.continuation_model_id=})")
 
-        return await do_continuation(
-            messages_list,
-            original_sequence,
-            inference_model,
-            params.retrieval_policy,
-            params.retrieval_search_args,
-            empty_request,
-            history_db,
-            audit_db,
+        status_holder = ServerStatusHolder(
+            f"/sequences/{sequence_id}/continue: processing on {inference_model.human_id}")
+
+        return await keepalive_wrapper(
+            inference_model.human_id,
+            do_continuation(
+                messages_list,
+                original_sequence,
+                inference_model,
+                params.retrieval_policy,
+                params.retrieval_search_args,
+                status_holder,
+                empty_request,
+                history_db,
+                audit_db,
+            ),
+            status_holder,
         )
 
     @router_ish.post("/sequences/{sequence_id:int}/extend")
@@ -365,7 +349,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             audit_db: AuditDB = Depends(get_audit_db),
     ) -> JSONStreamingResponse:
         # Manually fetch the message + model config history from our requests
-        messages_list: list[ChatMessageOrm] = \
+        messages_list: list[ChatMessage] = \
             do_get_sequence(sequence_id, history_db, include_model_info_diffs=False)
 
         # First, store the message that was painstakingly generated for us.
@@ -383,14 +367,14 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
         maybe_message = lookup_chat_message(params.next_message, history_db)
         if maybe_message is not None:
-            messages_list.append(maybe_message)
+            messages_list.append(ChatMessage.from_orm(maybe_message))
             user_sequence.current_message = maybe_message.id
             user_sequence.generation_complete = True
         else:
             new_message = ChatMessageOrm(**params.next_message.model_dump())
             history_db.add(new_message)
             history_db.commit()
-            messages_list.append(new_message)
+            messages_list.append(ChatMessage.from_orm(new_message))
             user_sequence.current_message = new_message.id
             user_sequence.generation_complete = True
 
@@ -408,13 +392,21 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         if inference_model is None:
             raise HTTPException(400, f"Could not find model ({params.continuation_model_id=})")
 
-        return await do_continuation(
-            messages_list,
-            original_sequence if user_sequence.id is None else user_sequence,
-            inference_model,
-            params.retrieval_policy,
-            params.retrieval_search_args,
-            empty_request,
-            history_db,
-            audit_db,
+        status_holder = ServerStatusHolder(
+            f"/sequences/{sequence_id}/extend: processing on {inference_model.human_id}")
+
+        return await keepalive_wrapper(
+            inference_model.human_id,
+            do_continuation(
+                messages_list,
+                original_sequence if user_sequence.id is None else user_sequence,
+                inference_model,
+                params.retrieval_policy,
+                params.retrieval_search_args,
+                status_holder,
+                empty_request,
+                history_db,
+                audit_db,
+            ),
+            status_holder,
         )

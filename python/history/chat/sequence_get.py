@@ -5,15 +5,13 @@ from http.client import HTTPException
 import fastapi.routing
 from fastapi import Depends
 from pydantic import BaseModel
-from sqlalchemy import Row
 from sqlalchemy import select
 
 from _util.typing import ChatSequenceID, RoleName, PromptText
-from history.chat.database import ChatMessageOrm, lookup_sequence_parents
+from history.chat.database import ChatMessageOrm, lookup_sequence_parents, ChatMessage
 from history.chat.database import ChatSequence
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import InferenceModelRecordOrm, lookup_inference_model_for_event_id, \
-    lookup_inference_model
+from providers.inference_models.orm import InferenceModelRecordOrm, lookup_inference_model_for_event_id
 
 logger = logging.getLogger(__name__)
 
@@ -30,14 +28,14 @@ class InfoMessageOut(BaseModel):
     content: PromptText
 
 
-def translate_model_info(model0: InferenceModelRecordOrm | None) -> ChatMessageOrm:
+def translate_model_info(model0: InferenceModelRecordOrm | None) -> InfoMessageOut:
     if model0 is None:
-        return ChatMessageOrm(
+        return InfoMessageOut(
             role='model config',
             content="no info available",
         )
 
-    return ChatMessageOrm(
+    return InfoMessageOut(
         role='model config',
         content=f"ModelConfigRecord: {json.dumps(model0.as_json(), indent=2)}"
     )
@@ -56,7 +54,7 @@ def translate_model_info_diff(
     if model0.as_json() == model1.as_json():
         return None
 
-    return ChatMessageOrm(
+    return InfoMessageOut(
         role='model config',
         # TODO: pip install jsondiff would make this simpler, and also dumber
         content=f"ModelRecordConfigs changed:\n"
@@ -69,8 +67,8 @@ def do_get_sequence(
         id: ChatSequenceID,
         history_db: HistoryDB,
         include_model_info_diffs: bool,
-) -> list[ChatMessageOrm]:
-    messages_list = []
+) -> list[ChatMessage | InfoMessageOut]:
+    messages_list: list[ChatMessage | InfoMessageOut] = []
     last_seen_model: InferenceModelRecordOrm | None = None
 
     sequence: ChatSequence
@@ -80,7 +78,8 @@ def do_get_sequence(
             .where(ChatMessageOrm.id == sequence.current_message)
         ).scalar_one_or_none()
         if message is not None:
-            messages_list.append(message)
+            message_out = ChatMessage.from_orm(message)
+            messages_list.append(message_out)
 
         # For "debug" purposes, compute the diffs even if we don't render them
         if sequence.inference_job_id is not None:

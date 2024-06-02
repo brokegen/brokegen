@@ -73,6 +73,10 @@ async def emit_keepalive_chunks(
     start_time = datetime.now(tz=timezone.utc)
     maybe_next: asyncio.Future[U] | None = None
 
+    # Emit an initial keepalive, in case our async chunks are enormous
+    logger.debug(f"emit_keepalive_chunks(): emitting zero sentinel after {datetime.now(tz=timezone.utc) - start_time}")
+    yield sentinel
+
     try:
         maybe_next = asyncio.ensure_future(primordial.__anext__())
         while True:
@@ -81,8 +85,7 @@ async def emit_keepalive_chunks(
                 maybe_next = asyncio.ensure_future(primordial.__anext__())
             except asyncio.TimeoutError:
                 current_time = datetime.now(tz=timezone.utc)
-                logger.debug(
-                    f"emit_keepalive_chunks(): emitting sentinel type after {current_time - start_time}")
+                logger.debug(f"emit_keepalive_chunks(): emitting sentinel after {current_time - start_time}")
                 yield sentinel
 
     except StopAsyncIteration:
