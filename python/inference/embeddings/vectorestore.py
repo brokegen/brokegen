@@ -79,8 +79,8 @@ class VectorStoreReadOnly:
                 self.embedder,
                 shard_id,
                 allow_dangerous_deserialization=True)
-            logger.info(f"Loaded saved embeddings from \"{shard_id}\" on disk, "
-                        f"{len(new_vectordb.index_to_docstore_id):_} entries in shard")
+            logger.info(f"Loaded {len(new_vectordb.index_to_docstore_id):_} embeddings "
+                        f"from \"{parent_dir}\" / \"{shard_id}\"")
             return new_vectordb
 
         except RuntimeError:

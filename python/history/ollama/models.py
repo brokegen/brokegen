@@ -1,16 +1,19 @@
+import logging
 from datetime import datetime, timezone
 from typing import Generator
 
 import orjson
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func
 
 from _util.json import safe_get
+from _util.typing import InferenceModelHumanID
 from history.ollama.json import OllamaResponseContentJSON
 from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceModelRecordOrm, InferenceModelRecord, \
     InferenceModelAddRequest, lookup_inference_model_detailed
-from _util.typing import InferenceModelRecordID, InferenceModelHumanID
 from providers.orm import ProviderRecordOrm, ProviderRecord
+
+logger = logging.getLogger(__name__)
 
 
 def fetch_model_record(
@@ -35,6 +38,9 @@ def build_models_from_api_tags(
         response_json,
         history_db: HistoryDB,
 ) -> Generator[InferenceModelRecord, None, None]:
+    """
+    /api/tags fills in the `model_identifiers`, but `combined_inference_parameters` must be from /api/show
+    """
     for model0 in safe_get(response_json, 'models'):
         sorted_model_json = orjson.loads(
             orjson.dumps(model0, option=orjson.OPT_SORT_KEYS)
@@ -52,8 +58,8 @@ def build_models_from_api_tags(
             first_seen_at=model_modified_at,
             last_seen=datetime.now(tz=timezone.utc),
             provider_identifiers=provider_record.identifiers,
-            model_identifiers=sorted_model_json['details'],
-            # combined_inference_parameters=None,
+            model_identifiers=sorted_model_json,
+            combined_inference_parameters=None,
         )
 
         maybe_model = lookup_inference_model_detailed(model_in, history_db)
@@ -65,31 +71,16 @@ def build_models_from_api_tags(
             yield InferenceModelRecord.from_orm(maybe_model)
             continue
 
-        # Also allow for the case where /api/show provided real parameters that got merged in
-        maybe_model2 = history_db.execute(
-            select(InferenceModelRecordOrm)
-            .where(InferenceModelRecordOrm.human_id == model_in.human_id,
-                   InferenceModelRecordOrm.provider_identifiers == model_in.provider_identifiers,
-                   InferenceModelRecordOrm.model_identifiers == model_in.model_identifiers,
-                   )
-            .where(or_(
-                InferenceModelRecordOrm.combined_inference_parameters.is_(None),
-                InferenceModelRecordOrm.combined_inference_parameters.is_("null"),
-            ))
-            .order_by(InferenceModelRecordOrm.last_seen.desc())
-            .limit(1)
-        ).scalar_one_or_none()
-        if maybe_model2 is not None:
-            yield maybe_model2
+        else:
+            logger.info(f"GET /api/tags returned a new InferenceModelRecord: {safe_get(sorted_model_json, 'name')}")
+            new_model = InferenceModelRecordOrm(
+                **model_in.model_dump(),
+            )
+            history_db.add(new_model)
+            history_db.commit()
+
+            yield InferenceModelRecord.from_orm(new_model)
             continue
-
-        new_model = InferenceModelRecordOrm(
-            **model_in.model_dump(),
-        )
-        history_db.add(new_model)
-        history_db.commit()
-
-        yield InferenceModelRecord.from_orm(new_model)
 
 
 def build_model_from_api_show(
@@ -102,9 +93,6 @@ def build_model_from_api_show(
         orjson.dumps(response_json, option=orjson.OPT_SORT_KEYS)
     )
 
-    # Convert the 'details' key into model_identifiers
-    model_identifiers = safe_get(sorted_response_json, "details") or {}
-
     # Parse the rest of the response into inference_parameters
     updated_inference_parameters = {}
     for k, v in sorted_response_json.items():
@@ -113,14 +101,24 @@ def build_model_from_api_show(
             continue
 
         elif k == 'parameters':
+            final_ollama_parameters = {}
+
             # Apparently the list of parameters comes back in random order, so sort it
-            sorted_params: list[str] = sorted(v.split('\n'))
-            updated_inference_parameters[k] = '\n'.join(sorted_params)
+            sorted_ollama_parameter_lines: list[str] = sorted(v.split('\n'))
+            for ollama_parameter_line in sorted_ollama_parameter_lines:
+                p_word, key, value = ollama_parameter_line.split()
+                if p_word != 'PARAMETER':
+                    logger.warning(f"Found odd Ollama parameter line for {human_id}: {ollama_parameter_line}")
+
+                final_ollama_parameters[key] = value
+
+            updated_inference_parameters[k] = final_ollama_parameters
             continue
 
         # And actually, the modelfile includes these out-of-order parameters, so just ignore eit
         elif k == 'modelfile':
-            updated_inference_parameters[k] = "# no modelfile, ollama can't behave"
+            updated_inference_parameters[k] = \
+                "# skipped modelfile contents, since ollama returns randomly-sorted parameters in it"
             continue
 
         updated_inference_parameters[k] = v
@@ -128,48 +126,54 @@ def build_model_from_api_show(
     # Construct most of a new model, for the sake of checking
     model_in = InferenceModelAddRequest(
         human_id=human_id,
+        last_seen=datetime.now(tz=timezone.utc),
         provider_identifiers=provider_identifiers,
-        model_identifiers=model_identifiers,
         combined_inference_parameters=updated_inference_parameters,
     )
-    if model_in.last_seen is None:
-        model_in.last_seen = datetime.now(tz=timezone.utc)
 
-    # Quick check for more precise matches
-    maybe_model1 = lookup_inference_model_detailed(model_in, history_db)
-    if maybe_model1:
-        return maybe_model1
-
-    # Otherwise, scan entries one-at-a-time and figure out how to merge in data.
-    # This merge is only feasible when /api/tags response and /api/show's 'details' sections are identical,
-    # which only seems to be true testing a few models with `ollama --version` `0.1.33+e9ae607e`.
-    #
-    # Beyond that, though, it's not _terrible_ to have two sets of models, mapping to each call.
-    maybe_model2: InferenceModelRecordOrm | None = history_db.execute(
+    # Check for an exact match first, which should be the most common case
+    exact_match: InferenceModelRecordOrm | None = history_db.execute(
         select(InferenceModelRecordOrm)
-            .where(InferenceModelRecordOrm.human_id == model_in.human_id,
-                   InferenceModelRecordOrm.provider_identifiers == model_in.provider_identifiers,
-                   InferenceModelRecordOrm.model_identifiers == model_in.model_identifiers,
-               )
-        .where(or_(
-            InferenceModelRecordOrm.combined_inference_parameters.is_(None),
-            InferenceModelRecordOrm.combined_inference_parameters.is_("null"),
-        ))
+        .where(
+            InferenceModelRecordOrm.human_id == human_id,
+            InferenceModelRecordOrm.provider_identifiers == provider_identifiers,
+            func.json_extract(InferenceModelRecordOrm.model_identifiers, "$.details") == safe_get(
+                sorted_response_json, "details"),
+            InferenceModelRecordOrm.combined_inference_parameters == updated_inference_parameters,
+        )
         .order_by(InferenceModelRecordOrm.last_seen.desc())
         .limit(1)
     ).scalar_one_or_none()
-    if maybe_model2 is not None:
-        maybe_model2.merge_in_updates(model_in)
-        history_db.add(maybe_model2)
+    if exact_match is not None:
+        exact_match.merge_in_updates(model_in)
+        history_db.add(exact_match)
         history_db.commit()
 
-        return maybe_model2
+        return exact_match
 
-    # Otherwise-otherwise, just create an entirely new model
-    new_model = InferenceModelRecordOrm(
-        **model_in.model_dump(),
-    )
-    history_db.add(new_model)
-    history_db.commit()
+    # Scan for /api/tags-created entries one-at-a-time and figure out how to merge in data.
+    # This merge is only feasible when /api/tags response and /api/show's 'details' sections are identical,
+    # which seems to be true testing a few models with `ollama --version` `0.1.33+e9ae607e`.
+    api_tags_match: InferenceModelRecordOrm | None = history_db.execute(
+        select(InferenceModelRecordOrm)
+        .where(
+            InferenceModelRecordOrm.human_id == human_id,
+            InferenceModelRecordOrm.provider_identifiers == provider_identifiers,
+            func.json_extract(InferenceModelRecordOrm.model_identifiers, "$.details") == safe_get(
+                sorted_response_json, "details"),
+            or_(
+                InferenceModelRecordOrm.combined_inference_parameters.is_(None),
+                InferenceModelRecordOrm.combined_inference_parameters.is_("null"),
+            ),
+        )
+        .order_by(InferenceModelRecordOrm.last_seen.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    if api_tags_match is not None:
+        api_tags_match.merge_in_updates(model_in)
+        history_db.add(api_tags_match)
+        history_db.commit()
 
-    return new_model
+        return api_tags_match
+
+    raise NotImplementedError(f"Could not find {human_id}, must call /api/tags first before populating its inference parameters")

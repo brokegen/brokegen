@@ -43,8 +43,12 @@ class SkipRetrievalPolicy(RetrievalPolicy):
 class SimpleRetrievalPolicy(RetrievalPolicy):
     def __init__(self, knowledge: KnowledgeSingleton):
         self.retriever = knowledge.as_retriever(
-            search_type='similarity',
-            search_kwargs={"k": 12},
+            search_type="mmr",
+            search_kwargs={
+                "k": 18,
+                "fetch_k": 60,
+                "lambda_mult": 0.25,
+            },
         )
 
     async def parse_chat_history(
