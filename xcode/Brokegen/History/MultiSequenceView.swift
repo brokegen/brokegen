@@ -70,7 +70,7 @@ struct SequenceRow: View {
     func displayInferenceModel() -> String? {
         guard sequence.inferenceModelId != nil else { return nil }
 
-        if let model = providerService.availableModels.first(where: {
+        if let model = providerService.allModels.first(where: {
             $0.serverId == sequence.inferenceModelId!
         }) {
             return model.humanId

@@ -16,7 +16,7 @@ typealias InferenceModelRecordID = Int
 typealias InferenceEventID = Int
 
 public struct InferenceModel: Identifiable {
-    public let id: UUID = UUID()
+    public let id: UUID
     public let serverId: Int
 
     public let humanId: String
@@ -35,6 +35,10 @@ public struct InferenceModel: Identifiable {
 
 extension InferenceModel {
     init(_ jsonDict: [String: Any?]) {
+        self.init(clientId: UUID(), jsonDict: jsonDict)
+    }
+
+    init(clientId: UUID, jsonDict: [String: Any?]) {
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
@@ -53,6 +57,7 @@ extension InferenceModel {
         }
 
         self.init(
+            id: clientId,
             serverId: jsonDict["id"] as! Int,
             humanId: jsonDict["human_id"] as! String,
             firstSeenAt: firstSeenAt0,
@@ -61,6 +66,20 @@ extension InferenceModel {
             modelIdentifiers: (jsonDict["model_identifiers"] as! [String : Any]),
             combinedInferenceParameters: jsonDict["combined_inference_parameters"] as? JSONObject,
             stats: (jsonDict["stats"] as! [String : Any])
+        )
+    }
+
+    func replaceId(_ newClientId: UUID) -> InferenceModel {
+        return InferenceModel(
+            id: newClientId,
+            serverId: self.serverId,
+            humanId: self.humanId,
+            firstSeenAt: self.firstSeenAt,
+            lastSeen: self.lastSeen,
+            providerIdentifiers: self.providerIdentifiers,
+            modelIdentifiers: self.modelIdentifiers,
+            combinedInferenceParameters: self.combinedInferenceParameters,
+            stats: self.stats
         )
     }
 }
@@ -78,7 +97,23 @@ class ProviderService: Observable, ObservableObject {
         return Alamofire.Session(configuration: configuration)
     }()
 
-    var availableModels: [InferenceModel] = []
+    var availableModels: [InferenceModel] {
+        get {
+            do {
+                let predicate = #Predicate<InferenceModel> {
+                    $0.humanId.contains("instruct")
+                    // This relies on the way our stats field is implemented, but, fine.
+                    || $0.stats?.count ?? 0 > 1
+                }
+                return try allModels.filter(predicate)
+            }
+            catch {
+                return allModels
+            }
+        }
+    }
+
+    var allModels: [InferenceModel] = []
 
     private func getData(_ endpoint: String) async -> Data? {
         do {
@@ -140,14 +175,51 @@ class ProviderService: Observable, ObservableObject {
         }
     }
 
+    /// TODO: The sorting order gets all messed up.
+    private func replaceModelById(_ originalModelId: InferenceModelRecordID?, with updatedModel: InferenceModel) {
+        var priorClientId: UUID? = nil
+        var priorRemovalIndex: Int? = nil
+
+        if originalModelId != nil {
+            if let removalIndex = allModels.firstIndex(where: {
+                $0.serverId == originalModelId
+            }) {
+                priorClientId = self.allModels[removalIndex].id
+                priorRemovalIndex = removalIndex
+            }
+
+            self.allModels.removeAll(where: {
+                $0.serverId == originalModelId
+            })
+        }
+
+        if let clientId = priorClientId {
+            if priorRemovalIndex != nil {
+                self.allModels.insert(
+                    updatedModel.replaceId(clientId),
+                    at: priorRemovalIndex!)
+            }
+            else {
+                self.allModels.append(updatedModel.replaceId(clientId))
+            }
+        }
+        else {
+            if priorRemovalIndex != nil {
+                self.allModels.insert(updatedModel, at: priorRemovalIndex!)
+            }
+            else {
+                self.allModels.append(updatedModel)
+            }
+        }
+    }
+
     func fetchAvailableModels() {
         Task.init {
             if let data = await getDataAsJsonDict("/models/available") {
                 let sortedData = data.sorted(by: { Int($0.0) ?? -1 < Int($1.0) ?? -1 })
                 for (sortIndex, modelInfo) in sortedData {
                     let model = InferenceModel(modelInfo as! [String : Any?])
-                    //print("[DEBUG] adding model #\(sortIndex) \(model.humanId): \(String(describing: model.stats) ?? "")")
-                    availableModels.append(model)
+                    replaceModelById(model.serverId, with: model)
                 }
             }
         }
