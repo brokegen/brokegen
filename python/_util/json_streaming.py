@@ -16,7 +16,7 @@ import asyncio
 import logging
 from collections.abc import AsyncIterable
 from datetime import datetime, timezone
-from typing import Callable, Awaitable, AsyncIterator, TypeVar
+from typing import Callable, Awaitable, AsyncIterator, TypeVar, Any
 from typing import Iterable
 
 import orjson
@@ -28,8 +28,6 @@ from starlette.responses import StreamingResponse, JSONResponse
 
 from _util.json import safe_get, JSONDict
 from _util.typing import InferenceModelHumanID
-from history.ollama.json import OllamaResponseContentJSON, \
-    consolidate_stream
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +61,38 @@ class JSONStreamingResponse(StreamingResponse, JSONResponse):
         self.init_headers(headers)
 
 
+T = TypeVar('T')
+U = TypeVar('U')
+
+
+async def emit_keepalive_chunks(
+        primordial: AsyncIterator[U],
+        timeout: float | None,
+        sentinel: T,
+) -> AsyncIterator[U | T]:
+    start_time = datetime.now(tz=timezone.utc)
+    maybe_next: asyncio.Future[U] | None = None
+
+    try:
+        maybe_next = asyncio.ensure_future(primordial.__anext__())
+        while True:
+            try:
+                yield await asyncio.wait_for(asyncio.shield(maybe_next), timeout)
+                maybe_next = asyncio.ensure_future(primordial.__anext__())
+            except asyncio.TimeoutError:
+                current_time = datetime.now(tz=timezone.utc)
+                logger.debug(
+                    f"emit_keepalive_chunks(): emitting sentinel type after {current_time - start_time}")
+                yield sentinel
+
+    except StopAsyncIteration:
+        pass
+
+    finally:
+        if maybe_next is not None:
+            maybe_next.cancel()
+
+
 async def complex_nothing_chain(
         inference_model_human_id: InferenceModelHumanID,
         is_disconnected: Callable[[], Awaitable[bool]],
@@ -93,35 +123,6 @@ async def complex_nothing_chain(
             "done": True,
         })
 
-    T = TypeVar('T')
-
-    async def emit_keepalive_chunks(
-            primordial: AsyncIterator[str],
-            timeout: float | None,
-            sentinel: T,
-    ) -> AsyncIterator[T]:
-        start_time = datetime.now(tz=timezone.utc)
-        maybe_next: asyncio.Future[str] | None = None
-
-        try:
-            maybe_next = asyncio.ensure_future(primordial.__anext__())
-            while True:
-                try:
-                    yield await asyncio.wait_for(asyncio.shield(maybe_next), timeout)
-                    maybe_next = asyncio.ensure_future(primordial.__anext__())
-                except asyncio.TimeoutError:
-                    current_time = datetime.now(tz=timezone.utc)
-                    logger.debug(
-                        f"emit_keepalive_chunks(): emitting sentinel type after {current_time - start_time}")
-                    yield sentinel
-
-        except StopAsyncIteration:
-            pass
-
-        finally:
-            if maybe_next is not None:
-                maybe_next.cancel()
-
     # Final chunk for what we're returning
     async for chunk in emit_keepalive_chunks(fake_timeout(), 0.5, None):
         if await is_disconnected():
@@ -148,9 +149,14 @@ async def complex_nothing_chain(
 
 # TODO: Make sure this doesn't block execution, or whatever.
 # TODO: Figure out how to trigger two AsyncIterators at once, but we've already burned a day on it.
-async def log_stream_to_console(primordial: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
+async def tee_stream_to_log_and_callback(
+        primordial: AsyncIterator[bytes],
+        on_done_fn: Callable[[AsyncIterable[JSONDict]], Awaitable[Any]],
+) -> AsyncIterator[bytes]:
     """
     TODO: This doesn't work, it only mostly/partly works.
+
+    Also, the indexing into .message.content is API-specific.
     """
     stored_chunks = []
     buffered_text = ''
@@ -174,11 +180,11 @@ async def log_stream_to_console(primordial: AsyncIterator[bytes]) -> AsyncIterat
         for chunk in stored_chunks:
             yield chunk
 
-    async def to_json(primo: AsyncIterable) -> AsyncIterable[OllamaResponseContentJSON]:
-        async for chunk in primo:
+    async def to_json(primordial2: AsyncIterable) -> AsyncIterable[JSONDict]:
+        async for chunk in primordial2:
             yield orjson.loads(chunk)
 
-    _ = await consolidate_stream(to_json(replay_chunks()))
+    await on_done_fn(to_json(replay_chunks()))
 
 
 async def consolidate_stream_to_json(primordial: AsyncIterable[str | bytes]) -> JSONDict:

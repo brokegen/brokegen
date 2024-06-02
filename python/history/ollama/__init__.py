@@ -14,7 +14,7 @@ from history.ollama.chat_rag_routes import do_proxy_chat_rag, convert_chat_to_ge
     do_generate_raw_templated
 from history.ollama.chat_routes import do_proxy_generate, lookup_model_offline
 from history.ollama.forward_routes import forward_request_nodetails, forward_request, forward_request_nolog
-from history.ollama.json import consolidate_stream, OllamaResponseContentJSON, chunk_and_log_output
+from history.ollama.json import consolidate_stream, OllamaResponseContentJSON, chunk_and_log_output, keepalive_wrapper
 from history.ollama.model_routes import do_api_tags, do_api_show_streaming
 from inference.embeddings.knowledge import KnowledgeSingleton, get_knowledge_dependency
 from inference.embeddings.retrieval import SkipRetrievalPolicy, SummarizingRetrievalPolicy, SimpleRetrievalPolicy
@@ -189,7 +189,10 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
         if force_ollama_rag:
             retrieval_policy = SimpleRetrievalPolicy(knowledge)
 
-        return await do_proxy_chat_rag(request, retrieval_policy, history_db, audit_db)
+        return await keepalive_wrapper(
+            safe_get(orjson.loads(await request.body()), "model"),
+            do_proxy_chat_rag(request, retrieval_policy, history_db, audit_db),
+        )
 
     # TODO: Using a router prefix breaks this, somehow
     @ollama_forwarder.head("/ollama-proxy/{ollama_head_path:path}")

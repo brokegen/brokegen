@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import TypeAlias, AsyncIterable, AsyncIterator, Any, Callable, Awaitable, Iterable
+from typing import TypeAlias, AsyncIterable, AsyncIterator, Any, Callable, Awaitable, Iterable, AsyncGenerator
 
 import httpx
 import orjson
@@ -10,6 +10,8 @@ import starlette.responses
 from starlette.background import BackgroundTask
 
 from _util.json import JSONDict, safe_get
+from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks
+from _util.typing import InferenceModelHumanID
 from audit.content_scrubber import scrub_json
 from audit.http import AuditDB, get_db, HttpEvent
 
@@ -157,6 +159,52 @@ async def chunk_and_log_output(
 
     if buffered_chunks:
         log_fn(buffered_chunks)
+
+
+async def keepalive_wrapper(
+        inference_model_human_id: InferenceModelHumanID,
+        real_response_maker: Awaitable[JSONStreamingResponse],
+) -> JSONStreamingResponse:
+    async def delayed_response_maker(
+            timeout: float = 0.7,
+    ) -> AsyncIterable[str | bytes]:
+        """
+        Rather than doing a straight "await", poll, so we don't block
+        """
+        while True:
+            try:
+                # TODO: Hopefully the `await` here is enough for other coroutines to execute
+                real_response = await asyncio.wait_for(asyncio.shield(real_response_maker), timeout)
+                return real_response.body_iterator
+            except asyncio.TimeoutError:
+                pass
+
+    async def do_keepalive(
+            primordial: AsyncIterable[str | bytes],
+    ) -> AsyncGenerator[str | bytes]:
+        async for chunk in emit_keepalive_chunks(primordial.__aiter__(), 0.5, None):
+            if chunk is None:
+                yield orjson.dumps({
+                    "model": inference_model_human_id,
+                    "created_at": datetime.now(tz=timezone.utc),
+                    "message": {
+                        # On testing, we don't even need this field, so empty string is fine
+                        "content": "",
+                        "role": "assistant",
+                    },
+                    "done": False,
+                    # Add random fields, since clients seem robust
+                    "response": "",
+                    "status": "Waiting for Ollama response",
+                })
+                continue
+
+            yield chunk
+
+    return JSONStreamingResponse(
+        content=do_keepalive(await delayed_response_maker()),
+        status_code=200,
+    )
 
 
 class OllamaEventBuilder:

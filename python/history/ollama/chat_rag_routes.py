@@ -12,7 +12,7 @@ from sqlalchemy import select
 from starlette.exceptions import HTTPException
 
 from _util.json import safe_get, JSONArray, safe_get_arrayed
-from _util.json_streaming import JSONStreamingResponse, log_stream_to_console, consolidate_stream_to_json
+from _util.json_streaming import JSONStreamingResponse, tee_stream_to_log_and_callback, consolidate_stream_to_json
 from _util.typing import PromptText, TemplatedPromptText, InferenceModelHumanID
 from audit.http import AuditDB
 from audit.http_raw import HttpxLogger
@@ -391,7 +391,10 @@ async def do_proxy_chat_rag(
             return upstream_response
 
         if log_output:
-            upstream_response._content_iterable = log_stream_to_console(upstream_response._content_iterable)
+            upstream_response._content_iterable = tee_stream_to_log_and_callback(
+                upstream_response._content_iterable,
+                consolidate_stream,
+            )
             return upstream_response
 
     return await wrap_response(ollama_response)
