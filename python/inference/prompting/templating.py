@@ -1,6 +1,9 @@
+import logging
 import re
 
 from _util.typing import PromptText, TemplatedPromptText
+
+logger = logging.getLogger(__name__)
 
 
 async def apply_llm_template(
@@ -36,6 +39,9 @@ async def apply_llm_template(
     except StopIteration:
         pass
 
+    except TypeError:
+        logger.warning(f"Could not match next regex for template: {repr(template1)}")
+
     # And then substitute in the concrete values
     response_used_once: bool = False
     template3 = template1
@@ -67,6 +73,9 @@ async def apply_llm_template(
 
     except StopIteration:
         pass
+
+    except TypeError:
+        logger.warning(f"Could not match next regex for template: {repr(template3)}")
 
     # For some model templates (mistral), `.Response` doesn't even show up in the template.
     # Add it, if needed.
