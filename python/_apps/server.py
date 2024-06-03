@@ -82,11 +82,13 @@ async def lifespan_logging(app: FastAPI):
 @click.option('--bind-port', default=6635, type=click.IntRange(0, 65535),
               help='uvicorn bind port')
 @click.option('--log-level', default='DEBUG',
-              type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'FATAL'], case_sensitive=False),
-              help='loglevel to pass to Python `logging`')
+              help='loglevel to pass to Python `logging`',
+              type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'FATAL'], case_sensitive=False))
 @click.option('--enable-colorlog', default=False)
 @click.option('--trace-sqlalchemy', default=False, type=click.BOOL)
-@click.option('--trace-fastapi', default=True, type=click.BOOL)
+@click.option('--trace-fastapi-http', default=True,
+              help='Record FastAPI ingress/egress, at the HTTP request/response level',
+              type=click.BOOL)
 @click.option('--force-ollama-rag', default=False, type=click.BOOL,
               help='Load FAISS files from --data-dir, and apply them to any ollama-proxy /api/chat calls')
 def run_proxy(
@@ -96,7 +98,7 @@ def run_proxy(
         log_level,
         enable_colorlog: bool,
         trace_sqlalchemy: bool,
-        trace_fastapi: bool,
+        trace_fastapi_http: bool,
         force_ollama_rag: bool,
 ):
     numeric_log_level = getattr(logging, str(log_level).upper(), None)
@@ -126,7 +128,7 @@ def run_proxy(
             logger.exception(f"Failed to initialize app databases")
         return
 
-    if trace_fastapi:
+    if trace_fastapi_http:
         app.add_middleware(
             SqlLoggingMiddleware,
             audit_db=next(get_audit_db()),
@@ -163,8 +165,8 @@ def run_proxy(
     asyncio.run(providers.ollama.discover_servers())
     asyncio.run(providers.llamafile.discover_in('dist'))
 
-    history.ollama.install_forwards(app, force_ollama_rag)
     history.ollama.install_test_points(app)
+    history.ollama.install_forwards(app, force_ollama_rag)
     history.chat.install_routes(app)
     providers.inference_models.routes.install_routes(app)
 
