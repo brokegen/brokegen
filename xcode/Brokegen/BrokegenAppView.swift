@@ -58,7 +58,7 @@ struct AppSidebar: View {
                         }
                     }
 
-                    NavigationLink(destination: InferenceModelView()) {
+                    NavigationLink(destination: InferenceModelsListView()) {
                         HStack {
                             Text("Available Models")
                                 .font(.title2)

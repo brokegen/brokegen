@@ -183,7 +183,7 @@ struct MultiSequenceView: View {
 
             Spacer()
 
-            NavigationLink(destination: InferenceModelView()) {
+            NavigationLink(destination: InferenceModelsListView()) {
                 Label("New Chat...", systemImage: "plus")
                     .buttonStyle(.accessoryBar)
                     .padding(12)

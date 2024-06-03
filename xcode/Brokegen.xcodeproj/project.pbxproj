@@ -23,7 +23,7 @@
 		CE67A9E52C091709008BFA1D /* CustomTabView in Frameworks */ = {isa = PBXBuildFile; productRef = CE67A9E42C091709008BFA1D /* CustomTabView */; };
 		CE6D8A7F2BF6DF1800A7934D /* RibbonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */; };
 		CE7FFE142C04435D00DB7CFA /* ProviderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE132C04435D00DB7CFA /* ProviderService.swift */; };
-		CE7FFE162C04482900DB7CFA /* InferenceModelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE152C04482900DB7CFA /* InferenceModelView.swift */; };
+		CE7FFE162C04482900DB7CFA /* InferenceModelsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE152C04482900DB7CFA /* InferenceModelsListView.swift */; };
 		CE7FFE182C06772400DB7CFA /* BlankOneSequenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE172C06772400DB7CFA /* BlankOneSequenceView.swift */; };
 		CE8229AF2BF7306000029DC2 /* JobsManagerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8229AE2BF7306000029DC2 /* JobsManagerService.swift */; };
 		CE9867512BF4047C008D6C41 /* BrokegenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867502BF4047C008D6C41 /* BrokegenApp.swift */; };
@@ -77,7 +77,7 @@
 		CE4634F52BFBB4D00063142E /* ChatsSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatsSidebar.swift; sourceTree = "<group>"; };
 		CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RibbonView.swift; sourceTree = "<group>"; };
 		CE7FFE132C04435D00DB7CFA /* ProviderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderService.swift; sourceTree = "<group>"; };
-		CE7FFE152C04482900DB7CFA /* InferenceModelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceModelView.swift; sourceTree = "<group>"; };
+		CE7FFE152C04482900DB7CFA /* InferenceModelsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceModelsListView.swift; sourceTree = "<group>"; };
 		CE7FFE172C06772400DB7CFA /* BlankOneSequenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankOneSequenceView.swift; sourceTree = "<group>"; };
 		CE8229AE2BF7306000029DC2 /* JobsManagerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsManagerService.swift; sourceTree = "<group>"; };
 		CE98674D2BF4047C008D6C41 /* Brokegen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Brokegen.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -138,6 +138,7 @@
 		CE4634F02BFBB4560063142E /* History */ = {
 			isa = PBXGroup;
 			children = (
+				CEE99E612C0E7D13008E1B07 /* InferenceModels */,
 				CEAA2B6E2C070AAE002BEB26 /* Data */,
 				CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */,
 				CE7FFE172C06772400DB7CFA /* BlankOneSequenceView.swift */,
@@ -145,7 +146,6 @@
 				CE2988312C09101F00A997A1 /* SequenceViewTwo.swift */,
 				CE4634F12BFBB4730063142E /* MultiSequenceView.swift */,
 				CE4634F52BFBB4D00063142E /* ChatsSidebar.swift */,
-				CE7FFE152C04482900DB7CFA /* InferenceModelView.swift */,
 			);
 			path = History;
 			sourceTree = "<group>";
@@ -244,6 +244,14 @@
 				CEE99E5F2C0D8FF1008E1B07 /* InferenceModelSettingsView.swift */,
 			);
 			path = Settings;
+			sourceTree = "<group>";
+		};
+		CEE99E612C0E7D13008E1B07 /* InferenceModels */ = {
+			isa = PBXGroup;
+			children = (
+				CE7FFE152C04482900DB7CFA /* InferenceModelsListView.swift */,
+			);
+			path = InferenceModels;
 			sourceTree = "<group>";
 		};
 		CEFEB4742BFDA5FB00334522 /* Monitors */ = {
@@ -356,7 +364,7 @@
 				CEFEB4782BFDA6C900334522 /* TimeJob.swift in Sources */,
 				CEE99E5E2C0D8B78008E1B07 /* InferenceModelSettings.swift in Sources */,
 				CE4634ED2BFAE3020063142E /* RestartableProcess.swift in Sources */,
-				CE7FFE162C04482900DB7CFA /* InferenceModelView.swift in Sources */,
+				CE7FFE162C04482900DB7CFA /* InferenceModelsListView.swift in Sources */,
 				CE4634F42BFBB4900063142E /* ChatSyncService.swift in Sources */,
 				CE4634EF2BFAFA340063142E /* StayAwakeService.swift in Sources */,
 				CE9867512BF4047C008D6C41 /* BrokegenApp.swift in Sources */,

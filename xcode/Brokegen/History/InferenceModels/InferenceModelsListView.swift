@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct InferenceModelView: View {
+struct InferenceModelsListView: View {
     @Environment(ProviderService.self) private var providerService
 
     func formatJson(_ jsonDict: [String : Any], indent: Int = 0) -> String {
