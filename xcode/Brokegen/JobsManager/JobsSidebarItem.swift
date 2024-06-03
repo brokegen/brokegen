@@ -12,80 +12,78 @@ struct JobsSidebarItem: View {
     }
 
     var body: some View {
-        HStack {
-            switch job.status {
-            case .notStarted:
-                Image(systemName: "play.fill")
-                    .font(.system(size: 18))
-                    .frame(maxWidth: JobsSidebarItem.LEADING_MARGIN)
-                    .onTapGesture {
-                        _ = job.launch()
-                    }
+        HStack(alignment: .top) {
+            Group {
+                switch job.status {
+                case .notStarted:
+                    Image(systemName: "play")
+                        .onTapGesture {
+                            _ = job.launch()
+                        }
 
-            case .startedWithOutput:
-                Image(systemName: "bolt.horizontal.fill")
-                    .controlSize(.extraLarge)
-                    .foregroundStyle(.green)
-                    .frame(maxWidth: JobsSidebarItem.LEADING_MARGIN)
+                case .startedNoOutput, .startedWithOutput:
+                    Image(systemName: "stop")
+                        .onTapGesture {
+                            _ = job.terminatePatiently()
+                        }
 
-            case .stopped, .error:
-                Image(systemName: "arrow.clockwise")
-                    .frame(width: JobsSidebarItem.LEADING_MARGIN)
-                    .onTapGesture {
-                        _ = job.launch()
-                    }
+                case .requestedStop:
+                    Image(systemName: "stop.fill")
+                        .onTapGesture {
+                            _ = job.terminate()
+                        }
 
-            case _:
-                Spacer()
-                    .padding([.leading], JobsSidebarItem.BUTTON_WIDTH)
-                    .frame(maxWidth: JobsSidebarItem.LEADING_MARGIN)
+                case .stopped, .error:
+                    Image(systemName: "arrow.clockwise")
+                        .onTapGesture {
+                            _ = job.launch()
+                        }
 
+                case _:
+                    Spacer()
+
+                }
             }
+            .frame(width: JobsSidebarItem.LEADING_MARGIN)
+            .layoutPriority(0.5)
 
             Text(job.sidebarTitle)
-                .font(.system(size: 18))
                 .lineLimit(1...4)
+                .layoutPriority(1.0)
 
             Spacer()
 
-            switch job.status {
-            case .requestedStart:
-                ProgressView()
-                    .progressViewStyle(.linear)
-                    .padding([.trailing], JobsSidebarItem.LEADING_MARGIN + 4)
-                    .frame(maxWidth: JobsSidebarItem.PROGRESS_WIDTH + JobsSidebarItem.BUTTON_WIDTH + 6)
+            Group {
+                switch job.status {
+                case .requestedStart:
+                    ProgressView()
+                        .progressViewStyle(.linear)
+                        .padding([.trailing], JobsSidebarItem.LEADING_MARGIN + 4)
+                        .frame(maxWidth: JobsSidebarItem.PROGRESS_WIDTH + JobsSidebarItem.BUTTON_WIDTH + 6)
 
-            case .startedNoOutput:
-                ProgressView()
-                    .progressViewStyle(.linear)
-                    .frame(maxWidth: 80)
-                Image(systemName: "stop")
-                    .frame(width: JobsSidebarItem.BUTTON_WIDTH)
-                    .onTapGesture {
-                        _ = job.terminatePatiently()
-                    }
+                case .startedNoOutput:
+                    ProgressView()
+                        .progressViewStyle(.linear)
+                        .frame(maxWidth: 80)
 
-            case .startedWithOutput:
-                Image(systemName: "stop")
-                    .frame(width: JobsSidebarItem.BUTTON_WIDTH)
-                    .onTapGesture {
-                        _ = job.terminatePatiently()
-                    }
+                case .startedWithOutput:
+                    Image(systemName: "bolt.horizontal.fill")
+                        .controlSize(.extraLarge)
+                        .foregroundStyle(.green)
+                        .frame(maxWidth: JobsSidebarItem.LEADING_MARGIN)
 
-            case .requestedStop:
-                ProgressView()
-                    .controlSize(.small)
-                    .frame(maxWidth: 32)
-                Image(systemName: "stop.fill")
-                    .frame(width: JobsSidebarItem.BUTTON_WIDTH)
-                    .onTapGesture {
-                        _ = job.terminate()
-                    }
+                case .requestedStop:
+                    ProgressView()
+                        .controlSize(.small)
+                        .frame(maxWidth: 32)
 
-            case _:
-                EmptyView()
+                case _:
+                    EmptyView()
+                }
             }
+            .layoutPriority(0.2)
         }
+        .font(.system(size: 16))
         .frame(minHeight: 32)
     }
 }

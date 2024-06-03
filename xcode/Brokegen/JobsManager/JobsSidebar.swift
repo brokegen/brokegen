@@ -42,12 +42,14 @@ struct MiniJobsSidebar: View {
             Divider()
 
             NavigationLink(destination: AllJobs(jobsService.storedJobs)) {
-                Text("Available Jobs")
-                    .font(.title2)
-                    .padding(6)
-                    .layoutPriority(0.5)
-                Spacer()
-                Image(systemName: "chevron.right")
+                HStack {
+                    Text("Available Jobs")
+                        .font(.title2)
+                        .padding(6)
+                        .layoutPriority(0.5)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                }
             }
 
             if !jobsService.sidebarRenderableJobs.isEmpty && navLimit > 0 {

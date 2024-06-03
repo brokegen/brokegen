@@ -99,6 +99,7 @@ struct AppSidebar: View {
                         Text("Providers")
                             .font(.title2)
                             .padding(6)
+                            .layoutPriority(0.5)
                             .foregroundStyle(Color(.disabledControlTextColor))
                         Spacer()
                         Image(systemName: "chevron.right")
@@ -106,11 +107,14 @@ struct AppSidebar: View {
                     }
 
                     NavigationLink(destination: InferenceModelSettingsView()) {
-                        Text("Defaults")
-                            .font(.title2)
-                            .padding(6)
-                        Spacer()
-                        Image(systemName: "chevron.right")
+                        HStack {
+                            Text("Defaults")
+                                .font(.title2)
+                                .padding(6)
+                                .layoutPriority(0.5)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                        }
                     }
                 }
 
@@ -126,7 +130,7 @@ struct AppSidebar: View {
             .layoutPriority(1.0)
         }
         .listStyle(.sidebar)
-        .frame(minWidth: 200, idealWidth: 400, maxHeight: .infinity)
+        .frame(maxHeight: .infinity)
         .toolbar(.hidden)
     }
 }
