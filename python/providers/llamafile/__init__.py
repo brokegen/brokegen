@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 class LlamafileProvider(BaseProvider):
     """
+    llamafile API is based on a vendored llama.cpp/server, see https://github.com/Mozilla-Ocho/llamafile
+
     Providers are expected to be extremely lightweight, so we have an extra "launch()" function that actually starts.
 
     TODO: Make instances share process interactions, which probably implies Borg pattern.
@@ -58,10 +60,14 @@ class LlamafileProvider(BaseProvider):
 
     async def available(self) -> bool:
         ping1 = self.server_comms.build_request(
-            method='HEAD',
-            url='/',
+            method='GET',
+            url='/health',
         )
-        await self.server_comms.send(ping1)
+        response = await self.server_comms.send(ping1)
+        if response.content != '{"status": "ok"}':
+            logger.error(f"{self.filename} not available, response returned: {response.content}")
+            return False
+
         return True
 
     async def make_record(self) -> ProviderRecord:
@@ -103,7 +109,7 @@ class LlamafileProvider(BaseProvider):
             llamafile_test = subprocess.Popen(
                 f"{filename} --version",
                 shell=True,
-                stdout=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
             )
             llamafile_test.wait(5.0)
@@ -138,7 +144,7 @@ class LlamafileProvider(BaseProvider):
         return LlamafileProvider(filename)
 
 
-async def discover_in(*search_paths: str):
+async def discover_llamafiles_in(*search_paths: str):
     async def factory(label: ProviderLabel) -> LlamafileProvider | None:
         if label.type != 'llamafile':
             return None

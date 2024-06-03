@@ -162,8 +162,8 @@ def run_proxy(
             audit_db,
         )
 
-    asyncio.run(providers.ollama.discover_servers())
-    asyncio.run(providers.llamafile.discover_in('dist'))
+    asyncio.run(providers.ollama.discover_ollama_servers())
+    asyncio.run(providers.llamafile.discover_llamafiles_in('dist'))
 
     history.ollama.install_test_points(app)
     history.ollama.install_forwards(app, force_ollama_rag)

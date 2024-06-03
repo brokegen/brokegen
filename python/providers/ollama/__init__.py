@@ -83,7 +83,7 @@ class OllamaProvider(BaseProvider):
         return ProviderRecord.from_orm(new_provider)
 
 
-async def discover_servers():
+async def discover_ollama_servers():
     async def factory(label: ProviderLabel) -> OllamaProvider | None:
         if label.type != 'ollama':
             return None
