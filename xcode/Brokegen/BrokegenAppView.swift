@@ -29,130 +29,101 @@ struct RadialLayout: Layout {
     }
 }
 
-struct SettingsBlob: View {
-    var body: some View {
-        RadialLayout {
-            NavigationLink(destination: SystemInfoView()) {
-                Text("System Info")
-                    .font(.title2)
-            }
-            .padding(6)
-
-            Text("Settings")
-                .font(.title2)
-                .foregroundStyle(.secondary)
-
-            NavigationLink(destination: PlaceholderContentView("INFERENCE")) {
-                Label("Inference", systemImage: "slider.horizontal.3")
-                    .font(.title3)
-                    .padding(24)
-            }
-            NavigationLink(destination: PlaceholderContentView("RETRIEVAL")) {
-                Label("Retrieval", systemImage: "slider.horizontal.3")
-                    .font(.title3)
-            }
-            NavigationLink(destination: PlaceholderContentView("AGENCE")) {
-                Label("A gents", systemImage: "slider.horizontal.3")
-                    .font(.title3)
-            }
-
-            Text("Agents")
-            .padding(12)
-        }
-        .frame(width: 380)
-    }
-
-    var bodyDisabled: some View {
-        VStack(alignment: .trailing) {
-            Divider()
-
-            NavigationLink(destination: SystemInfoView()) {
-                Text("System Info")
-                    .font(.title2)
-            }
-            .padding(6)
-
-            Group {
-                Text("Settings")
-                    .font(.title2)
-                    .foregroundStyle(.secondary)
-
-                NavigationLink(destination: PlaceholderContentView("INFERENCE")) {
-                    Label("Inference", systemImage: "slider.horizontal.3")
-                        .font(.title3)
-                }
-                NavigationLink(destination: PlaceholderContentView("RETRIEVAL")) {
-                    Label("Retrieval", systemImage: "slider.horizontal.3")
-                        .font(.title3)
-                }
-                NavigationLink(destination: PlaceholderContentView("AGENCE")) {
-                    Label("A gents", systemImage: "slider.horizontal.3")
-                        .font(.title3)
-                }
-
-                Text("Agents")
-                .padding(12)
-            }
-            .padding(6)
-        }
-    }
-}
-
 struct AppSidebar: View {
     var body: some View {
-        List {
-            NavigationLink(destination: SystemInfoView()) {
-                Text("System Info")
-                    .font(.title2)
-                    .lineLimit(3)
-                    .padding(6)
+        VStack {
+            List {
+                Section(header: HStack {
+                    Image(systemName: "message")
+                        .font(.system(size: 20))
+                        .foregroundStyle(Color(.controlTextColor))
+                        .padding(.leading, 4)
+                        .padding(.trailing, -8)
+
+                    Text("Chats")
+                        .font(.system(size: 24))
+                        .foregroundStyle(Color(.controlTextColor))
+                        .padding(8)
+                }) {
+                    Divider()
+
+                    NavigationLink(destination: MultiSequenceView()) {
+                        HStack {
+                            Text("Recent")
+                                .font(.title2)
+                                .padding(6)
+                                .layoutPriority(0.5)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                        }
+                    }
+
+                    NavigationLink(destination: InferenceModelView()) {
+                        HStack {
+                            Text("Available Models")
+                                .font(.title2)
+                                .padding(6)
+                                .layoutPriority(0.5)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                        }
+                    }
+                }
+
+                Spacer()
+                    .frame(maxHeight: 48)
+
+                MiniJobsSidebar()
             }
+            .layoutPriority(0.5)
 
-            Section(header: Text("Chats")
-                .font(.largeTitle)
-                .padding(6)
-            ) {
-                NavigationLink(destination: MultiSequenceView()) {
-                    Image(systemName: "slider.horizontal.3")
-                    Text("Recent")
+            Spacer()
+                .layoutPriority(0.2)
+
+            List {
+                NavigationLink(destination: SystemInfoView()) {
+                    Text("System Info")
                         .font(.title2)
+                        .lineLimit(3)
                         .padding(6)
-                    Spacer()
-                    Image(systemName: "chevron.right")
                 }
 
-                NavigationLink(destination: InferenceModelView()) {
-                    Image(systemName: "slider.horizontal.3")
-                    Text("Available Models")
-                        .font(.title2)
-                        .padding(6)
-                    Spacer()
-                    Image(systemName: "plus.message")
+                Section(header: HStack {
+                    Image(systemName: "gear")
+                        .font(.system(size: 24))
+                        .foregroundStyle(Color(.controlTextColor))
+                        .padding(.leading, 4)
+                        .padding(.trailing, -8)
+
+                    Text("Settings")
+                        .font(.system(size: 24))
+                        .foregroundStyle(Color(.controlTextColor))
+                        .padding(8)
+                }) {
+                    Divider()
+
+                    HStack {
+                        Text("Providers")
+                            .font(.title2)
+                            .padding(6)
+                            .foregroundStyle(Color(.disabledControlTextColor))
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .foregroundStyle(Color(.disabledControlTextColor))
+                    }
+
+                    NavigationLink(destination: InferenceModelSettingsView()) {
+                        Text("Defaults")
+                            .font(.title2)
+                            .padding(6)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                    }
                 }
             }
-
-            Divider()
-
-            MiniJobsSidebar()
-
-            Divider()
-
-            Section(header: Label("Settings", systemImage: "gear")
-                .font(.largeTitle)
-                .padding(6)
-            ) {
-                HStack {
-                    Text("Providers")
-                        .font(.title2)
-                        .padding(6)
-                }
-
-                NavigationLink(destination: InferenceModelSettingsView()) {
-                    Text("Defaults")
-                        .font(.title2)
-                        .padding(6)
-                }
-            }
+            .frame(height: 240)
+            .scrollDisabled(true)
+            .layoutPriority(1.0)
         }
         .listStyle(.sidebar)
         .frame(minWidth: 200, idealWidth: 400, maxHeight: .infinity)
@@ -223,10 +194,6 @@ struct BrokegenAppView: View {
             providerService.fetchAvailableModels()
         }
     }
-}
-
-#Preview(traits: .fixedLayout(width: 1024, height: 400)) {
-    SettingsBlob()
 }
 
 #Preview(traits: .fixedLayout(width: 1024, height: 1024)) {
