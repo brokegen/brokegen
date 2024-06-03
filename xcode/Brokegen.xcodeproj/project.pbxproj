@@ -43,6 +43,7 @@
 		CEE99E592C0D85AD008E1B07 /* ChatSequenceClientModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E582C0D85AD008E1B07 /* ChatSequenceClientModel.swift */; };
 		CEE99E5E2C0D8B78008E1B07 /* InferenceModelSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E5D2C0D8B78008E1B07 /* InferenceModelSettings.swift */; };
 		CEE99E602C0D8FF1008E1B07 /* InferenceModelSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E5F2C0D8FF1008E1B07 /* InferenceModelSettingsView.swift */; };
+		CEE99E632C0E7D9F008E1B07 /* OneInferenceModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E622C0E7D9F008E1B07 /* OneInferenceModel.swift */; };
 		CEFEB4762BFDA67400334522 /* SimplePing.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFEB4752BFDA67400334522 /* SimplePing.swift */; };
 		CEFEB4782BFDA6C900334522 /* TimeJob.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFEB4772BFDA6C900334522 /* TimeJob.swift */; };
 		CEFEB47E2BFE399500334522 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = CEFEB47D2BFE399500334522 /* SwiftTerm */; };
@@ -97,6 +98,7 @@
 		CEE99E582C0D85AD008E1B07 /* ChatSequenceClientModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSequenceClientModel.swift; sourceTree = "<group>"; };
 		CEE99E5D2C0D8B78008E1B07 /* InferenceModelSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceModelSettings.swift; sourceTree = "<group>"; };
 		CEE99E5F2C0D8FF1008E1B07 /* InferenceModelSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceModelSettingsView.swift; sourceTree = "<group>"; };
+		CEE99E622C0E7D9F008E1B07 /* OneInferenceModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneInferenceModel.swift; sourceTree = "<group>"; };
 		CEFEB4752BFDA67400334522 /* SimplePing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimplePing.swift; sourceTree = "<group>"; };
 		CEFEB4772BFDA6C900334522 /* TimeJob.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeJob.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -250,6 +252,7 @@
 			isa = PBXGroup;
 			children = (
 				CE7FFE152C04482900DB7CFA /* InferenceModelsListView.swift */,
+				CEE99E622C0E7D9F008E1B07 /* OneInferenceModel.swift */,
 			);
 			path = InferenceModels;
 			sourceTree = "<group>";
@@ -374,6 +377,7 @@
 				CE9867612BF414B3008D6C41 /* ManagedProcess.swift in Sources */,
 				CE4634E52BFA5F890063142E /* SimpleProcess.swift in Sources */,
 				CE4634E02BF963210063142E /* BaseJob.swift in Sources */,
+				CEE99E632C0E7D9F008E1B07 /* OneInferenceModel.swift in Sources */,
 				CEAA2B722C070B2E002BEB26 /* ChatSequence.swift in Sources */,
 				CEAA2B742C07A8E4002BEB26 /* OneSequenceView.swift in Sources */,
 				CEBAA28C2C003F4B00D43E22 /* InteractiveJobOutputView.swift in Sources */,

@@ -182,18 +182,6 @@ struct BlankOneSequenceView: View {
         submitting = false
     }
 
-    private func formatJson(_ jsonDict: [String : Any], indent: Int = 0) -> String {
-        var stringMaker = ""
-        for (k, v) in jsonDict {
-            if v != nil {
-                stringMaker += String(repeating: " ", count: indent)
-                stringMaker += "\(k): \(v)\n"
-            }
-        }
-
-        return stringMaker
-    }
-
     var body: some View {
         VStack {
             ChatNameInput($chatSequenceHumanDesc)
@@ -201,40 +189,9 @@ struct BlankOneSequenceView: View {
                 .padding(24)
 
             // Display the model info, because otherwise there's nothing to see
-            VStack(alignment: .leading) {
-                Text(initialModel.humanId)
-                    .font(.title)
-                    .monospaced()
-                    .foregroundColor(.accentColor)
-                    .lineLimit(2)
-                    .padding(.bottom, 8)
-
-                if let lastSeen = initialModel.lastSeen {
-                    Text("Last seen: " + String(describing: lastSeen))
-                        .font(.subheadline)
-                }
-
-                Divider()
-
-                Group {
-                    if initialModel.stats != nil {
-                        Text("stats: \n" + formatJson(initialModel.stats!, indent: 2))
-                            .lineLimit(1...)
-                            .monospaced()
-                            .padding(4)
-                    }
-
-                    Text(formatJson(initialModel.modelIdentifiers!))
-                        .lineLimit(1...)
-                        .monospaced()
-                        .padding(4)
-                }
-            }
-            .padding(12)
-            .listRowSeparator(.hidden)
-            .padding(.bottom, 48)
-            .frame(maxWidth: 800)
-            .layoutPriority(0.2)
+            OneInferenceModel(model: initialModel, showAddButton: false)
+                .frame(maxWidth: 800)
+                .layoutPriority(0.2)
 
             VStack {
                 Spacer()
