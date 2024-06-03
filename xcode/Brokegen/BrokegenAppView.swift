@@ -101,6 +101,13 @@ struct SettingsBlob: View {
 struct AppSidebar: View {
     var body: some View {
         List {
+            NavigationLink(destination: SystemInfoView()) {
+                Text("System Info")
+                    .font(.title2)
+                    .lineLimit(3)
+                    .padding(6)
+            }
+
             Section(header: Text("Chats")
                 .font(.largeTitle)
                 .padding(6)
@@ -130,11 +137,21 @@ struct AppSidebar: View {
 
             Divider()
 
-            NavigationLink(destination: SystemInfoView()) {
-                Text("System Info")
-                    .font(.title2)
-                    .lineLimit(3)
-                    .padding(6)
+            Section(header: Label("Settings", systemImage: "gear")
+                .font(.largeTitle)
+                .padding(6)
+            ) {
+                HStack {
+                    Text("Providers")
+                        .font(.title2)
+                        .padding(6)
+                }
+
+                NavigationLink(destination: InferenceModelSettingsView()) {
+                    Text("Defaults")
+                        .font(.title2)
+                        .padding(6)
+                }
             }
         }
         .listStyle(.sidebar)

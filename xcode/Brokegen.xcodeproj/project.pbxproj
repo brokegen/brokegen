@@ -41,6 +41,8 @@
 		CECA47AA2BF6D62E007A28F2 /* SystemInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECA47A92BF6D62E007A28F2 /* SystemInfoView.swift */; };
 		CEDCF2AB2BFFD623006ABBA9 /* OneMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */; };
 		CEE99E592C0D85AD008E1B07 /* ChatSequenceClientModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E582C0D85AD008E1B07 /* ChatSequenceClientModel.swift */; };
+		CEE99E5E2C0D8B78008E1B07 /* InferenceModelSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E5D2C0D8B78008E1B07 /* InferenceModelSettings.swift */; };
+		CEE99E602C0D8FF1008E1B07 /* InferenceModelSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E5F2C0D8FF1008E1B07 /* InferenceModelSettingsView.swift */; };
 		CEFEB4762BFDA67400334522 /* SimplePing.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFEB4752BFDA67400334522 /* SimplePing.swift */; };
 		CEFEB4782BFDA6C900334522 /* TimeJob.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFEB4772BFDA6C900334522 /* TimeJob.swift */; };
 		CEFEB47E2BFE399500334522 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = CEFEB47D2BFE399500334522 /* SwiftTerm */; };
@@ -93,6 +95,8 @@
 		CECA47A92BF6D62E007A28F2 /* SystemInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemInfoView.swift; sourceTree = "<group>"; };
 		CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneMessageView.swift; sourceTree = "<group>"; };
 		CEE99E582C0D85AD008E1B07 /* ChatSequenceClientModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSequenceClientModel.swift; sourceTree = "<group>"; };
+		CEE99E5D2C0D8B78008E1B07 /* InferenceModelSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceModelSettings.swift; sourceTree = "<group>"; };
+		CEE99E5F2C0D8FF1008E1B07 /* InferenceModelSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceModelSettingsView.swift; sourceTree = "<group>"; };
 		CEFEB4752BFDA67400334522 /* SimplePing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimplePing.swift; sourceTree = "<group>"; };
 		CEFEB4772BFDA6C900334522 /* TimeJob.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeJob.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -168,6 +172,7 @@
 		CE98674F2BF4047C008D6C41 /* Brokegen */ = {
 			isa = PBXGroup;
 			children = (
+				CEE99E5A2C0D8ACB008E1B07 /* Settings */,
 				CE4634F02BFBB4560063142E /* History */,
 				CE98675F2BF4149F008D6C41 /* Jobs */,
 				CE4634DC2BF937020063142E /* JobsManager */,
@@ -230,6 +235,15 @@
 				CECA47A92BF6D62E007A28F2 /* SystemInfoView.swift */,
 			);
 			path = Performance;
+			sourceTree = "<group>";
+		};
+		CEE99E5A2C0D8ACB008E1B07 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				CEE99E5D2C0D8B78008E1B07 /* InferenceModelSettings.swift */,
+				CEE99E5F2C0D8FF1008E1B07 /* InferenceModelSettingsView.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 		CEFEB4742BFDA5FB00334522 /* Monitors */ = {
@@ -337,8 +351,10 @@
 				CE4634F62BFBB4D00063142E /* ChatsSidebar.swift in Sources */,
 				CEAA2B702C070AE3002BEB26 /* ChatSequence+Extend.swift in Sources */,
 				CE9867652BF41A3E008D6C41 /* PlaceholderContentView.swift in Sources */,
+				CEE99E602C0D8FF1008E1B07 /* InferenceModelSettingsView.swift in Sources */,
 				CE8229AF2BF7306000029DC2 /* JobsManagerService.swift in Sources */,
 				CEFEB4782BFDA6C900334522 /* TimeJob.swift in Sources */,
+				CEE99E5E2C0D8B78008E1B07 /* InferenceModelSettings.swift in Sources */,
 				CE4634ED2BFAE3020063142E /* RestartableProcess.swift in Sources */,
 				CE7FFE162C04482900DB7CFA /* InferenceModelView.swift in Sources */,
 				CE4634F42BFBB4900063142E /* ChatSyncService.swift in Sources */,
