@@ -28,7 +28,7 @@ struct ChatsSidebar: View {
             Text("Last quarter: Lakers")
         }
 
-        NavigationLink(destination: MultiSequenceView()) {
+        NavigationLink(destination: SequencePickerView()) {
             Spacer()
             Label("Sequences", systemImage: "slider.horizontal.3")
         }

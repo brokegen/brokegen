@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct InferenceModelsListView: View {
+struct ModelPickerView: View {
     @Environment(ProviderService.self) private var providerService
 
     var body: some View {

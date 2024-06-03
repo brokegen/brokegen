@@ -47,7 +47,7 @@ struct AppSidebar: View {
                 }) {
                     Divider()
 
-                    NavigationLink(destination: MultiSequenceView()) {
+                    NavigationLink(destination: SequencePickerView()) {
                         HStack {
                             Text("Recent")
                                 .font(.title2)
@@ -58,7 +58,7 @@ struct AppSidebar: View {
                         }
                     }
 
-                    NavigationLink(destination: InferenceModelsListView()) {
+                    NavigationLink(destination: ModelPickerView()) {
                         HStack {
                             Text("Available Models")
                                 .font(.title2)
@@ -170,7 +170,7 @@ struct BrokegenAppView: View {
     var body: some View {
         NavigationStack(path: $pathHost.path) {
             NavigationSplitView(sidebar: { AppSidebar() }, detail: {
-                AllJobs(jobsService.storedJobs)
+                JobPickerView(jobsService.storedJobs)
             })
             .navigationDestination(for: ChatSequence.self) { sequence in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {

@@ -141,7 +141,7 @@ func dateToSectionName(_ date: Date?) -> String {
     return sectionName
 }
 
-struct MultiSequenceView: View {
+struct SequencePickerView: View {
     @Environment(ChatSyncService.self) private var chatService
     @Environment(PathHost.self) private var pathHost
 
@@ -183,7 +183,7 @@ struct MultiSequenceView: View {
 
             Spacer()
 
-            NavigationLink(destination: InferenceModelsListView()) {
+            NavigationLink(destination: ModelPickerView()) {
                 Label("New Chat...", systemImage: "plus")
                     .buttonStyle(.accessoryBar)
                     .padding(12)

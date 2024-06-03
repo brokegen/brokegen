@@ -1,23 +1,5 @@
 import SwiftUI
 
-struct AllJobs: View {
-    let jobs: [BaseJob]
-
-    init(_ jobs: [BaseJob]) {
-        self.jobs = jobs
-    }
-
-    var body: some View {
-        RadialLayout {
-            ForEach(jobs) { job in
-                NavigationLink(destination: JobOutputView(job: job)) {
-                    JobsSidebarItem(job: job)
-                }
-            }
-        }
-    }
-}
-
 struct MiniJobsSidebar: View {
     @Environment(JobsManagerService.self) private var jobsService: JobsManagerService
     let navLimit: Int
@@ -41,7 +23,7 @@ struct MiniJobsSidebar: View {
         }) {
             Divider()
 
-            NavigationLink(destination: AllJobs(jobsService.storedJobs)) {
+            NavigationLink(destination: JobPickerView(jobsService.storedJobs)) {
                 HStack {
                     Text("Available Jobs")
                         .font(.title2)
