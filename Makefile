@@ -57,12 +57,16 @@ venv-clean:
 # https://github.com/Mozilla-Ocho/llamafile
 # Use Mozilla Ocho `llamafile` binaries as the simplest-to-setup inference server
 #
-build: dist/llava-v1.5-7b-q4.llamafile
 dist/llava-v1.5-7b-q4.llamafile:
 	cd "$(dir $@)" \
 		&& curl -L -O https://huggingface.co/Mozilla/llava-v1.5-7b-llamafile/resolve/main/llava-v1.5-7b-q4.llamafile?download=true
+	echo "[INFO] Expected filesize for $@: 4_294_064_438 bytes"
+	echo "[INFO] Expected \`shasum\`: 1c77bc3d1df6be114e36a09c593e93affd1862c7"
 	chmod +x "$@"
 
-dist/mistral-7b-instruct-v0.2.Q8_0.llamafile:
-	cd dist && curl -L -O https://huggingface.co/Mozilla/Mistral-7B-Instruct-v0.2-llamafile/resolve/main/mistral-7b-instruct-v0.2.Q8_0.llamafile?download=true
+dist/Mistral-7B-Instruct-v0.3.Q4_K_M.llamafile:
+	cd "$(dir $@)" \
+		&& curl -L -O https://huggingface.co/Mozilla/Mistral-7B-Instruct-v0.3-llamafile/resolve/main/Mistral-7B-Instruct-v0.3.Q4_K_M.llamafile?download=true
+	echo "[INFO] Expected filesize for $@: 4_408_359_087 bytes"
+	echo "[INFO] Expected \`shasum\`: 3e0cc8c00ef0fe971424392491273fb2bbc3cbe3"
 	chmod +x "$@"
