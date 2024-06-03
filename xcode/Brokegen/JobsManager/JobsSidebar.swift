@@ -27,15 +27,25 @@ struct MiniJobsSidebar: View {
     }
 
     var body: some View {
-        Section(header: Text("Jobs")
-            .font(.largeTitle)
-            .padding(6)
-        ) {
+        Section(header: HStack {
+            Image(systemName: "checklist")
+                .font(.system(size: 24))
+                .foregroundStyle(Color(.controlTextColor))
+                .padding(.leading, 4)
+                .padding(.trailing, -8)
+
+            Text("Jobs")
+                .font(.system(size: 24))
+                .foregroundStyle(Color(.controlTextColor))
+                .padding(8)
+        }) {
+            Divider()
+
             NavigationLink(destination: AllJobs(jobsService.storedJobs)) {
-                Image(systemName: "slider.horizontal.3")
                 Text("Available Jobs")
                     .font(.title2)
                     .padding(6)
+                    .layoutPriority(0.5)
                 Spacer()
                 Image(systemName: "chevron.right")
             }

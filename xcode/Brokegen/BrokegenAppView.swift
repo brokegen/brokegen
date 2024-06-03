@@ -81,13 +81,6 @@ struct AppSidebar: View {
                 .layoutPriority(0.2)
 
             List {
-                NavigationLink(destination: SystemInfoView()) {
-                    Text("System Info")
-                        .font(.title2)
-                        .lineLimit(3)
-                        .padding(6)
-                }
-
                 Section(header: HStack {
                     Image(systemName: "gear")
                         .font(.system(size: 24))
@@ -119,6 +112,13 @@ struct AppSidebar: View {
                         Spacer()
                         Image(systemName: "chevron.right")
                     }
+                }
+
+                NavigationLink(destination: SystemInfoView()) {
+                    Text("System Info")
+                        .font(.title2)
+                        .lineLimit(3)
+                        .padding(6)
                 }
             }
             .frame(height: 240)

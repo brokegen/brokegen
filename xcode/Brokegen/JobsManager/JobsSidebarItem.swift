@@ -14,36 +14,41 @@ struct JobsSidebarItem: View {
     var body: some View {
         HStack {
             switch job.status {
+            case .notStarted:
+                Image(systemName: "play.fill")
+                    .font(.system(size: 18))
+                    .frame(maxWidth: JobsSidebarItem.LEADING_MARGIN)
+                    .onTapGesture {
+                        _ = job.launch()
+                    }
+
             case .startedWithOutput:
                 Image(systemName: "bolt.horizontal.fill")
                     .controlSize(.extraLarge)
                     .foregroundStyle(.green)
                     .frame(maxWidth: JobsSidebarItem.LEADING_MARGIN)
-            case .error:
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .controlSize(.extraLarge)
-                    .foregroundStyle(.red)
-                    .frame(maxWidth: JobsSidebarItem.LEADING_MARGIN)
-            case _:
-                Spacer()
-                    .padding([.leading], JobsSidebarItem.BUTTON_WIDTH)
-                    .frame(maxWidth: JobsSidebarItem.LEADING_MARGIN)
-            }
 
-            Text(job.sidebarTitle)
-                .font(.title2)
-                .lineLimit(3)
-
-            Spacer()
-
-            switch job.status {
-            case .notStarted:
-                Image(systemName: "play")
-                    .frame(width: JobsSidebarItem.BUTTON_WIDTH)
+            case .stopped, .error:
+                Image(systemName: "arrow.clockwise")
+                    .frame(width: JobsSidebarItem.LEADING_MARGIN)
                     .onTapGesture {
                         _ = job.launch()
                     }
 
+            case _:
+                Spacer()
+                    .padding([.leading], JobsSidebarItem.BUTTON_WIDTH)
+                    .frame(maxWidth: JobsSidebarItem.LEADING_MARGIN)
+
+            }
+
+            Text(job.sidebarTitle)
+                .font(.system(size: 18))
+                .lineLimit(1...4)
+
+            Spacer()
+
+            switch job.status {
             case .requestedStart:
                 ProgressView()
                     .progressViewStyle(.linear)
@@ -77,12 +82,8 @@ struct JobsSidebarItem: View {
                         _ = job.terminate()
                     }
 
-            case .stopped, .error:
-                Image(systemName: "arrow.clockwise")
-                    .frame(width: JobsSidebarItem.BUTTON_WIDTH)
-                    .onTapGesture {
-                        _ = job.launch()
-                    }
+            case _:
+                EmptyView()
             }
         }
         .frame(minHeight: 32)
