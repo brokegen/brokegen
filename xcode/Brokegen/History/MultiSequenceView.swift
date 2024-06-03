@@ -58,6 +58,14 @@ struct SequenceRow: View {
         self.sequence = sequence
     }
 
+    func displayHumanDesc() -> String {
+        if !(sequence.humanDesc ?? "").isEmpty {
+            return sequence.humanDesc!
+        }
+
+        return "ChatSequence#\(sequence.serverId!)"
+    }
+
     func displayDate() -> String? {
         if let date = sequence.lastMessageDate {
             return dateToISOWeekStartingMonday(date) + " " + date.formatted(date: .omitted, time: .standard)
@@ -85,8 +93,7 @@ struct SequenceRow: View {
                 .padding(.leading, -8)
                 .padding(.trailing, 16)
 
-            let longTitle: String = sequence.humanDesc ?? "ChatSequence #\(sequence.serverId!)"
-            Text(longTitle)
+            Text(displayHumanDesc())
                 .font(.title)
                 .padding(.bottom, 8)
                 .lineLimit(1...4)
@@ -199,9 +206,9 @@ struct MultiSequenceView: View {
                         .padding(12)
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            print("[DEBUG] Pushing new ChatSequence view onto stack: \(sequence)")
-                            pathHost.push(sequence)
-                            pathHost.printIt("\(pathHost): ")
+                            pathHost.push(
+                                chatService.clientModel(for: sequence)
+                            )
                         }
                 }
             }

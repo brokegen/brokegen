@@ -309,3 +309,28 @@ class ChatSequenceClientModel: Observable, ObservableObject {
     }
 }
 
+extension ChatSequenceClientModel: Hashable {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(sequence)
+        hasher.combine(promptInEdit)
+        hasher.combine(responseInEdit)
+    }
+}
+
+extension ChatSequenceClientModel: Equatable {
+    static func == (lhs: ChatSequenceClientModel, rhs: ChatSequenceClientModel) -> Bool {
+        if lhs.sequence != rhs.sequence {
+            return false
+        }
+
+        if lhs.promptInEdit != rhs.promptInEdit {
+            return false
+        }
+
+        if lhs.responseInEdit != rhs.responseInEdit {
+            return false
+        }
+
+        return true
+    }
+}

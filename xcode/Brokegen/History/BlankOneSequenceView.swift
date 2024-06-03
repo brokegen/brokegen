@@ -152,23 +152,29 @@ struct BlankOneSequenceView: View {
             let messageId: ChatMessageServerID? = await chatService.constructUserMessage(promptInEdit)
             guard messageId != nil else {
                 submitting = false
+                print("[ERROR] Couldn't submit message: \(promptInEdit)")
                 return
             }
 
             let sequenceId: ChatSequenceServerID? =
                 await constructUserSequence(id: messageId!)
+            guard sequenceId != nil else {
+                submitting = false
+                print("[ERROR] Couldn't construct sequence from: ChatMessage#\(messageId!)")
+                return
+            }
 
-            if sequenceId != nil {
-                let nextSequence = await chatService.fetchSequence(sequenceId!)
-                pathHost.push(ChatSequenceParameters(
-                    nextMessage: nil,
-                    sequenceId: sequenceId!,
-                    sequence: nextSequence,
-                    continuationModelId: initialModel.serverId))
+            let nextSequence = await chatService.fetchSequence(sequenceId!)
+            guard nextSequence != nil else {
+                submitting = false
+                print("[ERROR] Couldn't fetch sequence information for ChatSequence#\(sequenceId!)")
+                return
             }
-            else {
-                print("[ERROR] Couldn't push next ChatSequenceParameters onto NavigationStack")
-            }
+
+            pathHost.push(
+                chatService.clientModel(for: nextSequence!)
+                    .requestContinue(model: initialModel.serverId)
+                )
         }
     }
 
