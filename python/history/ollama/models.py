@@ -47,17 +47,11 @@ def build_models_from_api_tags(
             orjson.dumps(model0, option=orjson.OPT_SORT_KEYS)
         )
 
-        model_modified_at = accessed_at
-        if safe_get(sorted_model_json, 'modified_at'):
-            # TODO: Verify whether ollama source timestamps are in UTC
-            model_modified_at = datetime.fromisoformat(sorted_model_json['modified_at'])
-            model_modified_at = model_modified_at.replace(tzinfo=None)
-
         # Construct most of a new model, for the sake of checking
         model_in = InferenceModelAddRequest(
             human_id=safe_get(sorted_model_json, 'name'),
-            first_seen_at=model_modified_at,
-            last_seen=datetime.now(tz=timezone.utc),
+            first_seen_at=accessed_at,
+            last_seen=accessed_at,
             provider_identifiers=provider_record.identifiers,
             model_identifiers=sorted_model_json,
             combined_inference_parameters=None,
@@ -108,7 +102,7 @@ def build_model_from_api_show(
             sorted_ollama_parameter_lines: list[str] = sorted(v.split('\n'))
             for ollama_parameter_line in sorted_ollama_parameter_lines:
                 try:
-                    key, value = ollama_parameter_line.split()
+                    key, value = ollama_parameter_line.split(maxsplit=1)
                     final_ollama_parameters[key] = value
 
                 except ValueError:
@@ -133,8 +127,14 @@ def build_model_from_api_show(
         combined_inference_parameters=updated_inference_parameters,
     )
 
+    parent_model_id = safe_get(sorted_response_json, "details", "parent_model")
+    if parent_model_id:
+        # Noticed starting with Ollama 0.1.33+e9ae607e
+        logger.warning(f"ollama /api/show: Erasing parent_model info, because it's inconsistent: {parent_model_id} => {human_id}")
+        sorted_response_json["details"]["parent_model"] = ""
+
     # reference_model_details = orjson.dumps(safe_get(sorted_response_json, "details")).decode()
-    reference_model_details: str = json.dumps(safe_get(sorted_response_json, "details"))
+    reference_model_details: str = json.dumps(safe_get(sorted_response_json, "details"), separators=(',', ':'))
     """In particular, sqlalchemy.func.json_extract() returns a _string_, while orjson is bytes."""
 
     # Check for an exact match first, which should be the most common case
@@ -181,4 +181,4 @@ def build_model_from_api_show(
         return api_tags_match
 
     raise NotImplementedError(
-        f"Could not find {human_id}, must call /api/tags first before populating its inference parameters")
+        f"Could not process {human_id}, try calling /api/tags first before populating its inference parameters")

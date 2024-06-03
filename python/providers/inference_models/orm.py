@@ -119,7 +119,8 @@ class InferenceModelRecordOrm(Base):
             if self.first_seen_at is None:
                 self.first_seen_at = model_in.first_seen_at
             else:
-                self.first_seen_at = min(model_in.first_seen_at, self.first_seen_at)
+                requested_first_seen = model_in.first_seen_at.replace(tzinfo=None)
+                self.first_seen_at = min(requested_first_seen, self.first_seen_at)
         if model_in.last_seen is not None:
             if self.last_seen is None:
                 self.last_seen = model_in.last_seen
@@ -294,6 +295,7 @@ def inject_inference_stats(
                 stats_dict["prompt evaluation time"] = query_result[2]
             if query_result[1] and query_result[2]:
                 stats_dict["prompt sec/token"] = query_result[2] / query_result[1]
+                stats_dict["prompt token/sec"] = query_result[1] / query_result[2]
 
             if query_result[3] is not None:
                 stats_dict["response tokens returned"] = query_result[3]
@@ -301,6 +303,7 @@ def inject_inference_stats(
                 stats_dict["response inference time"] = query_result[4]
             if query_result[3] and query_result[4]:
                 stats_dict["response sec/token"] = query_result[4] / query_result[3]
+                stats_dict["response token/sec"] = query_result[3] / query_result[4]
 
             if query_result[1] is not None and query_result[3] is not None:
                 stats_dict["total tokens"] = query_result[1] + query_result[3]

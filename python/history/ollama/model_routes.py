@@ -1,7 +1,8 @@
+import functools
 import itertools
 import logging
 import operator
-from typing import cast, Any
+from typing import cast, Any, Generator
 
 import httpx
 import orjson
@@ -51,13 +52,25 @@ async def do_list_available_models(
     response: httpx.Response = await provider.client.send(upstream_request)
     response: starlette.responses.Response = await intercept.wrap_response(response)
 
-    available_models_generator = build_models_from_api_tags(
+    available_models_generator: Generator[InferenceModelRecord, None, None] = build_models_from_api_tags(
         await provider.make_record(),
         cached_accessed_at,
         orjson.loads(response.body),
         history_db=history_db,
     )
-    models_and_sort_keys = inject_inference_stats(available_models_generator, history_db)
+
+    async def api_show_injector(
+            inference_models: Generator[InferenceModelRecord, None, None]
+    ) -> Generator[InferenceModelRecord, None, None]:
+        inference_model: InferenceModelRecord
+        for inference_model in inference_models:
+            inference_model_orm: InferenceModelRecordOrm
+            inference_model_orm = await do_api_show(inference_model.human_id, history_db, audit_db)
+            yield InferenceModelRecord.from_orm(inference_model_orm)
+
+    models_and_sort_keys = inject_inference_stats(
+        [amodel async for amodel in api_show_injector(available_models_generator)],
+        history_db)
 
     # NB Swift JSON decode does not preserve order, because JSON does not preserve order
     sorted_masks = sorted(models_and_sort_keys, key=operator.itemgetter(1), reverse=True)
@@ -135,7 +148,7 @@ async def do_api_show_streaming(
         audit_db: AuditDB,
 ) -> starlette.responses.Response:
     intercept = OllamaEventBuilder("ollama:/api/show", audit_db)
-    logger.debug(f"ollama proxy: start legacy handler for POST /api/show")
+    logger.debug(f"ollama proxy: start legacy streaming handler for POST /api/show")
 
     provider: BaseProvider = ProviderRegistry().by_label[
         ProviderLabel(type="ollama", id=str(_real_ollama_client.base_url))
