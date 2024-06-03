@@ -137,9 +137,10 @@ extension ChatSyncService {
     }
 
     func updateSequences(with updatedSequence: ChatSequence) {
+        // Keep the first ChatSequence's clientId, in case of duplicates
+        var originalClientId: UUID? = nil
+
         self.sequencesWriteLock.withLock {
-            // Keep the first ChatSequence's clientId, in case of duplicates
-            var originalClientId: UUID? = nil
             if let removalIndex = self._cachedChatSequences.firstIndex(where: {
                 $0.serverId == updatedSequence.serverId
             }) {
@@ -158,6 +159,16 @@ extension ChatSyncService {
                 self._cachedChatSequences.insert(updatedSequence, at: 0)
             }
         }
+
+        let predicate = #Predicate<ChatSequenceClientModel> {
+            $0.sequence.serverId == updatedSequence.serverId
+        }
+        do {
+            for clientModel in try _chatSequenceClientModels.filter(predicate) {
+                clientModel.sequence = updatedSequence
+            }
+        }
+        catch {}
     }
 
     func replaceSequenceById(_ originalSequenceId: ChatSequenceServerID?, with updatedSequenceId: ChatSequenceServerID) {
@@ -188,10 +199,19 @@ extension ChatSyncService {
                         // Insert new ChatSequences in reverse order, newest at the top
                         self._cachedChatSequences.insert(updatedSequence, at: 0)
                     }
+
+                    let predicate = #Predicate<ChatSequenceClientModel> {
+                        $0.sequence.serverId == originalSequenceId
+                    }
+                    do {
+                        for clientModel in try _chatSequenceClientModels.filter(predicate) {
+                            clientModel.sequence = updatedSequence
+                        }
+                    }
                 }
             }
             catch {
-                print("[ERROR] Failed to replaceSequenceById(\(originalSequenceId), with: \(updatedSequenceId))")
+                print("[ERROR] Failed to replaceSequenceById(\(String(describing: originalSequenceId)), with: \(updatedSequenceId))")
             }
         }
     }

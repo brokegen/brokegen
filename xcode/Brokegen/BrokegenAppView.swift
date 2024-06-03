@@ -181,7 +181,7 @@ struct BrokegenAppView: View {
             .navigationDestination(for: ChatSequence.self) { sequence in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {
                     OneSequenceView(
-                        ChatSequenceClientModel(sequence, chatService: chatService)
+                        chatService.clientModel(for: sequence)
                     )
                 })
                 .environment(chatService)
@@ -190,7 +190,7 @@ struct BrokegenAppView: View {
             .navigationDestination(for: ChatSequenceParameters.self) { params in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {
                     OneSequenceView(
-                        ChatSequenceClientModel(params.sequence!, chatService: chatService)
+                        chatService.clientModel(for: params.sequence!)
                             .requestContinue(model: params.continuationModelId)
                     )
                 })

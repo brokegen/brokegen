@@ -185,11 +185,25 @@ class ChatSyncService: Observable, ObservableObject {
         }
     }
 
+    var _chatSequenceClientModels: [ChatSequenceClientModel] = []
     var _cachedChatSequences: [ChatSequence] = []
     var sequencesWriteLock = NSLock()
 
     public var loadedSequences: [ChatSequence] {
         return _cachedChatSequences
+    }
+
+    public func clientModel(for sequence: ChatSequence) -> ChatSequenceClientModel {
+        if let existingSeq = _chatSequenceClientModels.first(where: {
+            $0.sequence == sequence
+        }) {
+            return existingSeq
+        }
+        else {
+            let newModel = ChatSequenceClientModel(sequence, chatService: self)
+            _chatSequenceClientModels.append(newModel)
+            return newModel
+        }
     }
 
     /// Used to check when the @Environment was injected correctly;
