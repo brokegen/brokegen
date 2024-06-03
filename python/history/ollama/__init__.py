@@ -12,11 +12,11 @@ from _util.json import safe_get
 from audit.http import AuditDB, get_db as get_audit_db
 from history.ollama.chat_rag_routes import do_proxy_chat_rag, convert_chat_to_generate, OllamaModelName, \
     do_generate_raw_templated
-from history.ollama.chat_routes import do_proxy_generate, lookup_model_offline
+from history.ollama.chat_routes import do_proxy_generate, lookup_model_offline, lookup_model
 from history.ollama.forward_routes import forward_request_nodetails, forward_request, forward_request_nolog
 from history.ollama.json import consolidate_stream, OllamaResponseContentJSON, chunk_and_log_output, keepalive_wrapper
 from _util.status import ServerStatusHolder
-from history.ollama.model_routes import do_api_tags, do_api_show_streaming
+from history.ollama.model_routes import do_api_tags, do_api_show_streaming, do_api_show
 from inference.embeddings.knowledge import KnowledgeSingleton, get_knowledge_dependency
 from inference.embeddings.retrieval import SkipRetrievalPolicy, SummarizingRetrievalPolicy, SimpleRetrievalPolicy
 from inference.prompting.templating import apply_llm_template
@@ -231,7 +231,8 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
             return await do_api_tags(request, history_db, audit_db)
 
         if ollama_post_path == "api/show":
-            return await do_api_show_streaming(request, history_db, audit_db)
+            request_content_json: dict = orjson.loads(await request.body())
+            return await do_api_show(request_content_json['name'], history_db, audit_db)
 
         return await forward_request(request, audit_db)
 

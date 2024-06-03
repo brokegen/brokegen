@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import datetime, timezone
 from typing import Generator
@@ -106,11 +107,12 @@ def build_model_from_api_show(
             # Apparently the list of parameters comes back in random order, so sort it
             sorted_ollama_parameter_lines: list[str] = sorted(v.split('\n'))
             for ollama_parameter_line in sorted_ollama_parameter_lines:
-                p_word, key, value = ollama_parameter_line.split()
-                if p_word != 'PARAMETER':
-                    logger.warning(f"Found odd Ollama parameter line for {human_id}: {ollama_parameter_line}")
+                try:
+                    key, value = ollama_parameter_line.split()
+                    final_ollama_parameters[key] = value
 
-                final_ollama_parameters[key] = value
+                except ValueError:
+                    logger.error(f"Skipping Ollama parameter line for {human_id}: {ollama_parameter_line}")
 
             updated_inference_parameters[k] = final_ollama_parameters
             continue
@@ -131,14 +133,17 @@ def build_model_from_api_show(
         combined_inference_parameters=updated_inference_parameters,
     )
 
+    # reference_model_details = orjson.dumps(safe_get(sorted_response_json, "details")).decode()
+    reference_model_details: str = json.dumps(safe_get(sorted_response_json, "details"))
+    """In particular, sqlalchemy.func.json_extract() returns a _string_, while orjson is bytes."""
+
     # Check for an exact match first, which should be the most common case
     exact_match: InferenceModelRecordOrm | None = history_db.execute(
         select(InferenceModelRecordOrm)
         .where(
             InferenceModelRecordOrm.human_id == human_id,
             InferenceModelRecordOrm.provider_identifiers == provider_identifiers,
-            func.json_extract(InferenceModelRecordOrm.model_identifiers, "$.details") == safe_get(
-                sorted_response_json, "details"),
+            func.json_extract(InferenceModelRecordOrm.model_identifiers, "$.details") == reference_model_details,
             InferenceModelRecordOrm.combined_inference_parameters == updated_inference_parameters,
         )
         .order_by(InferenceModelRecordOrm.last_seen.desc())
@@ -159,8 +164,7 @@ def build_model_from_api_show(
         .where(
             InferenceModelRecordOrm.human_id == human_id,
             InferenceModelRecordOrm.provider_identifiers == provider_identifiers,
-            func.json_extract(InferenceModelRecordOrm.model_identifiers, "$.details") == safe_get(
-                sorted_response_json, "details"),
+            func.json_extract(InferenceModelRecordOrm.model_identifiers, "$.details") == reference_model_details,
             or_(
                 InferenceModelRecordOrm.combined_inference_parameters.is_(None),
                 InferenceModelRecordOrm.combined_inference_parameters.is_("null"),
@@ -176,4 +180,5 @@ def build_model_from_api_show(
 
         return api_tags_match
 
-    raise NotImplementedError(f"Could not find {human_id}, must call /api/tags first before populating its inference parameters")
+    raise NotImplementedError(
+        f"Could not find {human_id}, must call /api/tags first before populating its inference parameters")
