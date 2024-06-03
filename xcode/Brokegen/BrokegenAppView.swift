@@ -73,6 +73,7 @@ struct AppSidebar: View {
                 Spacer()
                     .frame(maxHeight: 48)
 
+                // TODO: ViewThatFits
                 MiniJobsSidebar()
             }
             .layoutPriority(0.5)
@@ -156,6 +157,7 @@ class PathHost {
 
 struct BrokegenAppView: View {
     @Environment(ChatSyncService.self) private var chatService
+    @Environment(JobsManagerService.self) private var jobsService
     @Environment(ProviderService.self) private var providerService
     @Binding private var pathHost: PathHost
 
@@ -168,7 +170,7 @@ struct BrokegenAppView: View {
     var body: some View {
         NavigationStack(path: $pathHost.path) {
             NavigationSplitView(sidebar: { AppSidebar() }, detail: {
-                MultiSequenceView()
+                AllJobs(jobsService.storedJobs)
             })
             .navigationDestination(for: ChatSequence.self) { sequence in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {

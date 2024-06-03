@@ -70,18 +70,25 @@ struct TallJobsSidebar: View {
     @Environment(JobsManagerService.self) private var jobsService: JobsManagerService
 
     var body: some View {
-        Section(header: Text("ALL JOBS")
-            .font(.title2)
-            .foregroundStyle(.primary)
-            .padding(6)
-        ) {
-            ForEach(jobsService.storedJobs) { job in
-                NavigationLink(destination: InteractiveJobOutputView(job: job)) {
+        Section(header: HStack {
+            Image(systemName: "checklist")
+                .font(.system(size: 24))
+                .foregroundStyle(Color(.controlTextColor))
+                .padding(.leading, 4)
+                .padding(.trailing, -8)
+
+            Text("All Jobs")
+                .font(.system(size: 24))
+                .foregroundStyle(Color(.controlTextColor))
+                .padding(8)
+        }) {
+            Divider()
+
+            ForEach(jobsService.sidebarRenderableJobs) { job in
+                NavigationLink(destination: JobOutputView(job: job)) {
                     JobsSidebarItem(job: job)
                 }
             }
         }
-
-        Spacer()
     }
 }
