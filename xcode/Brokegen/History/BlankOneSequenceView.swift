@@ -189,7 +189,7 @@ struct BlankOneSequenceView: View {
                 .padding(24)
 
             // Display the model info, because otherwise there's nothing to see
-            OneInferenceModel(model: initialModel, showAddButton: false)
+            OneInferenceModel(model: initialModel, showAddButton: false, modelAvailable: true)
                 .frame(maxWidth: 800)
                 .layoutPriority(0.2)
 

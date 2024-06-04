@@ -142,7 +142,7 @@ struct BrokegenAppView: View {
     var body: some View {
         NavigationStack(path: $pathHost.path) {
             NavigationSplitView(sidebar: { AppSidebar() }, detail: {
-                JobPickerView(jobsService.storedJobs)
+                ModelPickerView()
             })
             .navigationDestination(for: ChatSequence.self) { sequence in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {

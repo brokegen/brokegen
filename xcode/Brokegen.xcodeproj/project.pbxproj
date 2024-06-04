@@ -254,8 +254,8 @@
 		CEE99E612C0E7D13008E1B07 /* InferenceModels */ = {
 			isa = PBXGroup;
 			children = (
-				CE7FFE152C04482900DB7CFA /* ModelPickerView.swift */,
 				CEE99E622C0E7D9F008E1B07 /* OneInferenceModel.swift */,
+				CE7FFE152C04482900DB7CFA /* ModelPickerView.swift */,
 			);
 			path = InferenceModels;
 			sourceTree = "<group>";
