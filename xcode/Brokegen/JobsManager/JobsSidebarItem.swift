@@ -88,6 +88,14 @@ struct JobsSidebarItem: View {
     }
 }
 
+/// This is only used in #Preview
+extension TimeJob {
+    func setStatus(_ status: JobStatus) -> Self {
+        self.status = status
+        return self
+    }
+}
+
 #Preview(traits: .fixedLayout(width: 384, height: 512)) {
     VStack(alignment: .leading) {
         Section(header: Text("Starting")
@@ -99,8 +107,8 @@ struct JobsSidebarItem: View {
             JobsSidebarItem(job: TimeJob(
                 "row0 -- extremely long row name\n" +
                 "with 😡😠, damn multibyte unicode chars")
-                .status(.notStarted))
-            JobsSidebarItem(job: TimeJob("row1").status(.requestedStart))
+                .setStatus(.notStarted))
+            JobsSidebarItem(job: TimeJob("row1").setStatus(.requestedStart))
         }
 
         Section(header: Text("Started")
@@ -109,12 +117,12 @@ struct JobsSidebarItem: View {
             .font(.title)
             .foregroundStyle(.primary)
         ) {
-            JobsSidebarItem(job: TimeJob("row2").status(.startedNoOutput))
-            JobsSidebarItem(job: TimeJob("row3").status(.startedWithOutput))
-            JobsSidebarItem(job: TimeJob("row4").status(.requestedStop))
+            JobsSidebarItem(job: TimeJob("row2").setStatus(.startedNoOutput))
+            JobsSidebarItem(job: TimeJob("row3").setStatus(.startedWithOutput))
+            JobsSidebarItem(job: TimeJob("row4").setStatus(.requestedStop))
             Divider()
-            JobsSidebarItem(job: TimeJob("row5").status(.stopped))
-            JobsSidebarItem(job: TimeJob("row6").status(.error("sidebar, eh")))
+            JobsSidebarItem(job: TimeJob("row5").setStatus(.stopped))
+            JobsSidebarItem(job: TimeJob("row6").setStatus(.error("sidebar, eh")))
         }
     }
     .frame(maxHeight: .infinity)
