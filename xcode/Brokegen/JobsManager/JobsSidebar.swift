@@ -18,12 +18,7 @@ struct MiniJobsSidebar: View {
             }
         }) {
             NavigationLink(destination: JobPickerView(jobsService.storedJobs)) {
-                HStack {
-                    Text("Some Jobs")
-                        .layoutPriority(0.5)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                }
+                ASRow("All Jobs", showChevron: true)
             }
 
             if !jobsService.sidebarRenderableJobs.isEmpty && navLimit > 0 {
@@ -32,6 +27,8 @@ struct MiniJobsSidebar: View {
                 ForEach(jobsService.sidebarRenderableJobs.prefix(navLimit)) { job in
                     NavigationLink(destination: JobOutputView(job: job)) {
                         JobsSidebarItem(job: job)
+                            .padding(.leading, -24)
+                            .padding(.trailing, -24)
                     }
                 }
             }

@@ -107,6 +107,8 @@ struct AppSidebar: View {
                         }
                     }) {
                         ASRow("IRC revival")
+                            .disabled(true)
+                            .foregroundStyle(Color(.disabledControlTextColor))
                     }
 
                     AppSidebarSection(label: {
@@ -130,7 +132,7 @@ struct AppSidebar: View {
                         Image(systemName: "sink")
                             .padding(.trailing, 0)
 
-                        Text("Experiment")
+                        Text("Experiments")
                     }) {
                         ASRow("Model Inspector")
                             .foregroundStyle(Color(.disabledControlTextColor))

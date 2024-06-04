@@ -76,6 +76,7 @@ struct JobPickerView: View {
             ForEach(jobs) { job in
                 NavigationLink(destination: JobOutputView(job: job)) {
                     JobsSidebarItem(job: job)
+                        .padding(24)
                 }
             }
         }
