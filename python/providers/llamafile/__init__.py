@@ -1,3 +1,5 @@
+import functools
+import hashlib
 import logging
 import os
 import subprocess
@@ -103,6 +105,16 @@ class LlamafileProvider(BaseProvider):
 
         return ProviderRecord.from_orm(new_provider)
 
+    @functools.lru_cache
+    def compute_hash(self) -> str:
+        sha256_hasher = hashlib.sha256()
+        with open(self.filename, 'rb') as f:
+            while chunk := f.read(4096):
+                sha256_hasher.update(chunk)
+
+        return sha256_hasher.hexdigest()
+
+
     async def list_models(self) -> dict[int, InferenceModelRecord | Any]:
         model_name = os.path.basename(self.filename)
         if model_name[-10:] == '.llamafile':
@@ -111,6 +123,7 @@ class LlamafileProvider(BaseProvider):
         model_identifiers = {
             "name": model_name,
             "size": os.path.getsize(self.filename),
+            "hash-sha256": self.compute_hash(),
         }
 
         imr = InferenceModelRecord(
