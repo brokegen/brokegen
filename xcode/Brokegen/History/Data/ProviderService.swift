@@ -218,8 +218,10 @@ class ProviderService: Observable, ObservableObject {
             if let data = await getDataAsJsonDict("/models/available") {
                 let sortedData = data.sorted(by: { Int($0.0) ?? -1 < Int($1.0) ?? -1 })
                 for (sortIndex, modelInfo) in sortedData {
-                    let model = InferenceModel(modelInfo as! [String : Any?])
-                    replaceModelById(model.serverId, with: model)
+                    if let modelInfo = modelInfo as? [String : Any?] {
+                        let model = InferenceModel(modelInfo)
+                        replaceModelById(model.serverId, with: model)
+                    }
                 }
             }
         }
