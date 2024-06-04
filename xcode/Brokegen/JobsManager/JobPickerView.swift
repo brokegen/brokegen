@@ -1,36 +1,50 @@
 import SwiftUI
 
 
-func layout(sizes: [CGSize],
-           spacing: CGFloat = 8,
-           containerWidth: CGFloat) ->
-(offsets: [CGPoint], size: CGSize) {
-    var result: [CGPoint] = []
+func layout(
+    sizes: [CGSize],
+    spacingX: CGFloat,
+    spacingY: CGFloat,
+    containerWidth: CGFloat
+) -> (offsets: [CGPoint], size: CGSize) {
+    var offsetResults: [CGPoint] = []
     var currentPosition: CGPoint = .zero
-    var lineHeight: CGFloat = 0
-    var maxX: CGFloat = 0
-    for size in sizes {
-        if currentPosition.x + size.width > containerWidth {
+
+    var currentLineHeight: CGFloat = 0
+    var overallMaxWidth: CGFloat = 0
+
+    print("Starting FlowLayout: width \(containerWidth), \(sizes.count) viewSizes")
+    for viewSize in sizes {
+//        print("FlowLayout currently at position: \(currentPosition)")
+//        print("FlowLayout parsing viewSize: \(viewSize.width)x\(viewSize.height)")
+
+        // On a new line, reset the per-line counters
+        if currentPosition.x + viewSize.width > containerWidth {
             currentPosition.x = 0
-            currentPosition.y += lineHeight + spacing
-            lineHeight = 0
+            currentPosition.y += currentLineHeight + spacingY
+            currentLineHeight = 0
         }
 
-        result.append(currentPosition)
-        currentPosition.x += size.width
-        maxX = max(maxX, currentPosition.x)
-        currentPosition.x += spacing
-        lineHeight = max(lineHeight, size.height)
+        offsetResults.append(currentPosition)
+
+        currentPosition.x += viewSize.width
+        overallMaxWidth = max(overallMaxWidth, currentPosition.x)
+        currentPosition.x += spacingX
+
+        // TODO: THe heights in a FlowLayout aren't computed correctly, figure out why.
+//        currentLineHeight = max(currentLineHeight, viewSize.height)
     }
 
-    return (result,
-            .init(width: maxX,
-                  height: currentPosition.y + lineHeight))
+    print("Result: \(overallMaxWidth), \(currentPosition) + \(currentLineHeight)")
+    print("")
 
+    return (offsetResults,
+            .init(width: overallMaxWidth,
+                  height: currentPosition.y + currentLineHeight))
 }
 
 struct FlowLayout: Layout {
-    var spacing: CGFloat = 8
+    var spacing: CGFloat = 72
 
     func sizeThatFits(proposal: ProposedViewSize,
                       subviews: Subviews,
@@ -41,7 +55,8 @@ struct FlowLayout: Layout {
         }
 
         return layout(sizes: sizes,
-                      spacing: spacing,
+                      spacingX: spacing,
+                      spacingY: spacing,
                       containerWidth: containerWidth).size
     }
 
@@ -53,7 +68,8 @@ struct FlowLayout: Layout {
             $0.sizeThatFits(.unspecified)
         }
         let offsets = layout(sizes: sizes,
-                             spacing: spacing,
+                             spacingX: spacing,
+                             spacingY: spacing,
                              containerWidth: bounds.width).offsets
 
         for (offset, subview) in zip(offsets, subviews) {
@@ -72,7 +88,7 @@ struct JobPickerView: View {
     }
 
     var body: some View {
-        FlowLayout(spacing: 72) {
+        FlowLayout() {
             ForEach(jobs) { job in
                 NavigationLink(destination: JobOutputView(job: job)) {
                     JobsSidebarItem(job: job)
