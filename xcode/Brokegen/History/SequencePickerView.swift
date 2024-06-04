@@ -146,7 +146,7 @@ struct SequencePickerView: View {
     @Environment(PathHost.self) private var pathHost
 
     private var sectionedSequences: [(String, [ChatSequence])] {
-        let sectionedSequences = Dictionary(grouping: chatService.loadedSequences) {
+        let sectionedSequences = Dictionary(grouping: chatService.loadedChatSequences) {
             dateToSectionName($0.lastMessageDate)
         }
 

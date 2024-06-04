@@ -140,31 +140,29 @@ extension ChatSyncService {
         // Keep the first ChatSequence's clientId, in case of duplicates
         var originalClientId: UUID? = nil
 
-        self.sequencesWriteLock.withLock {
-            if let removalIndex = self._cachedChatSequences.firstIndex(where: {
-                $0.serverId == updatedSequence.serverId
-            }) {
-                originalClientId = loadedSequences[removalIndex].id
-            }
+        if let removalIndex = loadedChatSequences.firstIndex(where: {
+            $0.serverId == updatedSequence.serverId
+        }) {
+            originalClientId = loadedChatSequences[removalIndex].id
+        }
 
-            // Remove all matching ChatSequences
-            self._cachedChatSequences.removeAll(where: {
-                $0.serverId == updatedSequence.serverId
-            })
+        // Remove all matching ChatSequences
+        loadedChatSequences.removeAll(where: {
+            $0.serverId == updatedSequence.serverId
+        })
 
-            if let clientId = originalClientId {
-                self._cachedChatSequences.insert(updatedSequence.replaceId(clientId), at: 0)
-            }
-            else {
-                self._cachedChatSequences.insert(updatedSequence, at: 0)
-            }
+        if let clientId = originalClientId {
+            loadedChatSequences.insert(updatedSequence.replaceId(clientId), at: 0)
+        }
+        else {
+            loadedChatSequences.insert(updatedSequence, at: 0)
         }
 
         let predicate = #Predicate<ChatSequenceClientModel> {
             $0.sequence.serverId == updatedSequence.serverId
         }
         do {
-            for clientModel in try _chatSequenceClientModels.filter(predicate) {
+            for clientModel in try chatSequenceClientModels.filter(predicate) {
                 clientModel.sequence = updatedSequence
             }
         }
@@ -175,17 +173,15 @@ extension ChatSyncService {
         Task.init {
             var priorSequenceClientId: UUID? = nil
             if originalSequenceId != nil {
-                self.sequencesWriteLock.withLock {
-                    if let removalIndex = self._cachedChatSequences.firstIndex(where: {
-                        $0.serverId == originalSequenceId
-                    }) {
-                        priorSequenceClientId = self._cachedChatSequences[removalIndex].id
-                    }
-
-                    self._cachedChatSequences.removeAll(where: {
-                        $0.serverId == originalSequenceId
-                    })
+                if let removalIndex = self.loadedChatSequences.firstIndex(where: {
+                    $0.serverId == originalSequenceId
+                }) {
+                    priorSequenceClientId = self.loadedChatSequences[removalIndex].id
                 }
+
+                self.loadedChatSequences.removeAll(where: {
+                    $0.serverId == originalSequenceId
+                })
             }
 
             do {
@@ -195,16 +191,14 @@ extension ChatSyncService {
                         serverId: updatedSequenceId,
                         data: updatedSequenceData)
 
-                    self.sequencesWriteLock.withLock {
-                        // Insert new ChatSequences in reverse order, newest at the top
-                        self._cachedChatSequences.insert(updatedSequence, at: 0)
-                    }
+                    // Insert new ChatSequences in reverse order, newest at the top
+                    self.loadedChatSequences.insert(updatedSequence, at: 0)
 
                     let predicate = #Predicate<ChatSequenceClientModel> {
                         $0.sequence.serverId == originalSequenceId
                     }
                     do {
-                        for clientModel in try _chatSequenceClientModels.filter(predicate) {
+                        for clientModel in try chatSequenceClientModels.filter(predicate) {
                             clientModel.sequence = updatedSequence
                         }
                     }

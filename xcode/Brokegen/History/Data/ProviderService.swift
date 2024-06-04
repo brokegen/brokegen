@@ -84,7 +84,6 @@ extension InferenceModel {
     }
 }
 
-@Observable
 class ProviderService: Observable, ObservableObject {
     var baseURL: String = "http://127.0.0.1:6635"
     let session: Alamofire.Session = {
@@ -113,7 +112,7 @@ class ProviderService: Observable, ObservableObject {
         }
     }
 
-    var allModels: [InferenceModel] = []
+    @Published var allModels: [InferenceModel] = []
 
     private func getData(_ endpoint: String) async -> Data? {
         do {
@@ -184,31 +183,31 @@ class ProviderService: Observable, ObservableObject {
             if let removalIndex = allModels.firstIndex(where: {
                 $0.serverId == originalModelId
             }) {
-                priorClientId = self.allModels[removalIndex].id
+                priorClientId = allModels[removalIndex].id
                 priorRemovalIndex = removalIndex
             }
 
-            self.allModels.removeAll(where: {
+            allModels.removeAll(where: {
                 $0.serverId == originalModelId
             })
         }
 
         if let clientId = priorClientId {
             if priorRemovalIndex != nil {
-                self.allModels.insert(
+                allModels.insert(
                     updatedModel.replaceId(clientId),
                     at: priorRemovalIndex!)
             }
             else {
-                self.allModels.append(updatedModel.replaceId(clientId))
+                allModels.append(updatedModel.replaceId(clientId))
             }
         }
         else {
             if priorRemovalIndex != nil {
-                self.allModels.insert(updatedModel, at: priorRemovalIndex!)
+                allModels.insert(updatedModel, at: priorRemovalIndex!)
             }
             else {
-                self.allModels.append(updatedModel)
+                allModels.append(updatedModel)
             }
         }
     }
@@ -217,7 +216,7 @@ class ProviderService: Observable, ObservableObject {
         Task.init {
             if let data = await getDataAsJsonDict("/models/available") {
                 let sortedData = data.sorted(by: { Int($0.0) ?? -1 < Int($1.0) ?? -1 })
-                for (sortIndex, modelInfo) in sortedData {
+                for (_, modelInfo) in sortedData {
                     if let modelInfo = modelInfo as? [String : Any?] {
                         let model = InferenceModel(modelInfo)
                         replaceModelById(model.serverId, with: model)

@@ -114,7 +114,6 @@ actor CachedChatMessages {
     }
 }
 
-@Observable
 class ChatSyncService: Observable, ObservableObject {
     var serverBaseURL: String = "http://127.0.0.1:6635"
     let session: Alamofire.Session
@@ -174,7 +173,7 @@ class ChatSyncService: Observable, ObservableObject {
         }
     }
 
-    var loadedMessages: CachedChatMessages = CachedChatMessages()
+    @Published var loadedMessages: CachedChatMessages = CachedChatMessages()
 
     public func fetchMessage(id: Int) {
         Task.init {
@@ -185,23 +184,18 @@ class ChatSyncService: Observable, ObservableObject {
         }
     }
 
-    var _chatSequenceClientModels: [ChatSequenceClientModel] = []
-    var _cachedChatSequences: [ChatSequence] = []
-    var sequencesWriteLock = NSLock()
-
-    public var loadedSequences: [ChatSequence] {
-        return _cachedChatSequences
-    }
+    var chatSequenceClientModels: [ChatSequenceClientModel] = []
+    @Published var loadedChatSequences: [ChatSequence] = []
 
     public func clientModel(for sequence: ChatSequence) -> ChatSequenceClientModel {
-        if let existingSeq = _chatSequenceClientModels.first(where: {
+        if let existingSeq = chatSequenceClientModels.first(where: {
             $0.sequence == sequence
         }) {
             return existingSeq
         }
         else {
             let newModel = ChatSequenceClientModel(sequence, chatService: self)
-            _chatSequenceClientModels.append(newModel)
+            chatSequenceClientModels.append(newModel)
             return newModel
         }
     }
