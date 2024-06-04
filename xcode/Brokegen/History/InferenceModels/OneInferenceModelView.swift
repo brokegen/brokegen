@@ -10,7 +10,7 @@ func formatJson(_ jsonDict: [String : Any], indent: Int = 0) -> String {
     return stringMaker
 }
 
-struct OneInferenceModel: View {
+struct OneInferenceModelView: View {
     private var model: InferenceModel
 
     @State private var modelAvailable: Bool

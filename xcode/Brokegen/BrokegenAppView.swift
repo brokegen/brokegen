@@ -93,6 +93,8 @@ struct ASRow: View {
 }
 
 struct AppSidebar: View {
+    @Environment(InferenceModelSettings.self) private var inferenceModelSettings
+
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
@@ -101,7 +103,7 @@ struct AppSidebar: View {
                         HStack {
                             Image(systemName: "person.3")
                                 .padding(.trailing, 0)
-
+                            
                             Text("Agents")
                         }
                     }) {
@@ -109,28 +111,28 @@ struct AppSidebar: View {
                             .disabled(true)
                             .foregroundStyle(Color(.disabledControlTextColor))
                     }
-
+                    
                     AppSidebarSection(label: {
                         HStack {
                             Image(systemName: "message")
                                 .padding(.trailing, 4)
-
+                            
                             Text("Chats")
                         }
                     }) {
                         NavigationLink(destination: BlankOneSequenceView()) {
                             ASRow("New", showChevron: true)
                         }
-
+                        
                         NavigationLink(destination: SequencePickerView()) {
                             ASRow("Recent", showChevron: true)
                         }
                     }
-
+                    
                     AppSidebarSection(label: {
                         Image(systemName: "sink")
                             .padding(.trailing, 0)
-
+                        
                         Text("Experiments")
                     }) {
                         NavigationLink(destination: {
@@ -138,30 +140,30 @@ struct AppSidebar: View {
                         }) {
                             ASRow("Model Inspector")
                         }
-
+                        
                         ASRow("Non-chat completions")
                             .foregroundStyle(Color(.disabledControlTextColor))
                     }
-
+                    
                     MiniJobsSidebar()
                 }
             }
-
+            
             AppSidebarSection(label: {
                 HStack {
                     Image(systemName: "gear")
                         .padding(.trailing, 0)
-
+                    
                     Text("Settings")
                 }
             }) {
                 ASRow("Providers", showChevron: true)
                     .foregroundStyle(Color(.disabledControlTextColor))
-
-                NavigationLink(value: InferenceModelSettings()) {
+                
+                NavigationLink(value: inferenceModelSettings) {
                     ASRow("Defaults", showChevron: true)
                 }
-
+                
                 NavigationLink(destination: SystemInfoView()) {
                     ASRow("System Info")
                 }
@@ -170,6 +172,9 @@ struct AppSidebar: View {
         }
         .listStyle(.sidebar)
         .toolbar(.hidden)
+        .navigationDestination(for: InferenceModelSettings.self) { settings in
+            InferenceModelSettingsView(settings: settings)
+        }
     }
 }
 

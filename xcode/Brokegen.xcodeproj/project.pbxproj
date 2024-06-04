@@ -40,10 +40,10 @@
 		CECA47AA2BF6D62E007A28F2 /* SystemInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECA47A92BF6D62E007A28F2 /* SystemInfoView.swift */; };
 		CEDCF2AB2BFFD623006ABBA9 /* OneMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */; };
 		CEE99E592C0D85AD008E1B07 /* ChatSequenceClientModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E582C0D85AD008E1B07 /* ChatSequenceClientModel.swift */; };
-		CEE99E5E2C0D8B78008E1B07 /* InferenceModelSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E5D2C0D8B78008E1B07 /* InferenceModelSettings.swift */; };
-		CEE99E602C0D8FF1008E1B07 /* InferenceModelSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E5F2C0D8FF1008E1B07 /* InferenceModelSettingsView.swift */; };
-		CEE99E632C0E7D9F008E1B07 /* OneInferenceModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E622C0E7D9F008E1B07 /* OneInferenceModel.swift */; };
+		CEE99E632C0E7D9F008E1B07 /* OneInferenceModelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E622C0E7D9F008E1B07 /* OneInferenceModelView.swift */; };
 		CEE99E652C0E8378008E1B07 /* JobPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E642C0E8378008E1B07 /* JobPickerView.swift */; };
+		CEE99E682C0FD9FC008E1B07 /* InferenceModelSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E662C0FD9FC008E1B07 /* InferenceModelSettingsView.swift */; };
+		CEE99E692C0FD9FC008E1B07 /* InferenceModelSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E672C0FD9FC008E1B07 /* InferenceModelSettings.swift */; };
 		CEFEB4762BFDA67400334522 /* SimplePing.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFEB4752BFDA67400334522 /* SimplePing.swift */; };
 		CEFEB4782BFDA6C900334522 /* TimeJob.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFEB4772BFDA6C900334522 /* TimeJob.swift */; };
 		CEFEB47E2BFE399500334522 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = CEFEB47D2BFE399500334522 /* SwiftTerm */; };
@@ -95,10 +95,10 @@
 		CECA47A92BF6D62E007A28F2 /* SystemInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemInfoView.swift; sourceTree = "<group>"; };
 		CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneMessageView.swift; sourceTree = "<group>"; };
 		CEE99E582C0D85AD008E1B07 /* ChatSequenceClientModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSequenceClientModel.swift; sourceTree = "<group>"; };
-		CEE99E5D2C0D8B78008E1B07 /* InferenceModelSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceModelSettings.swift; sourceTree = "<group>"; };
-		CEE99E5F2C0D8FF1008E1B07 /* InferenceModelSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceModelSettingsView.swift; sourceTree = "<group>"; };
-		CEE99E622C0E7D9F008E1B07 /* OneInferenceModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneInferenceModel.swift; sourceTree = "<group>"; };
+		CEE99E622C0E7D9F008E1B07 /* OneInferenceModelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneInferenceModelView.swift; sourceTree = "<group>"; };
 		CEE99E642C0E8378008E1B07 /* JobPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobPickerView.swift; sourceTree = "<group>"; };
+		CEE99E662C0FD9FC008E1B07 /* InferenceModelSettingsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InferenceModelSettingsView.swift; sourceTree = "<group>"; };
+		CEE99E672C0FD9FC008E1B07 /* InferenceModelSettings.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InferenceModelSettings.swift; sourceTree = "<group>"; };
 		CEFEB4752BFDA67400334522 /* SimplePing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimplePing.swift; sourceTree = "<group>"; };
 		CEFEB4772BFDA6C900334522 /* TimeJob.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeJob.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -174,7 +174,6 @@
 		CE98674F2BF4047C008D6C41 /* Brokegen */ = {
 			isa = PBXGroup;
 			children = (
-				CEE99E5A2C0D8ACB008E1B07 /* Settings */,
 				CE4634F02BFBB4560063142E /* History */,
 				CE98675F2BF4149F008D6C41 /* Jobs */,
 				CE4634DC2BF937020063142E /* JobsManager */,
@@ -239,20 +238,13 @@
 			path = Performance;
 			sourceTree = "<group>";
 		};
-		CEE99E5A2C0D8ACB008E1B07 /* Settings */ = {
-			isa = PBXGroup;
-			children = (
-				CEE99E5D2C0D8B78008E1B07 /* InferenceModelSettings.swift */,
-				CEE99E5F2C0D8FF1008E1B07 /* InferenceModelSettingsView.swift */,
-			);
-			path = Settings;
-			sourceTree = "<group>";
-		};
 		CEE99E612C0E7D13008E1B07 /* InferenceModels */ = {
 			isa = PBXGroup;
 			children = (
-				CEE99E622C0E7D9F008E1B07 /* OneInferenceModel.swift */,
+				CEE99E622C0E7D9F008E1B07 /* OneInferenceModelView.swift */,
 				CE7FFE152C04482900DB7CFA /* ModelPickerView.swift */,
+				CEE99E672C0FD9FC008E1B07 /* InferenceModelSettings.swift */,
+				CEE99E662C0FD9FC008E1B07 /* InferenceModelSettingsView.swift */,
 			);
 			path = InferenceModels;
 			sourceTree = "<group>";
@@ -361,10 +353,8 @@
 				CE9867632BF41954008D6C41 /* BrokegenAppView.swift in Sources */,
 				CEAA2B702C070AE3002BEB26 /* ChatSequence+Extend.swift in Sources */,
 				CE9867652BF41A3E008D6C41 /* PlaceholderContentView.swift in Sources */,
-				CEE99E602C0D8FF1008E1B07 /* InferenceModelSettingsView.swift in Sources */,
 				CE8229AF2BF7306000029DC2 /* JobsManagerService.swift in Sources */,
 				CEFEB4782BFDA6C900334522 /* TimeJob.swift in Sources */,
-				CEE99E5E2C0D8B78008E1B07 /* InferenceModelSettings.swift in Sources */,
 				CEE99E652C0E8378008E1B07 /* JobPickerView.swift in Sources */,
 				CE4634ED2BFAE3020063142E /* RestartableProcess.swift in Sources */,
 				CE7FFE162C04482900DB7CFA /* ModelPickerView.swift in Sources */,
@@ -376,10 +366,12 @@
 				CE4634E22BF97A180063142E /* JobOutputView.swift in Sources */,
 				CE9867612BF414B3008D6C41 /* ManagedProcess.swift in Sources */,
 				CE4634E52BFA5F890063142E /* SimpleProcess.swift in Sources */,
+				CEE99E682C0FD9FC008E1B07 /* InferenceModelSettingsView.swift in Sources */,
 				CE4634E02BF963210063142E /* BaseJob.swift in Sources */,
-				CEE99E632C0E7D9F008E1B07 /* OneInferenceModel.swift in Sources */,
+				CEE99E632C0E7D9F008E1B07 /* OneInferenceModelView.swift in Sources */,
 				CEAA2B722C070B2E002BEB26 /* ChatSequence.swift in Sources */,
 				CEAA2B742C07A8E4002BEB26 /* OneSequenceView.swift in Sources */,
+				CEE99E692C0FD9FC008E1B07 /* InferenceModelSettings.swift in Sources */,
 				CEBAA28C2C003F4B00D43E22 /* InteractiveJobOutputView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

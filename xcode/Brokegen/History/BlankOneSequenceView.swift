@@ -198,7 +198,7 @@ struct BlankOneSequenceView: View {
 
             // Display the model info, because otherwise there's nothing to see
             if modelSelection != nil {
-                OneInferenceModel(model: modelSelection!, modelAvailable: true, modelSelection: $modelSelection, enableModelSelection: false)
+                OneInferenceModelView(model: modelSelection!, modelAvailable: true, modelSelection: $modelSelection, enableModelSelection: false)
                     .frame(maxWidth: 800)
                     .layoutPriority(0.2)
             }

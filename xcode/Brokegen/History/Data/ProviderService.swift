@@ -84,6 +84,27 @@ extension InferenceModel {
     }
 }
 
+extension InferenceModel: Equatable {
+    public static func == (lhs: InferenceModel, rhs: InferenceModel) -> Bool {
+        if lhs.serverId != rhs.serverId {
+            return false
+        }
+
+        if lhs.id != rhs.id {
+            return false
+        }
+
+        return true
+    }
+}
+
+extension InferenceModel: Hashable {
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(serverId)
+    }
+}
+
 class ProviderService: Observable, ObservableObject {
     var baseURL: String = "http://127.0.0.1:6635"
     let session: Alamofire.Session = {

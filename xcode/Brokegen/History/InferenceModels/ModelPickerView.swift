@@ -34,7 +34,7 @@ struct ModelPickerView: View {
 
             List {
                 ForEach(providerService.allModels) { model in
-                    OneInferenceModel(
+                    OneInferenceModelView(
                         model: model,
                         modelAvailable: providerService.availableModels.contains {
                             $0.serverId == model.serverId
