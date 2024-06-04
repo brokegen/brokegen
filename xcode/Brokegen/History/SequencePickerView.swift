@@ -183,7 +183,7 @@ struct SequencePickerView: View {
 
             Spacer()
 
-            NavigationLink(destination: ModelPickerView()) {
+            NavigationLink(destination: BlankOneSequenceView()) {
                 Label("New Chat...", systemImage: "plus")
                     .buttonStyle(.accessoryBar)
                     .padding(12)

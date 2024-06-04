@@ -1,81 +1,59 @@
 import SwiftUI
 
 
-func layout(
-    sizes: [CGSize],
-    spacingX: CGFloat,
-    spacingY: CGFloat,
-    containerWidth: CGFloat
-) -> (offsets: [CGPoint], size: CGSize) {
-    var offsetResults: [CGPoint] = []
-    var currentPosition: CGPoint = .zero
-
-    var currentLineHeight: CGFloat = 0
-    var overallMaxWidth: CGFloat = 0
-
-    print("Starting FlowLayout: width \(containerWidth), \(sizes.count) viewSizes")
-    for viewSize in sizes {
-//        print("FlowLayout currently at position: \(currentPosition)")
-//        print("FlowLayout parsing viewSize: \(viewSize.width)x\(viewSize.height)")
-
-        // On a new line, reset the per-line counters
-        if currentPosition.x + viewSize.width > containerWidth {
-            currentPosition.x = 0
-            currentPosition.y += currentLineHeight + spacingY
-            currentLineHeight = 0
-        }
-
-        offsetResults.append(currentPosition)
-
-        currentPosition.x += viewSize.width
-        overallMaxWidth = max(overallMaxWidth, currentPosition.x)
-        currentPosition.x += spacingX
-
-        // TODO: THe heights in a FlowLayout aren't computed correctly, figure out why.
-//        currentLineHeight = max(currentLineHeight, viewSize.height)
-    }
-
-    print("Result: \(overallMaxWidth), \(currentPosition) + \(currentLineHeight)")
-    print("")
-
-    return (offsetResults,
-            .init(width: overallMaxWidth,
-                  height: currentPosition.y + currentLineHeight))
-}
-
 struct FlowLayout: Layout {
-    var spacing: CGFloat = 72
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
 
-    func sizeThatFits(proposal: ProposedViewSize,
-                      subviews: Subviews,
-                      cache: inout ()) -> CGSize {
-        let containerWidth = proposal.width ?? .infinity
-        let sizes = subviews.map {
-            $0.sizeThatFits(.unspecified)
+        var totalHeight: CGFloat = 0
+        var totalWidth: CGFloat = 0
+
+        var lineWidth: CGFloat = 0
+        var lineHeight: CGFloat = 0
+
+          for size in sizes {
+            if lineWidth + size.width > proposal.width ?? 0 {
+                totalHeight += lineHeight
+                lineWidth = size.width
+                lineHeight = size.height
+            } else {
+                lineWidth += size.width
+                lineHeight = max(lineHeight, size.height)
+            }
+
+            totalWidth = max(totalWidth, lineWidth)
         }
 
-        return layout(sizes: sizes,
-                      spacingX: spacing,
-                      spacingY: spacing,
-                      containerWidth: containerWidth).size
+        totalHeight += lineHeight
+
+        return .init(width: totalWidth, height: totalHeight)
     }
 
-    func placeSubviews(in bounds: CGRect,
-                       proposal: ProposedViewSize,
-                       subviews: Subviews,
-                       cache: inout ()) {
-        let sizes = subviews.map {
-            $0.sizeThatFits(.unspecified)
-        }
-        let offsets = layout(sizes: sizes,
-                             spacingX: spacing,
-                             spacingY: spacing,
-                             containerWidth: bounds.width).offsets
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
 
-        for (offset, subview) in zip(offsets, subviews) {
-            subview.place(at: .init(x: offset.x + bounds.minX,
-                                    y: offset.y + bounds.minY),
-                          proposal: .unspecified)
+        var lineX = bounds.minX
+        var lineY = bounds.minY
+        var lineHeight: CGFloat = 0
+
+        for index in subviews.indices {
+            if lineX + sizes[index].width > (proposal.width ?? 0) {
+                lineY += lineHeight
+                lineHeight = 0
+                lineX = bounds.minX
+            }
+
+            subviews[index].place(
+                at: .init(
+                    x: lineX + sizes[index].width / 2,
+                    y: lineY + sizes[index].height / 2
+                ),
+                anchor: .center,
+                proposal: ProposedViewSize(sizes[index])
+            )
+
+            lineHeight = max(lineHeight, sizes[index].height)
+            lineX += sizes[index].width
         }
     }
 }
@@ -96,6 +74,5 @@ struct JobPickerView: View {
                 }
             }
         }
-        .frame(maxWidth: 800)
     }
 }

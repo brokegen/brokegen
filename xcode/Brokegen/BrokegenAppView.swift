@@ -24,7 +24,6 @@ struct ASSStyle: DisclosureGroupStyle {
                         .padding(.trailing, -12)
                 }
                 .padding(8)
-                .padding([.leading], 12)
             }
 
             if configuration.isExpanded {
@@ -119,7 +118,7 @@ struct AppSidebar: View {
                             Text("Chats")
                         }
                     }) {
-                        NavigationLink(destination: ModelPickerView()) {
+                        NavigationLink(destination: BlankOneSequenceView()) {
                             ASRow("New", showChevron: true)
                         }
 
@@ -134,8 +133,11 @@ struct AppSidebar: View {
 
                         Text("Experiments")
                     }) {
-                        ASRow("Model Inspector")
-                            .foregroundStyle(Color(.disabledControlTextColor))
+                        NavigationLink(destination: {
+                            ModelPickerView()
+                        }) {
+                            ASRow("Model Inspector")
+                        }
 
                         ASRow("Non-chat completions")
                             .foregroundStyle(Color(.disabledControlTextColor))
@@ -204,7 +206,7 @@ struct BrokegenAppView: View {
     var body: some View {
         NavigationStack(path: $pathHost.path) {
             NavigationSplitView(sidebar: { AppSidebar() }, detail: {
-                ModelPickerView()
+                SequencePickerView()
             })
             .navigationDestination(for: ChatSequence.self) { sequence in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {

@@ -89,7 +89,9 @@ struct InlineTextInput: View {
 struct BlankOneSequenceView: View {
     @Environment(ChatSyncService.self) private var chatService
     @Environment(PathHost.self) private var pathHost
-    let initialModel: InferenceModel
+
+    @State var modelSelection: InferenceModel?
+    @State var showModelPicker: Bool
 
     @State var chatSequenceHumanDesc: String = ""
     @State var promptInEdit: String = ""
@@ -97,8 +99,14 @@ struct BlankOneSequenceView: View {
 
     @FocusState var focusTextInput: Bool
 
-    init(_ initialModel: InferenceModel) {
-        self.initialModel = initialModel
+    init(_ initialModel: InferenceModel? = nil) {
+        if initialModel == nil {
+            _showModelPicker = State(initialValue: true)
+        }
+        else {
+            _showModelPicker = State(initialValue: false)
+            self.modelSelection = initialModel
+        }
     }
 
     private func prettyDate(_ requestedDate: Date? = nil) -> String {
@@ -173,7 +181,7 @@ struct BlankOneSequenceView: View {
 
             pathHost.push(
                 chatService.clientModel(for: nextSequence!)
-                    .requestContinue(model: initialModel.serverId)
+                    .requestContinue(model: modelSelection!.serverId)
                 )
         }
     }
@@ -189,9 +197,11 @@ struct BlankOneSequenceView: View {
                 .padding(24)
 
             // Display the model info, because otherwise there's nothing to see
-            OneInferenceModel(model: initialModel, showAddButton: false, modelAvailable: true)
-                .frame(maxWidth: 800)
-                .layoutPriority(0.2)
+            if modelSelection != nil {
+                OneInferenceModel(model: modelSelection!, modelAvailable: true, modelSelection: $modelSelection, enableModelSelection: false)
+                    .frame(maxWidth: 800)
+                    .layoutPriority(0.2)
+            }
 
             VStack {
                 Spacer()
@@ -259,6 +269,9 @@ struct BlankOneSequenceView: View {
         .frame(maxHeight: .infinity)
         .onTapGesture {
             focusTextInput = true
+        }
+        .sheet(isPresented: $showModelPicker) {
+            ModelPickerView(modelSelection: $modelSelection)
         }
     }
 }
