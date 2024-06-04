@@ -19,7 +19,6 @@
 		CE4634EF2BFAFA340063142E /* StayAwakeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634EE2BFAFA340063142E /* StayAwakeService.swift */; };
 		CE4634F22BFBB4730063142E /* SequencePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634F12BFBB4730063142E /* SequencePickerView.swift */; };
 		CE4634F42BFBB4900063142E /* ChatSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634F32BFBB4900063142E /* ChatSyncService.swift */; };
-		CE4634F62BFBB4D00063142E /* ChatsSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634F52BFBB4D00063142E /* ChatsSidebar.swift */; };
 		CE67A9E52C091709008BFA1D /* CustomTabView in Frameworks */ = {isa = PBXBuildFile; productRef = CE67A9E42C091709008BFA1D /* CustomTabView */; };
 		CE6D8A7F2BF6DF1800A7934D /* RibbonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */; };
 		CE7FFE142C04435D00DB7CFA /* ProviderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE132C04435D00DB7CFA /* ProviderService.swift */; };
@@ -76,7 +75,6 @@
 		CE4634EE2BFAFA340063142E /* StayAwakeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StayAwakeService.swift; sourceTree = "<group>"; };
 		CE4634F12BFBB4730063142E /* SequencePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequencePickerView.swift; sourceTree = "<group>"; };
 		CE4634F32BFBB4900063142E /* ChatSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSyncService.swift; sourceTree = "<group>"; };
-		CE4634F52BFBB4D00063142E /* ChatsSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatsSidebar.swift; sourceTree = "<group>"; };
 		CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RibbonView.swift; sourceTree = "<group>"; };
 		CE7FFE132C04435D00DB7CFA /* ProviderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderService.swift; sourceTree = "<group>"; };
 		CE7FFE152C04482900DB7CFA /* ModelPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelPickerView.swift; sourceTree = "<group>"; };
@@ -150,7 +148,6 @@
 				CEAA2B732C07A8E4002BEB26 /* OneSequenceView.swift */,
 				CE2988312C09101F00A997A1 /* SequenceViewTwo.swift */,
 				CE4634F12BFBB4730063142E /* SequencePickerView.swift */,
-				CE4634F52BFBB4D00063142E /* ChatsSidebar.swift */,
 			);
 			path = History;
 			sourceTree = "<group>";
@@ -362,7 +359,6 @@
 				CE4634DE2BF937320063142E /* JobsSidebar.swift in Sources */,
 				CE4634F22BFBB4730063142E /* SequencePickerView.swift in Sources */,
 				CE9867632BF41954008D6C41 /* BrokegenAppView.swift in Sources */,
-				CE4634F62BFBB4D00063142E /* ChatsSidebar.swift in Sources */,
 				CEAA2B702C070AE3002BEB26 /* ChatSequence+Extend.swift in Sources */,
 				CE9867652BF41A3E008D6C41 /* PlaceholderContentView.swift in Sources */,
 				CEE99E602C0D8FF1008E1B07 /* InferenceModelSettingsView.swift in Sources */,

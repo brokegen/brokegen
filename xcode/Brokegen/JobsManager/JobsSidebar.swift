@@ -9,25 +9,17 @@ struct MiniJobsSidebar: View {
     }
 
     var body: some View {
-        Section(header: HStack {
-            Image(systemName: "checklist")
-                .font(.system(size: 24))
-                .foregroundStyle(Color(.controlTextColor))
-                .padding(.leading, 4)
-                .padding(.trailing, -8)
+        AppSidebarSection(label: {
+            HStack {
+                Image(systemName: "checklist")
+                    .padding(.trailing, 0)
 
-            Text("Jobs")
-                .font(.system(size: 24))
-                .foregroundStyle(Color(.controlTextColor))
-                .padding(8)
+                Text("Jobs")
+            }
         }) {
-            Divider()
-
             NavigationLink(destination: JobPickerView(jobsService.storedJobs)) {
                 HStack {
-                    Text("Available Jobs")
-                        .font(.title2)
-                        .padding(6)
+                    Text("Some Jobs")
                         .layoutPriority(0.5)
                     Spacer()
                     Image(systemName: "chevron.right")
@@ -52,21 +44,15 @@ struct TallJobsSidebar: View {
     @Environment(JobsManagerService.self) private var jobsService: JobsManagerService
 
     var body: some View {
-        Section(header: HStack {
-            Image(systemName: "checklist")
-                .font(.system(size: 24))
-                .foregroundStyle(Color(.controlTextColor))
-                .padding(.leading, 4)
-                .padding(.trailing, -8)
+        AppSidebarSection(label: {
+            HStack {
+                Image(systemName: "checklist")
+                    .padding(.trailing, 0)
 
-            Text("All Jobs")
-                .font(.system(size: 24))
-                .foregroundStyle(Color(.controlTextColor))
-                .padding(8)
+                Text("All Jobs")
+            }
         }) {
-            Divider()
-
-            ForEach(jobsService.sidebarRenderableJobs) { job in
+            ForEach(jobsService.storedJobs) { job in
                 NavigationLink(destination: JobOutputView(job: job)) {
                     JobsSidebarItem(job: job)
                 }

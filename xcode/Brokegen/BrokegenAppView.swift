@@ -1,109 +1,170 @@
 import Combine
 import SwiftUI
 
+struct ASSStyle: DisclosureGroupStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        VStack(spacing: 0) {
+            Button {
+                withAnimation {
+                    configuration.isExpanded.toggle()
+                }
+            } label: {
+                HStack {
+                    configuration.label
+                        .padding(4)
+                        .font(.system(size: 24))
+                        .foregroundStyle(Color(.controlTextColor))
+                        .layoutPriority(0.5)
+
+                    Spacer()
+
+                    Image(systemName: configuration.isExpanded ? "chevron.down" : "chevron.left")
+                        .contentTransition(.symbolEffect)
+                        .padding()
+                        .padding(.trailing, -12)
+                }
+                .padding(8)
+                .padding([.leading], 12)
+            }
+
+            if configuration.isExpanded {
+                VStack(alignment: .leading, spacing: 0) {
+                    configuration.content
+                    // NB Animations don't work well within Lists.
+                    // This only works for animating up
+                        .transition(
+                            .asymmetric(insertion: .push(from: .bottom),
+                                        removal: .identity)
+                        )
+                        .padding([.top, .bottom], 12)
+                }
+                .font(.system(size: 18))
+                .padding(12)
+                .padding([.leading, .trailing], 24)
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+struct AppSidebarSection<Label: View, Content: View>: View {
+    @State var isExpanded: Bool = true
+    let label: () -> Label
+    let content: () -> Content
+
+    init(
+        @ViewBuilder label: @escaping () -> Label,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.label = label
+        self.content = content
+    }
+
+    var body: some View {
+        DisclosureGroup(isExpanded: $isExpanded, content: content, label: label)
+            .disclosureGroupStyle(ASSStyle())
+    }
+}
+
+struct ASRow: View {
+    let text: String
+    let showChevron: Bool
+
+    init(
+        _ text: String,
+        showChevron: Bool = false
+    ) {
+        self.showChevron = showChevron
+        self.text = text
+    }
+
+    var body: some View {
+        HStack {
+            Text(text)
+                .layoutPriority(0.5)
+            Spacer()
+            if showChevron {
+                Image(systemName: "chevron.right")
+                    .padding(.trailing, -12)
+                    .font(.system(size: 10))
+            }
+        }
+        .contentShape(Rectangle())
+    }
+}
+
 struct AppSidebar: View {
     var body: some View {
-        VStack {
-            List {
-                Section(header: HStack {
-                    Image(systemName: "message")
-                        .font(.system(size: 20))
-                        .foregroundStyle(Color(.controlTextColor))
-                        .padding(.leading, 4)
-                        .padding(.trailing, -8)
-
-                    Text("Chats")
-                        .font(.system(size: 24))
-                        .foregroundStyle(Color(.controlTextColor))
-                        .padding(8)
-                }) {
-                    Divider()
-
-                    NavigationLink(destination: SequencePickerView()) {
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: 0) {
+                    AppSidebarSection(label: {
                         HStack {
-                            Text("Recent")
-                                .font(.title2)
-                                .padding(6)
-                                .layoutPriority(0.5)
-                            Spacer()
-                            Image(systemName: "chevron.right")
+                            Image(systemName: "person.3")
+                                .padding(.trailing, 0)
+
+                            Text("Agents")
+                        }
+                    }) {
+                        ASRow("IRC revival")
+                    }
+
+                    AppSidebarSection(label: {
+                        HStack {
+                            Image(systemName: "message")
+                                .padding(.trailing, 4)
+
+                            Text("Chats")
+                        }
+                    }) {
+                        NavigationLink(destination: ModelPickerView()) {
+                            ASRow("New", showChevron: true)
+                        }
+
+                        NavigationLink(destination: SequencePickerView()) {
+                            ASRow("Recent", showChevron: true)
                         }
                     }
 
-                    NavigationLink(destination: ModelPickerView()) {
-                        HStack {
-                            Text("Available Models")
-                                .font(.title2)
-                                .padding(6)
-                                .layoutPriority(0.5)
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                        }
+                    AppSidebarSection(label: {
+                        Image(systemName: "sink")
+                            .padding(.trailing, 0)
+
+                        Text("Experiment")
+                    }) {
+                        ASRow("Model Inspector")
+                            .foregroundStyle(Color(.disabledControlTextColor))
+
+                        ASRow("Non-chat completions")
+                            .foregroundStyle(Color(.disabledControlTextColor))
                     }
+
+                    MiniJobsSidebar()
                 }
-
-                Spacer()
-                    .frame(maxHeight: 48)
-
-                // TODO: ViewThatFits
-                MiniJobsSidebar()
             }
-            .layoutPriority(0.5)
 
-            Spacer()
-                .layoutPriority(0.2)
-
-            List {
-                Section(header: HStack {
+            AppSidebarSection(label: {
+                HStack {
                     Image(systemName: "gear")
-                        .font(.system(size: 24))
-                        .foregroundStyle(Color(.controlTextColor))
-                        .padding(.leading, 4)
-                        .padding(.trailing, -8)
+                        .padding(.trailing, 0)
 
                     Text("Settings")
-                        .font(.system(size: 24))
-                        .foregroundStyle(Color(.controlTextColor))
-                        .padding(8)
-                }) {
-                    Divider()
+                }
+            }) {
+                ASRow("Providers", showChevron: true)
+                    .foregroundStyle(Color(.disabledControlTextColor))
 
-                    HStack {
-                        Text("Providers")
-                            .font(.title2)
-                            .padding(6)
-                            .layoutPriority(0.5)
-                            .foregroundStyle(Color(.disabledControlTextColor))
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .foregroundStyle(Color(.disabledControlTextColor))
-                    }
-
-                    NavigationLink(value: InferenceModelSettings()) {
-                        HStack {
-                            Text("Defaults")
-                                .font(.title2)
-                                .padding(6)
-                                .layoutPriority(0.5)
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                        }
-                    }
+                NavigationLink(value: InferenceModelSettings()) {
+                    ASRow("Defaults", showChevron: true)
                 }
 
                 NavigationLink(destination: SystemInfoView()) {
-                    Text("System Info")
-                        .font(.title2)
-                        .lineLimit(3)
-                        .padding(6)
+                    ASRow("System Info")
                 }
+                .padding(.bottom, 24)
             }
-            .frame(height: 240)
-            .scrollDisabled(true)
-            .layoutPriority(1.0)
         }
         .listStyle(.sidebar)
-        .frame(maxHeight: .infinity)
         .toolbar(.hidden)
     }
 }
@@ -168,8 +229,16 @@ struct BrokegenAppView: View {
     }
 }
 
-#Preview(traits: .fixedLayout(width: 400, height: 1200)) {
+#Preview(traits: .fixedLayout(width: 400, height: 800)) {
     let jobs = JobsManagerService()
+    for index in 1...20 {
+        let job = TimeJob("Job \(index)")
+        if index < 4 {
+            jobs.sidebarRenderableJobs.append(job)
+        }
+
+        jobs.storedJobs.append(job)
+    }
 
     return AppSidebar()
         .environment(jobs)
