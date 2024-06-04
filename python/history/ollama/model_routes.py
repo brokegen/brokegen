@@ -17,7 +17,7 @@ from history.ollama.json import OllamaEventBuilder
 from history.ollama.models import build_model_from_api_show, build_models_from_api_tags
 from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceModelRecord, InferenceModelRecordOrm, inject_inference_stats
-from providers.ollama import OllamaProvider
+from providers.ollama import ExternalOllamaProvider
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry, BaseProvider
 
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 async def do_list_available_models(
-        provider: OllamaProvider,
+        provider: ExternalOllamaProvider,
         history_db: HistoryDB,
         audit_db: AuditDB,
 ) -> dict[int, InferenceModelRecord | Any]:
@@ -122,7 +122,7 @@ async def do_api_show(
     logger.debug(f"ollama proxy: start handler for POST /api/show")
 
     provider: BaseProvider = ProviderRegistry().by_label[ProviderLabel(type="ollama", id=str(_real_ollama_client.base_url))]
-    provider: providers.ollama.OllamaProvider = cast(providers.ollama.OllamaProvider, provider)
+    provider: providers.ollama.ExternalOllamaProvider = cast(providers.ollama.ExternalOllamaProvider, provider)
     upstream_request = provider.client.build_request(
         method="POST",
         url="/api/show",
@@ -153,7 +153,7 @@ async def do_api_show_streaming(
     provider: BaseProvider = ProviderRegistry().by_label[
         ProviderLabel(type="ollama", id=str(_real_ollama_client.base_url))
     ]
-    provider: providers.ollama.OllamaProvider = cast(providers.ollama.OllamaProvider, provider)
+    provider: providers.ollama.ExternalOllamaProvider = cast(providers.ollama.ExternalOllamaProvider, provider)
     upstream_request = provider.client.build_request(
         method="POST",
         url="/api/show",

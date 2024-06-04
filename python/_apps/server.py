@@ -10,23 +10,18 @@ import logging
 import os
 import sqlite3
 from contextlib import asynccontextmanager
-from typing import cast
 
 import click
 import starlette.responses
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI
 
 import audit
 import history
 import history.ollama
 import providers.ollama
-from audit.http import get_db as get_audit_db, AuditDB
+from audit.http import get_db as get_audit_db
 from audit.http_raw import SqlLoggingMiddleware
-from history.ollama.model_routes import do_list_available_models
 from inference.embeddings.knowledge import get_knowledge
-from providers.inference_models.database import HistoryDB, get_db as get_history_db
-from providers.orm import ProviderLabel
-from providers.registry import ProviderRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -143,25 +138,6 @@ def run_proxy(
         """
         return starlette.responses.Response(status_code=200)
 
-    @app.get("/models/available")
-    async def list_available_models(
-            provider: ProviderLabel = ProviderLabel(
-                type="ollama",
-                id="http://localhost:11434",
-            ),
-            history_db: HistoryDB = Depends(get_history_db),
-            audit_db: AuditDB = Depends(get_audit_db),
-    ):
-        ollama = ProviderRegistry().by_label[provider]
-        if not isinstance(ollama, providers.ollama.OllamaProvider):
-            raise HTTPException(501, "Only ollama is supported")
-
-        return await do_list_available_models(
-            cast(providers.ollama.OllamaProvider, ollama),
-            history_db,
-            audit_db,
-        )
-
     asyncio.run(providers.ollama.discover_ollama_servers())
     asyncio.run(providers.llamafile.discover_llamafiles_in('dist'))
 
@@ -169,6 +145,7 @@ def run_proxy(
     history.ollama.install_forwards(app, force_ollama_rag)
     history.chat.install_routes(app)
     providers.inference_models.routes.install_routes(app)
+    providers.routes.install_routes(app)
 
     get_knowledge().load_shards_from(None)
     get_knowledge().queue_data_dir(data_dir)

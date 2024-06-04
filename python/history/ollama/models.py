@@ -103,6 +103,9 @@ def build_model_from_api_show(
             for ollama_parameter_line in sorted_ollama_parameter_lines:
                 try:
                     key, value = ollama_parameter_line.split(maxsplit=1)
+                    if value and len(value) > 2:
+                        # Remove leading and trailing quotation marks, for parameters that have spaces
+                        value.strip('"')
                     final_ollama_parameters[key] = value
 
                 except ValueError:

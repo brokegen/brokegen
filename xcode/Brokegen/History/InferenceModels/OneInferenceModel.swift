@@ -120,9 +120,10 @@ struct OneInferenceModel: View {
                 }
             }
             .contentShape(Rectangle())
-            .onTapGesture {
-                self.expandContent = !self.expandContent
-            }
+            // TODO: This eats the NavigationLink tap
+//            .onTapGesture {
+//                self.expandContent = !self.expandContent
+//            }
 
             Divider()
 
@@ -150,9 +151,9 @@ struct OneInferenceModel: View {
                 .fill(isHovered ? Color(.controlHighlightColor) : Color.clear)
                 .border(Color(.controlTextColor))
         )
-        .onHover { isHovered in
-            self.isHovered = isHovered
-        }
+//        .onHover { isHovered in
+//            self.isHovered = isHovered
+//        }
     }
 }
 

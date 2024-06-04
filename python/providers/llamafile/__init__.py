@@ -2,7 +2,7 @@ import logging
 import os
 import subprocess
 from datetime import datetime, timezone
-from typing import Union
+from typing import Union, Any
 
 import httpx
 import orjson
@@ -10,6 +10,7 @@ from sqlalchemy import select
 
 from providers._util import local_provider_identifiers, local_fetch_machine_info
 from providers.inference_models.database import HistoryDB, get_db
+from providers.inference_models.orm import InferenceModelRecord
 from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord
 from providers.registry import ProviderRegistry, BaseProvider
 
@@ -102,6 +103,28 @@ class LlamafileProvider(BaseProvider):
 
         return ProviderRecord.from_orm(new_provider)
 
+    async def list_models(self) -> dict[int, InferenceModelRecord | Any]:
+        model_name = os.path.basename(self.filename)
+        if model_name[-10:] == '.llamafile':
+            model_name = model_name[:-10]
+
+        model_identifiers = {
+            "name": model_name,
+            "size": os.path.getsize(self.filename),
+        }
+
+        imr = InferenceModelRecord(
+            id=1000,
+            human_id=model_name,
+            first_seen_at=os.path.getmtime(self.filename),
+            last_seen=datetime.now(tz=timezone.utc),
+            # TODO: This gets doubly JSON-encoded, but I guess we'll live.
+            provider_identifiers=(await self.make_record()).model_dump_json(),
+            model_identifiers=model_identifiers,
+            combined_inference_parameters=None,
+        )
+        return {0: imr}
+
     @staticmethod
     def _version_info(filename: str) -> str | None:
         try:
@@ -112,7 +135,7 @@ class LlamafileProvider(BaseProvider):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
             )
-            llamafile_test.wait(5.0)
+            llamafile_test.wait(30.0)
             llamafile_test.terminate()
             if llamafile_test.returncode != 0:
                 logger.warning(f"{filename} failed: {llamafile_test.returncode=}")

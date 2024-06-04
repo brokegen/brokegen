@@ -3,13 +3,14 @@ from http.client import HTTPException
 
 import fastapi.routing
 import orjson
-from fastapi import FastAPI, Depends
+from fastapi import Depends
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 
-from providers.inference_models.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import InferenceModelRecordOrm, lookup_inference_model, lookup_inference_model_detailed, InferenceModelAddRequest
 from _util.typing import InferenceModelRecordID
+from providers.inference_models.database import HistoryDB, get_db as get_history_db
+from providers.inference_models.orm import InferenceModelRecordOrm, lookup_inference_model, \
+    lookup_inference_model_detailed, InferenceModelAddRequest
 from providers.orm import ProviderRecordOrm, ProviderRecord, ProviderAddRequest
 
 
@@ -59,10 +60,8 @@ def make_provider_record(
     return ProviderRecord.from_orm(new_provider)
 
 
-def install_routes(app: FastAPI):
-    router = fastapi.routing.APIRouter()
-
-    @router.post(
+def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
+    @router_ish.post(
         "/models",
         response_model=InferenceModelAddResponse,
     )
@@ -102,7 +101,7 @@ def install_routes(app: FastAPI):
             just_created=True
         )
 
-    @router.get("/models/{id:int}")
+    @router_ish.get("/models/{id:int}")
     def get_model_config(
             id: int,
             history_db: HistoryDB = Depends(get_history_db),
@@ -115,5 +114,3 @@ def install_routes(app: FastAPI):
             raise HTTPException(400, "No matching object")
 
         return match_object
-
-    app.include_router(router)

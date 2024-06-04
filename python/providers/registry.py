@@ -9,8 +9,9 @@ Current known providers generally have two things to look for: Type, and ID.
 """
 import logging
 from abc import abstractmethod
-from typing import TypeAlias, Callable, Awaitable
+from typing import TypeAlias, Callable, Awaitable, Any
 
+from providers.inference_models.orm import InferenceModelRecord
 from providers.orm import ProviderLabel, ProviderRecord
 
 logger = logging.getLogger(__name__)
@@ -23,6 +24,10 @@ class BaseProvider:
 
     @abstractmethod
     async def make_record(self) -> ProviderRecord:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def list_models(self) -> dict[int, InferenceModelRecord | Any]:
         raise NotImplementedError()
 
 
