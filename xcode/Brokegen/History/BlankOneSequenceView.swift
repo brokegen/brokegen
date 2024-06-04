@@ -272,6 +272,8 @@ struct BlankOneSequenceView: View {
         }
         .sheet(isPresented: $showModelPicker) {
             ModelPickerView(modelSelection: $modelSelection)
+                .frame(width: 800, height: 1200, alignment: .top)
+                .animation(.linear(duration: 0.2))
         }
     }
 }

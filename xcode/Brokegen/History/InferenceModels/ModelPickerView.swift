@@ -51,7 +51,9 @@ struct ModelPickerView: View {
             providerService.fetchAvailableModels()
         }
         .onChange(of: modelSelection.wrappedValue?.serverId) {
-            dismiss.callAsFunction()
+            if modelSelection.wrappedValue != nil {
+                dismiss.callAsFunction()
+            }
         }
     }
 }
