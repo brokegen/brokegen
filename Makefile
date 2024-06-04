@@ -70,3 +70,9 @@ dist/Mistral-7B-Instruct-v0.3.Q4_K_M.llamafile:
 	echo "[INFO] Expected filesize for $@: 4_408_359_087 bytes"
 	echo "[INFO] Expected \`shasum\`: 3e0cc8c00ef0fe971424392491273fb2bbc3cbe3"
 	chmod +x "$@"
+
+# Download the non-Electron binary
+#
+dist/ollama-darwin:
+	cd "$(dir $@)" \
+		&& curl -L -O https://github.com/ollama/ollama/releases/download/v0.1.41/ollama-darwin
