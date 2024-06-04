@@ -79,7 +79,7 @@ struct AppSidebar: View {
                             .foregroundStyle(Color(.disabledControlTextColor))
                     }
 
-                    NavigationLink(destination: InferenceModelSettingsView()) {
+                    NavigationLink(value: InferenceModelSettings()) {
                         HStack {
                             Text("Defaults")
                                 .font(.title2)
@@ -129,7 +129,6 @@ class PathHost {
 
 struct BrokegenAppView: View {
     @Environment(ChatSyncService.self) private var chatService
-    @Environment(JobsManagerService.self) private var jobsService
     @Environment(ProviderService.self) private var providerService
     @Binding private var pathHost: PathHost
 
@@ -167,6 +166,13 @@ struct BrokegenAppView: View {
             providerService.fetchAvailableModels()
         }
     }
+}
+
+#Preview(traits: .fixedLayout(width: 400, height: 1200)) {
+    let jobs = JobsManagerService()
+
+    return AppSidebar()
+        .environment(jobs)
 }
 
 #Preview(traits: .fixedLayout(width: 1024, height: 1024)) {

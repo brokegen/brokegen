@@ -69,8 +69,8 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
     ):
-        constructed_url = request.url_for('get_provider_models') \
-            .include_query_params(
+        constructed_url = request.url_for(
+            'get_provider_models',
             provider_type=provider.type,
             provider_id=provider.id,
         )

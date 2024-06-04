@@ -5,8 +5,7 @@ enum ModelNeeds: Codable, CaseIterable {
     case inferenceDefault, chatSummary, embedding
 }
 
-@Model
-class InferenceModelSettings: Codable {
+class InferenceModelSettings: Codable, Observable {
     var storedModelNeeds: [ModelNeeds : InferenceModelRecordID] = [:]
 
     required init(from decoder: Decoder) throws {
@@ -20,6 +19,8 @@ class InferenceModelSettings: Codable {
         self.storedModelNeeds = from.storedModelNeeds
     }
 
+    init() {}
+
     func get(for modelNeed: ModelNeeds) -> InferenceModelRecordID? {
         return storedModelNeeds[modelNeed]
     }
@@ -31,5 +32,17 @@ class InferenceModelSettings: Codable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(storedModelNeeds)
+    }
+}
+
+extension InferenceModelSettings: Equatable {
+    static func == (lhs: InferenceModelSettings, rhs: InferenceModelSettings) -> Bool {
+        return lhs.storedModelNeeds == rhs.storedModelNeeds
+    }
+}
+
+extension InferenceModelSettings: Hashable {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(storedModelNeeds)
     }
 }

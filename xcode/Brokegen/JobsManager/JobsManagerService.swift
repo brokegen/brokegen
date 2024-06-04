@@ -4,10 +4,16 @@ import SwiftUI
 
 
 class JobsManagerService: Observable, ObservableObject {
-    @Published var sidebarRenderableJobs: [Job]
-    @Published var storedJobs: [Job]
+    @Published var sidebarRenderableJobs: [Job] = []
+    @Published var storedJobs: [Job] = []
 
+    init() {}
+}
+
+class DefaultJobsManagerService: JobsManagerService {
     init(startPingsImmediately: Bool = false) {
+        super.init()
+
         let importantJobs = [
             // Use prime numbers for these, because we can
             SimplePing("brokegen-server heartbeat", "http://localhost:6635", timeInterval: 23),
