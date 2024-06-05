@@ -147,7 +147,7 @@ struct BlankOneSequenceView: View {
             Divider()
 
             HStack {
-                Text("Ready")
+                Text(submitting ? "Submitting ChatMessage/Sequence" : "Ready")
                     .foregroundStyle(Color(.disabledControlTextColor))
 
                 Spacer()
