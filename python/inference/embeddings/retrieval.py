@@ -69,7 +69,7 @@ class SimpleRetrievalPolicy(RetrievalPolicy):
         )
 
         big_prompt = f"""\
-Use the provided context where applicable. Ignore irrelevant context.
+Use any sources you can. Some recent context is provided to try and provide newer information:
 
 <context>
 {formatted_docs}
