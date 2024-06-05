@@ -297,7 +297,9 @@ class ChatSequenceClientModel: Observable, ObservableObject {
             chatService.replaceSequenceById(sequence.serverId!, with: newSequenceId)
 
             if let newSequence = await chatService.fetchSequence(newSequenceId) {
-                self.sequence = newSequence
+                DispatchQueue.main.async {
+                    self.sequence = newSequence
+                }
             }
         }
     }
