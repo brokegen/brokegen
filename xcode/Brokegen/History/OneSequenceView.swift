@@ -90,8 +90,11 @@ struct OneSequenceView: View {
                         Button(action: viewModel.requestExtendWithRetrieval) {
                             Image(systemName: "arrow.up.doc")
                                 .font(.system(size: 32))
-                                .disabled(disableControls)
-                                .foregroundStyle(disableControls ? Color(.disabledControlTextColor) : Color(.controlTextColor))
+                                .disabled(disableControls || viewModel.promptInEdit.isEmpty)
+                                .foregroundStyle(
+                                    (disableControls || viewModel.promptInEdit.isEmpty)
+                                    ? Color(.disabledControlTextColor)
+                                    : Color(.controlTextColor))
                         }
                         .buttonStyle(.plain)
                         .help("Submit with Retrieval-Augmented Generation")
