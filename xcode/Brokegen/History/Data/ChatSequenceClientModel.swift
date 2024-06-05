@@ -292,7 +292,7 @@ class ChatSequenceClientModel: Observable, ObservableObject {
     }
 
     func replaceSequence(_ newSequenceId: ChatSequenceServerID) {
-        Task.init {
+        Task {
             print("[DEBUG] Attempting to update ChatSequenceClientModel to new_sequence_id: \(newSequenceId)")
             chatService.replaceSequenceById(sequence.serverId!, with: newSequenceId)
 

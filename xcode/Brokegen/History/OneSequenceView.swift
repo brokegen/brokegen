@@ -39,7 +39,9 @@ struct OneSequenceView: View {
                             .padding(24)
                             .padding(.top, 16)
                     }
+                }
 
+                VStack(spacing: 0) {
                     if viewModel.submitting || viewModel.responseInEdit != nil || viewModel.displayedStatus != nil {
                         // TODO: This doesn't seem like the right UI move, but I don't understand colors yet
                         Divider()
@@ -62,63 +64,63 @@ struct OneSequenceView: View {
                         .padding(.leading, 24)
                         .padding(.trailing, 24)
                     }
-                }
 
-                HStack {
-                    let disableControls: Bool = viewModel.submitting || viewModel.responseInEdit != nil
+                    HStack {
+                        let disableControls: Bool = viewModel.submitting || viewModel.responseInEdit != nil
 
-                    InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
-                        .focused($focusTextInput)
-                        .onAppear {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                self.focusTextInput = true
+                        InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
+                            .focused($focusTextInput)
+                            .onAppear {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    self.focusTextInput = true
+                                }
                             }
-                        }
-                        .backgroundStyle(inputBackgroundStyle)
+                            .backgroundStyle(inputBackgroundStyle)
 
-                    Group {
-                        Button(action: {
-                            viewModel.stopSubmitAndReceive(userRequested: true)
-                        }) {
-                            Image(systemName: viewModel.responseInEdit != nil ? "stop.fill" : "stop")
-                                .font(.system(size: 32))
-                                .disabled(!disableControls)
-                                .foregroundStyle(!disableControls ? Color(.disabledControlTextColor) : Color(.controlTextColor))
-                        }
-                        .buttonStyle(.plain)
-                        .help("Stop submitting or receiving")
-                        .padding(.leading, 12)
-
-                        Button(action: viewModel.requestExtendWithRetrieval) {
-                            Image(systemName: "arrow.up.doc")
-                                .font(.system(size: 32))
-                                .disabled(disableControls || viewModel.promptInEdit.isEmpty)
-                                .foregroundStyle(
-                                    (disableControls || viewModel.promptInEdit.isEmpty)
-                                    ? Color(.disabledControlTextColor)
-                                    : Color(.controlTextColor))
-                        }
-                        .buttonStyle(.plain)
-                        .help("Submit with Retrieval-Augmented Generation")
-
-                        Button(action: {
-                            if viewModel.promptInEdit.isEmpty {
-                                _ = viewModel.requestContinue()
+                        Group {
+                            Button(action: {
+                                viewModel.stopSubmitAndReceive(userRequested: true)
+                            }) {
+                                Image(systemName: viewModel.responseInEdit != nil ? "stop.fill" : "stop")
+                                    .font(.system(size: 32))
+                                    .disabled(!disableControls)
+                                    .foregroundStyle(!disableControls ? Color(.disabledControlTextColor) : Color(.controlTextColor))
                             }
-                            else {
-                                viewModel.requestExtend()
+                            .buttonStyle(.plain)
+                            .help("Stop submitting or receiving")
+                            .padding(.leading, 12)
+
+                            Button(action: viewModel.requestExtendWithRetrieval) {
+                                Image(systemName: "arrow.up.doc")
+                                    .font(.system(size: 32))
+                                    .disabled(disableControls || viewModel.promptInEdit.isEmpty)
+                                    .foregroundStyle(
+                                        (disableControls || viewModel.promptInEdit.isEmpty)
+                                        ? Color(.disabledControlTextColor)
+                                        : Color(.controlTextColor))
                             }
-                        }) {
-                            Image(systemName: viewModel.submitting ? "arrow.up.circle.fill" : "arrow.up.circle")
-                                .font(.system(size: 32))
-                                .disabled(disableControls)
-                                .foregroundStyle(disableControls ? Color(.disabledControlTextColor) : Color(.controlTextColor))
-                        }
-                        .buttonStyle(.plain)
-                        .help("Submit")
-                    } // end of button group
-                    .padding(.trailing, 12)
-                } // end of entire lower HStack
+                            .buttonStyle(.plain)
+                            .help("Submit with Retrieval-Augmented Generation")
+
+                            Button(action: {
+                                if viewModel.promptInEdit.isEmpty {
+                                    _ = viewModel.requestContinue()
+                                }
+                                else {
+                                    viewModel.requestExtend()
+                                }
+                            }) {
+                                Image(systemName: viewModel.submitting ? "arrow.up.circle.fill" : "arrow.up.circle")
+                                    .font(.system(size: 32))
+                                    .disabled(disableControls)
+                                    .foregroundStyle(disableControls ? Color(.disabledControlTextColor) : Color(.controlTextColor))
+                            }
+                            .buttonStyle(.plain)
+                            .help("Submit")
+                        } // end of button group
+                        .padding(.trailing, 12)
+                    }
+                } // end of entire lower VStack
                 .background(inputBackgroundStyle)
             }
             .defaultScrollAnchor(.bottom)

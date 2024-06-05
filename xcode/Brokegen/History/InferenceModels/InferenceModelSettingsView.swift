@@ -1,14 +1,10 @@
 import SwiftUI
 
 struct InferenceModelSettingsView: View {
-    let settings: InferenceModelSettings
+    @EnvironmentObject var settings: InferenceModelSettings
 
     @State private var showDefaultInferenceModelPicker = false
     @State private var showFallbackInferenceModelPicker = false
-
-    init(_ settings: InferenceModelSettings) {
-        self.settings = settings
-    }
 
     var body: some View {
         VStack(spacing: 24) {

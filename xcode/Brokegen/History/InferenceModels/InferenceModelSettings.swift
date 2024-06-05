@@ -11,6 +11,7 @@ class InferenceModelSettings: Observable, ObservableObject {
             get: { return self.defaultInferenceModel },
             set: { value in
                 self.defaultInferenceModel = value
+                self.objectWillChange.send()
             }
         )
     }
@@ -20,6 +21,7 @@ class InferenceModelSettings: Observable, ObservableObject {
             get: { return self.fallbackInferenceModel },
             set: { value in
                 self.fallbackInferenceModel = value
+                self.objectWillChange.send()
             }
         )
     }

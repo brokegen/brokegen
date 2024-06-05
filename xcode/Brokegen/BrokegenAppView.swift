@@ -159,7 +159,8 @@ struct AppSidebar: View {
         .listStyle(.sidebar)
         .toolbar(.hidden)
         .navigationDestination(for: InferenceModelSettings.self) { settings in
-            InferenceModelSettingsView(settings)
+            InferenceModelSettingsView()
+                .environmentObject(settings)
         }
     }
 }
