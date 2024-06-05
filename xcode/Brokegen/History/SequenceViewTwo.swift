@@ -3,7 +3,7 @@ import CustomTabView
 import SwiftUI
 
 enum Tab: String, Hashable, CaseIterable {
-    case simple, pro, proMax, options
+    case simple, retrieval, uiOptions, modelOptions, systemOptions
 }
 
 struct ComposeTabsView: View {
@@ -17,18 +17,18 @@ struct ComposeTabsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ForEach([Tab.simple, Tab.pro, Tab.proMax], id: \.self) { tab in
+            ForEach([Tab.simple, Tab.retrieval], id: \.self) { tab in
                 HStack(spacing: 0) {
                     Spacer()
                         .frame(minWidth: 0)
                     Text(tab.rawValue)
                         .layoutPriority(1)
                 }
-                .padding()
+                .padding(.trailing, 12)
                 .frame(maxWidth: .infinity)
                 .frame(maxHeight: 32)
                 .background(selection == tab
-                            ? Color.accentColor
+                            ? Color(.selectedControlColor)
                             : inputBackgroundStyle)
                 .contentShape(Rectangle())
                 .onTapGesture {
@@ -40,21 +40,28 @@ struct ComposeTabsView: View {
 
             Spacer()
 
-            Text("options")
-                .padding()
+            ForEach([Tab.uiOptions, Tab.modelOptions, Tab.systemOptions], id: \.self) { tab in
+                HStack(spacing: 0) {
+                    Text(tab.rawValue)
+                        .layoutPriority(1)
+                    Spacer()
+                        .frame(minWidth: 0)
+                }
+                .padding(.leading, 12)
                 .frame(maxWidth: .infinity)
                 .frame(maxHeight: 32)
-                .background(selection == .options
-                            ? Color.accentColor
-                            : Color(.controlBackgroundColor))
+                .background(selection == tab
+                            ? Color(.selectedControlColor)
+                            : inputBackgroundStyle)
                 .contentShape(Rectangle())
                 .onTapGesture {
-                    selection = .options
-                    onTabSelection(.options)
+                    selection = tab
+                    onTabSelection(tab)
                 }
                 .layoutPriority(0.2)
+            }
         }
-        .frame(maxWidth: 80)
+        .frame(maxWidth: 120)
     }
 }
 
@@ -91,6 +98,53 @@ struct SequenceViewTwo: View {
             .frame(maxHeight: .infinity)
 
         return CustomTabView(tabBarView: composeTabsView, tabs: Tab.allCases, selection: selectedTab) {
+            // Tab.simple
+            VStack(spacing: 0) {
+                HStack {
+                    InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
+                        .focused($focusTextInput)
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                self.focusTextInput = true
+                            }
+                        }
+                        .backgroundStyle(inputBackgroundStyle)
+                        .onSubmit {
+                            viewModel.requestExtend()
+                        }
+
+                    let buttonName: String = {
+                        if viewModel.submitting || viewModel.responseInEdit != nil {
+                            return "stop.fill"
+                        }
+
+                        return "arrowshape.up"
+                    }()
+
+                    Button(action: {
+                        if viewModel.promptInEdit.isEmpty && allowContinuation {
+                            _ = viewModel.requestContinue()
+                        }
+                        else {
+                            viewModel.requestExtend()
+                        }
+                    }) {
+                        Image(systemName: buttonName)
+                            .font(.system(size: 32))
+                            .disabled(
+                                (viewModel.promptInEdit.isEmpty && !allowContinuation)
+                            )
+                            .foregroundStyle(
+                                (viewModel.promptInEdit.isEmpty && !allowContinuation)
+                                ? Color(.disabledControlTextColor)
+                                : Color.accentColor)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.trailing, 12)
+                }
+            }
+
+            // Tab.retrieval
             VStack(spacing: 0) {
                 HStack {
                     InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
@@ -162,38 +216,7 @@ struct SequenceViewTwo: View {
                 }
             }
 
-            FlowLayout(spacing: 0) {
-                GroupBox(content: {
-                    TextEditor(text: $overrideSystemPrompt)
-                        .frame(width: 360, height: 72)
-                        .lineLimit(4...12)
-                }, label: {
-                    Text("overrideSystemPrompt")
-                })
-
-                GroupBox(content: {
-                    TextEditor(text: $retrieverOptions)
-                        .frame(width: 360, height: 72)
-                        .lineLimit(4...12)
-                }, label: {
-                    Text("retrieverOptions")
-                })
-            }
-
-            FlowLayout(spacing: 0) {
-                GroupBox(content: {
-                    TextField("overrideInferenceTemplate", text: $overrideSystemPrompt)
-                }, label: {
-                    Text("overrideInferenceTemplate")
-                })
-
-                GroupBox(content: {
-                    TextField("inferenceOptions", text: $inferenceOptions)
-                }, label: {
-                    Text("inferenceOptions")
-                })
-            }
-
+            // Tab.uiOptions
             FlowLayout(spacing: 0) {
                 GroupBox(content: {
                     VStack(alignment: .leading, spacing: 24) {
@@ -223,12 +246,46 @@ struct SequenceViewTwo: View {
                     Text("Generation Options")
                 })
             }
+
+            // Tab.modelOptions
+            FlowLayout(spacing: 0) {
+                GroupBox(content: {
+                    TextField("overrideInferenceTemplate", text: $overrideSystemPrompt)
+                }, label: {
+                    Text("overrideInferenceTemplate")
+                })
+
+                GroupBox(content: {
+                    TextField("inferenceOptions", text: $inferenceOptions)
+                }, label: {
+                    Text("inferenceOptions")
+                })
+            }
+
+            // Tab.systemOptions
+            FlowLayout(spacing: 0) {
+                GroupBox(content: {
+                    TextEditor(text: $overrideSystemPrompt)
+                        .frame(width: 360, height: 72)
+                        .lineLimit(4...12)
+                }, label: {
+                    Text("overrideSystemPrompt")
+                })
+
+                GroupBox(content: {
+                    TextEditor(text: $retrieverOptions)
+                        .frame(width: 360, height: 72)
+                        .lineLimit(4...12)
+                }, label: {
+                    Text("retrieverOptions")
+                })
+            }
         }
         .tabBarPosition(.edge(.leading))
         // TODO: This is very oddly hard-coded. Try layoutPriority on the CustomTabView, next.
         // It's probably something in CustomTabView that's adjusting the height.
         // Or the ComposeTabsView has infinite height.
-        .frame(maxHeight: 200)
+        .frame(maxHeight: 180)
     }
 
     var body: some View {
