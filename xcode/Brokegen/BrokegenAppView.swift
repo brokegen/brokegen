@@ -37,16 +37,9 @@ struct BrokegenAppView: View {
                 SequencePickerView()
                     .environmentObject(chatService)
             })
-            .navigationDestination(for: ChatSequence.self) { sequence in
-                NavigationSplitView(sidebar: { AppSidebar() }, detail: {
-                    OneSequenceView(
-                        chatService.clientModel(for: sequence, inferenceModelSettings: inferenceModelSettings)
-                    )
-                })
-            }
             .navigationDestination(for: ChatSequenceClientModel.self) { clientModel in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {
-                    SequenceViewTwo(clientModel)
+                    OneSequenceView(clientModel)
                 })
             }
         }
