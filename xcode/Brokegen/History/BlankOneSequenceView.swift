@@ -110,87 +110,6 @@ struct BlankOneSequenceView: View {
         }
     }
 
-    private func prettyDate(_ requestedDate: Date? = nil) -> String {
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions.insert(.withFractionalSeconds)
-
-        let date = requestedDate ?? Date.now
-        return dateFormatter.string(from: date)
-    }
-
-    private func constructUserSequence(id messageID: ChatMessageServerID) async -> ChatSequenceServerID? {
-        struct Parameters: Codable {
-            var humanDesc: String? = nil
-            var userPinned: Bool
-            let currentMessage: ChatMessageServerID
-            var parentSequence: ChatSequenceServerID? = nil
-            var generatedAt: String?
-            var generationComplete: Bool
-            var inferenceJobId: InferenceEventID? = nil
-            var inferenceError: String? = nil
-        }
-        let params = Parameters(
-            humanDesc: chatSequenceHumanDesc,
-            userPinned: true,
-            currentMessage: messageID,
-            generatedAt: prettyDate(),
-            generationComplete: true
-        )
-
-        let encoder = JSONEncoder()
-        encoder.keyEncodingStrategy = .convertToSnakeCase
-
-        do {
-            let jsonDict = try await chatService.postData(
-                try encoder.encode(params),
-                endpoint: "/sequences")
-            guard jsonDict != nil else { return nil }
-
-            let sequenceID: ChatMessageServerID? = jsonDict!["sequence_id"] as? Int
-            return sequenceID
-        }
-        catch {
-            return nil
-        }
-    }
-
-    func submit() {
-        Task.init {
-            submitting = true
-
-            let messageId: ChatMessageServerID? = await chatService.constructUserMessage(promptInEdit)
-            guard messageId != nil else {
-                submitting = false
-                print("[ERROR] Couldn't submit message: \(promptInEdit)")
-                return
-            }
-
-            let sequenceId: ChatSequenceServerID? =
-                await constructUserSequence(id: messageId!)
-            guard sequenceId != nil else {
-                submitting = false
-                print("[ERROR] Couldn't construct sequence from: ChatMessage#\(messageId!)")
-                return
-            }
-
-            let nextSequence = await chatService.fetchSequence(sequenceId!)
-            guard nextSequence != nil else {
-                submitting = false
-                print("[ERROR] Couldn't fetch sequence information for ChatSequence#\(sequenceId!)")
-                return
-            }
-
-            pathHost.push(
-                chatService.clientModel(for: nextSequence!, inferenceModelSettings: inferenceModelSettings)
-                    .requestContinue(model: modelSelection!.serverId)
-                )
-        }
-    }
-
-    func stopSubmitAndReceive() {
-        submitting = false
-    }
-
     var body: some View {
         VStack {
             ChatNameInput($chatSequenceHumanDesc)
@@ -276,5 +195,85 @@ struct BlankOneSequenceView: View {
                 .frame(width: 800, height: 1200, alignment: .top)
                 .animation(.linear(duration: 0.2))
         }
+    }
+    private func prettyDate(_ requestedDate: Date? = nil) -> String {
+        let dateFormatter = ISO8601DateFormatter()
+        dateFormatter.formatOptions.insert(.withFractionalSeconds)
+
+        let date = requestedDate ?? Date.now
+        return dateFormatter.string(from: date)
+    }
+
+    private func constructUserSequence(id messageID: ChatMessageServerID) async -> ChatSequenceServerID? {
+        struct Parameters: Codable {
+            var humanDesc: String? = nil
+            var userPinned: Bool
+            let currentMessage: ChatMessageServerID
+            var parentSequence: ChatSequenceServerID? = nil
+            var generatedAt: String?
+            var generationComplete: Bool
+            var inferenceJobId: InferenceEventID? = nil
+            var inferenceError: String? = nil
+        }
+        let params = Parameters(
+            humanDesc: chatSequenceHumanDesc,
+            userPinned: true,
+            currentMessage: messageID,
+            generatedAt: prettyDate(),
+            generationComplete: true
+        )
+
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+
+        do {
+            let jsonDict = try await chatService.postData(
+                try encoder.encode(params),
+                endpoint: "/sequences")
+            guard jsonDict != nil else { return nil }
+
+            let sequenceID: ChatMessageServerID? = jsonDict!["sequence_id"] as? Int
+            return sequenceID
+        }
+        catch {
+            return nil
+        }
+    }
+
+    func submit() {
+        Task.init {
+            submitting = true
+
+            let messageId: ChatMessageServerID? = await chatService.constructUserMessage(promptInEdit)
+            guard messageId != nil else {
+                submitting = false
+                print("[ERROR] Couldn't submit message: \(promptInEdit)")
+                return
+            }
+
+            let sequenceId: ChatSequenceServerID? =
+                await constructUserSequence(id: messageId!)
+            guard sequenceId != nil else {
+                submitting = false
+                print("[ERROR] Couldn't construct sequence from: ChatMessage#\(messageId!)")
+                return
+            }
+
+            let nextSequence = await chatService.fetchSequence(sequenceId!)
+            guard nextSequence != nil else {
+                submitting = false
+                print("[ERROR] Couldn't fetch sequence information for ChatSequence#\(sequenceId!)")
+                return
+            }
+
+            pathHost.push(
+                chatService.clientModel(for: nextSequence!, inferenceModelSettings: inferenceModelSettings)
+                    .requestContinue(model: modelSelection!.serverId)
+                )
+        }
+    }
+
+    func stopSubmitAndReceive() {
+        submitting = false
     }
 }

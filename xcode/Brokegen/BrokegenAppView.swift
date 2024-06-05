@@ -80,6 +80,7 @@ struct ASRow: View {
     var body: some View {
         HStack {
             Text(text)
+                .lineLimit(1...2)
                 .layoutPriority(0.5)
             Spacer()
             if showChevron {
@@ -108,27 +109,12 @@ struct AppSidebar: View {
                         }
                     }) {
                         ASRow("IRC revival")
-                            .disabled(true)
-                            .foregroundStyle(Color(.disabledControlTextColor))
                     }
-                    
-                    AppSidebarSection(label: {
-                        HStack {
-                            Image(systemName: "message")
-                                .padding(.trailing, 4)
-                            
-                            Text("Chats")
-                        }
-                    }) {
-                        NavigationLink(destination: BlankOneSequenceView()) {
-                            ASRow("New", showChevron: true)
-                        }
-                        
-                        NavigationLink(destination: SequencePickerView()) {
-                            ASRow("Recent", showChevron: true)
-                        }
-                    }
-                    
+                    .disabled(true)
+                    .foregroundStyle(Color(.disabledControlTextColor))
+
+                    MiniSequencePickerSidebar()
+
                     AppSidebarSection(label: {
                         Image(systemName: "sink")
                             .padding(.trailing, 0)
@@ -144,11 +130,11 @@ struct AppSidebar: View {
                         ASRow("Non-chat completions")
                             .foregroundStyle(Color(.disabledControlTextColor))
                     }
-                    
+
                     MiniJobsSidebar()
                 }
             }
-            
+
             AppSidebarSection(label: {
                 HStack {
                     Image(systemName: "gear")
@@ -213,6 +199,7 @@ struct BrokegenAppView: View {
         NavigationStack(path: $pathHost.path) {
             NavigationSplitView(sidebar: { AppSidebar() }, detail: {
                 SequencePickerView()
+                    .environmentObject(chatService)
             })
             .navigationDestination(for: ChatSequence.self) { sequence in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {

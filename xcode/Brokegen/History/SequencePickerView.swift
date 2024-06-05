@@ -50,20 +50,22 @@ fileprivate func dateToISOWeekStartingMonday(_ date: Date) -> String {
     return "\(paddedYear)-ww\(paddedWeek).\(weekday)" + formatter.string(from: date)
 }
 
+extension ChatSequence {
+    func displayHumanDesc() -> String {
+        if !(humanDesc ?? "").isEmpty {
+            return humanDesc!
+        }
+
+        return "ChatSequence#\(serverId!)"
+    }
+}
+
 struct SequenceRow: View {
     @Environment(ProviderService.self) private var providerService
     let sequence: ChatSequence
 
     init(_ sequence: ChatSequence) {
         self.sequence = sequence
-    }
-
-    func displayHumanDesc() -> String {
-        if !(sequence.humanDesc ?? "").isEmpty {
-            return sequence.humanDesc!
-        }
-
-        return "ChatSequence#\(sequence.serverId!)"
     }
 
     func displayDate() -> String? {
@@ -93,7 +95,7 @@ struct SequenceRow: View {
                 .padding(.leading, -8)
                 .padding(.trailing, 16)
 
-            Text(displayHumanDesc())
+            Text(sequence.displayHumanDesc())
                 .font(.title)
                 .padding(.bottom, 8)
                 .lineLimit(1...4)
@@ -141,8 +143,105 @@ func dateToSectionName(_ date: Date?) -> String {
     return sectionName
 }
 
+struct MiniSequencePickerSidebar: View {
+    @EnvironmentObject private var chatService: ChatSyncService
+    @Environment(PathHost.self) private var pathHost
+    @Environment(InferenceModelSettings.self) public var inferenceModelSettings
+    let navLimit: Int
+
+    init(navLimit: Int = 2) {
+        self.navLimit = navLimit
+    }
+
+    func sectionedSequences() -> [(String, [ChatSequence])] {
+        let sectionedSequences = Dictionary(grouping: chatService.loadedChatSequences) {
+            dateToSectionName($0.lastMessageDate)
+        }
+
+        return Array(sectionedSequences)
+            .map {
+                // Sorts the individual ChatSequences within a section
+                ($0.0, $0.1.sorted {
+                    if $0.lastMessageDate == nil {
+                        return false
+                    }
+                    if $1.lastMessageDate == nil {
+                        return true
+                    }
+
+                    return $0.lastMessageDate! > $1.lastMessageDate!
+                })
+            }
+            .sorted { $0.0 > $1.0 }
+    }
+
+    var body: some View {
+        AppSidebarSection(label: {
+            HStack {
+                Image(systemName: "message")
+                    .padding(.trailing, 4)
+
+                Text("Chats")
+            }
+        }) {
+            NavigationLink(destination: BlankOneSequenceView(
+                inferenceModelSettings.defaultInferenceModel
+            )) {
+                HStack {
+                    Image(systemName: "plus")
+                        .padding(.trailing, 0)
+                    Text("New")
+                        .layoutPriority(0.5)
+                }
+                .contentShape(Rectangle())
+            }
+            .padding(.leading, -24)
+            .padding(.trailing, -24)
+
+            NavigationLink(destination: SequencePickerView()) {
+                ASRow("Recent", showChevron: true)
+            }
+
+            if !sectionedSequences().isEmpty && navLimit > 0 {
+                Divider()
+
+                ForEach(sectionedSequences().prefix(navLimit), id: \.0) { pair in
+                    let (sectionName, sectionSequences) = pair
+
+                    Section(content: {
+                        ForEach(sectionSequences) { sequence in
+                            HStack(alignment: .top) {
+                                Image(systemName: "bubble")
+                                    .padding(.leading, -4)
+                                    .padding(.top, 2)
+                                Text(sequence.displayHumanDesc())
+                                    .lineLimit(1...2)
+                                    .layoutPriority(0.5)
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                pathHost.push(
+                                    chatService.clientModel(for: sequence, inferenceModelSettings: inferenceModelSettings)
+                                )
+                            }
+                        }
+                    }, header: {
+                        Text(sectionName)
+                            .padding(-6)
+                            .padding(.top, 12)
+                            .foregroundStyle(Color(.disabledControlTextColor))
+                            .font(.system(size: 16))
+                    })
+                }
+                .padding(.leading, -24)
+                .padding(.trailing, -24)
+            }
+        }
+    }
+}
+
 struct SequencePickerView: View {
-    @Environment(ChatSyncService.self) private var chatService
+    @EnvironmentObject private var chatService: ChatSyncService
     @Environment(PathHost.self) private var pathHost
     @Environment(InferenceModelSettings.self) public var inferenceModelSettings
 
@@ -184,7 +283,9 @@ struct SequencePickerView: View {
 
             Spacer()
 
-            NavigationLink(destination: BlankOneSequenceView()) {
+            NavigationLink(destination: BlankOneSequenceView(
+                inferenceModelSettings.defaultInferenceModel
+            )) {
                 Label("New Chat...", systemImage: "plus")
                     .buttonStyle(.accessoryBar)
                     .padding(12)
@@ -193,27 +294,34 @@ struct SequencePickerView: View {
         .padding(24)
         .frame(maxWidth: 1000)
 
-        List(sectionedSequences, id: \.0) { pair in
-            let (sectionName, sectionSequences) = pair
+        List {
+            ForEach(sectionedSequences, id: \.0) { pair in
+                let (sectionName, sectionSequences) = pair
 
-            Section(header: Text(sectionName)
-                .font(.title)
-                .monospaced()
-                .foregroundColor(.accentColor)
-                .padding(.top, 36)
-            ) {
-                ForEach(sectionSequences) { sequence in
-                    SequenceRow(sequence)
-                        .padding(12)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            pathHost.push(
-                                chatService.clientModel(for: sequence, inferenceModelSettings: inferenceModelSettings)
-                            )
-                        }
+                Section(header: Text(sectionName)
+                    .font(.title)
+                    .monospaced()
+                    .foregroundColor(.accentColor)
+                    .padding(.top, 36)
+                ) {
+                    ForEach(sectionSequences) { sequence in
+                        SequenceRow(sequence)
+                            .padding(12)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                pathHost.push(
+                                    chatService.clientModel(for: sequence, inferenceModelSettings: inferenceModelSettings)
+                                )
+                            }
+                    }
                 }
+                .padding(8)
             }
-            .padding(8)
+
+            Text("End of loaded ChatSequences")
+                .foregroundStyle(Color(.disabledControlTextColor))
+                .frame(height: 400)
+                .frame(maxWidth: .infinity)
         }
     }
 }

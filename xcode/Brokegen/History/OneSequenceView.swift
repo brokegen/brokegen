@@ -14,52 +14,54 @@ struct OneSequenceView: View {
 
     var body: some View {
         ScrollViewReader { proxy in
-            ScrollView(.vertical) {
-                if viewModel.sequence.humanDesc != nil {
-                    HStack {
-                        Text(viewModel.sequence.humanDesc!)
-                            .font(.system(size: 36))
-                            .padding(.leading, 24)
-                            .foregroundColor(.gray)
-                            .lineLimit(1)
+            VStack(spacing: 0) {
+                ScrollView(.vertical) {
+                    if viewModel.sequence.humanDesc != nil {
+                        HStack {
+                            Text(viewModel.sequence.humanDesc!)
+                                .font(.system(size: 36))
+                                .padding(.leading, 24)
+                                .foregroundColor(.gray)
+                                .lineLimit(1)
 
-                        Spacer()
-                    }
-                }
-
-                ForEach(viewModel.sequence.messages) { message in
-                    OneMessageView(message)
-                        .padding(24)
-                        .padding(.top, 16)
-                }
-
-                if viewModel.responseInEdit != nil {
-                    OneMessageView(viewModel.responseInEdit!, stillUpdating: true)
-                        .padding(24)
-                        .padding(.top, 16)
-                }
-
-                if viewModel.submitting || viewModel.responseInEdit != nil || viewModel.displayedStatus != nil {
-                    // TODO: This doesn't seem like the right UI move, but I don't understand colors yet
-                    Divider()
-
-                    HStack {
-                        if viewModel.displayedStatus != nil {
-                            // TODO: Find a way to persist any changes for at least a few seconds
-                            Text(viewModel.displayedStatus ?? "")
-                                .foregroundStyle(Color(.disabledControlTextColor))
-                        }
-
-                        Spacer()
-
-                        if viewModel.submitting || viewModel.responseInEdit != nil {
-                            ProgressView()
-                                .progressViewStyle(.linear)
-                                .frame(maxWidth: 120)
+                            Spacer()
                         }
                     }
-                    .padding(.leading, 24)
-                    .padding(.trailing, 24)
+
+                    ForEach(viewModel.sequence.messages) { message in
+                        OneMessageView(message)
+                            .padding(24)
+                            .padding(.top, 16)
+                    }
+
+                    if viewModel.responseInEdit != nil {
+                        OneMessageView(viewModel.responseInEdit!, stillUpdating: true)
+                            .padding(24)
+                            .padding(.top, 16)
+                    }
+
+                    if viewModel.submitting || viewModel.responseInEdit != nil || viewModel.displayedStatus != nil {
+                        // TODO: This doesn't seem like the right UI move, but I don't understand colors yet
+                        Divider()
+
+                        HStack {
+                            if viewModel.displayedStatus != nil {
+                                // TODO: Find a way to persist any changes for at least a few seconds
+                                Text(viewModel.displayedStatus ?? "")
+                                    .foregroundStyle(Color(.disabledControlTextColor))
+                            }
+
+                            Spacer()
+
+                            if viewModel.submitting || viewModel.responseInEdit != nil {
+                                ProgressView()
+                                    .progressViewStyle(.linear)
+                                    .frame(maxWidth: 120)
+                            }
+                        }
+                        .padding(.leading, 24)
+                        .padding(.trailing, 24)
+                    }
                 }
 
                 HStack {
@@ -114,11 +116,10 @@ struct OneSequenceView: View {
                         }
                         .buttonStyle(.plain)
                         .help("Submit")
-                    }
+                    } // end of button group
                     .padding(.trailing, 12)
-                }
+                } // end of entire lower HStack
                 .background(inputBackgroundStyle)
-                .frame(maxHeight: 400)
             }
             .defaultScrollAnchor(.bottom)
             .onAppear {

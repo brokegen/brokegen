@@ -170,7 +170,7 @@ extension ChatSyncService {
     }
 
     func replaceSequenceById(_ originalSequenceId: ChatSequenceServerID?, with updatedSequenceId: ChatSequenceServerID) {
-        Task.init {
+        Task {
             var priorSequenceClientId: UUID? = nil
             if originalSequenceId != nil {
                 if let removalIndex = self.loadedChatSequences.firstIndex(where: {
