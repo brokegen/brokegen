@@ -2,6 +2,10 @@ import SwiftUI
 
 
 struct FlowLayout: Layout {
+    init(spacing: Int = 0) {
+        // TODO: Do something with spacing, maybe
+    }
+
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
 

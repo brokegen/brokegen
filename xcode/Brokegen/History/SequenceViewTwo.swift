@@ -64,12 +64,140 @@ struct SequenceViewTwo: View {
     @FocusState var focusTextInput: Bool
     @State private var selectedTab: Tab = .simple
 
+    // per-chat options
+    @State var overrideSystemPrompt: String = ""
+    @State var retrieverOptions: String = ""
+
+    // entire-model options
+    @State var overrideInferenceTemplate: String = ""
+    @State var inferenceOptions: String = ""
+
+    // UI options
+    // @AppStorage("allowContinuation")
     @State var allowContinuation: Bool = true
     @State var showSeparateRetrievalButton: Bool = false
     @State var forceRetrieval: Bool = false
 
+    @State var autoSummarizeChats: Bool? = nil
+
     init(_ viewModel: ChatSequenceClientModel) {
         self.viewModel = viewModel
+    }
+
+    var tabsView: some View {
+        let composeTabsView = ComposeTabsView(selection: $selectedTab) { tab in
+            print("Picked tab \(tab.rawValue)")
+        }
+            .frame(maxHeight: .infinity)
+
+        return CustomTabView(tabBarView: composeTabsView, tabs: Tab.allCases, selection: selectedTab) {
+            VStack(spacing: 0) {
+                HStack {
+                    InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
+                        .focused($focusTextInput)
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                self.focusTextInput = true
+                            }
+                        }
+                        .backgroundStyle(inputBackgroundStyle)
+                        .onSubmit {
+                            viewModel.requestExtend()
+                        }
+
+                    let buttonName: String = {
+                        if viewModel.submitting || viewModel.responseInEdit != nil {
+                            return "stop.fill"
+                        }
+
+                        if !showSeparateRetrievalButton && forceRetrieval {
+                            return "arrow.up.doc"
+                        }
+
+                        return "arrowshape.up"
+                    }()
+
+                    Button(action: {
+                        viewModel.requestExtendWithRetrieval()
+                    }) {
+                        Image(systemName: buttonName)
+                            .font(.system(size: 32))
+                            .disabled(viewModel.promptInEdit.isEmpty && !allowContinuation)
+                            .foregroundStyle((viewModel.promptInEdit.isEmpty && !allowContinuation)
+                                             ? Color(.disabledControlTextColor)
+                                             : Color.accentColor)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.trailing, 12)
+                }
+            }
+
+            FlowLayout(spacing: 0) {
+                GroupBox(content: {
+                    TextEditor(text: $overrideSystemPrompt)
+                        .frame(width: 360, height: 72)
+                        .lineLimit(4...12)
+                }, label: {
+                    Text("overrideSystemPrompt")
+                })
+
+                GroupBox(content: {
+                    TextEditor(text: $retrieverOptions)
+                        .frame(width: 360, height: 72)
+                        .lineLimit(4...12)
+                }, label: {
+                    Text("retrieverOptions")
+                })
+            }
+
+            FlowLayout(spacing: 0) {
+                GroupBox(content: {
+                    TextField("overrideInferenceTemplate", text: $overrideSystemPrompt)
+                }, label: {
+                    Text("overrideInferenceTemplate")
+                })
+
+                GroupBox(content: {
+                    TextField("inferenceOptions", text: $inferenceOptions)
+                }, label: {
+                    Text("inferenceOptions")
+                })
+            }
+
+            FlowLayout(spacing: 0) {
+                GroupBox(content: {
+                    VStack(alignment: .leading, spacing: 24) {
+                        Toggle(isOn: $allowContinuation, label: { Text("allowContinuation") })
+                        Toggle(isOn: $showSeparateRetrievalButton, label: { Text("showSeparateRetrievalButton")})
+                        Toggle(isOn: $forceRetrieval, label: { Text("forceRetrieval") })
+                    }
+                    .padding(24)
+                }, label: {
+                    Text("Submit Button")
+                })
+
+                GroupBox(content: {
+                    Text("override generation options")
+                    Picker("autoSummarizeChats", selection: $autoSummarizeChats) {
+                        Text("allow")
+                            .tag(true)
+
+                        Text("deny")
+                            .tag(false)
+
+                        Text("server default")
+                            .tag(nil as Bool?)
+                    }
+                }, label: {
+                    Text("Generation Options")
+                })
+            }
+        }
+        .tabBarPosition(.edge(.leading))
+        // TODO: This is very oddly hard-coded. Try layoutPriority on the CustomTabView, next.
+        // It's probably something in CustomTabView that's adjusting the height.
+        // Or the ComposeTabsView has infinite height.
+        .frame(maxHeight: 200)
     }
 
     var body: some View {
@@ -125,86 +253,7 @@ struct SequenceViewTwo: View {
                         .padding(.trailing, 24)
                     }
 
-                    let composeTabsView = ComposeTabsView(selection: $selectedTab) { tab in
-                        print("Picked tab \(tab.rawValue)")
-                    }
-                        .frame(maxHeight: .infinity)
-
-                    CustomTabView(tabBarView: composeTabsView, tabs: Tab.allCases, selection: selectedTab) {
-                        VStack(spacing: 0) {
-                            HStack {
-                                InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
-                                    .focused($focusTextInput)
-                                    .onAppear {
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                            self.focusTextInput = true
-                                        }
-                                    }
-                                    .backgroundStyle(inputBackgroundStyle)
-                                    .onSubmit {
-                                        viewModel.requestExtend()
-                                    }
-
-                                let buttonName: String = {
-                                    if viewModel.submitting || viewModel.responseInEdit != nil {
-                                        return "stop.fill"
-                                    }
-
-                                    if !showSeparateRetrievalButton && forceRetrieval {
-                                        return "arrow.up.doc"
-                                    }
-
-                                    return "arrowshape.up"
-                                }()
-
-                                Button(action: {
-                                    viewModel.requestExtendWithRetrieval()
-                                }) {
-                                    Image(systemName: buttonName)
-                                        .font(.system(size: 32))
-                                        .disabled(viewModel.promptInEdit.isEmpty && !allowContinuation)
-                                        .foregroundStyle((viewModel.promptInEdit.isEmpty && !allowContinuation)
-                                                         ? Color(.disabledControlTextColor)
-                                                         : inputBackgroundStyle
-                                        )
-                                }
-                                .buttonStyle(.plain)
-                                .padding(.trailing, 12)
-                            }
-                        }
-
-                        HStack {
-                            Text("content")
-                        }
-                        .tabItem {
-                            HStack {
-                                Label("  Tab 2", systemImage: "2.circle")
-                            }
-                            .padding(24)
-                        }
-
-                        VStack {
-                            Text("more content")
-                        }
-                        .tabItem {
-                            Label("Privacy", systemImage: "hand.raised")
-                        }
-
-                        VStack(spacing: 0) {
-                            GroupBox(content: {
-                                Toggle(isOn: $allowContinuation, label: { Text("allowContinuation") })
-                                Toggle(isOn: $showSeparateRetrievalButton, label: { Text("showSeparateRetrievalButton")})
-                                Toggle(isOn: $forceRetrieval, label: { Text("forceRetrieval") })
-                            }, label: {
-                                Text("Submit Button")
-                            })
-                        }
-                    }
-                    .tabBarPosition(.edge(.leading))
-                    // TODO: This is very oddly hard-coded. Try layoutPriority on the CustomTabView, next.
-                    // It's probably something in CustomTabView that's adjusting the height.
-                    // Or the ComposeTabsView has infinite height.
-                    .frame(maxHeight: 200)
+                    tabsView
                 } // end of entire lower VStack
                 .background(inputBackgroundStyle)
             }
