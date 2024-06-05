@@ -210,13 +210,53 @@ struct MiniSequencePickerSidebar: View {
 
                     Section(content: {
                         ForEach(sectionSequences) { sequence in
-                            HStack(alignment: .top) {
+                            HStack(alignment: .top, spacing: 0) {
                                 Image(systemName: "bubble")
                                     .padding(.leading, -4)
                                     .padding(.top, 2)
-                                Text(sequence.displayHumanDesc())
-                                    .lineLimit(1...2)
-                                    .layoutPriority(0.5)
+                                    .padding(.trailing, 8)
+
+                                ViewThatFits(in: .horizontal) {
+                                    HStack(spacing: 0) {
+                                        Text(sequence.displayHumanDesc())
+                                            .lineLimit(1...2)
+                                            .layoutPriority(0.5)
+                                            .padding(.trailing, -12)
+
+                                        Spacer()
+
+                                        if sequence.messages.count > 4 {
+                                            Text("\(sequence.messages.count) messages")
+                                                .lineLimit(1)
+                                                .font(.system(size: 16))
+                                                .foregroundStyle(Color(.disabledControlTextColor))
+                                                .layoutPriority(0.2)
+                                        }
+                                    } // first ViewThatFits option
+
+                                    VStack(alignment: .leading, spacing: 0) {
+                                        HStack(spacing: 0) {
+                                            Text(sequence.displayHumanDesc())
+                                                .lineLimit(1...2)
+                                                .layoutPriority(0.5)
+                                                .padding(.trailing, -12)
+
+                                            Spacer()
+                                        }
+
+                                        if sequence.messages.count > 4 {
+                                            HStack(spacing: 0) {
+                                                Spacer()
+
+                                                Text("\(sequence.messages.count) messages")
+                                                    .lineLimit(1)
+                                                    .font(.system(size: 16))
+                                                    .foregroundStyle(Color(.disabledControlTextColor))
+                                                    .layoutPriority(0.2)
+                                            }
+                                        }
+                                    } // second ViewThatFits option
+                                }
                             }
                             .contentShape(Rectangle())
                             .onTapGesture {
