@@ -7,6 +7,7 @@
    - Data is easy to port around, a few GB of chat history is easier to preserve for ten years from now, rather than trying to get Python 3.5 working on an iOS device in 2034.
 3. Store original JSON responses as much as possible
    - There's no reason to come up with our own distinct storage format for anything; we're simply not at a scale where we see any benefit from it.
+   - User data is the most important thing, do everything you can to make sure it's not lost.
 
 LLM inference (compute) is presumed to be the bottleneck, and will get worse as we stack on RAG and DSPy, so each "user" query fans out into dozens and hundreds of reified LLM queries.
 
@@ -21,7 +22,7 @@ There are a lot of different verbs, because data is created, fetched, constructe
 
 - `Templated` means the prompts and content have been adapted for use by a specific model type, since chat/instruct-type models are trained on special tokens to demarcate user/assistant input. (This is less useful for local models, where we don't have to fight a `system` prompt that's set in stone.) 
 - `Records` is a suffix that implies we're storing every variant of a provided datom. For example, even if a model config changes by one tiny parameter (`top_k` going from 60 to 80), record that change.
-- `Label` means it's for human use; 
+- `Label` means it's intended to be human-readable identifiers.
 
 Data + network calls:
 
