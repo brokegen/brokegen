@@ -3,16 +3,15 @@ import SwiftUI
 
 @main
 struct BrokegenApp: App {
-    @State private var chatService: ChatSyncService
+    @State private var chatService: ChatSyncService = ChatSyncService()
     @State private var jobsService: JobsManagerService
-    @State private var providerService: ProviderService
+    @State private var providerService: ProviderService = ProviderService()
     @State private var pathHost: PathHost = PathHost()
-    @State private var inferenceModelSettings: InferenceModelSettings = InferenceModelSettings()
+    @State private var inferenceModelSettings: InferenceModelSettings
 
     init() {
-        self.chatService = ChatSyncService()
         self.jobsService = DefaultJobsManagerService()
-        self.providerService = ProviderService()
+        self.inferenceModelSettings = InferenceModelSettings()
     }
 
     var body: some Scene {

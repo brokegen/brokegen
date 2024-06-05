@@ -93,6 +93,7 @@ struct ASRow: View {
 }
 
 struct AppSidebar: View {
+    @Environment(ProviderService.self) private var providerService
     @Environment(InferenceModelSettings.self) private var inferenceModelSettings
 
     var body: some View {
@@ -159,7 +160,7 @@ struct AppSidebar: View {
         .toolbar(.hidden)
         .navigationDestination(for: InferenceModelSettings.self) { settings in
             InferenceModelSettingsView()
-                .environmentObject(settings)
+                .environmentObject(settings.inflateModels(providerService))
         }
     }
 }

@@ -122,6 +122,22 @@ struct BlankOneSequenceView: View {
                     .frame(maxWidth: 800)
                     .layoutPriority(0.2)
             }
+            else if inferenceModelSettings.defaultInferenceModel != nil {
+                OneInferenceModelView(model: inferenceModelSettings.defaultInferenceModel!, modelAvailable: true, modelSelection: $modelSelection, enableModelSelection: false)
+                    .frame(maxWidth: 800)
+                    .layoutPriority(0.2)
+            }
+            else {
+                let finalDesc: String = {
+                    if let humanDesc: String = inferenceModelSettings.fallbackInferenceModel?.humanId {
+                        return "No model selected, will fallback to \(humanDesc)"
+                    }
+                    else {
+                        return "No model selected"
+                    }
+                }()
+                Text(finalDesc)
+            }
 
             VStack {
                 Spacer()
