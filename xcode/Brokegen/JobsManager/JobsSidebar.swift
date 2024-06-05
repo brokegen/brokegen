@@ -17,7 +17,15 @@ struct MiniJobsSidebar: View {
                 Text("Jobs")
             }
         }) {
-            NavigationLink(destination: JobPickerView(jobsService.storedJobs)) {
+            NavigationLink(destination: {
+                NavigationSplitView(sidebar: {
+                    ScrollView {
+                        TallJobsSidebar()
+                    }
+                }, detail: {
+                    JobPickerView(jobsService.storedJobs)
+                })
+            }) {
                 ASRow("All Jobs", showChevron: true)
             }
 
