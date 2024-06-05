@@ -1,7 +1,7 @@
 import Alamofire
 import Combine
 import Foundation
-import SwiftData
+import SwiftUI
 
 typealias ChatMessageServerID = Int
 
@@ -106,15 +106,6 @@ extension Message: Hashable {
     }
 }
 
-actor CachedChatMessages {
-    var cachedChatMessages: [Message] = []
-
-    func append(_ message: Message) {
-        cachedChatMessages.append(message)
-    }
-}
-
-@Observable
 class ChatSyncService: Observable, ObservableObject {
     var serverBaseURL: String = "http://127.0.0.1:6635"
     let session: Alamofire.Session
@@ -174,34 +165,18 @@ class ChatSyncService: Observable, ObservableObject {
         }
     }
 
-    var loadedMessages: CachedChatMessages = CachedChatMessages()
+    var chatSequenceClientModels: [ChatSequenceClientModel] = []
+    @Published var loadedChatSequences: [ChatSequence] = []
 
-    public func fetchMessage(id: Int) {
-        Task.init {
-            if let data = await getData("/messages/\(id)") {
-                let message = try Message(id, data: data)
-                await self.loadedMessages.append(message)
-            }
-        }
-    }
-
-    var _chatSequenceClientModels: [ChatSequenceClientModel] = []
-    var _cachedChatSequences: [ChatSequence] = []
-    var sequencesWriteLock = NSLock()
-
-    public var loadedSequences: [ChatSequence] {
-        return _cachedChatSequences
-    }
-
-    public func clientModel(for sequence: ChatSequence) -> ChatSequenceClientModel {
-        if let existingSeq = _chatSequenceClientModels.first(where: {
+    public func clientModel(for sequence: ChatSequence, inferenceModelSettings: InferenceModelSettings) -> ChatSequenceClientModel {
+        if let existingSeq = chatSequenceClientModels.first(where: {
             $0.sequence == sequence
         }) {
             return existingSeq
         }
         else {
-            let newModel = ChatSequenceClientModel(sequence, chatService: self)
-            _chatSequenceClientModels.append(newModel)
+            let newModel = ChatSequenceClientModel(sequence, chatService: self, inferenceModelSettings: inferenceModelSettings)
+            chatSequenceClientModels.append(newModel)
             return newModel
         }
     }

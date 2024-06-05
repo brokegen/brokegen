@@ -1,11 +1,10 @@
+import urllib.parse
+
 import fastapi
 import starlette.requests
 from fastapi import Depends
 from starlette.responses import RedirectResponse
 
-from audit.http import AuditDB
-from audit.http import get_db as get_audit_db
-from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.orm import ProviderType, ProviderID, ProviderLabel
 from providers.registry import ProviderRegistry
 
@@ -46,13 +45,11 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
         return enumerate([m async for m in list_models()])
 
-    @router_ish.get("/providers/{provider_type:str}/{provider_id:str}/models")
+    @router_ish.get("/providers/{provider_type:str}/{provider_id:path}/models")
     async def get_provider_models(
             provider_type: ProviderType,
             provider_id: ProviderID,
             registry: ProviderRegistry = Depends(ProviderRegistry),
-            history_db: HistoryDB = Depends(get_history_db),
-            audit_db: AuditDB = Depends(get_audit_db),
     ):
         label = ProviderLabel(type=provider_type, id=provider_id)
         provider = registry.by_label[label]
@@ -62,17 +59,17 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
     @router_ish.get("/models/available")
     async def list_available_models(
             request: starlette.requests.Request,
+            # NB According to an older HTTP/1.1 spec, GET requests should not have meaningful content.
+            # So the arguments to this function might be removed by a middleman proxy, or whatever.
             provider: ProviderLabel = ProviderLabel(
                 type="ollama",
                 id="http://localhost:11434",
             ),
-            history_db: HistoryDB = Depends(get_history_db),
-            audit_db: AuditDB = Depends(get_audit_db),
     ):
-        constructed_url = request.url_for('get_provider_models') \
-            .include_query_params(
-            provider_type=provider.type,
-            provider_id=provider.id,
+        constructed_url = request.url_for(
+            'get_provider_models',
+            provider_type=urllib.parse.quote_plus(provider.type),
+            provider_id=urllib.parse.quote_plus(provider.id),
         )
 
         return RedirectResponse(constructed_url)

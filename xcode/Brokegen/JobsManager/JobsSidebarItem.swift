@@ -3,9 +3,11 @@ import SwiftUI
 struct JobsSidebarItem: View {
     @ObservedObject var job: BaseJob
 
-    static let LEADING_MARGIN: CGFloat = 24
-    static let PROGRESS_WIDTH: CGFloat = 80
-    static let BUTTON_WIDTH: CGFloat = 32
+    @State var isButtonHovered = false
+
+    static let LEADING_BUTTON_WIDTH: CGFloat = 24
+    static let TRAILING_PROGRESS_WIDTH: CGFloat = 80
+    static let TRAILING_INDICATOR_WIDTH: CGFloat = 24
 
     init(job: BaseJob) {
         self.job = job
@@ -16,35 +18,37 @@ struct JobsSidebarItem: View {
             Group {
                 switch job.status {
                 case .notStarted:
-                    Image(systemName: "play")
+                    Image(systemName: self.isButtonHovered ? "play.fill" : "play")
                         .onTapGesture {
                             _ = job.launch()
                         }
 
+                case .requestedStart:
+                    Image(systemName: "play.fill")
+                        .disabled(true)
+                        .foregroundStyle(Color(.disabledControlTextColor))
+
                 case .startedNoOutput, .startedWithOutput:
-                    Image(systemName: "stop")
+                    Image(systemName: self.isButtonHovered ? "stop.fill" : "stop")
                         .onTapGesture {
                             _ = job.terminatePatiently()
                         }
 
                 case .requestedStop:
                     Image(systemName: "stop.fill")
+                        .foregroundStyle(self.isButtonHovered ? Color.red : Color(.controlTextColor))
                         .onTapGesture {
                             _ = job.terminate()
                         }
 
                 case .stopped, .error:
-                    Image(systemName: "arrow.clockwise")
+                    Image(systemName: self.isButtonHovered ? "play.fill" : "arrow.clockwise")
                         .onTapGesture {
                             _ = job.launch()
                         }
-
-                case _:
-                    Spacer()
-
                 }
             }
-            .frame(width: JobsSidebarItem.LEADING_MARGIN)
+            .frame(width: JobsSidebarItem.LEADING_BUTTON_WIDTH)
             .layoutPriority(0.5)
 
             Text(job.sidebarTitle)
@@ -58,24 +62,26 @@ struct JobsSidebarItem: View {
                 case .requestedStart:
                     ProgressView()
                         .progressViewStyle(.linear)
-                        .padding([.trailing], JobsSidebarItem.LEADING_MARGIN + 4)
-                        .frame(maxWidth: JobsSidebarItem.PROGRESS_WIDTH + JobsSidebarItem.BUTTON_WIDTH + 6)
+                        .frame(maxWidth: JobsSidebarItem.TRAILING_PROGRESS_WIDTH)
 
                 case .startedNoOutput:
                     ProgressView()
                         .progressViewStyle(.linear)
-                        .frame(maxWidth: 80)
+                        .frame(maxWidth: JobsSidebarItem.TRAILING_PROGRESS_WIDTH)
 
                 case .startedWithOutput:
                     Image(systemName: "bolt.horizontal.fill")
-                        .controlSize(.extraLarge)
                         .foregroundStyle(.green)
-                        .frame(maxWidth: JobsSidebarItem.LEADING_MARGIN)
+                        .frame(maxWidth: JobsSidebarItem.TRAILING_INDICATOR_WIDTH)
 
                 case .requestedStop:
                     ProgressView()
                         .controlSize(.small)
-                        .frame(maxWidth: 32)
+                        .frame(maxWidth: JobsSidebarItem.TRAILING_INDICATOR_WIDTH)
+
+                case .error:
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundStyle(.red)
 
                 case _:
                     EmptyView()
@@ -83,13 +89,19 @@ struct JobsSidebarItem: View {
             }
             .layoutPriority(0.2)
         }
-        .font(.system(size: 16))
-        .frame(minHeight: 32)
     }
 }
 
-#Preview(traits: .fixedLayout(width: 384, height: 512)) {
-    VStack(alignment: .leading) {
+/// This is only used in #Preview
+extension TimeJob {
+    func setStatus(_ status: JobStatus) -> Self {
+        self.status = status
+        return self
+    }
+}
+
+#Preview(traits: .fixedLayout(width: 384, height: 768)) {
+    List {
         Section(header: Text("Starting")
             .padding([.top], 32)
             .padding([.bottom], 12)
@@ -99,9 +111,10 @@ struct JobsSidebarItem: View {
             JobsSidebarItem(job: TimeJob(
                 "row0 -- extremely long row name\n" +
                 "with 😡😠, damn multibyte unicode chars")
-                .status(.notStarted))
-            JobsSidebarItem(job: TimeJob("row1").status(.requestedStart))
+                .setStatus(.notStarted))
+            JobsSidebarItem(job: TimeJob("row1").setStatus(.requestedStart))
         }
+        .padding(8)
 
         Section(header: Text("Started")
             .padding([.top], 32)
@@ -109,14 +122,15 @@ struct JobsSidebarItem: View {
             .font(.title)
             .foregroundStyle(.primary)
         ) {
-            JobsSidebarItem(job: TimeJob("row2").status(.startedNoOutput))
-            JobsSidebarItem(job: TimeJob("row3").status(.startedWithOutput))
-            JobsSidebarItem(job: TimeJob("row4").status(.requestedStop))
-            Divider()
-            JobsSidebarItem(job: TimeJob("row5").status(.stopped))
-            JobsSidebarItem(job: TimeJob("row6").status(.error("sidebar, eh")))
+            JobsSidebarItem(job: TimeJob("row2").setStatus(.startedNoOutput))
+            JobsSidebarItem(job: TimeJob("row3").setStatus(.startedWithOutput))
+            JobsSidebarItem(job: TimeJob("row4").setStatus(.requestedStop))
+            JobsSidebarItem(job: TimeJob("row5").setStatus(.stopped))
+            JobsSidebarItem(job: TimeJob("row6").setStatus(.error("sidebar, eh")))
         }
+        .padding(8)
+        .background(Color(.controlBackgroundColor))
     }
     .frame(maxHeight: .infinity)
-    .padding(12)
+    .font(.system(size: 16))
 }

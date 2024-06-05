@@ -69,6 +69,13 @@ class Job: BaseJob {
                     }
                 }
 
+                switch newStatus {
+                case .requestedStart, .startedNoOutput, .startedWithOutput, .requestedStop:
+                    self.showRelativeTimes = true
+                case _:
+                    self.showRelativeTimes = false
+                }
+
                 self.historicalStatusUpdates.append((Date.now, newStatus))
                 self.updateDisplayedStatusTexts()
             }
@@ -88,14 +95,6 @@ class Job: BaseJob {
                     }
                 }
             }
-
-        // TODO: Tie this to the UI-visibility state
-        // showRelativeTimes = true
-    }
-
-    func status(_ status: JobStatus) -> Job {
-        self.status = status
-        return self
     }
 
     func updateDisplayedStatusTexts(forceRelativeTimes: Bool = false) {

@@ -34,6 +34,8 @@ logger = logging.getLogger(__name__)
 
 class ContinueRequest(BaseModel):
     continuation_model_id: Optional[InferenceModelRecordID] = None
+    fallback_model_id: Optional[InferenceModelRecordID] = None
+    """Used in case the continuation is None, and also nothing recorded in ChatSequence history"""
     retrieval_policy: Optional[RetrievalPolicyID] = None
     retrieval_search_args: Optional[str] = None
 
@@ -41,6 +43,7 @@ class ContinueRequest(BaseModel):
 class ExtendRequest(BaseModel):
     next_message: ChatMessage
     continuation_model_id: Optional[InferenceModelRecordID] = None
+    fallback_model_id: Optional[InferenceModelRecordID] = None
     retrieval_policy: Optional[RetrievalPolicyID] = None
     retrieval_search_args: Optional[str] = None
 
@@ -48,8 +51,9 @@ class ExtendRequest(BaseModel):
 def select_continuation_model(
         sequence_id: ChatSequenceID | None,
         requested_model_id: InferenceModelRecordID | None,
+        fallback_model_id: InferenceModelRecordID | None,
         history_db: HistoryDB,
-) -> InferenceEventOrm | None:
+) -> InferenceEventOrm:
     if requested_model_id is not None:
         # TODO: Take this opportunity to confirm the InferenceModel is online.
         #       Though, maybe the inference events later on should be robust enough to handle errors.
@@ -72,7 +76,13 @@ def select_continuation_model(
 
         return inference_model
 
-    return None
+    if fallback_model_id is not None:
+        return history_db.execute(
+            select(InferenceModelRecordOrm)
+            .where(InferenceModelRecordOrm.id == fallback_model_id)
+        ).scalar_one()
+
+    raise HTTPException(400, f"Couldn't find any models ({requested_model_id=}, {fallback_model_id}, {sequence_id=})")
 
 
 async def ollama_generate_helper_fn(
@@ -319,10 +329,8 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             do_get_sequence(sequence_id, history_db, include_model_info_diffs=False)
 
         # Decide how to continue inference for this sequence
-        inference_model: InferenceModelRecordOrm | None = \
-            select_continuation_model(sequence_id, params.continuation_model_id, history_db)
-        if inference_model is None:
-            raise HTTPException(400, f"Could not find model ({params.continuation_model_id=})")
+        inference_model: InferenceModelRecordOrm = \
+            select_continuation_model(sequence_id, params.continuation_model_id, params.fallback_model_id, history_db)
 
         status_holder = ServerStatusHolder(
             f"/sequences/{sequence_id}/continue: processing on {inference_model.human_id}")
@@ -391,9 +399,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
         # Decide how to continue inference for this sequence
         inference_model: InferenceModelRecordOrm = \
-            select_continuation_model(sequence_id, params.continuation_model_id, history_db)
-        if inference_model is None:
-            raise HTTPException(400, f"Could not find model ({params.continuation_model_id=})")
+            select_continuation_model(sequence_id, params.continuation_model_id, params.fallback_model_id, history_db)
 
         status_holder = ServerStatusHolder(
             f"/sequences/{sequence_id}/extend: processing on {inference_model.human_id}")

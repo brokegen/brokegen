@@ -1,110 +1,180 @@
 import Combine
 import SwiftUI
 
-struct AppSidebar: View {
+struct ASSStyle: DisclosureGroupStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        VStack(spacing: 0) {
+            Button {
+                withAnimation {
+                    configuration.isExpanded.toggle()
+                }
+            } label: {
+                HStack {
+                    configuration.label
+                        .padding(4)
+                        .font(.system(size: 24))
+                        .foregroundStyle(Color(.controlTextColor))
+                        .layoutPriority(0.5)
+
+                    Spacer()
+
+                    Image(systemName: configuration.isExpanded ? "chevron.down" : "chevron.left")
+                        .contentTransition(.symbolEffect)
+                        .padding()
+                        .padding(.trailing, -12)
+                }
+                .padding(8)
+            }
+
+            if configuration.isExpanded {
+                VStack(alignment: .leading, spacing: 0) {
+                    configuration.content
+                    // NB Animations don't work well within Lists.
+                    // This only works for animating up
+                        .transition(
+                            .asymmetric(insertion: .push(from: .bottom),
+                                        removal: .identity)
+                        )
+                        .padding([.top, .bottom], 12)
+                }
+                .font(.system(size: 18))
+                .padding(12)
+                .padding([.leading, .trailing], 24)
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+struct AppSidebarSection<Label: View, Content: View>: View {
+    @State var isExpanded: Bool = true
+    let label: () -> Label
+    let content: () -> Content
+
+    init(
+        @ViewBuilder label: @escaping () -> Label,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.label = label
+        self.content = content
+    }
+
     var body: some View {
-        VStack {
-            List {
-                Section(header: HStack {
-                    Image(systemName: "message")
-                        .font(.system(size: 20))
-                        .foregroundStyle(Color(.controlTextColor))
-                        .padding(.leading, 4)
-                        .padding(.trailing, -8)
+        DisclosureGroup(isExpanded: $isExpanded, content: content, label: label)
+            .disclosureGroupStyle(ASSStyle())
+    }
+}
 
-                    Text("Chats")
-                        .font(.system(size: 24))
-                        .foregroundStyle(Color(.controlTextColor))
-                        .padding(8)
-                }) {
-                    Divider()
+struct ASRow: View {
+    let text: String
+    let showChevron: Bool
 
-                    NavigationLink(destination: SequencePickerView()) {
-                        HStack {
-                            Text("Recent")
-                                .font(.title2)
-                                .padding(6)
-                                .layoutPriority(0.5)
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                        }
-                    }
+    init(
+        _ text: String,
+        showChevron: Bool = false
+    ) {
+        self.showChevron = showChevron
+        self.text = text
+    }
 
-                    NavigationLink(destination: ModelPickerView()) {
-                        HStack {
-                            Text("Available Models")
-                                .font(.title2)
-                                .padding(6)
-                                .layoutPriority(0.5)
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                        }
-                    }
-                }
-
-                Spacer()
-                    .frame(maxHeight: 48)
-
-                // TODO: ViewThatFits
-                MiniJobsSidebar()
-            }
-            .layoutPriority(0.5)
-
+    var body: some View {
+        HStack {
+            Text(text)
+                .layoutPriority(0.5)
             Spacer()
-                .layoutPriority(0.2)
+            if showChevron {
+                Image(systemName: "chevron.right")
+                    .padding(.trailing, -12)
+                    .font(.system(size: 10))
+            }
+        }
+        .contentShape(Rectangle())
+    }
+}
 
-            List {
-                Section(header: HStack {
-                    Image(systemName: "gear")
-                        .font(.system(size: 24))
-                        .foregroundStyle(Color(.controlTextColor))
-                        .padding(.leading, 4)
-                        .padding(.trailing, -8)
+struct AppSidebar: View {
+    @Environment(InferenceModelSettings.self) private var inferenceModelSettings
 
-                    Text("Settings")
-                        .font(.system(size: 24))
-                        .foregroundStyle(Color(.controlTextColor))
-                        .padding(8)
-                }) {
-                    Divider()
-
-                    HStack {
-                        Text("Providers")
-                            .font(.title2)
-                            .padding(6)
-                            .layoutPriority(0.5)
-                            .foregroundStyle(Color(.disabledControlTextColor))
-                        Spacer()
-                        Image(systemName: "chevron.right")
+    var body: some View {
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(spacing: 0) {
+                    AppSidebarSection(label: {
+                        HStack {
+                            Image(systemName: "person.3")
+                                .padding(.trailing, 0)
+                            
+                            Text("Agents")
+                        }
+                    }) {
+                        ASRow("IRC revival")
+                            .disabled(true)
                             .foregroundStyle(Color(.disabledControlTextColor))
                     }
-
-                    NavigationLink(destination: InferenceModelSettingsView()) {
+                    
+                    AppSidebarSection(label: {
                         HStack {
-                            Text("Defaults")
-                                .font(.title2)
-                                .padding(6)
-                                .layoutPriority(0.5)
-                            Spacer()
-                            Image(systemName: "chevron.right")
+                            Image(systemName: "message")
+                                .padding(.trailing, 4)
+                            
+                            Text("Chats")
+                        }
+                    }) {
+                        NavigationLink(destination: BlankOneSequenceView()) {
+                            ASRow("New", showChevron: true)
+                        }
+                        
+                        NavigationLink(destination: SequencePickerView()) {
+                            ASRow("Recent", showChevron: true)
                         }
                     }
-                }
-
-                NavigationLink(destination: SystemInfoView()) {
-                    Text("System Info")
-                        .font(.title2)
-                        .lineLimit(3)
-                        .padding(6)
+                    
+                    AppSidebarSection(label: {
+                        Image(systemName: "sink")
+                            .padding(.trailing, 0)
+                        
+                        Text("Experiments")
+                    }) {
+                        NavigationLink(destination: {
+                            ModelPickerView()
+                        }) {
+                            ASRow("Model Inspector")
+                        }
+                        
+                        ASRow("Non-chat completions")
+                            .foregroundStyle(Color(.disabledControlTextColor))
+                    }
+                    
+                    MiniJobsSidebar()
                 }
             }
-            .frame(height: 240)
-            .scrollDisabled(true)
-            .layoutPriority(1.0)
+            
+            AppSidebarSection(label: {
+                HStack {
+                    Image(systemName: "gear")
+                        .padding(.trailing, 0)
+                    
+                    Text("Settings")
+                }
+            }) {
+                ASRow("Providers", showChevron: true)
+                    .foregroundStyle(Color(.disabledControlTextColor))
+                
+                NavigationLink(value: inferenceModelSettings) {
+                    ASRow("Defaults", showChevron: true)
+                }
+                
+                NavigationLink(destination: SystemInfoView()) {
+                    ASRow("System Info")
+                }
+                .padding(.bottom, 24)
+            }
         }
         .listStyle(.sidebar)
-        .frame(maxHeight: .infinity)
         .toolbar(.hidden)
+        .navigationDestination(for: InferenceModelSettings.self) { settings in
+            InferenceModelSettingsView(settings)
+        }
     }
 }
 
@@ -129,9 +199,9 @@ class PathHost {
 
 struct BrokegenAppView: View {
     @Environment(ChatSyncService.self) private var chatService
-    @Environment(JobsManagerService.self) private var jobsService
     @Environment(ProviderService.self) private var providerService
     @Binding private var pathHost: PathHost
+    @Environment(InferenceModelSettings.self) public var inferenceModelSettings
 
     init(pathHost: Binding<PathHost>) {
         _chatService = Environment(ChatSyncService.self)
@@ -142,16 +212,14 @@ struct BrokegenAppView: View {
     var body: some View {
         NavigationStack(path: $pathHost.path) {
             NavigationSplitView(sidebar: { AppSidebar() }, detail: {
-                ModelPickerView()
+                SequencePickerView()
             })
             .navigationDestination(for: ChatSequence.self) { sequence in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {
                     OneSequenceView(
-                        chatService.clientModel(for: sequence)
+                        chatService.clientModel(for: sequence, inferenceModelSettings: inferenceModelSettings)
                     )
                 })
-                .environment(chatService)
-                .environment(pathHost)
             }
             .navigationDestination(for: ChatSequenceClientModel.self) { clientModel in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {
@@ -159,14 +227,27 @@ struct BrokegenAppView: View {
                 })
             }
         }
-        .environment(chatService)
-        .environment(pathHost)
         .onAppear {
             // Do on-startup init, because otherwise we store no data and app is empty
             chatService.fetchPinnedSequences()
             providerService.fetchAvailableModels()
         }
     }
+}
+
+#Preview(traits: .fixedLayout(width: 400, height: 800)) {
+    let jobs = JobsManagerService()
+    for index in 1...20 {
+        let job = TimeJob("Job \(index)")
+        if index < 4 {
+            jobs.sidebarRenderableJobs.append(job)
+        }
+
+        jobs.storedJobs.append(job)
+    }
+
+    return AppSidebar()
+        .environment(jobs)
 }
 
 #Preview(traits: .fixedLayout(width: 1024, height: 1024)) {

@@ -1,65 +1,59 @@
 import SwiftUI
 
 
-func layout(sizes: [CGSize],
-           spacing: CGFloat = 8,
-           containerWidth: CGFloat) ->
-(offsets: [CGPoint], size: CGSize) {
-    var result: [CGPoint] = []
-    var currentPosition: CGPoint = .zero
-    var lineHeight: CGFloat = 0
-    var maxX: CGFloat = 0
-    for size in sizes {
-        if currentPosition.x + size.width > containerWidth {
-            currentPosition.x = 0
-            currentPosition.y += lineHeight + spacing
-            lineHeight = 0
-        }
-
-        result.append(currentPosition)
-        currentPosition.x += size.width
-        maxX = max(maxX, currentPosition.x)
-        currentPosition.x += spacing
-        lineHeight = max(lineHeight, size.height)
-    }
-
-    return (result,
-            .init(width: maxX,
-                  height: currentPosition.y + lineHeight))
-
-}
-
 struct FlowLayout: Layout {
-    var spacing: CGFloat = 8
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
 
-    func sizeThatFits(proposal: ProposedViewSize,
-                      subviews: Subviews,
-                      cache: inout ()) -> CGSize {
-        let containerWidth = proposal.width ?? .infinity
-        let sizes = subviews.map {
-            $0.sizeThatFits(.unspecified)
+        var totalHeight: CGFloat = 0
+        var totalWidth: CGFloat = 0
+
+        var lineWidth: CGFloat = 0
+        var lineHeight: CGFloat = 0
+
+          for size in sizes {
+            if lineWidth + size.width > proposal.width ?? 0 {
+                totalHeight += lineHeight
+                lineWidth = size.width
+                lineHeight = size.height
+            } else {
+                lineWidth += size.width
+                lineHeight = max(lineHeight, size.height)
+            }
+
+            totalWidth = max(totalWidth, lineWidth)
         }
 
-        return layout(sizes: sizes,
-                      spacing: spacing,
-                      containerWidth: containerWidth).size
+        totalHeight += lineHeight
+
+        return .init(width: totalWidth, height: totalHeight)
     }
 
-    func placeSubviews(in bounds: CGRect,
-                       proposal: ProposedViewSize,
-                       subviews: Subviews,
-                       cache: inout ()) {
-        let sizes = subviews.map {
-            $0.sizeThatFits(.unspecified)
-        }
-        let offsets = layout(sizes: sizes,
-                             spacing: spacing,
-                             containerWidth: bounds.width).offsets
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
 
-        for (offset, subview) in zip(offsets, subviews) {
-            subview.place(at: .init(x: offset.x + bounds.minX,
-                                    y: offset.y + bounds.minY),
-                          proposal: .unspecified)
+        var lineX = bounds.minX
+        var lineY = bounds.minY
+        var lineHeight: CGFloat = 0
+
+        for index in subviews.indices {
+            if lineX + sizes[index].width > (proposal.width ?? 0) {
+                lineY += lineHeight
+                lineHeight = 0
+                lineX = bounds.minX
+            }
+
+            subviews[index].place(
+                at: .init(
+                    x: lineX + sizes[index].width / 2,
+                    y: lineY + sizes[index].height / 2
+                ),
+                anchor: .center,
+                proposal: ProposedViewSize(sizes[index])
+            )
+
+            lineHeight = max(lineHeight, sizes[index].height)
+            lineX += sizes[index].width
         }
     }
 }
@@ -72,13 +66,13 @@ struct JobPickerView: View {
     }
 
     var body: some View {
-        FlowLayout(spacing: 72) {
+        FlowLayout() {
             ForEach(jobs) { job in
                 NavigationLink(destination: JobOutputView(job: job)) {
                     JobsSidebarItem(job: job)
+                        .padding(24)
                 }
             }
         }
-        .frame(maxWidth: 800)
     }
 }

@@ -5,11 +5,14 @@ import SwiftData
 
 struct ChatSequenceParameters: Codable, Hashable {
     let nextMessage: Message?
-    let sequenceId: ChatSequenceServerID
-    let sequence: ChatSequence?
     let continuationModelId: InferenceModelRecordID?
+    let fallbackModelId: InferenceModelRecordID?
     var retrievalPolicy: String? = nil
     var retrievalSearchArgs: String? = nil
+
+    // These parameters aren't passed to the server, but needed to complete the request.
+    // Due to shenanigans, they're passed to the server anyway.
+    let sequenceId: ChatSequenceServerID
 }
 
 struct AFErrorAndData: Error {
