@@ -9,6 +9,7 @@ import SwiftData
 class ChatSequenceClientModel: Observable, ObservableObject {
     var sequence: ChatSequence
     let chatService: ChatSyncService
+    let inferenceModelSettings: InferenceModelSettings
 
     var promptInEdit: String = ""
     var submitting: Bool = false
@@ -20,9 +21,10 @@ class ChatSequenceClientModel: Observable, ObservableObject {
 
     var displayedStatus: String? = nil
 
-    init(_ sequence: ChatSequence, chatService: ChatSyncService) {
+    init(_ sequence: ChatSequence, chatService: ChatSyncService, inferenceModelSettings: InferenceModelSettings) {
         self.sequence = sequence
         self.chatService = chatService
+        self.inferenceModelSettings = inferenceModelSettings
     }
 
     private func completionHandler(
@@ -76,9 +78,9 @@ class ChatSequenceClientModel: Observable, ObservableObject {
             receivingStreamer = await chatService.sequenceContinue(
                 ChatSequenceParameters(
                     nextMessage: nil,
-                    sequenceId: sequence.serverId!,
-                    sequence: nil,
-                    continuationModelId: continuationModelId
+                    continuationModelId: continuationModelId,
+                    fallbackModelId: inferenceModelSettings.fallbackInferenceModel?.serverId,
+                    sequenceId: sequence.serverId!
                 )
             )
                 .sink(receiveCompletion: completionHandler(
@@ -147,9 +149,9 @@ class ChatSequenceClientModel: Observable, ObservableObject {
             receivingStreamer = await chatService.sequenceExtend(
                 ChatSequenceParameters(
                     nextMessage: nextMessage,
-                    sequenceId: sequence.serverId!,
-                    sequence: nil,
-                    continuationModelId: nil
+                    continuationModelId: nil,
+                    fallbackModelId: inferenceModelSettings.fallbackInferenceModel?.serverId,
+                    sequenceId: sequence.serverId!
                 )
             )
             .sink(receiveCompletion: completionHandler(
@@ -218,11 +220,11 @@ class ChatSequenceClientModel: Observable, ObservableObject {
             receivingStreamer = await chatService.sequenceExtend(
                 ChatSequenceParameters(
                     nextMessage: nextMessage,
-                    sequenceId: sequence.serverId!,
-                    sequence: nil,
                     continuationModelId: nil,
+                    fallbackModelId: inferenceModelSettings.fallbackInferenceModel?.serverId,
                     retrievalPolicy: "simple",
-                    retrievalSearchArgs: "{\"k\": 18}"
+                    retrievalSearchArgs: "{\"k\": 18}",
+                    sequenceId: sequence.serverId!
                 )
             )
             .sink(receiveCompletion: completionHandler(

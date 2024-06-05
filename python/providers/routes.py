@@ -4,7 +4,6 @@ import fastapi
 import starlette.requests
 from fastapi import Depends
 from starlette.responses import RedirectResponse
-from typing_extensions import deprecated
 
 from providers.orm import ProviderType, ProviderID, ProviderLabel
 from providers.registry import ProviderRegistry
@@ -57,7 +56,6 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
         return await provider.list_models()
 
-    @deprecated
     @router_ish.get("/models/available")
     async def list_available_models(
             request: starlette.requests.Request,

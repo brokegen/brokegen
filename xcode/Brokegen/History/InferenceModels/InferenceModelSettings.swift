@@ -5,6 +5,24 @@ class InferenceModelSettings: Observable, ObservableObject {
     var fallbackInferenceModel: InferenceModel? = nil
     var chatSummaryModel: InferenceModel? = nil
     var embeddingModel: InferenceModel? = nil
+
+    func defaultInferenceModelBinding() -> Binding<InferenceModel?> {
+        return Binding(
+            get: { return self.defaultInferenceModel },
+            set: { value in
+                self.defaultInferenceModel = value
+            }
+        )
+    }
+
+    func fallbackInferenceModelBinding() -> Binding<InferenceModel?> {
+        return Binding(
+            get: { return self.fallbackInferenceModel },
+            set: { value in
+                self.fallbackInferenceModel = value
+            }
+        )
+    }
 }
 
 extension InferenceModelSettings: Equatable {

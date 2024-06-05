@@ -168,7 +168,7 @@ Your input will help me generate more targeted and valuable responses. Let's col
     do {
         let chatService = ChatSyncService()
         let sequence = try ChatSequence(-1, data: try encoder.encode(parameters))
-        let viewModel = ChatSequenceClientModel(sequence, chatService: chatService)
+        let viewModel = ChatSequenceClientModel(sequence, chatService: chatService, inferenceModelSettings: InferenceModelSettings())
         return OneSequenceView(viewModel)
     }
     catch {

@@ -144,6 +144,7 @@ func dateToSectionName(_ date: Date?) -> String {
 struct SequencePickerView: View {
     @Environment(ChatSyncService.self) private var chatService
     @Environment(PathHost.self) private var pathHost
+    @Environment(InferenceModelSettings.self) public var inferenceModelSettings
 
     private var sectionedSequences: [(String, [ChatSequence])] {
         let sectionedSequences = Dictionary(grouping: chatService.loadedChatSequences) {
@@ -207,7 +208,7 @@ struct SequencePickerView: View {
                         .contentShape(Rectangle())
                         .onTapGesture {
                             pathHost.push(
-                                chatService.clientModel(for: sequence)
+                                chatService.clientModel(for: sequence, inferenceModelSettings: inferenceModelSettings)
                             )
                         }
                 }

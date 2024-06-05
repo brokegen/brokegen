@@ -173,7 +173,7 @@ struct AppSidebar: View {
         .listStyle(.sidebar)
         .toolbar(.hidden)
         .navigationDestination(for: InferenceModelSettings.self) { settings in
-            InferenceModelSettingsView(settings: settings)
+            InferenceModelSettingsView(settings)
         }
     }
 }
@@ -201,6 +201,7 @@ struct BrokegenAppView: View {
     @Environment(ChatSyncService.self) private var chatService
     @Environment(ProviderService.self) private var providerService
     @Binding private var pathHost: PathHost
+    @Environment(InferenceModelSettings.self) public var inferenceModelSettings
 
     init(pathHost: Binding<PathHost>) {
         _chatService = Environment(ChatSyncService.self)
@@ -216,11 +217,9 @@ struct BrokegenAppView: View {
             .navigationDestination(for: ChatSequence.self) { sequence in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {
                     OneSequenceView(
-                        chatService.clientModel(for: sequence)
+                        chatService.clientModel(for: sequence, inferenceModelSettings: inferenceModelSettings)
                     )
                 })
-                .environment(chatService)
-                .environment(pathHost)
             }
             .navigationDestination(for: ChatSequenceClientModel.self) { clientModel in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {
@@ -228,8 +227,6 @@ struct BrokegenAppView: View {
                 })
             }
         }
-        .environment(chatService)
-        .environment(pathHost)
         .onAppear {
             // Do on-startup init, because otherwise we store no data and app is empty
             chatService.fetchPinnedSequences()

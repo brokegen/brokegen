@@ -89,6 +89,7 @@ struct InlineTextInput: View {
 struct BlankOneSequenceView: View {
     @Environment(ChatSyncService.self) private var chatService
     @Environment(PathHost.self) private var pathHost
+    @Environment(InferenceModelSettings.self) public var inferenceModelSettings
 
     @State var modelSelection: InferenceModel?
     @State var showModelPicker: Bool
@@ -180,7 +181,7 @@ struct BlankOneSequenceView: View {
             }
 
             pathHost.push(
-                chatService.clientModel(for: nextSequence!)
+                chatService.clientModel(for: nextSequence!, inferenceModelSettings: inferenceModelSettings)
                     .requestContinue(model: modelSelection!.serverId)
                 )
         }

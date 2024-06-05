@@ -1,26 +1,28 @@
 import SwiftUI
 
 struct InferenceModelSettingsView: View {
-    @Environment(ProviderService.self) private var providerService
-    
-    @State var settings: InferenceModelSettings
-    
+    let settings: InferenceModelSettings
+
     @State private var showDefaultInferenceModelPicker = false
     @State private var showFallbackInferenceModelPicker = false
-    
+
+    init(_ settings: InferenceModelSettings) {
+        self.settings = settings
+    }
+
     var body: some View {
         VStack(spacing: 24) {
             HStack {
                 Text("defaultInferenceModel: ")
                     .layoutPriority(0.2)
-                
+
                 Spacer()
-                
+
                 if let model = settings.defaultInferenceModel {
                     OneInferenceModelView(
                         model: model,
                         modelAvailable: true,
-                        modelSelection: $settings.defaultInferenceModel,
+                        modelSelection: settings.defaultInferenceModelBinding(),
                         enableModelSelection: true)
                     .layoutPriority(0.2)
                 }
@@ -32,18 +34,18 @@ struct InferenceModelSettingsView: View {
                     }
                 }
             }
-            
+
             HStack {
                 Text("fallbackInferenceModel: ")
                     .layoutPriority(0.2)
-                
+
                 Spacer()
-                
+
                 if let model = settings.fallbackInferenceModel {
                     OneInferenceModelView(
                         model: model,
                         modelAvailable: true,
-                        modelSelection: $settings.fallbackInferenceModel,
+                        modelSelection: settings.fallbackInferenceModelBinding(),
                         enableModelSelection: true)
                     .layoutPriority(0.2)
                 }
@@ -58,12 +60,12 @@ struct InferenceModelSettingsView: View {
         }
         .font(.system(size: 36))
         .sheet(isPresented: $showDefaultInferenceModelPicker) {
-            ModelPickerView(modelSelection: $settings.defaultInferenceModel)
+            ModelPickerView(modelSelection: settings.defaultInferenceModelBinding())
                 .frame(width: 800, height: 1200, alignment: .top)
                 .animation(.linear(duration: 0.2))
         }
         .sheet(isPresented: $showFallbackInferenceModelPicker) {
-            ModelPickerView(modelSelection: $settings.fallbackInferenceModel)
+            ModelPickerView(modelSelection: settings.fallbackInferenceModelBinding())
                 .frame(width: 800, height: 1200, alignment: .top)
                 .animation(.linear(duration: 0.2))
         }

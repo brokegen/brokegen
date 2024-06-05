@@ -202,7 +202,7 @@ struct SequenceViewTwo: View {
     do {
         let chatService = ChatSyncService()
         let sequence = try ChatSequence(-1, data: try encoder.encode(parameters))
-        let viewModel = ChatSequenceClientModel(sequence, chatService: chatService)
+        let viewModel = ChatSequenceClientModel(sequence, chatService: chatService, inferenceModelSettings: InferenceModelSettings())
         return SequenceViewTwo(viewModel)
     }
     catch {
