@@ -199,7 +199,7 @@ struct MiniSequencePickerSidebar: View {
             .padding(.trailing, -24)
 
             NavigationLink(destination: SequencePickerView()) {
-                ASRow("Recent", showChevron: true)
+                ASRow("Browse Recent", showChevron: true)
             }
 
             if !sectionedSequences().isEmpty && navLimit > 0 {

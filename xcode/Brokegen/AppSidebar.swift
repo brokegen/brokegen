@@ -108,7 +108,7 @@ struct AppSidebar: View {
                             Text("Agents")
                         }
                     }) {
-                        ASRow("IRC revival")
+                        ASRow("IRC Simulator")
                     }
                     .disabled(true)
                     .foregroundStyle(Color(.disabledControlTextColor))
@@ -127,7 +127,10 @@ struct AppSidebar: View {
                             ASRow("Model Inspector")
                         }
 
-                        ASRow("Non-chat completions")
+                        ASRow("Tokenization Check")
+                            .foregroundStyle(Color(.disabledControlTextColor))
+
+                        ASRow("Completions")
                             .foregroundStyle(Color(.disabledControlTextColor))
                     }
 

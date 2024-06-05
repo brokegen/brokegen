@@ -18,9 +18,9 @@ struct ComposeTabsView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 0) {
             ForEach([Tab.simple, Tab.pro, Tab.proMax], id: \.self) { tab in
-                HStack {
+                HStack(spacing: 0) {
                     Spacer()
                         .frame(minWidth: 0)
                     Text(tab.rawValue)
@@ -37,24 +37,24 @@ struct ComposeTabsView: View {
                     selection = tab
                     onTabSelection(tab)
                 }
+                .layoutPriority(0.2)
             }
 
-            VStack {
-                Spacer()
+            Spacer()
 
-                Text("options")
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .frame(maxHeight: 32)
-                    .background(selection == .options
-                                ? Color.accentColor
-                                : Color(.controlBackgroundColor))
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        selection = .options
-                        onTabSelection(.options)
-                    }
-            }
+            Text("options")
+                .padding()
+                .frame(maxWidth: .infinity)
+                .frame(maxHeight: 32)
+                .background(selection == .options
+                            ? Color.accentColor
+                            : Color(.controlBackgroundColor))
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    selection = .options
+                    onTabSelection(.options)
+                }
+                .layoutPriority(0.2)
         }
         .frame(maxWidth: 80)
     }
@@ -62,6 +62,7 @@ struct ComposeTabsView: View {
 
 struct SequenceViewTwo: View {
     @ObservedObject var viewModel: ChatSequenceClientModel
+
     @FocusState var focusTextInput: Bool
     @State private var selectedTab: Tab = .simple
 
@@ -71,109 +72,144 @@ struct SequenceViewTwo: View {
 
     var body: some View {
         ScrollViewReader { proxy in
-            ScrollView(.vertical) {
-                ForEach(viewModel.sequence.messages) { message in
-                    OneMessageView(message)
-                        .padding(24)
-                        .padding(.top, 16)
-                }
+            VStack(spacing: 0) {
+                ScrollView(.vertical) {
+                    if viewModel.sequence.humanDesc != nil {
+                        HStack {
+                            Text(viewModel.sequence.humanDesc!)
+                                .font(.system(size: 36))
+                                .padding(.leading, 24)
+                                .foregroundColor(.gray)
+                                .lineLimit(1)
 
-                if viewModel.responseInEdit != nil {
-                    OneMessageView(viewModel.responseInEdit!)
-                        .padding(24)
-                        .padding(.top, 16)
-                }
-            }
-            .layoutPriority(0.5)
-
-            HStack {
-                Text("Ollama status: loading model")
-                Spacer()
-            }
-            .foregroundStyle(Color(.disabledControlTextColor))
-
-            let composeTabsView = ComposeTabsView(selection: $selectedTab) { tab in
-                print("Picked tab \(tab.rawValue)")
-            }
-                .frame(maxHeight: .infinity)
-
-            CustomTabView(tabBarView: composeTabsView, tabs: Tab.allCases, selection: selectedTab) {
-                VStack {
-                    HStack {
-                        InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
-                            .padding(.top, 24)
-                            .padding(.bottom, 24)
-                            .border(.blue)
-                            .disabled(viewModel.submitting || viewModel.responseInEdit != nil)
-                            .onSubmit {
-                                viewModel.requestExtend()
-                            }
-                            .onAppear {
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    self.focusTextInput = true
-                                }
-                            }
-
-                        Group {
-                            Button(action: viewModel.requestExtendWithRetrieval) {
-                                Image(systemName: viewModel.submitting ? "arrowshape.up.fill" : "arrowshape.up")
-                                    .resizable()
-                                    .frame(width: 32, height: 32)
-                                    .disabled(viewModel.submitting || viewModel.responseInEdit != nil)
-                            }
-                            .buttonStyle(.plain)
-                            .help("Submit with Retrieval")
+                            Spacer()
                         }
-                        .padding(.top, 16)
-                        .padding(.bottom, 12)
-                        .padding(.leading, 12)
-                        .padding(.trailing, 12)
                     }
-                    Spacer()
-                }
 
-                HStack {
-                    Text("content")
-                }
-                .tabItem {
-                    HStack {
-                        Label("  Tab 2", systemImage: "2.circle")
+                    ForEach(viewModel.sequence.messages) { message in
+                        OneMessageView(message)
+                            .padding(24)
+                            .padding(.top, 16)
                     }
-                    .padding(24)
+
+                    if viewModel.responseInEdit != nil {
+                        OneMessageView(viewModel.responseInEdit!)
+                            .padding(24)
+                            .padding(.top, 16)
+                    }
                 }
 
-                VStack {
-                    Text("more content")
-                }
-                .tabItem {
-                    Label("Privacy", systemImage: "hand.raised")
-                }
-
-                VStack {
-                    VStack(alignment: .leading) {
-                        Text("llama-3-120B")
-                            .font(.title)
-                            .monospaced()
-                            .foregroundColor(.accentColor)
-                            .lineLimit(2)
-                            .padding(.bottom, 8)
-
+                VStack(spacing: 0) {
+                    if viewModel.submitting || viewModel.responseInEdit != nil || viewModel.displayedStatus != nil {
+                        // TODO: This doesn't seem like the right UI move, but I don't understand colors yet
                         Divider()
-                        Text("response sec/token: 0.04")
-                            .lineLimit(1...)
-                            .monospaced()
-                            .padding(4)
+
+                        HStack {
+                            if viewModel.displayedStatus != nil {
+                                // TODO: Find a way to persist any changes for at least a few seconds
+                                Text(viewModel.displayedStatus ?? "")
+                                    .foregroundStyle(Color(.disabledControlTextColor))
+                            }
+
+                            Spacer()
+
+                            if viewModel.submitting || viewModel.responseInEdit != nil {
+                                ProgressView()
+                                    .progressViewStyle(.linear)
+                                    .frame(maxWidth: 120)
+                            }
+                        }
+                        .padding(.leading, 24)
+                        .padding(.trailing, 24)
                     }
-                    .padding(12)
-                    .listRowSeparator(.hidden)
-                    .padding(.bottom, 48)
-                    .frame(maxWidth: 800)
-                }
+
+                    let composeTabsView = ComposeTabsView(selection: $selectedTab) { tab in
+                        print("Picked tab \(tab.rawValue)")
+                    }
+                        .frame(maxHeight: .infinity)
+
+                    CustomTabView(tabBarView: composeTabsView, tabs: Tab.allCases, selection: selectedTab) {
+                        VStack(spacing: 0) {
+                            HStack {
+                                InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
+                                    .focused($focusTextInput)
+                                    .onAppear {
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                            self.focusTextInput = true
+                                        }
+                                    }
+                                    .backgroundStyle(inputBackgroundStyle)
+                                    .onSubmit {
+                                        viewModel.requestExtend()
+                                    }
+
+                                Button(action: {
+                                    viewModel.requestExtendWithRetrieval()
+                                }) {
+                                    Image(systemName:
+                                            (viewModel.submitting || viewModel.responseInEdit != nil)
+                                          ? "stop.fill" : "arrowshape.up")
+                                    .font(.system(size: 32))
+                                }
+                                .buttonStyle(.plain)
+                                .padding(.trailing, 12)
+                            }
+                        }
+
+                        HStack {
+                            Text("content")
+                        }
+                        .tabItem {
+                            HStack {
+                                Label("  Tab 2", systemImage: "2.circle")
+                            }
+                            .padding(24)
+                        }
+
+                        VStack {
+                            Text("more content")
+                        }
+                        .tabItem {
+                            Label("Privacy", systemImage: "hand.raised")
+                        }
+
+                        VStack {
+                            VStack(alignment: .leading) {
+                                Text("llama-3-120B")
+                                    .font(.title)
+                                    .monospaced()
+                                    .foregroundColor(.accentColor)
+                                    .lineLimit(2)
+                                    .padding(.bottom, 8)
+
+                                Divider()
+                                Text("response sec/token: 0.04")
+                                    .lineLimit(1...)
+                                    .monospaced()
+                                    .padding(4)
+                            }
+                            .padding(12)
+                            .listRowSeparator(.hidden)
+                            .padding(.bottom, 48)
+                            .frame(maxWidth: 800)
+                        }
+                    }
+                    .tabBarPosition(.edge(.leading))
+                } // end of entire lower VStack
+                .background(inputBackgroundStyle)
             }
-            .tabBarPosition(.edge(.leading))
-            .layoutPriority(0.2)
+            .defaultScrollAnchor(.bottom)
+            .onAppear {
+                proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+            }
+            .onChange(of: viewModel.sequence.messages) { old, new in
+                proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+            }
+            .onChange(of: viewModel.responseInEdit?.content) {
+                // TODO: Replace this with a GeometryReader that merely nudges us, if we're already close to the bottom
+                proxy.scrollTo(viewModel.responseInEdit, anchor: .bottom)
+            }
         }
-        .background(darkBackgroundStyle)
     }
 }
 

@@ -46,7 +46,7 @@ struct BrokegenAppView: View {
             }
             .navigationDestination(for: ChatSequenceClientModel.self) { clientModel in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {
-                    OneSequenceView(clientModel)
+                    SequenceViewTwo(clientModel)
                 })
             }
         }
