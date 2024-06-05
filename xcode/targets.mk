@@ -21,8 +21,8 @@ build-xcode: server ollama-proxy
 build-xcode:
 	xcodebuild archive \
 		-project xcode/Brokegen.xcodeproj \
-		-scheme Debug \
-		-config Debug \
+		-scheme Release \
+		-config Release \
 		-sdk macosx \
 		-archivePath build/"macOS App.xcarchive" \
 		-derivedDataPath build/xcode-derived-data/
