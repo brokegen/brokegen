@@ -117,15 +117,45 @@ struct SequenceViewTwo: View {
                         return "arrowshape.up"
                     }()
 
+                    if showSeparateRetrievalButton {
+                        Button(action: {
+                            // TODO: Implement continuation with retrieval.
+                            viewModel.requestExtendWithRetrieval()
+                        }) {
+                            Image(systemName: "arrow.up.doc")
+                                .font(.system(size: 32))
+                                .disabled(viewModel.promptInEdit.isEmpty)
+                                .foregroundStyle(viewModel.promptInEdit.isEmpty
+                                                 ? Color(.disabledControlTextColor)
+                                                 : Color.accentColor)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
                     Button(action: {
-                        viewModel.requestExtendWithRetrieval()
+                        if viewModel.promptInEdit.isEmpty && allowContinuation {
+                            _ = viewModel.requestContinue()
+                        }
+                        else {
+                            if !showSeparateRetrievalButton && forceRetrieval {
+                                viewModel.requestExtendWithRetrieval()
+                            }
+                            else {
+                                viewModel.requestExtend()
+                            }
+                        }
                     }) {
                         Image(systemName: buttonName)
                             .font(.system(size: 32))
-                            .disabled(viewModel.promptInEdit.isEmpty && !allowContinuation)
-                            .foregroundStyle((viewModel.promptInEdit.isEmpty && !allowContinuation)
-                                             ? Color(.disabledControlTextColor)
-                                             : Color.accentColor)
+                            .disabled(
+                                (viewModel.promptInEdit.isEmpty && !allowContinuation)
+                                || (viewModel.promptInEdit.isEmpty && !showSeparateRetrievalButton && forceRetrieval)
+                            )
+                            .foregroundStyle(
+                                (viewModel.promptInEdit.isEmpty && !allowContinuation)
+                                || (viewModel.promptInEdit.isEmpty && !showSeparateRetrievalButton && forceRetrieval)
+                                ? Color(.disabledControlTextColor)
+                                : Color.accentColor)
                     }
                     .buttonStyle(.plain)
                     .padding(.trailing, 12)
@@ -170,6 +200,7 @@ struct SequenceViewTwo: View {
                         Toggle(isOn: $allowContinuation, label: { Text("allowContinuation") })
                         Toggle(isOn: $showSeparateRetrievalButton, label: { Text("showSeparateRetrievalButton")})
                         Toggle(isOn: $forceRetrieval, label: { Text("forceRetrieval") })
+                            .disabled(showSeparateRetrievalButton)
                     }
                     .padding(24)
                 }, label: {
