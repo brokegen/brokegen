@@ -5,6 +5,7 @@ from typing import TypeAlias, Callable, Awaitable, Any
 
 import httpx
 import orjson
+import sqlalchemy
 import starlette.datastructures
 import starlette.requests
 from sqlalchemy import select
@@ -246,7 +247,7 @@ async def convert_chat_to_generate(
 def do_capture_chat_messages(
         chat_messages: JSONArray,
         history_db: HistoryDB,
-):
+) -> ChatSequence | None:
     prior_sequence: ChatSequence | None = None
 
     for index in range(len(chat_messages)):
@@ -305,6 +306,8 @@ def do_capture_chat_messages(
         prior_sequence = sequence_in
         continue
 
+    return prior_sequence
+
 
 async def do_proxy_chat_rag(
         original_request: starlette.requests.Request,
@@ -312,6 +315,7 @@ async def do_proxy_chat_rag(
         history_db: HistoryDB,
         audit_db: AuditDB,
         capture_chat_messages: bool = True,
+        capture_chat_response: bool = False,
         status_holder: ServerStatusHolder | None = None,
 ) -> JSONStreamingResponse:
     request_content_bytes: bytes = await original_request.body()
@@ -324,8 +328,9 @@ async def do_proxy_chat_rag(
         raise RuntimeError("No 'messages' provided in call to /api/chat")
 
     # Assume that these are messages from a third-party client, and try to feed them into the history database.
+    captured_sequence: ChatSequence | None = None
     if capture_chat_messages:
-        do_capture_chat_messages(chat_messages, history_db)
+        captured_sequence = do_capture_chat_messages(chat_messages, history_db)
 
     async def generate_helper_fn(
             inference_reason: InferenceReason,
@@ -396,10 +401,73 @@ async def do_proxy_chat_rag(
         if not log_output:
             return upstream_response
 
+        async def consolidate_wrapper(
+                primordial: AsyncIterable[OllamaResponseContentJSON],
+        ) -> OllamaResponseContentJSON:
+            consolidated_response = await consolidate_stream(primordial)
+
+            if capture_chat_response:
+                model, executor_record = await lookup_model_offline(
+                    consolidated_response['model'],
+                    history_db,
+                )
+
+                # Construct InferenceEvent
+                new_ie = InferenceEventOrm(
+                    model_record_id=model.id,
+                    reason="chat sequence",
+                )
+                finalize_inference_job(new_ie, consolidated_response)
+
+                try:
+                    history_db.add(new_ie)
+                    history_db.commit()
+                except sqlalchemy.exc.SQLAlchemyError:
+                    logger.exception(f"Failed to commit intercepted inference event for {new_ie}")
+                    history_db.rollback()
+
+                # And a ChatMessage
+                response_in = ChatMessageOrm(
+                    role="assistant",
+                    content=safe_get(consolidated_response, "response")
+                        or safe_get(consolidated_response, "message", "content"),
+                    created_at=datetime.fromisoformat(safe_get(consolidated_response, "created_at"))
+                        or datetime.now(tz=timezone.utc),
+                )
+                if response_in.content:
+                    history_db.add(response_in)
+                    history_db.commit()
+
+                # Update ChatSequences
+                if response_in.content and captured_sequence is not None:
+                    parent_sequence = history_db.merge(captured_sequence)
+
+                    new_sequence = ChatSequence(
+                        human_desc=parent_sequence.human_desc,
+                        user_pinned=parent_sequence.user_pinned,
+                        current_message=response_in.id,
+                        parent_sequence=parent_sequence.id,
+                        generated_at=datetime.now(tz=timezone.utc),
+                        generation_complete=safe_get(consolidated_response, 'done'),
+                        inference_job_id=new_ie.id,
+                    )
+
+                    parent_sequence.user_pinned = False
+
+                    try:
+                        history_db.add(parent_sequence)
+                        history_db.add(new_sequence)
+                        history_db.commit()
+                    except sqlalchemy.exc.SQLAlchemyError:
+                        logger.exception(f"Failed to create add-on ChatSequence {new_sequence}")
+                        history_db.rollback()
+
+            return consolidated_response
+
         if log_output:
             upstream_response._content_iterable = tee_stream_to_log_and_callback(
                 upstream_response._content_iterable,
-                consolidate_stream,
+                consolidate_wrapper,
             )
             return upstream_response
 

@@ -205,6 +205,7 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
                 retrieval_policy,
                 history_db,
                 audit_db,
+                capture_chat_response=True,
                 status_holder=status_holder,
             ),
             status_holder,
