@@ -2,8 +2,6 @@ import Combine
 import CustomTabView
 import SwiftUI
 
-let darkBackgroundStyle = Color(.black)
-
 enum Tab: String, Hashable, CaseIterable {
     case simple, pro, proMax, options
 }
@@ -31,7 +29,7 @@ struct ComposeTabsView: View {
                 .frame(maxHeight: 32)
                 .background(selection == tab
                             ? Color.accentColor
-                            : darkBackgroundStyle)
+                            : inputBackgroundStyle)
                 .contentShape(Rectangle())
                 .onTapGesture {
                     selection = tab
@@ -66,6 +64,10 @@ struct SequenceViewTwo: View {
     @FocusState var focusTextInput: Bool
     @State private var selectedTab: Tab = .simple
 
+    @State var allowContinuation: Bool = true
+    @State var showSeparateRetrievalButton: Bool = false
+    @State var forceRetrieval: Bool = false
+
     init(_ viewModel: ChatSequenceClientModel) {
         self.viewModel = viewModel
     }
@@ -93,7 +95,7 @@ struct SequenceViewTwo: View {
                     }
 
                     if viewModel.responseInEdit != nil {
-                        OneMessageView(viewModel.responseInEdit!)
+                        OneMessageView(viewModel.responseInEdit!, stillUpdating: true)
                             .padding(24)
                             .padding(.top, 16)
                     }
@@ -143,13 +145,28 @@ struct SequenceViewTwo: View {
                                         viewModel.requestExtend()
                                     }
 
+                                let buttonName: String = {
+                                    if viewModel.submitting || viewModel.responseInEdit != nil {
+                                        return "stop.fill"
+                                    }
+
+                                    if !showSeparateRetrievalButton && forceRetrieval {
+                                        return "arrow.up.doc"
+                                    }
+
+                                    return "arrowshape.up"
+                                }()
+
                                 Button(action: {
                                     viewModel.requestExtendWithRetrieval()
                                 }) {
-                                    Image(systemName:
-                                            (viewModel.submitting || viewModel.responseInEdit != nil)
-                                          ? "stop.fill" : "arrowshape.up")
-                                    .font(.system(size: 32))
+                                    Image(systemName: buttonName)
+                                        .font(.system(size: 32))
+                                        .disabled(viewModel.promptInEdit.isEmpty && !allowContinuation)
+                                        .foregroundStyle((viewModel.promptInEdit.isEmpty && !allowContinuation)
+                                                         ? Color(.disabledControlTextColor)
+                                                         : inputBackgroundStyle
+                                        )
                                 }
                                 .buttonStyle(.plain)
                                 .padding(.trailing, 12)
@@ -173,28 +190,21 @@ struct SequenceViewTwo: View {
                             Label("Privacy", systemImage: "hand.raised")
                         }
 
-                        VStack {
-                            VStack(alignment: .leading) {
-                                Text("llama-3-120B")
-                                    .font(.title)
-                                    .monospaced()
-                                    .foregroundColor(.accentColor)
-                                    .lineLimit(2)
-                                    .padding(.bottom, 8)
-
-                                Divider()
-                                Text("response sec/token: 0.04")
-                                    .lineLimit(1...)
-                                    .monospaced()
-                                    .padding(4)
-                            }
-                            .padding(12)
-                            .listRowSeparator(.hidden)
-                            .padding(.bottom, 48)
-                            .frame(maxWidth: 800)
+                        VStack(spacing: 0) {
+                            GroupBox(content: {
+                                Toggle(isOn: $allowContinuation, label: { Text("allowContinuation") })
+                                Toggle(isOn: $showSeparateRetrievalButton, label: { Text("showSeparateRetrievalButton")})
+                                Toggle(isOn: $forceRetrieval, label: { Text("forceRetrieval") })
+                            }, label: {
+                                Text("Submit Button")
+                            })
                         }
                     }
                     .tabBarPosition(.edge(.leading))
+                    // TODO: This is very oddly hard-coded. Try layoutPriority on the CustomTabView, next.
+                    // It's probably something in CustomTabView that's adjusting the height.
+                    // Or the ComposeTabsView has infinite height.
+                    .frame(maxHeight: 200)
                 } // end of entire lower VStack
                 .background(inputBackgroundStyle)
             }
