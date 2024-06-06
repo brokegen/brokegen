@@ -43,14 +43,13 @@ struct OneSequenceView: View {
 
                 VStack(spacing: 0) {
                     if viewModel.submitting || viewModel.responseInEdit != nil || viewModel.displayedStatus != nil {
-                        // TODO: This doesn't seem like the right UI move, but I don't understand colors yet
                         Divider()
 
                         HStack {
                             if viewModel.displayedStatus != nil {
-                                // TODO: Find a way to persist any changes for at least a few seconds
                                 Text(viewModel.displayedStatus ?? "")
                                     .foregroundStyle(Color(.disabledControlTextColor))
+                                    .layoutPriority(0.2)
                             }
 
                             Spacer()

@@ -408,7 +408,7 @@ async def do_proxy_chat_rag(
     if len(chat_messages) > 1:
         status_desc = f"Forwarding {len(chat_messages)} messages to ollama /api/generate"
     if prompt_override is not None:
-        status_desc += f" (with retrieval context of {len(prompt_override)} chars)"
+        status_desc += f" (with retrieval context of {len(prompt_override):_} chars)"
 
     with StatusContext(status_desc, status_holder):
         ollama_response = await convert_chat_to_generate(
