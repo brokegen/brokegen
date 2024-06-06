@@ -7,6 +7,7 @@ struct OneSequenceView: View {
     @ObservedObject var viewModel: ChatSequenceClientModel
 
     @FocusState var focusTextInput: Bool
+    @State var allowNewlineSubmit: Bool = false
 
     init(_ viewModel: ChatSequenceClientModel) {
         self.viewModel = viewModel
@@ -109,7 +110,7 @@ struct OneSequenceView: View {
                     HStack {
                         let disableControls: Bool = viewModel.submitting || viewModel.responseInEdit != nil
 
-                        InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput) {
+                        InlineTextInput($viewModel.promptInEdit, allowNewlineSubmit: $allowNewlineSubmit, isFocused: $focusTextInput) {
                             if viewModel.promptInEdit.isEmpty {
                                 _ = viewModel.requestContinue()
                             }

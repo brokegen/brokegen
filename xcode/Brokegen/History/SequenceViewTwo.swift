@@ -84,8 +84,9 @@ struct SequenceViewTwo: View {
     @State var allowContinuation: Bool = true
     @State var showSeparateRetrievalButton: Bool = true
     @State var forceRetrieval: Bool = false
+    @State var allowNewlineSubmit: Bool = false
 
-    @State var autoSummarizeChats: Bool? = nil
+    @State var autoSummarizeChats: Bool = true
 
     init(_ viewModel: ChatSequenceClientModel) {
         self.viewModel = viewModel
@@ -101,7 +102,7 @@ struct SequenceViewTwo: View {
             // Tab.simple
             VStack(spacing: 0) {
                 HStack {
-                    InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput) {
+                    InlineTextInput($viewModel.promptInEdit, allowNewlineSubmit: $allowNewlineSubmit, isFocused: $focusTextInput) {
                         if viewModel.promptInEdit.isEmpty && allowContinuation {
                             _ = viewModel.requestContinue()
                         }
@@ -150,7 +151,7 @@ struct SequenceViewTwo: View {
             // Tab.retrieval
             VStack(spacing: 0) {
                 HStack {
-                    InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput) {
+                    InlineTextInput($viewModel.promptInEdit, allowNewlineSubmit: $allowNewlineSubmit, isFocused: $focusTextInput) {
                         if viewModel.promptInEdit.isEmpty && allowContinuation {
                             _ = viewModel.requestContinue()
                         }
@@ -236,6 +237,8 @@ struct SequenceViewTwo: View {
                         Toggle(isOn: $showSeparateRetrievalButton, label: { Text("showSeparateRetrievalButton")})
                         Toggle(isOn: $forceRetrieval, label: { Text("forceRetrieval") })
                             .disabled(showSeparateRetrievalButton)
+                        Toggle(isOn: $allowNewlineSubmit, label: { Text("allowNewlineSubmit") })
+                        Toggle(isOn: $autoSummarizeChats, label: { Text("autoSummarizeChats") })
                     }
                     .padding(24)
                 }, label: {

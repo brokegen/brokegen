@@ -32,19 +32,23 @@ struct ChatNameInput: View {
 
 struct InlineTextInput: View {
     @Binding var textInEdit: String
-    var submitFunc: (() -> Void)
+    @Binding var allowNewlineSubmit: Bool
 
     @State var isHovered: Bool = false
     var isFocused: FocusState<Bool>.Binding
 
+    var submitFunc: (() -> Void)
+
     init(
         _ textInEdit: Binding<String>,
+        allowNewlineSubmit: Binding<Bool>,
         isFocused: FocusState<Bool>.Binding,
         submitFunc: (@escaping () -> Void)
     ) {
         _textInEdit = textInEdit
-        self.submitFunc = submitFunc
+        _allowNewlineSubmit = allowNewlineSubmit
         self.isFocused = isFocused
+        self.submitFunc = submitFunc
     }
 
     var body: some View {
@@ -57,9 +61,12 @@ struct InlineTextInput: View {
             .padding(4)
             .background(isHovered ? Color(.selectedControlColor) : Color(.controlBackgroundColor))
             .onChange(of: textInEdit) {
-                if textInEdit.last?.isNewline == .some(true) {
-                    textInEdit.removeLast()
-                    self.submitFunc()
+                if allowNewlineSubmit {
+                    // TODO: This is wonky as all hell, it submits when you paste text that ends with a newline
+                    if textInEdit.last?.isNewline == .some(true) {
+                        textInEdit.removeLast()
+                        self.submitFunc()
+                    }
                 }
             }
             .onHover { isHovered in
@@ -72,6 +79,7 @@ struct InlineTextInput: View {
 #Preview(traits: .fixedLayout(width: 800, height: 800)) {
     struct ViewHolder: View {
         @State var textInEdit = "typed text"
+        @State var allowNewlineSubmit = false
         @FocusState var isFocused: Bool
 
         var body: some View {
@@ -81,7 +89,7 @@ struct InlineTextInput: View {
                         .frame(maxHeight: .infinity)
                         .frame(maxWidth: .infinity)
 
-                    InlineTextInput($textInEdit, isFocused: $isFocused) {}
+                    InlineTextInput($textInEdit, allowNewlineSubmit: $allowNewlineSubmit, isFocused: $isFocused) {}
                         .frame(minHeight: 200)
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height)
@@ -101,10 +109,11 @@ struct BlankOneSequenceView: View {
     @State var showModelPicker: Bool
 
     @State var chatSequenceHumanDesc: String = ""
-    @State var promptInEdit: String = ""
     @State var submitting: Bool = false
 
+    @State var promptInEdit: String = ""
     @FocusState var focusTextInput: Bool
+    @State var allowNewlineSubmit: Bool = false
 
     init(_ initialModel: InferenceModel? = nil) {
         if initialModel == nil {
@@ -170,7 +179,7 @@ struct BlankOneSequenceView: View {
             .padding(.trailing, 24)
 
             HStack {
-                InlineTextInput($promptInEdit, isFocused: $focusTextInput) {
+                InlineTextInput($promptInEdit, allowNewlineSubmit: $allowNewlineSubmit, isFocused: $focusTextInput) {
                     submit()
                 }
                     .focused($focusTextInput)
