@@ -93,7 +93,7 @@ class LMStudioProvider(BaseProvider):
 
         return ProviderRecord.from_orm(new_provider)
 
-    async def list_models(self) -> AsyncIterable[InferenceModelRecord | Any]:
+    async def list_models(self) -> AsyncIterable[InferenceModelRecord]:
         request = self.server_comms.build_request(
             method='GET',
             url='/v1/models',

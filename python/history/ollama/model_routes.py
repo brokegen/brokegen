@@ -1,8 +1,11 @@
 import logging
-from typing import cast, Any, Generator, Iterable, AsyncGenerator
+from typing import cast, Generator, Iterable, AsyncGenerator
 
 import httpx
 import orjson
+import starlette.responses
+import starlette.responses
+import starlette.responses
 import starlette.responses
 from fastapi import Request
 
@@ -14,27 +17,7 @@ from history.ollama.json import OllamaEventBuilder
 from history.ollama.models import build_model_from_api_show, build_models_from_api_tags
 from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceModelRecord, InferenceModelRecordOrm, inject_inference_stats, \
-    InferenceModelWithStats
-from providers.ollama import ExternalOllamaProvider
-from providers.orm import ProviderLabel
-from providers.registry import ProviderRegistry, BaseProvider
-import logging
-from typing import cast, Any, Generator, Iterable, AsyncGenerator
-
-import httpx
-import orjson
-import starlette.responses
-from fastapi import Request
-
-import providers
-from _util.json import safe_get
-from _util.typing import InferenceModelHumanID
-from audit.http import AuditDB
-from history.ollama.json import OllamaEventBuilder
-from history.ollama.models import build_model_from_api_show, build_models_from_api_tags
-from providers.inference_models.database import HistoryDB
-from providers.inference_models.orm import InferenceModelRecord, InferenceModelRecordOrm, inject_inference_stats, \
-    InferenceModelWithStats
+    InferenceModelResponse
 from providers.ollama import ExternalOllamaProvider
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry, BaseProvider
@@ -56,7 +39,7 @@ async def do_list_available_models(
         provider: ExternalOllamaProvider,
         history_db: HistoryDB,
         audit_db: AuditDB,
-) -> AsyncGenerator[InferenceModelRecord | Any, None]:
+) -> AsyncGenerator[InferenceModelResponse, None]:
     intercept = OllamaEventBuilder("ollama:/api/tags", audit_db)
     cached_accessed_at = intercept.wrapped_event.accessed_at
 
@@ -89,7 +72,7 @@ async def do_list_available_models(
 
     # NB This sorting is basically useless, because we don't have a way to sort models across providers.
     # NB Swift JSON decode does not preserve order, because JSON dict spec does not preserve order.
-    models_and_sort_keys: Iterable[tuple[InferenceModelWithStats, tuple]] = \
+    models_and_sort_keys: Iterable[tuple[InferenceModelResponse, tuple]] = \
         inject_inference_stats(
             [amodel async for amodel in api_show_injector(available_models_generator)],
             history_db)

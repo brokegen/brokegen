@@ -11,7 +11,7 @@ import logging
 from abc import abstractmethod
 from typing import TypeAlias, Callable, Awaitable, Any, AsyncGenerator, AsyncIterable
 
-from providers.inference_models.orm import InferenceModelRecord
+from providers.inference_models.orm import InferenceModelRecord, InferenceModelResponse
 from providers.orm import ProviderLabel, ProviderRecord
 
 logger = logging.getLogger(__name__)
@@ -28,8 +28,8 @@ class BaseProvider:
 
     @abstractmethod
     def list_models(self) -> (
-            AsyncGenerator[InferenceModelRecord | Any, None]
-            | AsyncIterable[InferenceModelRecord | Any]):
+            AsyncGenerator[InferenceModelRecord | InferenceModelResponse, None]
+            | AsyncIterable[InferenceModelRecord | InferenceModelResponse]):
         raise NotImplementedError()
 
 

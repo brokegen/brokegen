@@ -4,7 +4,7 @@ import logging
 import os
 import subprocess
 from datetime import datetime, timezone
-from typing import Union, Any, AsyncIterable
+from typing import Union, Any, AsyncIterable, AsyncGenerator
 
 import httpx
 import orjson
@@ -118,7 +118,7 @@ class LlamafileProvider(BaseProvider):
 
         return sha256_hasher.hexdigest()
 
-    async def list_models(self) -> AsyncIterable[InferenceModelRecord | Any]:
+    async def list_models(self) -> AsyncGenerator[InferenceModelRecord, None]:
         model_name = os.path.basename(self.filename)
         if model_name[-10:] == '.llamafile':
             model_name = model_name[:-10]

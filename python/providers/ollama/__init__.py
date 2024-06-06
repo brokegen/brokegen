@@ -9,7 +9,7 @@ from sqlalchemy import select
 from audit.http import get_db as get_audit_db, AuditDB
 from providers._util import local_provider_identifiers, local_fetch_machine_info
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import InferenceModelRecord
+from providers.inference_models.orm import InferenceModelRecord, InferenceModelResponse
 from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord
 from providers.registry import ProviderRegistry, BaseProvider
 
@@ -85,7 +85,7 @@ class ExternalOllamaProvider(BaseProvider):
 
         return ProviderRecord.from_orm(new_provider)
 
-    async def list_models(self) -> AsyncGenerator[InferenceModelRecord | Any, None]:
+    async def list_models(self) -> AsyncGenerator[InferenceModelResponse, None]:
         history_db: HistoryDB = next(get_history_db())
         audit_db: AuditDB = next(get_audit_db())
 
