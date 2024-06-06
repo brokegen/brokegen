@@ -6,7 +6,6 @@ struct BrokegenApp: App {
     @State private var chatService: ChatSyncService = ChatSyncService()
     @State private var jobsService: JobsManagerService
     @State private var providerService: ProviderService = ProviderService()
-    @State private var pathHost: PathHost = PathHost()
     @State private var inferenceModelSettings: InferenceModelSettings
 
     init() {
@@ -15,12 +14,11 @@ struct BrokegenApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
-            BrokegenAppView(pathHost: $pathHost)
+        WindowGroup(for: UUID.self) { _ in
+            BrokegenAppView()
                 .environment(chatService)
                 .environment(jobsService)
                 .environment(providerService)
-                .environment(pathHost)
                 .environment(inferenceModelSettings)
         }
         .windowStyle(.hiddenTitleBar)

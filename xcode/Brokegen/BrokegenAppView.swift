@@ -22,14 +22,9 @@ class PathHost {
 struct BrokegenAppView: View {
     @Environment(ChatSyncService.self) private var chatService
     @Environment(ProviderService.self) private var providerService
-    @Binding private var pathHost: PathHost
+    // This is the only one that really belongs here, because multiple windows
+    @State private var pathHost: PathHost = PathHost()
     @Environment(InferenceModelSettings.self) public var inferenceModelSettings
-
-    init(pathHost: Binding<PathHost>) {
-        _chatService = Environment(ChatSyncService.self)
-        /// This Environment var has to be here and not the Scene, because we need to bind it directly to the NavigationStack it's for
-        _pathHost = pathHost
-    }
 
     var body: some View {
         NavigationStack(path: $pathHost.path) {
@@ -48,6 +43,7 @@ struct BrokegenAppView: View {
             Task { await chatService.fetchPinnedSequences() }
             Task { await providerService.fetchAvailableModels() }
         }
+        .environment(pathHost)
     }
 }
 
@@ -67,13 +63,5 @@ struct BrokegenAppView: View {
 }
 
 #Preview(traits: .fixedLayout(width: 1024, height: 1024)) {
-    struct ViewHolder: View {
-        @State private var pathHost = PathHost()
-
-        var body: some View {
-            BrokegenAppView(pathHost: $pathHost)
-        }
-    }
-
-    return ViewHolder()
+    BrokegenAppView()
 }
