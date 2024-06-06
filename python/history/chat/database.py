@@ -104,15 +104,3 @@ def lookup_sequence_parents(
 
         yield sequence
         current_id = sequence.parent_sequence
-
-
-class VisibleSequence:
-    """
-    Represents a more user-visible concept of message chains.
-
-    In particular, having the summary of prior messages + possible token estimates.
-    """
-    __tablename__ = 'ChatSequences'
-
-    id = Column(Integer, primary_key=True, nullable=False)
-    top_node: ChatSequenceID
