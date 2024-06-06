@@ -11,7 +11,7 @@ class ChatSequenceClientModel: Observable, ObservableObject {
     let chatService: ChatSyncService
     let inferenceModelSettings: InferenceModelSettings
 
-    var pinSequenceTitle = true
+    var pinSequenceTitle: Bool
 
     var promptInEdit: String = ""
     var submitting: Bool = false
@@ -27,6 +27,8 @@ class ChatSequenceClientModel: Observable, ObservableObject {
         self.sequence = sequence
         self.chatService = chatService
         self.inferenceModelSettings = inferenceModelSettings
+
+        self.pinSequenceTitle = sequence.humanDesc != nil
     }
 
     var displayHumanDesc: String {
