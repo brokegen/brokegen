@@ -93,7 +93,7 @@ async def do_api_tags(
     upstream_request = _real_ollama_client.build_request(
         method=original_request.method,
         url="/api/tags",
-        content=intercept.wrap_req(original_request.stream()),
+        content=intercept.wrap_streaming_request(original_request.stream()),
         # https://github.com/encode/httpx/discussions/2959
         # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
         headers=[('Connection', 'close')],
@@ -127,7 +127,9 @@ async def do_api_show(
     upstream_request = provider.client.build_request(
         method="POST",
         url="/api/show",
-        content=orjson.dumps({"name": model_name}),
+        content=orjson.dumps(
+            intercept.wrap_request({"name": model_name})
+        ),
         # https://github.com/encode/httpx/discussions/2959
         # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
         headers=[('Connection', 'close')],
@@ -158,7 +160,7 @@ async def do_api_show_streaming(
     upstream_request = provider.client.build_request(
         method="POST",
         url="/api/show",
-        content=intercept.wrap_req(original_request.stream()),
+        content=intercept.wrap_streaming_request(original_request.stream()),
         # https://github.com/encode/httpx/discussions/2959
         # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
         headers=[('Connection', 'close')],

@@ -224,7 +224,25 @@ class OllamaEventBuilder:
 
         self.response_content_json = None
 
-    async def wrap_req(
+    def wrap_request(
+            self,
+            request_content: JSONDict,
+            remove_images: bool = False,
+    ):
+        if remove_images:
+            scrubbed_request_content = scrub_json(
+                request_content,
+                logger.warning,
+                remove_images,
+            )
+            self.wrapped_event.request_info = scrubbed_request_content
+
+        else:
+            self.wrapped_event.request_info = request_content
+
+        return request_content
+
+    async def wrap_streaming_request(
             self,
             primordial: AsyncIterator[bytes],
             remove_images: bool = True,
@@ -244,7 +262,7 @@ class OllamaEventBuilder:
             self.wrapped_event.request_info = request_json
 
             if remove_images:
-                maybe_content = await scrub_json(request_json, logger.warning, remove_images)
+                maybe_content = scrub_json(request_json, logger.warning, remove_images)
                 self.wrapped_event.request_info = maybe_content
 
         # Do a preliminary commit, because partial info is what we'd need for debugging

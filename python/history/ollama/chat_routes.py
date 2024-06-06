@@ -119,7 +119,7 @@ async def do_proxy_generate(
     upstream_request = _real_ollama_client.build_request(
         method='POST',
         url="/api/generate",
-        content=orjson.dumps(request_content_json),
+        content=orjson.dumps(intercept.wrap_request(request_content_json)),
         headers=modified_headers,
         cookies=original_request.cookies,
     )

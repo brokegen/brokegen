@@ -3,7 +3,7 @@ from typing import Callable, Any
 
 import orjson
 
-from _util.json import safe_get
+from _util.json import safe_get, JSONObject
 
 
 def _summarize(images_array: list[str]) -> str:
@@ -15,11 +15,11 @@ def _summarize(images_array: list[str]) -> str:
     return f"{len(images_array)} image(s) scrubbed, image sizes: {list(image_sizes)}"
 
 
-async def scrub_json(
-        content_json,
+def scrub_json(
+        content_json: JSONObject,
         logger_fn: Callable[[str], Any] | None = None,
         remove_images: bool = False,
-):
+) -> JSONObject:
     if remove_images:
         for message in safe_get(content_json, "messages") or []:
             if "images" in message and message["images"]:
@@ -41,7 +41,7 @@ async def scrub_bytes(
 
     try:
         content_json = orjson.loads(content_bytes)
-        scrubbed_json = await scrub_json(content_json, logger_fn, remove_images)
+        scrubbed_json = scrub_json(content_json, logger_fn, remove_images)
         return orjson.dumps(scrubbed_json)
 
     except orjson.JSONDecodeError:

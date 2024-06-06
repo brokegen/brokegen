@@ -23,7 +23,7 @@ class ChatMessage(BaseModel):
 
 
 class ChatMessageOrm(Base):
-    __tablename__ = 'Messages'
+    __tablename__ = 'ChatMessages'
 
     id: ChatMessageID = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     role: RoleName = Column(String, nullable=False)
@@ -69,7 +69,7 @@ class ChatSequence(Base):
     """
     Represents a linked list node for Message sequences.
     """
-    __tablename__ = 'ChatSequence'
+    __tablename__ = 'ChatSequences'
 
     id: ChatSequenceID = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
     human_desc = Column(String)
@@ -104,15 +104,3 @@ def lookup_sequence_parents(
 
         yield sequence
         current_id = sequence.parent_sequence
-
-
-class VisibleSequence:
-    """
-    Represents a more user-visible concept of message chains.
-
-    In particular, having the summary of prior messages + possible token estimates.
-    """
-    __tablename__ = 'ChatSequences'
-
-    id = Column(Integer, primary_key=True, nullable=False)
-    top_node: ChatSequenceID
