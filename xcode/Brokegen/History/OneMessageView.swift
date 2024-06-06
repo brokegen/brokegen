@@ -24,12 +24,19 @@ struct OneMessageView: View {
     let message: Message
     let sequence: ChatSequence?
     let stillUpdating: Bool
-    @State var expandDetails: Bool = false
 
-    init(_ message: Message, sequence: ChatSequence? = nil, stillUpdating: Bool = false) {
+    @State var expandDetails: Bool = false
+    @State var expandContent: Bool
+
+    init(
+        _ message: Message,
+        sequence: ChatSequence? = nil,
+        stillUpdating: Bool = false
+    ) {
         self.message = message
         self.sequence = sequence
         self.stillUpdating = stillUpdating
+        self._expandContent = State(initialValue: message.role != "model config")
     }
 
     var body: some View {
@@ -39,6 +46,7 @@ struct OneMessageView: View {
                 Text(message.role)
                     .font(.title3.weight(.semibold))
                     .foregroundColor(.accentColor)
+                    .layoutPriority(0.5)
 
                 if stillUpdating {
                     ProgressView()
@@ -48,14 +56,25 @@ struct OneMessageView: View {
 
                 Spacer()
 
-                Button(action: { expandDetails = !expandDetails }) {
-                    Image(systemName: expandDetails ? "chevron.down" : "chevron.left")
+                Toggle(isOn: $expandDetails) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 24))
+                        .frame(width: 30, height: 32)
+                        .padding(6)
+                        .contentShape(Rectangle())
                 }
-                    .buttonStyle(.accessoryBar)
-                    .help("Expand Details")
-                    .foregroundColor(.accentColor)
-                    .frame(minWidth: 32)
+                .layoutPriority(0.2)
+
+                Toggle(isOn: $expandContent) {
+                    Image(systemName: expandContent ? "chevron.down" : "chevron.left")
+                        .font(.system(size: 24))
+                        .frame(width: 30, height: 32)
+                        .padding(6)
+                        .contentShape(Rectangle())
+                }
+                .layoutPriority(0.2)
             }
+            .toggleStyle(.button)
 
             // Second line-block
             if expandDetails {
@@ -65,9 +84,12 @@ struct OneMessageView: View {
                 }
             }
 
-            Text(message.content)
-                .lineSpacing(6)
-                .textSelection(.enabled)
+            if expandContent {
+                Text(message.content)
+                    .font(.system(size: 18))
+                    .lineSpacing(6)
+                    .textSelection(.enabled)
+            }
         }
         .frame(maxWidth: .infinity)
     }
