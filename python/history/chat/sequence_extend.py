@@ -170,6 +170,7 @@ async def do_continuation(
                 #    So, append it to both.
                 system_message="You are a concise summarizer, seizing on easily identifiable + distinguishing factors of the text.",
                 user_prompt="Provide a summary of the provided text in a few words, suitable as a short description for a tab title." +
+                            "Answer with that title only." +
                             '\n'.join([m.content for m in messages_list]),
                 assistant_response="Tab title: "
             )
