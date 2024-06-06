@@ -143,14 +143,39 @@ func dateToSectionName(_ date: Date?) -> String {
     return sectionName
 }
 
+extension ChatSequence: Comparable {
+    static func < (lhs: ChatSequence, rhs: ChatSequence) -> Bool {
+        if lhs.lastMessageDate == nil {
+            return false
+        }
+        if rhs.lastMessageDate == nil {
+            return true
+        }
+
+        return lhs.lastMessageDate! > rhs.lastMessageDate!
+    }
+}
+
 struct MiniSequencePickerSidebar: View {
     @EnvironmentObject private var chatService: ChatSyncService
     @Environment(PathHost.self) private var pathHost
     @Environment(InferenceModelSettings.self) public var inferenceModelSettings
     let navLimit: Int
 
-    init(navLimit: Int = 2) {
+    init(navLimit: Int = 10) {
         self.navLimit = navLimit
+    }
+
+    func someSectionedSequences(limit: Int) -> [(String, [ChatSequence])] {
+        let someSequences = chatService.loadedChatSequences
+            .sorted()
+            .prefix(limit)
+
+        let sectionedSomeSequences = Dictionary(grouping: someSequences) {
+            dateToSectionName($0.lastMessageDate)
+        }
+
+        return Array(sectionedSomeSequences)
     }
 
     func sectionedSequences() -> [(String, [ChatSequence])] {
@@ -160,17 +185,8 @@ struct MiniSequencePickerSidebar: View {
 
         return Array(sectionedSequences)
             .map {
-                // Sorts the individual ChatSequences within a section
-                ($0.0, $0.1.sorted {
-                    if $0.lastMessageDate == nil {
-                        return false
-                    }
-                    if $1.lastMessageDate == nil {
-                        return true
-                    }
-
-                    return $0.lastMessageDate! > $1.lastMessageDate!
-                })
+                // Sort the individual ChatSequences within a section
+                ($0.0, $0.1.sorted())
             }
             .sorted { $0.0 > $1.0 }
     }
@@ -202,10 +218,10 @@ struct MiniSequencePickerSidebar: View {
                 ASRow("Browse Recent", showChevron: true)
             }
 
-            if !sectionedSequences().isEmpty && navLimit > 0 {
+            if !chatService.loadedChatSequences.isEmpty && navLimit > 0 {
                 Divider()
 
-                ForEach(sectionedSequences().prefix(navLimit), id: \.0) { pair in
+                ForEach(someSectionedSequences(limit: navLimit), id: \.0) { pair in
                     let (sectionName, sectionSequences) = pair
 
                     Section(content: {
@@ -299,16 +315,7 @@ struct SequencePickerView: View {
         return Array(sectionedSequences)
             .map {
                 // Sorts the individual ChatSequences within a section
-                ($0.0, $0.1.sorted {
-                    if $0.lastMessageDate == nil {
-                        return false
-                    }
-                    if $1.lastMessageDate == nil {
-                        return true
-                    }
-
-                    return $0.lastMessageDate! > $1.lastMessageDate!
-                })
+                ($0.0, $0.1.sorted())
             }
             .sorted { $0.0 > $1.0 }
     }
