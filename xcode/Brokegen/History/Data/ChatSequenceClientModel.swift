@@ -11,6 +11,8 @@ class ChatSequenceClientModel: Observable, ObservableObject {
     let chatService: ChatSyncService
     let inferenceModelSettings: InferenceModelSettings
 
+    var pinSequenceTitle = true
+
     var promptInEdit: String = ""
     var submitting: Bool = false
 
@@ -25,6 +27,14 @@ class ChatSequenceClientModel: Observable, ObservableObject {
         self.sequence = sequence
         self.chatService = chatService
         self.inferenceModelSettings = inferenceModelSettings
+    }
+
+    var displayHumanDesc: String {
+        if !(sequence.humanDesc ?? "").isEmpty {
+            return sequence.humanDesc!
+        }
+
+        return "ChatSequence#\(sequence.serverId!)"
     }
 
     private func completionHandler(

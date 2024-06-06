@@ -15,18 +15,58 @@ struct OneSequenceView: View {
     var body: some View {
         ScrollViewReader { proxy in
             VStack(spacing: 0) {
-                ScrollView(.vertical) {
-                    if viewModel.sequence.humanDesc != nil {
-                        HStack(spacing: 0) {
-                            Text(viewModel.sequence.humanDesc!)
-                                .font(.system(size: 36))
-                                .padding(.leading, 24)
-                                .foregroundColor(.gray)
-                                .lineLimit(1)
-                                .layoutPriority(0.2)
+                if viewModel.pinSequenceTitle {
+                    HStack(spacing: 0) {
+                        Text(viewModel.displayHumanDesc)
+                            .font(.system(size: 36))
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+                            .layoutPriority(0.2)
 
-                            Spacer()
+                        Spacer()
+
+                        Button(action: {
+                            viewModel.pinSequenceTitle = false
+                        }) {
+                            Image(systemName: "pin")
+                                .font(.system(size: 24))
+                                .padding(12)
+                                .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
+                    }
+                    .id("sequence title")
+                    .padding(.bottom, 12)
+                    .padding(.leading, 24)
+                    .padding(.trailing, 24)
+                }
+
+                ScrollView(.vertical) {
+                    if !viewModel.pinSequenceTitle {
+                        HStack(spacing: 0) {
+                            Text(viewModel.displayHumanDesc)
+                                .font(.system(size: 36))
+                                .foregroundColor(.gray)
+                                .lineLimit(1...10)
+                                .layoutPriority(0.2)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                viewModel.pinSequenceTitle = true
+                            }) {
+                                Image(systemName: "pin.slash")
+                                    .font(.system(size: 24))
+                                    .padding(12)
+                                    .contentShape(Rectangle())
+                                    .foregroundStyle(Color(.disabledControlTextColor))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .id("sequence title")
+                        .padding(.bottom, 12)
+                        .padding(.leading, 24)
+                        .padding(.trailing, 24)
                     }
 
                     ForEach(viewModel.sequence.messages) { message in

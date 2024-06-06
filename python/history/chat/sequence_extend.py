@@ -177,9 +177,10 @@ async def do_continuation(
             )
 
         # Only strip when both leading and trailing, otherwise we're probably just dropping half of a set.
-        if len(machine_desc) > 1:
+        if len(machine_desc) > 0:
+            machine_desc = machine_desc.strip()
+        if len(machine_desc) > 2:
             if machine_desc[0] == '"' and machine_desc[-1] == '"':
-                machine_desc = machine_desc.strip()
                 machine_desc = machine_desc.strip('"')
         logger.info(f"Auto-generated chat title is {len(machine_desc)} chars: {machine_desc=}")
         response_sequence.human_desc = machine_desc
