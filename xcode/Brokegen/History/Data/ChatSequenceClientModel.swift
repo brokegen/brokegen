@@ -249,12 +249,9 @@ class ChatSequenceClientModel: Observable, ObservableObject {
         }
     }
 
-    /// TODO: This should all run on main, but there's one async call.
     func replaceSequence(_ newSequenceId: ChatSequenceServerID) async {
-        DispatchQueue.main.async {
-            print("[DEBUG] Attempting to update ChatSequenceClientModel to new_sequence_id: \(newSequenceId)")
-            self.chatService.replaceSequenceById(self.sequence.serverId!, with: newSequenceId)
-        }
+        print("[DEBUG] Attempting to update ChatSequenceClientModel to new_sequence_id: \(newSequenceId)")
+        await self.chatService.replaceSequenceById(self.sequence.serverId!, with: newSequenceId)
 
         if let newSequence = await chatService.fetchSequence(newSequenceId) {
             DispatchQueue.main.async {

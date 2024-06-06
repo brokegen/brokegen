@@ -237,14 +237,14 @@ class ProviderService: Observable, ObservableObject {
         }
     }
 
-    func fetchAvailableModels() {
-        Task.init {
-            if let data = await getDataAsJsonDict("/providers/any/any/models") {
-                let sortedData = data.sorted(by: { Int($0.0) ?? -1 < Int($1.0) ?? -1 })
-                for (_, modelInfo) in sortedData {
-                    if let modelInfo = modelInfo as? [String : Any?] {
-                        let model = InferenceModel(modelInfo)
-                        replaceModelById(model.serverId, with: model)
+    func fetchAvailableModels() async {
+        if let data = await getDataAsJsonDict("/providers/any/any/models") {
+            let sortedData = data.sorted(by: { Int($0.0) ?? -1 < Int($1.0) ?? -1 })
+            for (_, modelInfo) in sortedData {
+                if let modelInfo = modelInfo as? [String : Any?] {
+                    let model = InferenceModel(modelInfo)
+                    DispatchQueue.main.async {
+                        self.replaceModelById(model.serverId, with: model)
                     }
                 }
             }

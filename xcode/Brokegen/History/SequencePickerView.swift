@@ -323,14 +323,14 @@ struct SequencePickerView: View {
     var body: some View {
         HStack {
             Button("Refresh", systemImage: "arrow.clockwise") {
-                chatService.fetchPinnedSequences()
+                Task { await chatService.fetchPinnedSequences() }
             }
             .buttonStyle(.accessoryBar)
             .padding(12)
             .layoutPriority(0.2)
 
             Button("Refresh 500", systemImage: "arrow.clockwise") {
-                chatService.fetchPinnedSequences(500)
+                Task { await chatService.fetchPinnedSequences(500) }
             }
             .buttonStyle(.accessoryBar)
             .padding(12)

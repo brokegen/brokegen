@@ -106,6 +106,8 @@ extension Message: Hashable {
     }
 }
 
+/// TODO: Limit scope of ObservableObject to the loadedChatSequences, and see if background refresh improves
+/// (right now the entire app gets choppy).
 class ChatSyncService: Observable, ObservableObject {
     var serverBaseURL: String = "http://127.0.0.1:6635"
     let session: Alamofire.Session

@@ -48,7 +48,9 @@ struct ModelPickerView: View {
             }
         }
         .onAppear {
-            providerService.fetchAvailableModels()
+            Task {
+                await providerService.fetchAvailableModels()
+            }
         }
         .onChange(of: modelSelection.wrappedValue?.serverId) {
             if modelSelection.wrappedValue != nil {

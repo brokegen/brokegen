@@ -45,8 +45,8 @@ struct BrokegenAppView: View {
         }
         .onAppear {
             // Do on-startup init, because otherwise we store no data and app is empty
-            chatService.fetchPinnedSequences()
-            providerService.fetchAvailableModels()
+            Task { await chatService.fetchPinnedSequences() }
+            Task { await providerService.fetchAvailableModels() }
         }
     }
 }

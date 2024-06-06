@@ -117,22 +117,20 @@ extension ChatSyncService {
         return nil
     }
 
-    func fetchPinnedSequences(_ limit: Int? = nil) {
-        Task.init {
-            var limitQuery = ""
-            if limit != nil {
-                limitQuery = "?limit=\(limit!)"
-            }
+    func fetchPinnedSequences(_ limit: Int? = nil) async {
+        var limitQuery = ""
+        if limit != nil {
+            limitQuery = "?limit=\(limit!)"
+        }
 
-            let jsonDict = await getDataAsJson("/sequences/pinned\(limitQuery)")
-            guard jsonDict != nil else { return }
+        let jsonDict = await getDataAsJson("/sequences/pinned\(limitQuery)")
+        guard jsonDict != nil else { return }
 
-            let newSequenceIds: [ChatSequenceServerID] = jsonDict!["sequence_ids"] as? [Int] ?? []
-            for newSequenceId in newSequenceIds {
-                if let entireSequence = await fetchSequence(newSequenceId) {
-                    DispatchQueue.main.async {
-                        self.updateSequences(with: entireSequence)
-                    }
+        let newSequenceIds: [ChatSequenceServerID] = jsonDict!["sequence_ids"] as? [Int] ?? []
+        for newSequenceId in newSequenceIds {
+            if let entireSequence = await fetchSequence(newSequenceId) {
+                DispatchQueue.main.async {
+                    self.updateSequences(with: entireSequence)
                 }
             }
         }
@@ -171,43 +169,47 @@ extension ChatSyncService {
         catch {}
     }
 
-    func replaceSequenceById(_ originalSequenceId: ChatSequenceServerID?, with updatedSequenceId: ChatSequenceServerID) {
-        Task {
-            var priorSequenceClientId: UUID? = nil
-            if originalSequenceId != nil {
-                if let removalIndex = self.loadedChatSequences.firstIndex(where: {
-                    $0.serverId == originalSequenceId
-                }) {
-                    priorSequenceClientId = self.loadedChatSequences[removalIndex].id
-                }
+    func replaceSequenceById(_ originalSequenceId: ChatSequenceServerID?, with updatedSequenceId: ChatSequenceServerID) async {
+        var priorSequenceClientId: UUID? = nil
+        if originalSequenceId != nil {
+            if let removalIndex = self.loadedChatSequences.firstIndex(where: {
+                $0.serverId == originalSequenceId
+            }) {
+                priorSequenceClientId = self.loadedChatSequences[removalIndex].id
+            }
 
+            DispatchQueue.main.async {
                 self.loadedChatSequences.removeAll(where: {
                     $0.serverId == originalSequenceId
                 })
             }
+        }
 
+        if let updatedSequenceData = await getData("/sequences/\(updatedSequenceId)") {
             do {
-                if let updatedSequenceData = await getData("/sequences/\(updatedSequenceId)") {
-                    let updatedSequence = try ChatSequence(
-                        clientId: priorSequenceClientId ?? UUID(),
-                        serverId: updatedSequenceId,
-                        data: updatedSequenceData)
+                let updatedSequence = try ChatSequence(
+                    clientId: priorSequenceClientId ?? UUID(),
+                    serverId: updatedSequenceId,
+                    data: updatedSequenceData)
 
-                    // Insert new ChatSequences in reverse order, newest at the top
+                // Insert new ChatSequences in reverse order, newest at the top
+                DispatchQueue.main.async {
                     self.loadedChatSequences.insert(updatedSequence, at: 0)
+                }
 
-                    let predicate = #Predicate<ChatSequenceClientModel> {
-                        $0.sequence.serverId == originalSequenceId
-                    }
-                    do {
-                        for clientModel in try chatSequenceClientModels.filter(predicate) {
+                let predicate = #Predicate<ChatSequenceClientModel> {
+                    $0.sequence.serverId == originalSequenceId
+                }
+                do {
+                    for clientModel in try chatSequenceClientModels.filter(predicate) {
+                        DispatchQueue.main.async {
                             clientModel.sequence = updatedSequence
                         }
                     }
                 }
             }
             catch {
-                print("[ERROR] Failed to replaceSequenceById(\(String(describing: originalSequenceId)), with: \(updatedSequenceId))")
+                print("[ERROR] Failed to ChatSyncService.replaceSequenceById(\(String(describing: originalSequenceId)), with: \(updatedSequenceId))")
             }
         }
     }
