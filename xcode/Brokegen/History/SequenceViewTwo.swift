@@ -69,7 +69,7 @@ struct SequenceViewTwo: View {
     @ObservedObject var viewModel: ChatSequenceClientModel
 
     @FocusState var focusTextInput: Bool
-    @State private var selectedTab: Tab = .simple
+    @State private var selectedTab: Tab = .retrieval
 
     // per-chat options
     @State var overrideSystemPrompt: String = ""
@@ -82,7 +82,7 @@ struct SequenceViewTwo: View {
     // UI options
     // @AppStorage("allowContinuation")
     @State var allowContinuation: Bool = true
-    @State var showSeparateRetrievalButton: Bool = false
+    @State var showSeparateRetrievalButton: Bool = true
     @State var forceRetrieval: Bool = false
 
     @State var autoSummarizeChats: Bool? = nil
