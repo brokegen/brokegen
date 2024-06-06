@@ -58,18 +58,28 @@ venv-clean:
 # Use Mozilla Ocho `llamafile` binaries as the simplest-to-setup inference server
 #
 dist/llava-v1.5-7b-q4.llamafile:
-	cd "$(dir $@)" \
-		&& curl -L -O https://huggingface.co/Mozilla/llava-v1.5-7b-llamafile/resolve/main/llava-v1.5-7b-q4.llamafile?download=true
-	echo "[INFO] Expected filesize for $@: 4_294_064_438 bytes"
-	echo "[INFO] Expected \`shasum\`: 1c77bc3d1df6be114e36a09c593e93affd1862c7"
-	chmod +x "$@"
+	cd "$(dir $@)" && curl -L -O https://huggingface.co/Mozilla/llava-v1.5-7b-llamafile/resolve/main/llava-v1.5-7b-q4.llamafile?download=true
+	@echo "[INFO] Expected filesize for $@: 4_294_064_438 bytes"
+	@ls -l "$@"
+	@echo "[INFO] Expected \`shasum\`: 1c77bc3d1df6be114e36a09c593e93affd1862c7"
+	@shasum "$@"
+	@chmod +x "$@"
 
 dist/Mistral-7B-Instruct-v0.3.Q4_K_M.llamafile:
-	cd "$(dir $@)" \
-		&& curl -L -O https://huggingface.co/Mozilla/Mistral-7B-Instruct-v0.3-llamafile/resolve/main/Mistral-7B-Instruct-v0.3.Q4_K_M.llamafile?download=true
-	echo "[INFO] Expected filesize for $@: 4_408_359_087 bytes"
-	echo "[INFO] Expected \`shasum\`: 3e0cc8c00ef0fe971424392491273fb2bbc3cbe3"
-	chmod +x "$@"
+	cd "$(dir $@)" && curl -L -O https://huggingface.co/Mozilla/Mistral-7B-Instruct-v0.3-llamafile/resolve/main/Mistral-7B-Instruct-v0.3.Q4_K_M.llamafile?download=true
+	@echo "[INFO] Expected filesize for $@: 4_408_359_087 bytes"
+	@ls -l "$@"
+	@echo "[INFO] Expected \`shasum\`: 3e0cc8c00ef0fe971424392491273fb2bbc3cbe3"
+	@shasum "$@"
+	@chmod +x "$@"
+
+dist/mxbai-embed-large-v1-f16.llamafile:
+	cd "$(dir $@)" && curl -L -O https://huggingface.co/Mozilla/mxbai-embed-large-v1-llamafile/resolve/main/mxbai-embed-large-v1-f16.llamafile?download=true
+	@echo "[INFO] Expected filesize for $@: 698_955_952 bytes"
+	@ls -l "$@"
+	@echo "[INFO] Expected \`shasum\`: eca2e537d3129ca5cce7f2d3e929ae0a4da33ac6"
+	@shasum "$@"
+	@chmod +x "$@"
 
 # Download the non-Electron binary
 #
