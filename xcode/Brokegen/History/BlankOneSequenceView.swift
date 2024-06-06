@@ -126,62 +126,63 @@ struct BlankOneSequenceView: View {
     }
 
     var body: some View {
-        VStack {
-            ChatNameInput($chatSequenceHumanDesc)
-                .frame(maxWidth: .infinity)
-                .padding(24)
-
-            // Display the model info, because otherwise there's nothing to see
-            if modelSelection != nil {
-                OneInferenceModelView(model: modelSelection!, modelAvailable: true, modelSelection: $modelSelection, enableModelSelection: false)
-                    .frame(maxWidth: 800)
-                    .layoutPriority(0.2)
-            }
-            else if inferenceModelSettings.defaultInferenceModel != nil {
-                OneInferenceModelView(model: inferenceModelSettings.defaultInferenceModel!, modelAvailable: true, modelSelection: $modelSelection, enableModelSelection: false)
-                    .frame(maxWidth: 800)
-                    .layoutPriority(0.2)
-            }
-            else {
-                let finalDesc: String = {
-                    if let humanDesc: String = inferenceModelSettings.fallbackInferenceModel?.humanId {
-                        return "No model selected, will fallback to \(humanDesc)"
-                    }
-                    else {
-                        return "No model selected"
-                    }
-                }()
-                Text(finalDesc)
-            }
-
+        GeometryReader { geometry in
             VStack {
-                Spacer()
-            }
-            .frame(maxHeight: .infinity)
+                ChatNameInput($chatSequenceHumanDesc)
+                    .frame(maxWidth: .infinity)
+                    .padding(24)
 
-            Divider()
-
-            HStack {
-                Text(submitting ? "Submitting ChatMessage/Sequence" : "Ready")
-                    .foregroundStyle(Color(.disabledControlTextColor))
-                    .layoutPriority(0.2)
-
-                Spacer()
-
-                if submitting {
-                    ProgressView()
-                        .progressViewStyle(.linear)
-                        .frame(maxWidth: 120)
+                // Display the model info, because otherwise there's nothing to see
+                if modelSelection != nil {
+                    OneInferenceModelView(model: modelSelection!, modelAvailable: true, modelSelection: $modelSelection, enableModelSelection: false)
+                        .frame(maxWidth: 800)
                         .layoutPriority(0.2)
                 }
-            }
-            .padding(.leading, 24)
-            .padding(.trailing, 24)
-
-            HStack {
-                InlineTextInput($promptInEdit, allowNewlineSubmit: $allowNewlineSubmit, isFocused: $focusTextInput) {
-                    submit()
+                else if inferenceModelSettings.defaultInferenceModel != nil {
+                    OneInferenceModelView(model: inferenceModelSettings.defaultInferenceModel!, modelAvailable: true, modelSelection: $modelSelection, enableModelSelection: false)
+                        .frame(maxWidth: 800)
+                        .layoutPriority(0.2)
                 }
+                else {
+                    let finalDesc: String = {
+                        if let humanDesc: String = inferenceModelSettings.fallbackInferenceModel?.humanId {
+                            return "No model selected, will fallback to \(humanDesc)"
+                        }
+                        else {
+                            return "No model selected"
+                        }
+                    }()
+                    Text(finalDesc)
+                }
+
+                VStack {
+                    Spacer()
+                }
+                .frame(maxHeight: .infinity)
+
+                Divider()
+
+                HStack {
+                    Text(submitting ? "Submitting ChatMessage/Sequence" : "Ready")
+                        .foregroundStyle(Color(.disabledControlTextColor))
+                        .layoutPriority(0.2)
+
+                    Spacer()
+
+                    if submitting {
+                        ProgressView()
+                            .progressViewStyle(.linear)
+                            .frame(maxWidth: 120)
+                            .layoutPriority(0.2)
+                    }
+                }
+                .padding(.leading, 24)
+                .padding(.trailing, 24)
+
+                HStack {
+                    InlineTextInput($promptInEdit, allowNewlineSubmit: $allowNewlineSubmit, isFocused: $focusTextInput) {
+                        submit()
+                    }
                     .focused($focusTextInput)
                     .onAppear {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -190,46 +191,50 @@ struct BlankOneSequenceView: View {
                     }
                     .backgroundStyle(inputBackgroundStyle)
 
-                Button(action: stopSubmitAndReceive) {
-                    Image(systemName: submitting ? "stop.fill" : "stop")
-                        .font(.system(size: 32))
-                        .disabled(!submitting)
-                        .foregroundStyle(!submitting ? Color(.disabledControlTextColor) : Color(.controlTextColor))
-                }
-                .buttonStyle(.plain)
-                .help("Stop submitting or receiving")
-                .padding(.leading, 12)
+                    Button(action: stopSubmitAndReceive) {
+                        Image(systemName: submitting ? "stop.fill" : "stop")
+                            .font(.system(size: 32))
+                            .disabled(!submitting)
+                            .foregroundStyle(!submitting ? Color(.disabledControlTextColor) : Color(.controlTextColor))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Stop submitting or receiving")
+                    .padding(.leading, 12)
 
-                Button(action: submit) {
-                    Image(systemName: "arrow.up.doc")
-                        .font(.system(size: 32))
-                        .disabled(true)
-                        .foregroundStyle(true ? Color(.disabledControlTextColor) : Color(.controlTextColor))
-                }
-                .buttonStyle(.plain)
-                .help("RAG not available in this view")
+                    Button(action: submit) {
+                        Image(systemName: "arrow.up.doc")
+                            .font(.system(size: 32))
+                            .disabled(true)
+                            .foregroundStyle(true ? Color(.disabledControlTextColor) : Color(.controlTextColor))
+                    }
+                    .buttonStyle(.plain)
+                    .help("RAG not available in this view")
 
-                Button(action: submit) {
-                    Image(systemName: submitting ? "arrow.up.circle.fill" : "arrow.up.circle")
-                        .font(.system(size: 32))
-                        .disabled(submitting)
-                        .foregroundStyle(submitting ? Color(.disabledControlTextColor) : Color(.controlTextColor))
+                    Button(action: submit) {
+                        Image(systemName: submitting ? "arrow.up.circle.fill" : "arrow.up.circle")
+                            .font(.system(size: 32))
+                            .disabled(submitting)
+                            .foregroundStyle(submitting ? Color(.disabledControlTextColor) : Color(.controlTextColor))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Submit")
                 }
-                .buttonStyle(.plain)
-                .help("Submit")
+                .padding(.trailing, 12)
+                .background(inputBackgroundStyle)
+                .frame(minHeight: 240)
             }
-            .padding(.trailing, 12)
-            .background(inputBackgroundStyle)
-            .frame(minHeight: 240)
-        }
-        .frame(maxHeight: .infinity)
-        .onTapGesture {
-            focusTextInput = true
-        }
-        .sheet(isPresented: $showModelPicker) {
-            ModelPickerView(modelSelection: $modelSelection)
-                .frame(width: 800, height: 1200, alignment: .top)
-                .animation(.linear(duration: 0.2))
+            .frame(maxHeight: .infinity)
+            .onTapGesture {
+                focusTextInput = true
+            }
+            .sheet(isPresented: $showModelPicker) {
+                ModelPickerView(modelSelection: $modelSelection)
+                    .frame(
+                        width: max(800, geometry.size.width * 0.8),
+                        height: max(800, geometry.size.height * 0.8),
+                        alignment: .top)
+                    .animation(.linear(duration: 0.2))
+            }
         }
     }
     private func prettyDate(_ requestedDate: Date? = nil) -> String {
