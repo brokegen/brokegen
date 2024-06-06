@@ -222,6 +222,7 @@ struct MiniSequencePickerSidebar: View {
                                             .lineLimit(1...2)
                                             .layoutPriority(0.5)
                                             .padding(.trailing, -12)
+                                            .id("\(sequence.id) text")
 
                                         Spacer()
 
@@ -231,8 +232,10 @@ struct MiniSequencePickerSidebar: View {
                                                 .font(.system(size: 16))
                                                 .foregroundStyle(Color(.disabledControlTextColor))
                                                 .layoutPriority(0.2)
+                                                .padding(.leading, 12)
+                                                .id("\(sequence.id) count")
                                         }
-                                    } // first ViewThatFits option
+                                    } // first ViewThatFits option: HStack
 
                                     VStack(alignment: .leading, spacing: 0) {
                                         HStack(spacing: 0) {
@@ -240,6 +243,7 @@ struct MiniSequencePickerSidebar: View {
                                                 .lineLimit(1...2)
                                                 .layoutPriority(0.5)
                                                 .padding(.trailing, -12)
+                                                .id("\(sequence.id) text")
 
                                             Spacer()
                                         }
@@ -253,9 +257,11 @@ struct MiniSequencePickerSidebar: View {
                                                     .font(.system(size: 16))
                                                     .foregroundStyle(Color(.disabledControlTextColor))
                                                     .layoutPriority(0.2)
+                                                    .padding(.top, 4)
+                                                    .id("\(sequence.id) count")
                                             }
                                         }
-                                    } // second ViewThatFits option
+                                    } // second ViewThatFits option: overflow VStack
                                 }
                             }
                             .contentShape(Rectangle())
