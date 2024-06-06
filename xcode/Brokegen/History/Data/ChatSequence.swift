@@ -130,7 +130,9 @@ extension ChatSyncService {
             let newSequenceIds: [ChatSequenceServerID] = jsonDict!["sequence_ids"] as? [Int] ?? []
             for newSequenceId in newSequenceIds {
                 if let entireSequence = await fetchSequence(newSequenceId) {
-                    updateSequences(with: entireSequence)
+                    DispatchQueue.main.async {
+                        self.updateSequences(with: entireSequence)
+                    }
                 }
             }
         }
