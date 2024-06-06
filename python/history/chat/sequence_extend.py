@@ -143,16 +143,10 @@ async def do_continuation(
         history_db: HistoryDB,
         audit_db: AuditDB,
 ):
-    constructed_ollama_body = {
+    constructed_ollama_request_content_json = {
         "messages": [m.model_dump() for m in messages_list],
         "model": inference_model.human_id,
     }
-
-    # Manually construct a Request object, because that's how we pass any data around
-    constructed_request = empty_request
-    # NB This overwrites the internals of the Requests object;
-    # we should really be passing decoded versions throughout the app.
-    constructed_request._body = orjson.dumps(constructed_ollama_body)
 
     # Wrap the output in a… something that appends new ChatSequence information
     response_sequence = ChatSequence(
@@ -252,7 +246,7 @@ async def do_continuation(
             if chunk is None:
                 yield orjson.dumps({
                     # Look this up in the JSON object, because the SQLAlchemy objects have long-expired.
-                    "model": constructed_ollama_body["model"],
+                    "model": constructed_ollama_request_content_json["model"],
                     "created_at": datetime.now(tz=timezone.utc),
                     "response": "",
                     "done": False,
@@ -291,7 +285,8 @@ async def do_continuation(
 
     return await wrap_response(
         await history.ollama.chat_rag_routes.do_proxy_chat_rag(
-            constructed_request,
+            empty_request,
+            constructed_ollama_request_content_json,
             retrieval_label,
             history_db,
             audit_db,

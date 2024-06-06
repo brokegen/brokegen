@@ -72,9 +72,6 @@ async def do_generate_raw_templated(
 
     model, executor_record = await lookup_model_offline(request_content['model'], history_db)
 
-    if safe_get(request_content, 'options'):
-        logger.warning(f"Ignoring Ollama options! {request_content['options']=}")
-
     inference_job = InferenceEventOrm(
         model_record_id=model.id,
         prompt_with_templating=request_content['prompt'],
@@ -111,6 +108,7 @@ async def do_generate_raw_templated(
 async def convert_chat_to_generate(
         original_request: starlette.requests.Request,
         chat_request_content: OllamaRequestContentJSON,
+        requested_system_message: PromptText | None,
         prompt_override: PromptText | None,
         history_db: HistoryDB,
         audit_db: AuditDB,
@@ -130,7 +128,8 @@ async def convert_chat_to_generate(
         raise HTTPException(500, "No model template available, confirm that InferenceModelRecords are complete")
 
     system_message = (
-            safe_get(chat_request_content, 'options', 'system')
+            requested_system_message
+            or safe_get(chat_request_content, 'options', 'system')
             or safe_get(model.combined_inference_parameters, 'system')
             or ''
     )
@@ -251,11 +250,19 @@ async def convert_chat_to_generate(
 def do_capture_chat_messages(
         chat_messages: JSONArray,
         history_db: HistoryDB,
-) -> ChatSequence | None:
+) -> tuple[ChatSequence | None, PromptText | None]:
     prior_sequence: ChatSequence | None = None
+    system_message: PromptText | None = None
 
     for index in range(len(chat_messages)):
         message_copy = dict(chat_messages[index])
+        if safe_get(message_copy, "role") == "system":
+            if system_message is not None:
+                logger.warning(f'Received several "system" messages, overwriting previous {system_message=}')
+            system_message = safe_get(message_copy, "content") or system_message
+        elif safe_get(message_copy, "role") not in ("user", "assistant"):
+            logger.warning(f"Received unknown Ollama role, continuing anyway: {safe_get(message_copy, "role")}")
+
         if safe_get_arrayed(chat_messages, index, 'images'):
             logger.error("Client submitted images for upload, ignoring")
         if 'images' in message_copy:
@@ -310,11 +317,12 @@ def do_capture_chat_messages(
         prior_sequence = sequence_in
         continue
 
-    return prior_sequence
+    return prior_sequence, system_message
 
 
 async def do_proxy_chat_rag(
         original_request: starlette.requests.Request,
+        request_content_json: OllamaRequestContentJSON,
         retrieval_label: RetrievalLabel,
         history_db: HistoryDB,
         audit_db: AuditDB,
@@ -322,9 +330,6 @@ async def do_proxy_chat_rag(
         capture_chat_response: bool = False,
         status_holder: ServerStatusHolder | None = None,
 ) -> JSONStreamingResponse:
-    request_content_bytes: bytes = await original_request.body()
-    request_content_json: OllamaRequestContentJSON = orjson.loads(request_content_bytes)
-
     # For now, everything we could possibly retrieve is from intercepting an Ollama /api/chat,
     # so there's no need to check for /api/generate's 'content' field.
     chat_messages: JSONArray | None = safe_get(request_content_json, 'messages')
@@ -333,8 +338,9 @@ async def do_proxy_chat_rag(
 
     # Assume that these are messages from a third-party client, and try to feed them into the history database.
     captured_sequence: ChatSequence | None = None
+    requested_system_message: PromptText | None = None
     if capture_chat_messages:
-        captured_sequence = do_capture_chat_messages(chat_messages, history_db)
+        captured_sequence, requested_system_message = do_capture_chat_messages(chat_messages, history_db)
 
     async def generate_helper_fn(
             inference_reason: InferenceReason,
@@ -417,11 +423,12 @@ async def do_proxy_chat_rag(
 
     with StatusContext(status_desc, status_holder):
         ollama_response = await convert_chat_to_generate(
-            original_request,
-            request_content_json,
-            prompt_override,
-            history_db,
-            audit_db,
+            original_request=original_request,
+            chat_request_content=request_content_json,
+            requested_system_message=requested_system_message,
+            prompt_override=prompt_override,
+            history_db=history_db,
+            audit_db=audit_db,
         )
 
     async def wrap_response(

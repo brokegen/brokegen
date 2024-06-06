@@ -107,6 +107,10 @@ class InferenceModelRecordOrm(Base):
 
     These will be important to surface to the user, but that's _because_ they were
     assumed to be changed in response to user actions.
+
+    Notes:
+
+    * the system prompt is basically ignored, since it could change per-request and doesn't impact inference
     """
 
     __table_args__ = (

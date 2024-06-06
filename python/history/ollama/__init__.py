@@ -16,7 +16,8 @@ from history.ollama.chat_rag_routes import do_proxy_chat_rag, convert_chat_to_ge
     do_generate_raw_templated
 from history.ollama.chat_routes import do_proxy_generate, lookup_model_offline, lookup_model
 from history.ollama.forward_routes import forward_request_nodetails, forward_request, forward_request_nolog
-from history.ollama.json import consolidate_stream, OllamaResponseContentJSON, chunk_and_log_output, keepalive_wrapper
+from history.ollama.json import consolidate_stream, OllamaResponseContentJSON, chunk_and_log_output, keepalive_wrapper, \
+    OllamaRequestContentJSON
 from history.ollama.model_routes import do_api_tags, do_api_show_streaming, do_api_show
 from inference.embeddings.retrieval import RetrievalLabel
 from inference.prompting.templating import apply_llm_template
@@ -196,10 +197,18 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
             retrieval_policy="simple" if force_ollama_rag else "skip",
         )
 
+        request_content_bytes: bytes = await request.body()
+        request_content_json: OllamaRequestContentJSON = orjson.loads(request_content_bytes)
+
+        if safe_get(request_content_json, 'options', 'temperature') is not None:
+            logger.debug(f"Intentionally disabling Ollama client request for {request_content_json['options']['temperature']=}")
+            del request_content_json['options']['temperature']
+
         return await keepalive_wrapper(
             inference_model_human_id,
             do_proxy_chat_rag(
                 request,
+                request_content_json,
                 retrieval_label,
                 history_db,
                 audit_db,
