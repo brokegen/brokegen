@@ -263,6 +263,7 @@ def lookup_inference_model_for_event_id(
 def inject_inference_stats(
         models: Iterable[InferenceModelRecord],
         history_db: HistoryDB,
+        include_all: bool = False
 ) -> Iterable[tuple[InferenceModelWithStats, tuple]]:
     for inference_model in models:
         query = (
@@ -289,24 +290,31 @@ def inject_inference_stats(
                 "inference events count": query_result[0],
             }
 
-            if query_result[1] is not None:
-                stats_dict["prompt tokens evaluated"] = query_result[1]
-            if query_result[2] is not None:
-                stats_dict["prompt evaluation time"] = query_result[2]
-            if query_result[1] and query_result[2]:
-                stats_dict["prompt sec/token"] = query_result[2] / query_result[1]
-                stats_dict["prompt token/sec"] = query_result[1] / query_result[2]
+            if include_all:
+                if query_result[1] is not None:
+                    stats_dict["prompt tokens evaluated"] = query_result[1]
+                if query_result[2] is not None:
+                    stats_dict["prompt evaluation time"] = query_result[2]
+                if query_result[1] and query_result[2]:
+                    stats_dict["prompt sec/token"] = query_result[2] / query_result[1]
+                    stats_dict["prompt token/sec"] = query_result[1] / query_result[2]
 
-            if query_result[3] is not None:
-                stats_dict["response tokens returned"] = query_result[3]
-            if query_result[4] is not None:
-                stats_dict["response inference time"] = query_result[4]
-            if query_result[3] and query_result[4]:
-                stats_dict["response sec/token"] = query_result[4] / query_result[3]
-                stats_dict["response token/sec"] = query_result[3] / query_result[4]
+                if query_result[3] is not None:
+                    stats_dict["response tokens returned"] = query_result[3]
+                if query_result[4] is not None:
+                    stats_dict["response inference time"] = query_result[4]
+                if query_result[3] and query_result[4]:
+                    stats_dict["response sec/token"] = query_result[4] / query_result[3]
+                    stats_dict["response token/sec"] = query_result[3] / query_result[4]
 
-            if query_result[1] is not None and query_result[3] is not None:
-                stats_dict["total tokens"] = query_result[1] + query_result[3]
+                if query_result[1] is not None and query_result[3] is not None:
+                    stats_dict["total tokens"] = query_result[1] + query_result[3]
+
+            else:
+                if query_result[3] is not None:
+                    stats_dict["response tokens returned"] = query_result[3]
+                if query_result[3] and query_result[4]:
+                    stats_dict["response token/sec"] = query_result[3] / query_result[4]
 
         statsed = InferenceModelWithStats(**inference_model.model_dump())
         statsed.stats = stats_dict
