@@ -38,7 +38,7 @@ class HttpEvent(Base):
     """
     Reduced version of RawHttpEvent, intended to be human-readable
     """
-    __tablename__ = 'HttpEvents'
+    __tablename__ = 'EgressHttpEvents'
     __bind_key__ = 'access'
 
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
