@@ -74,6 +74,57 @@ class ChatSequenceClientModel: Observable, ObservableObject {
         }
     }
 
+    private func receiveHandler(
+        caller callerName: String,
+        endpoint: String,
+        maybeNextMessage: Message? = nil
+    ) -> ((Data) -> Void) {
+        return { [self] data in
+            // On first data received, end "submitting" phase
+            if submitting {
+                if maybeNextMessage != nil {
+                    sequence.messages.append(maybeNextMessage!)
+                }
+
+                promptInEdit = ""
+                submitting = false
+
+                responseInEdit = Message(
+                    role: "assistant",
+                    content: "",
+                    createdAt: Date.now
+                )
+            }
+
+            displayedStatus = "\(endpoint) response: (\(responseInEdit!.content.count) characters so far)"
+            do {
+                let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
+                if let status = jsonDict["status"] as? String {
+                    displayedStatus = status
+                }
+
+                if let message = jsonDict["message"] as? [String : Any] {
+                    if let fragment = message["content"] as? String {
+                        if !fragment.isEmpty {
+                            responseInEdit = responseInEdit!.appendContent(fragment)
+                            objectWillChange.send()
+                        }
+                    }
+                }
+
+                if let done = jsonDict["done"] as? Bool {
+                    let newSequenceId: ChatSequenceServerID? = jsonDict["new_sequence_id"] as? Int
+                    if done && newSequenceId != nil {
+                        self.replaceSequence(newSequenceId!)
+                    }
+                }
+            }
+            catch {
+                print("[ERROR] \(callerName): decoding error or something")
+            }
+        }
+    }
+
     func requestContinue(
         model continuationModelId: InferenceModelRecordID? = nil
     ) -> Self {
@@ -98,45 +149,10 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                 .sink(receiveCompletion: completionHandler(
                     caller: "ChatSyncService.sequenceContinue",
                     endpoint: "/sequences/\(sequence.serverId!)/continue"
-                ), receiveValue: { [self] data in
-                    // On first data received, end "submitting" phase
-                    if submitting {
-                        promptInEdit = ""
-                        submitting = false
-
-                        responseInEdit = Message(
-                            role: "assistant",
-                            content: "",
-                            createdAt: Date.now
-                        )
-                    }
-
-                    displayedStatus = "/sequences/\(sequence.serverId!)/continue response: (\(responseInEdit!.content.count) characters so far)"
-                    do {
-                        let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
-                        if let status = jsonDict["status"] as? String {
-                            displayedStatus = status
-                        }
-
-                        if let message = jsonDict["message"] as? [String : Any] {
-                            if let fragment = message["content"] as? String {
-                                if !fragment.isEmpty {
-                                    responseInEdit = responseInEdit!.appendContent(fragment)
-                                }
-                            }
-                        }
-
-                        if let done = jsonDict["done"] as? Bool {
-                            let newSequenceId: ChatSequenceServerID? = jsonDict["new_sequence_id"] as? Int
-                            if done && newSequenceId != nil {
-                                self.replaceSequence(newSequenceId!)
-                            }
-                        }
-                    }
-                    catch {
-                        print("[ERROR] ChatSequenceClientModel.requestContinue: decoding error or something")
-                    }
-                })
+                ), receiveValue: receiveHandler(
+                    caller: "ChatSequenceClientModel.requestContinue",
+                    endpoint: "/sequences/\(sequence.serverId!)/continue"
+                ))
         }
 
         return self
@@ -169,47 +185,11 @@ class ChatSequenceClientModel: Observable, ObservableObject {
             .sink(receiveCompletion: completionHandler(
                 caller: "ChatSyncService.sequenceExtend",
                 endpoint: "/sequences/\(sequence.serverId!)/extend"
-            ), receiveValue: { [self] data in
-                // On first data received, end "submitting" phase
-                if submitting {
-                    sequence.messages.append(nextMessage)
-
-                    promptInEdit = ""
-                    submitting = false
-
-                    responseInEdit = Message(
-                        role: "assistant",
-                        content: "",
-                        createdAt: Date.now
-                    )
-                }
-
-                displayedStatus = "/sequences/\(sequence.serverId!)/extend response: (\(responseInEdit!.content.count) characters so far)"
-                do {
-                    let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
-                    if let status = jsonDict["status"] as? String {
-                        displayedStatus = status
-                    }
-
-                    if let message = jsonDict["message"] as? [String : Any] {
-                        if let fragment = message["content"] as? String {
-                            if !fragment.isEmpty {
-                                responseInEdit = responseInEdit!.appendContent(fragment)
-                            }
-                        }
-                    }
-
-                    if let done = jsonDict["done"] as? Bool {
-                        let newSequenceId: ChatSequenceServerID? = jsonDict["new_sequence_id"] as? Int
-                        if done && newSequenceId != nil {
-                            self.replaceSequence(newSequenceId!)
-                        }
-                    }
-                }
-                catch {
-                    print("[ERROR] ChatSequenceClientModel.sequenceExtend: decoding error or something")
-                }
-            })
+            ), receiveValue: receiveHandler(
+                caller: "ChatSequenceClientModel.requestExtend",
+                endpoint: "/sequences/\(sequence.serverId!)/extend",
+                maybeNextMessage: nextMessage
+            ))
         }
     }
 
@@ -243,47 +223,10 @@ class ChatSequenceClientModel: Observable, ObservableObject {
             .sink(receiveCompletion: completionHandler(
                 caller: "ChatSyncService.sequenceExtend",
                 endpoint: "/sequences/\(sequence.serverId!)/extend"
-            ), receiveValue: { [self] data in
-                    // On first data received, end "submitting" phase
-                    if submitting {
-                        sequence.messages.append(nextMessage)
-
-                        promptInEdit = ""
-                        submitting = false
-
-                        responseInEdit = Message(
-                            role: "assistant",
-                            content: "",
-                            createdAt: Date.now
-                        )
-                    }
-
-                    displayedStatus = "/sequences/\(sequence.serverId!)/extend response: (\(responseInEdit!.content.count) characters so far)"
-                    do {
-                        let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
-                        if let status = jsonDict["status"] as? String {
-                            displayedStatus = status
-                        }
-
-                        if let message = jsonDict["message"] as? [String : Any] {
-                            if let fragment = message["content"] as? String {
-                                if !fragment.isEmpty {
-                                    responseInEdit = responseInEdit!.appendContent(fragment)
-                                }
-                            }
-                        }
-
-                        if let done = jsonDict["done"] as? Bool {
-                            let newSequenceId: ChatSequenceServerID? = jsonDict["new_sequence_id"] as? Int
-                            if done && newSequenceId != nil {
-                                self.replaceSequence(newSequenceId!)
-                            }
-                        }
-                    }
-                    catch {
-                        print("[ERROR] ChatSequenceClientModel.sequenceExtend: decoding error or something")
-                    }
-                })
+            ), receiveValue: receiveHandler(
+                caller: "ChatSequenceClientModel.requestExtendWithRetrieval",
+                endpoint: "/sequences/\(sequence.serverId!)/extend"
+            ))
         }
     }
 
