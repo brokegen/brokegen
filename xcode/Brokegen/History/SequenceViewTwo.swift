@@ -282,6 +282,7 @@ struct SequenceViewTwo: View {
             }
         }
         .tabBarPosition(.edge(.leading))
+        .toggleStyle(.switch)
         // TODO: This is very oddly hard-coded. Try layoutPriority on the CustomTabView, next.
         // It's probably something in CustomTabView that's adjusting the height.
         // Or the ComposeTabsView has infinite height.
