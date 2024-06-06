@@ -1,22 +1,28 @@
 import logging
 import operator
 from abc import abstractmethod
-from typing import List, Callable, Awaitable, TypeAlias, Any
+from typing import List, Callable, Awaitable, TypeAlias, Optional
 
 import orjson
 from langchain_core.documents import Document
 from langchain_core.messages import ChatMessage
+from pydantic import BaseModel
 
 from _util.status import ServerStatusHolder, StatusContext
+from _util.typing import PromptText, InferenceModelRecordID
 from inference.embeddings.knowledge import KnowledgeSingleton, get_knowledge
-from _util.typing import PromptText, TemplatedPromptText
 from providers.inference_models.orm import InferenceReason
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-
 RetrievalPolicyID: TypeAlias = str
+
+
+class RetrievalLabel(BaseModel):
+    retrieval_policy: Optional[RetrievalPolicyID] = None
+    retrieval_search_args: Optional[str] = None
+    preferred_embedding_model: Optional[InferenceModelRecordID] = None
 
 
 class RetrievalPolicy:

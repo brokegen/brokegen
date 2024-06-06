@@ -5,19 +5,19 @@ import SwiftUI
 fileprivate let INVALID_MODEL_ID: InferenceModelRecordID = -1
 
 class InferenceModelSettings: Observable, ObservableObject {
-    var defaultInferenceModel: InferenceModel? = nil
-    var fallbackInferenceModel: InferenceModel? = nil
-    var chatSummaryModel: InferenceModel? = nil
-    var embeddingModel: InferenceModel? = nil
+    public var defaultInferenceModel: InferenceModel? = nil
+    public var fallbackInferenceModel: InferenceModel? = nil
+    public var chatSummaryModel: InferenceModel? = nil
+    public var preferredEmbeddingModel: InferenceModel? = nil
 
     @AppStorage("defaultInferenceModelId")
-    var defaultInferenceModelId: InferenceModelRecordID = INVALID_MODEL_ID
+    private var defaultInferenceModelId: InferenceModelRecordID = INVALID_MODEL_ID
     @AppStorage("fallbackInferenceModelId")
-    var fallbackInferenceModelId: InferenceModelRecordID = INVALID_MODEL_ID
+    private var fallbackInferenceModelId: InferenceModelRecordID = INVALID_MODEL_ID
     @AppStorage("chatSummaryModelId")
-    var chatSummaryModelId: InferenceModelRecordID = INVALID_MODEL_ID
-    @AppStorage("embeddingModelId")
-    var embeddingModelId: InferenceModelRecordID = INVALID_MODEL_ID
+    private var chatSummaryModelId: InferenceModelRecordID = INVALID_MODEL_ID
+    @AppStorage("preferredEmbeddingModelId")
+    private var preferredEmbeddingModelId: InferenceModelRecordID = INVALID_MODEL_ID
 
 
     func inflateModels(_ providerService: ProviderService) -> Self {
@@ -41,9 +41,9 @@ class InferenceModelSettings: Observable, ObservableObject {
             }
         }
 
-        if embeddingModel?.serverId != embeddingModelId {
-            embeddingModel = providerService.allModels.first {
-                $0.serverId == embeddingModelId
+        if preferredEmbeddingModel?.serverId != preferredEmbeddingModelId {
+            preferredEmbeddingModel = providerService.allModels.first {
+                $0.serverId == preferredEmbeddingModelId
             }
         }
 
@@ -84,12 +84,12 @@ class InferenceModelSettings: Observable, ObservableObject {
         )
     }
 
-    func embeddingModelBinding() -> Binding<InferenceModel?> {
+    func preferredEmbeddingModelBinding() -> Binding<InferenceModel?> {
         return Binding(
-            get: { return self.embeddingModel },
+            get: { return self.preferredEmbeddingModel },
             set: { value in
-                self.embeddingModel = value
-                self.embeddingModelId = value?.serverId ?? INVALID_MODEL_ID
+                self.preferredEmbeddingModel = value
+                self.preferredEmbeddingModelId = value?.serverId ?? INVALID_MODEL_ID
                 self.objectWillChange.send()
             }
         )
@@ -101,7 +101,7 @@ extension InferenceModelSettings: Equatable {
         return lhs.defaultInferenceModel == rhs.defaultInferenceModel
         && lhs.fallbackInferenceModel == rhs.fallbackInferenceModel
         && lhs.chatSummaryModel == rhs.chatSummaryModel
-        && lhs.embeddingModel == rhs.embeddingModel
+        && lhs.preferredEmbeddingModel == rhs.preferredEmbeddingModel
     }
 }
 
@@ -110,6 +110,6 @@ extension InferenceModelSettings: Hashable {
         hasher.combine(defaultInferenceModel)
         hasher.combine(fallbackInferenceModel)
         hasher.combine(chatSummaryModel)
-        hasher.combine(embeddingModel)
+        hasher.combine(preferredEmbeddingModel)
     }
 }

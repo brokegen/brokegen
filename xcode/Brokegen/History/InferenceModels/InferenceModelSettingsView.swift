@@ -6,7 +6,7 @@ struct InferenceModelSettingsView: View {
     @State private var showDefaultInferenceModelPicker = false
     @State private var showFallbackInferenceModelPicker = false
     @State private var showChatSummaryModelPicker = false
-    @State private var showEmbeddingModelPicker = false
+    @State private var showPreferredEmbeddingModelPicker = false
 
     var body: some View {
         ScrollView {
@@ -126,28 +126,28 @@ struct InferenceModelSettingsView: View {
                 .layoutPriority(0.2)
 
                 GroupBox(label:
-                            Text("embeddingModel")
+                            Text("preferredEmbeddingModel")
                     .monospaced()
                     .layoutPriority(0.2)
                     .font(.system(size: 36))
                 ) {
                     VStack(alignment: .leading, spacing: 36) {
-                        if let model = settings.embeddingModel {
+                        if let model = settings.preferredEmbeddingModel {
                             OneInferenceModelView(
                                 model: model,
                                 modelAvailable: true,
-                                modelSelection: settings.embeddingModelBinding(),
+                                modelSelection: settings.preferredEmbeddingModelBinding(),
                                 enableModelSelection: true)
 
                             Button(action: {
-                                settings.embeddingModelBinding().wrappedValue = nil
+                                settings.preferredEmbeddingModelBinding().wrappedValue = nil
                             }) {
                                 Text("Clear Model Selection")
                             }
                         }
                         else {
                             Button(action: {
-                                showEmbeddingModelPicker = true
+                                showPreferredEmbeddingModelPicker = true
                             }) {
                                 Text("Select Model")
                             }
@@ -156,8 +156,8 @@ struct InferenceModelSettingsView: View {
                     .padding(36)
                     .frame(maxWidth: .infinity, minHeight: 160)
                 }
-                .sheet(isPresented: $showEmbeddingModelPicker) {
-                    ModelPickerView(modelSelection: settings.embeddingModelBinding())
+                .sheet(isPresented: $showPreferredEmbeddingModelPicker) {
+                    ModelPickerView(modelSelection: settings.preferredEmbeddingModelBinding())
                         .frame(width: 800, height: 1200, alignment: .top)
                         .animation(.linear(duration: 0.2))
                 }

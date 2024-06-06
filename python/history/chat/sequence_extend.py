@@ -22,9 +22,7 @@ from history.chat.database import ChatMessageOrm, ChatSequence, lookup_chat_mess
 from history.chat.sequence_get import do_get_sequence
 from history.ollama.chat_rag_routes import finalize_inference_job, do_generate_raw_templated
 from history.ollama.json import consolidate_stream_sync, keepalive_wrapper
-from inference.embeddings.knowledge import get_knowledge
-from inference.embeddings.retrieval import SkipRetrievalPolicy, RetrievalPolicyID, RetrievalPolicy, \
-    SimpleRetrievalPolicy, SummarizingRetrievalPolicy
+from inference.embeddings.retrieval import RetrievalPolicyID, RetrievalLabel
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, InferenceReason
@@ -36,16 +34,20 @@ class ContinueRequest(BaseModel):
     continuation_model_id: Optional[InferenceModelRecordID] = None
     fallback_model_id: Optional[InferenceModelRecordID] = None
     """Used in case the continuation is None, and also nothing recorded in ChatSequence history"""
+
     retrieval_policy: Optional[RetrievalPolicyID] = None
     retrieval_search_args: Optional[str] = None
+    preferred_embedding_model: Optional[InferenceModelRecordID] = None
 
 
 class ExtendRequest(BaseModel):
     next_message: ChatMessage
     continuation_model_id: Optional[InferenceModelRecordID] = None
     fallback_model_id: Optional[InferenceModelRecordID] = None
+
     retrieval_policy: Optional[RetrievalPolicyID] = None
     retrieval_search_args: Optional[str] = None
+    preferred_embedding_model: Optional[InferenceModelRecordID] = None
 
 
 def select_continuation_model(
@@ -135,8 +137,7 @@ async def do_continuation(
         messages_list: list[ChatMessage],
         original_sequence: ChatSequence,
         inference_model: InferenceModelRecordOrm,
-        retrieval_policy: RetrievalPolicyID | None,
-        retrieval_search_args: str | None,
+        retrieval_label: RetrievalLabel,
         status_holder: ServerStatusHolder,
         empty_request: starlette.requests.Request,
         history_db: HistoryDB,
@@ -287,24 +288,10 @@ async def do_continuation(
         upstream_response._content_iterable = add_json_suffix(upstream_response._content_iterable)
         return upstream_response
 
-    real_retrieval_policy: RetrievalPolicy | None = None
-    if retrieval_policy == "skip":
-        real_retrieval_policy = SkipRetrievalPolicy()
-    elif retrieval_policy == "simple":
-        real_retrieval_policy = SimpleRetrievalPolicy(get_knowledge())
-    elif retrieval_policy == "summarizing":
-        init_kwargs = {
-            "knowledge": get_knowledge(),
-        }
-        if retrieval_search_args is not None:
-            init_kwargs["search_args_json"] = retrieval_search_args
-
-        real_retrieval_policy = SummarizingRetrievalPolicy(**init_kwargs)
-
     return await wrap_response(
         await history.ollama.chat_rag_routes.do_proxy_chat_rag(
             constructed_request,
-            real_retrieval_policy or SkipRetrievalPolicy(),
+            retrieval_label,
             history_db,
             audit_db,
             capture_chat_messages=False,
@@ -336,14 +323,20 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         status_holder = ServerStatusHolder(
             f"/sequences/{sequence_id}/continue: processing on {inference_model.human_id}")
 
+        # And RetrievalLabel
+        retrieval_label = RetrievalLabel(
+            retrieval_policy=params.retrieval_policy,
+            retrieval_search_args=params.retrieval_search_args,
+            preferred_embedding_model=params.preferred_embedding_model,
+        )
+
         return await keepalive_wrapper(
             inference_model.human_id,
             do_continuation(
                 messages_list,
                 original_sequence,
                 inference_model,
-                params.retrieval_policy,
-                params.retrieval_search_args,
+                retrieval_label,
                 status_holder,
                 empty_request,
                 history_db,
@@ -405,14 +398,20 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         status_holder = ServerStatusHolder(
             f"/sequences/{sequence_id}/extend: processing on {inference_model.human_id}")
 
+        # And RetrievalLabel
+        retrieval_label = RetrievalLabel(
+            retrieval_policy=params.retrieval_policy,
+            retrieval_search_args=params.retrieval_search_args,
+            preferred_embedding_model=params.preferred_embedding_model,
+        )
+
         return await keepalive_wrapper(
             inference_model.human_id,
             do_continuation(
                 messages_list,
                 original_sequence if user_sequence.id is None else user_sequence,
                 inference_model,
-                params.retrieval_policy,
-                params.retrieval_search_args,
+                retrieval_label,
                 status_holder,
                 empty_request,
                 history_db,

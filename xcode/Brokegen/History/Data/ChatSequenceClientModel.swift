@@ -224,6 +224,7 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                     fallbackModelId: inferenceModelSettings.fallbackInferenceModel?.serverId,
                     retrievalPolicy: "simple",
                     retrievalSearchArgs: "{\"k\": 18}",
+                    preferredEmbeddingModel: inferenceModelSettings.preferredEmbeddingModel?.serverId,
                     sequenceId: sequence.serverId!
                 )
             )
