@@ -17,12 +17,13 @@ struct OneSequenceView: View {
             VStack(spacing: 0) {
                 ScrollView(.vertical) {
                     if viewModel.sequence.humanDesc != nil {
-                        HStack {
+                        HStack(spacing: 0) {
                             Text(viewModel.sequence.humanDesc!)
                                 .font(.system(size: 36))
                                 .padding(.leading, 24)
                                 .foregroundColor(.gray)
                                 .lineLimit(1)
+                                .layoutPriority(0.2)
 
                             Spacer()
                         }
@@ -58,6 +59,7 @@ struct OneSequenceView: View {
                                 ProgressView()
                                     .progressViewStyle(.linear)
                                     .frame(maxWidth: 120)
+                                    .layoutPriority(0.2)
                             }
                         }
                         .padding(.leading, 24)

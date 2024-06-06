@@ -81,6 +81,7 @@ struct SequenceViewTwo: View {
                                 .padding(.leading, 24)
                                 .foregroundColor(.gray)
                                 .lineLimit(1)
+                                .layoutPriority(0.2)
 
                             Spacer()
                         }
@@ -109,6 +110,7 @@ struct SequenceViewTwo: View {
                                 // TODO: Find a way to persist any changes for at least a few seconds
                                 Text(viewModel.displayedStatus ?? "")
                                     .foregroundStyle(Color(.disabledControlTextColor))
+                                    .layoutPriority(0.2)
                             }
 
                             Spacer()
@@ -117,6 +119,7 @@ struct SequenceViewTwo: View {
                                 ProgressView()
                                     .progressViewStyle(.linear)
                                     .frame(maxWidth: 120)
+                                    .layoutPriority(0.2)
                             }
                         }
                         .padding(.leading, 24)

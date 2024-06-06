@@ -320,12 +320,14 @@ struct SequencePickerView: View {
             }
             .buttonStyle(.accessoryBar)
             .padding(12)
+            .layoutPriority(0.2)
 
             Button("Refresh 500", systemImage: "arrow.clockwise") {
                 chatService.fetchPinnedSequences(500)
             }
             .buttonStyle(.accessoryBar)
             .padding(12)
+            .layoutPriority(0.2)
 
             Spacer()
 
@@ -336,6 +338,7 @@ struct SequencePickerView: View {
                     .buttonStyle(.accessoryBar)
                     .padding(12)
             }
+            .layoutPriority(0.5)
         }
         .padding(24)
         .frame(maxWidth: 1000)
