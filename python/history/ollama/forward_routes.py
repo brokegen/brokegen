@@ -82,7 +82,7 @@ async def forward_request(
     upstream_request = _real_ollama_client.build_request(
         method=original_request.method,
         url=urlpath_noprefix,
-        content=intercept.wrap_req(original_request.stream()),
+        content=intercept.wrap_streaming_request(original_request.stream()),
         # https://github.com/encode/httpx/discussions/2959
         # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
         headers=[('Connection', 'close')],
