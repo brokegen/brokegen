@@ -111,7 +111,9 @@ async def do_api_tags(
         method=original_request.method,
         url="/api/tags",
         content=intercept.wrap_req(original_request.stream()),
-        headers=original_request.headers,
+        # https://github.com/encode/httpx/discussions/2959
+        # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
+        headers=[('Connection', 'close')],
         cookies=original_request.cookies,
     )
 

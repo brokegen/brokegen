@@ -4,20 +4,18 @@ import logging
 import os
 import subprocess
 from datetime import datetime, timezone
-from typing import Union, Any, AsyncGenerator, AsyncIterable
+from typing import Union, Any, AsyncIterable
 
 import httpx
 import orjson
 from sqlalchemy import select
 
-from _util.json import safe_get
 from providers._util import local_provider_identifiers, local_fetch_machine_info
+from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecord, InferenceModelAddRequest, \
     lookup_inference_model_detailed, InferenceModelRecordOrm
 from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord
 from providers.registry import ProviderRegistry, BaseProvider
-
-from providers.inference_models.database import HistoryDB, get_db as get_history_db
 
 logger = logging.getLogger(__name__)
 
@@ -65,10 +63,13 @@ class LlamafileProvider(BaseProvider):
         )
 
     async def available(self) -> bool:
-        ping1 = self.server_comms.build_request(
+        ping1 = (self.server_comms.build_request(
             method='GET',
             url='/health',
-        )
+            # https://github.com/encode/httpx/discussions/2959
+            # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
+            headers=[('Connection', 'close')],
+        ))
         response = await self.server_comms.send(ping1)
         if response.content != '{"status": "ok"}':
             logger.error(f"{self.filename} not available, response returned: {response.content}")
@@ -157,7 +158,6 @@ class LlamafileProvider(BaseProvider):
             history_db.commit()
 
             yield InferenceModelRecord.from_orm(new_model)
-
 
     @staticmethod
     def _version_info(filename: str) -> str | None:

@@ -27,7 +27,7 @@ class BaseProvider:
         raise NotImplementedError()
 
     @abstractmethod
-    async def list_models(self) -> (
+    def list_models(self) -> (
             AsyncGenerator[InferenceModelRecord | Any, None]
             | AsyncIterable[InferenceModelRecord | Any]):
         raise NotImplementedError()

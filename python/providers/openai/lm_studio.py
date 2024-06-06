@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from typing import Any, AsyncGenerator
+from typing import Any, AsyncIterable
 
 import fastapi
 import httpx
@@ -49,8 +49,13 @@ class LMStudioProvider(BaseProvider):
         ping1 = self.server_comms.build_request(
             method='GET',
             url='/v1/models',
+            # https://github.com/encode/httpx/discussions/2959
+            # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
+            headers=[('Connection', 'close')],
         )
         response = await self.server_comms.send(ping1)
+        await response.aclose()
+
         if response.status_code != 200:
             logger.error(f"{self.server_comms.base_url} not available, response returned: {response}")
             return False
@@ -88,10 +93,13 @@ class LMStudioProvider(BaseProvider):
 
         return ProviderRecord.from_orm(new_provider)
 
-    async def list_models(self) -> AsyncGenerator[InferenceModelRecord | Any, None]:
+    async def list_models(self) -> AsyncIterable[InferenceModelRecord | Any]:
         request = self.server_comms.build_request(
             method='GET',
             url='/v1/models',
+            # https://github.com/encode/httpx/discussions/2959
+            # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
+            headers=[('Connection', 'close')],
         )
         response = await self.server_comms.send(request)
         if response.status_code != 200:
@@ -100,6 +108,7 @@ class LMStudioProvider(BaseProvider):
                 detail=response.content,
                 headers=response.headers,
             )
+        await response.aclose()
 
         response_content: JSONDict = response.json()
         if safe_get(response_content, "object") != "list":

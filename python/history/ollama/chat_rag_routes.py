@@ -86,7 +86,9 @@ async def do_generate_raw_templated(
         method='POST',
         url="/api/generate",
         content=orjson.dumps(request_content),
-        headers=request_headers,
+        # https://github.com/encode/httpx/discussions/2959
+        # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
+        headers=[('Connection', 'close')],
         cookies=request_cookies,
     )
 

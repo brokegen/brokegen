@@ -4,7 +4,7 @@ from typing import AsyncIterable, Any, cast, AsyncGenerator
 import fastapi
 import starlette.requests
 from fastapi import Depends
-from starlette.responses import RedirectResponse
+from starlette.responses import RedirectResponse, JSONResponse
 
 from providers.inference_models.orm import InferenceModelRecord
 from providers.openai.lm_studio import LMStudioProvider
@@ -41,7 +41,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
     async def get_all_provider_models(
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ):
-        async def list_models() -> AsyncGenerator[InferenceModelRecord | Any]:
+        async def list_models() -> AsyncGenerator[InferenceModelRecord | Any, None]:
             for provider in registry.by_label.values():
                 async for model in provider.list_models():
                     yield model
@@ -53,7 +53,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             provider_type: ProviderType,
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ):
-        async def list_models() -> AsyncIterable[InferenceModelRecord | Any]:
+        async def list_models() -> AsyncGenerator[InferenceModelRecord | Any, None]:
             for label, provider in registry.by_label.items():
                 if label.type != provider_type:
                     continue

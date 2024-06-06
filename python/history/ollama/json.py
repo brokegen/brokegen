@@ -272,6 +272,8 @@ class OllamaEventBuilder:
             self._try_commit()
 
         async def post_forward_cleanup():
+            await upstream_response.aclose()
+
             for on_done_fn in on_done_fns:
                 if on_done_fn is not None:
                     try:
