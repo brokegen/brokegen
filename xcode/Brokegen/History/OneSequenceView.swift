@@ -15,17 +15,58 @@ struct OneSequenceView: View {
     var body: some View {
         ScrollViewReader { proxy in
             VStack(spacing: 0) {
-                ScrollView(.vertical) {
-                    if viewModel.sequence.humanDesc != nil {
-                        HStack {
-                            Text(viewModel.sequence.humanDesc!)
-                                .font(.system(size: 36))
-                                .padding(.leading, 24)
-                                .foregroundColor(.gray)
-                                .lineLimit(1)
+                if viewModel.pinSequenceTitle {
+                    HStack(spacing: 0) {
+                        Text(viewModel.displayHumanDesc)
+                            .font(.system(size: 36))
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+                            .layoutPriority(0.2)
 
-                            Spacer()
+                        Spacer()
+
+                        Button(action: {
+                            viewModel.pinSequenceTitle = false
+                        }) {
+                            Image(systemName: "pin")
+                                .font(.system(size: 24))
+                                .padding(12)
+                                .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
+                    }
+                    .id("sequence title")
+                    .padding(.bottom, 12)
+                    .padding(.leading, 24)
+                    .padding(.trailing, 24)
+                }
+
+                ScrollView(.vertical) {
+                    if !viewModel.pinSequenceTitle {
+                        HStack(spacing: 0) {
+                            Text(viewModel.displayHumanDesc)
+                                .font(.system(size: 36))
+                                .foregroundColor(.gray)
+                                .lineLimit(1...10)
+                                .layoutPriority(0.2)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                viewModel.pinSequenceTitle = true
+                            }) {
+                                Image(systemName: "pin.slash")
+                                    .font(.system(size: 24))
+                                    .padding(12)
+                                    .contentShape(Rectangle())
+                                    .foregroundStyle(Color(.disabledControlTextColor))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .id("sequence title")
+                        .padding(.bottom, 12)
+                        .padding(.leading, 24)
+                        .padding(.trailing, 24)
                     }
 
                     ForEach(viewModel.sequence.messages) { message in
@@ -43,14 +84,13 @@ struct OneSequenceView: View {
 
                 VStack(spacing: 0) {
                     if viewModel.submitting || viewModel.responseInEdit != nil || viewModel.displayedStatus != nil {
-                        // TODO: This doesn't seem like the right UI move, but I don't understand colors yet
                         Divider()
 
                         HStack {
                             if viewModel.displayedStatus != nil {
-                                // TODO: Find a way to persist any changes for at least a few seconds
                                 Text(viewModel.displayedStatus ?? "")
                                     .foregroundStyle(Color(.disabledControlTextColor))
+                                    .layoutPriority(0.2)
                             }
 
                             Spacer()
@@ -59,6 +99,7 @@ struct OneSequenceView: View {
                                 ProgressView()
                                     .progressViewStyle(.linear)
                                     .frame(maxWidth: 120)
+                                    .layoutPriority(0.2)
                             }
                         }
                         .padding(.leading, 24)

@@ -11,6 +11,8 @@ class ChatSequenceClientModel: Observable, ObservableObject {
     let chatService: ChatSyncService
     let inferenceModelSettings: InferenceModelSettings
 
+    var pinSequenceTitle: Bool
+
     var promptInEdit: String = ""
     var submitting: Bool = false
 
@@ -25,6 +27,16 @@ class ChatSequenceClientModel: Observable, ObservableObject {
         self.sequence = sequence
         self.chatService = chatService
         self.inferenceModelSettings = inferenceModelSettings
+
+        self.pinSequenceTitle = sequence.humanDesc != nil
+    }
+
+    var displayHumanDesc: String {
+        if !(sequence.humanDesc ?? "").isEmpty {
+            return sequence.humanDesc!
+        }
+
+        return "ChatSequence#\(sequence.serverId!)"
     }
 
     private func completionHandler(
@@ -224,6 +236,7 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                     fallbackModelId: inferenceModelSettings.fallbackInferenceModel?.serverId,
                     retrievalPolicy: "simple",
                     retrievalSearchArgs: "{\"k\": 18}",
+                    preferredEmbeddingModel: inferenceModelSettings.preferredEmbeddingModel?.serverId,
                     sequenceId: sequence.serverId!
                 )
             )
@@ -292,12 +305,14 @@ class ChatSequenceClientModel: Observable, ObservableObject {
     }
 
     func replaceSequence(_ newSequenceId: ChatSequenceServerID) {
-        Task {
-            print("[DEBUG] Attempting to update ChatSequenceClientModel to new_sequence_id: \(newSequenceId)")
-            chatService.replaceSequenceById(sequence.serverId!, with: newSequenceId)
+        print("[DEBUG] Attempting to update ChatSequenceClientModel to new_sequence_id: \(newSequenceId)")
+        chatService.replaceSequenceById(sequence.serverId!, with: newSequenceId)
 
+        Task {
             if let newSequence = await chatService.fetchSequence(newSequenceId) {
-                self.sequence = newSequence
+                DispatchQueue.main.async {
+                    self.sequence = newSequence
+                }
             }
         }
     }

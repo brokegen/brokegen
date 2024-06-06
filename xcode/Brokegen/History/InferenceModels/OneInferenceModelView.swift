@@ -59,9 +59,16 @@ struct OneInferenceModelView: View {
                             .padding(.bottom, 8)
                     }
 
-                    if let lastSeen = model.lastSeen {
-                        Text("Last seen: " + String(describing: lastSeen))
-                            .font(.subheadline)
+                    if model.label != nil {
+                        Text("\(model.label!["type"] ?? "[ProviderType]") -- \(model.label!["id"] ?? "[ProviderLabel]")")
+                            .font(.system(size: 24))
+                            .foregroundStyle(Color(.disabledControlTextColor))
+                    }
+
+                    if let firstSeenAt = model.firstSeenAt {
+                        Text("First seen: " + String(describing: firstSeenAt))
+                            .font(.system(size: 24))
+                            .foregroundStyle(Color(.disabledControlTextColor))
                     }
                 }
             }

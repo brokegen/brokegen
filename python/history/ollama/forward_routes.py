@@ -32,8 +32,9 @@ async def forward_request_nolog(
         method=original_request.method,
         url=endpoint_url,
         content=original_request.stream(),
-        # Purposely ignore the headers, because we don't want to pass the `host` around.
-        headers=None,
+        # https://github.com/encode/httpx/discussions/2959
+        # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
+        headers=[('Connection', 'close')],
         cookies=original_request.cookies,
     )
 
@@ -82,7 +83,9 @@ async def forward_request(
         method=original_request.method,
         url=urlpath_noprefix,
         content=intercept.wrap_req(original_request.stream()),
-        headers=None,
+        # https://github.com/encode/httpx/discussions/2959
+        # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
+        headers=[('Connection', 'close')],
         cookies=original_request.cookies,
     )
 

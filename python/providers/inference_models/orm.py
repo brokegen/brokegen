@@ -43,8 +43,9 @@ class InferenceModelRecord(BaseModel):
     )
 
 
-class InferenceModelWithStats(InferenceModelRecord):
+class InferenceModelResponse(InferenceModelRecord):
     stats: Optional[dict] = None
+    label: Optional[ProviderLabel] = None
 
     model_config = ConfigDict(
         extra='allow',
@@ -264,7 +265,7 @@ def inject_inference_stats(
         models: Iterable[InferenceModelRecord],
         history_db: HistoryDB,
         include_all: bool = False
-) -> Iterable[tuple[InferenceModelWithStats, tuple]]:
+) -> Iterable[tuple[InferenceModelResponse, tuple]]:
     for inference_model in models:
         query = (
             select(
@@ -316,7 +317,7 @@ def inject_inference_stats(
                 if query_result[3] and query_result[4]:
                     stats_dict["response token/sec"] = query_result[3] / query_result[4]
 
-        statsed = InferenceModelWithStats(**inference_model.model_dump())
+        statsed = InferenceModelResponse(**inference_model.model_dump())
         statsed.stats = stats_dict
 
         sort_keys = (

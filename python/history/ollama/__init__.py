@@ -9,18 +9,17 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from _util.json import safe_get
+from _util.status import ServerStatusHolder
+from _util.typing import TemplatedPromptText
 from audit.http import AuditDB, get_db as get_audit_db
 from history.ollama.chat_rag_routes import do_proxy_chat_rag, convert_chat_to_generate, OllamaModelName, \
     do_generate_raw_templated
 from history.ollama.chat_routes import do_proxy_generate, lookup_model_offline, lookup_model
 from history.ollama.forward_routes import forward_request_nodetails, forward_request, forward_request_nolog
 from history.ollama.json import consolidate_stream, OllamaResponseContentJSON, chunk_and_log_output, keepalive_wrapper
-from _util.status import ServerStatusHolder
 from history.ollama.model_routes import do_api_tags, do_api_show_streaming, do_api_show
-from inference.embeddings.knowledge import KnowledgeSingleton, get_knowledge_dependency
-from inference.embeddings.retrieval import SkipRetrievalPolicy, SummarizingRetrievalPolicy, SimpleRetrievalPolicy
+from inference.embeddings.retrieval import RetrievalLabel
 from inference.prompting.templating import apply_llm_template
-from _util.typing import TemplatedPromptText
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceReason
 
@@ -189,20 +188,19 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
             request: Request,
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
-            knowledge: KnowledgeSingleton = Depends(get_knowledge_dependency),
     ):
         inference_model_human_id = safe_get(orjson.loads(await request.body()), "model")
         status_holder = ServerStatusHolder(f"Received /api/chat request for {inference_model_human_id}, processing")
 
-        retrieval_policy = SkipRetrievalPolicy()
-        if force_ollama_rag:
-            retrieval_policy = SimpleRetrievalPolicy(knowledge)
+        retrieval_label = RetrievalLabel(
+            retrieval_policy="simple" if force_ollama_rag else "skip",
+        )
 
         return await keepalive_wrapper(
             inference_model_human_id,
             do_proxy_chat_rag(
                 request,
-                retrieval_policy,
+                retrieval_label,
                 history_db,
                 audit_db,
                 capture_chat_response=True,

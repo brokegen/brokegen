@@ -5,18 +5,18 @@ class ServerStatusHolder:
         self._client_visible_status = [initial_status]
 
     def set(self, status: str):
-        print("ServerStatus.set(): " + status)
+        print("ServerStatusHolder.set(): " + status)
         self._client_visible_status[-1] = status
 
     def get(self) -> str:
         return self._client_visible_status[-1]
 
     def push(self, status: str):
-        print("ServerStatus.push(): " + status)
+        print("ServerStatusHolder.push(): " + status)
         self._client_visible_status.append(status)
 
     def pop(self):
-        print(f"ServerStatus.pop() -> {self.get()}")
+        print(f"ServerStatusHolder.pop() -> {self.get()}")
         self._client_visible_status.pop()
 
 

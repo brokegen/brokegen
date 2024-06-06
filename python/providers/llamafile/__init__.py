@@ -4,15 +4,17 @@ import logging
 import os
 import subprocess
 from datetime import datetime, timezone
-from typing import Union, Any
+from typing import Union, AsyncGenerator
 
 import httpx
 import orjson
 from sqlalchemy import select
 
+from _util.json import safe_get
 from providers._util import local_provider_identifiers, local_fetch_machine_info
-from providers.inference_models.database import HistoryDB, get_db
-from providers.inference_models.orm import InferenceModelRecord
+from providers.inference_models.database import HistoryDB, get_db as get_history_db
+from providers.inference_models.orm import InferenceModelRecord, InferenceModelAddRequest, \
+    lookup_inference_model_detailed, InferenceModelRecordOrm
 from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord
 from providers.registry import ProviderRegistry, BaseProvider
 
@@ -61,20 +63,30 @@ class LlamafileProvider(BaseProvider):
             stderr=subprocess.STDOUT,
         )
 
-    async def available(self) -> bool:
-        ping1 = self.server_comms.build_request(
+    async def fetch_health(self) -> str:
+        health_request = (self.server_comms.build_request(
             method='GET',
             url='/health',
-        )
-        response = await self.server_comms.send(ping1)
-        if response.content != '{"status": "ok"}':
-            logger.error(f"{self.filename} not available, response returned: {response.content}")
+            # https://github.com/encode/httpx/discussions/2959
+            # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
+            headers=[('Connection', 'close')],
+        ))
+
+        response = await self.server_comms.send(health_request)
+        await response.aclose()
+
+        return safe_get(response.json(), "status") or "[unknown]"
+
+    async def available(self) -> bool:
+        health_status = await self.fetch_health()
+        if health_status != "ok":
+            logger.error(f"{self.filename} not available, response returned: {health_status}")
             return False
 
         return True
 
     async def make_record(self) -> ProviderRecord:
-        history_db: HistoryDB = next(get_db())
+        history_db: HistoryDB = next(get_history_db())
 
         provider_identifiers_dict = {
             "name": "llamafile",
@@ -114,8 +126,7 @@ class LlamafileProvider(BaseProvider):
 
         return sha256_hasher.hexdigest()
 
-
-    async def list_models(self) -> dict[int, InferenceModelRecord | Any]:
+    async def list_models(self) -> AsyncGenerator[InferenceModelRecord, None]:
         model_name = os.path.basename(self.filename)
         if model_name[-10:] == '.llamafile':
             model_name = model_name[:-10]
@@ -124,19 +135,37 @@ class LlamafileProvider(BaseProvider):
             "name": model_name,
             "size": os.path.getsize(self.filename),
             "hash-sha256": self.compute_hash(),
+            "file-ctime": os.path.getctime(self.filename),
+            "file-mtime": os.path.getmtime(self.filename)
         }
 
-        imr = InferenceModelRecord(
-            id=1000,
+        access_time = datetime.now(tz=timezone.utc)
+        model_in = InferenceModelAddRequest(
             human_id=model_name,
-            first_seen_at=os.path.getmtime(self.filename),
-            last_seen=datetime.now(tz=timezone.utc),
-            # TODO: This gets doubly JSON-encoded, but I guess we'll live.
-            provider_identifiers=(await self.make_record()).model_dump_json(),
+            first_seen_at=access_time,
+            last_seen=access_time,
+            provider_identifiers=(await self.make_record()).identifiers,
             model_identifiers=model_identifiers,
             combined_inference_parameters=None,
         )
-        return {0: imr}
+
+        history_db: HistoryDB = next(get_history_db())
+
+        maybe_model = lookup_inference_model_detailed(model_in, history_db)
+        if maybe_model is not None:
+            maybe_model.merge_in_updates(model_in)
+            history_db.add(maybe_model)
+            history_db.commit()
+
+            yield InferenceModelRecord.from_orm(maybe_model)
+
+        else:
+            logger.info(f".llamafile constructed a new InferenceModelRecord: {model_in.model_dump_json()}")
+            new_model = InferenceModelRecordOrm(**model_in.model_dump())
+            history_db.add(new_model)
+            history_db.commit()
+
+            yield InferenceModelRecord.from_orm(new_model)
 
     @staticmethod
     def _version_info(filename: str) -> str | None:

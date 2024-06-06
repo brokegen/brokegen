@@ -143,14 +143,39 @@ func dateToSectionName(_ date: Date?) -> String {
     return sectionName
 }
 
+extension ChatSequence: Comparable {
+    static func < (lhs: ChatSequence, rhs: ChatSequence) -> Bool {
+        if lhs.lastMessageDate == nil {
+            return false
+        }
+        if rhs.lastMessageDate == nil {
+            return true
+        }
+
+        return lhs.lastMessageDate! > rhs.lastMessageDate!
+    }
+}
+
 struct MiniSequencePickerSidebar: View {
     @EnvironmentObject private var chatService: ChatSyncService
     @Environment(PathHost.self) private var pathHost
     @Environment(InferenceModelSettings.self) public var inferenceModelSettings
     let navLimit: Int
 
-    init(navLimit: Int = 2) {
+    init(navLimit: Int = 10) {
         self.navLimit = navLimit
+    }
+
+    func someSectionedSequences(limit: Int) -> [(String, [ChatSequence])] {
+        let someSequences = chatService.loadedChatSequences
+            .sorted()
+            .prefix(limit)
+
+        let sectionedSomeSequences = Dictionary(grouping: someSequences) {
+            dateToSectionName($0.lastMessageDate)
+        }
+
+        return Array(sectionedSomeSequences)
     }
 
     func sectionedSequences() -> [(String, [ChatSequence])] {
@@ -160,17 +185,8 @@ struct MiniSequencePickerSidebar: View {
 
         return Array(sectionedSequences)
             .map {
-                // Sorts the individual ChatSequences within a section
-                ($0.0, $0.1.sorted {
-                    if $0.lastMessageDate == nil {
-                        return false
-                    }
-                    if $1.lastMessageDate == nil {
-                        return true
-                    }
-
-                    return $0.lastMessageDate! > $1.lastMessageDate!
-                })
+                // Sort the individual ChatSequences within a section
+                ($0.0, $0.1.sorted())
             }
             .sorted { $0.0 > $1.0 }
     }
@@ -202,10 +218,10 @@ struct MiniSequencePickerSidebar: View {
                 ASRow("Browse Recent", showChevron: true)
             }
 
-            if !sectionedSequences().isEmpty && navLimit > 0 {
+            if !chatService.loadedChatSequences.isEmpty && navLimit > 0 {
                 Divider()
 
-                ForEach(sectionedSequences().prefix(navLimit), id: \.0) { pair in
+                ForEach(someSectionedSequences(limit: navLimit), id: \.0) { pair in
                     let (sectionName, sectionSequences) = pair
 
                     Section(content: {
@@ -222,6 +238,7 @@ struct MiniSequencePickerSidebar: View {
                                             .lineLimit(1...2)
                                             .layoutPriority(0.5)
                                             .padding(.trailing, -12)
+                                            .id("\(sequence.id) text")
 
                                         Spacer()
 
@@ -231,8 +248,10 @@ struct MiniSequencePickerSidebar: View {
                                                 .font(.system(size: 16))
                                                 .foregroundStyle(Color(.disabledControlTextColor))
                                                 .layoutPriority(0.2)
+                                                .padding(.leading, 12)
+                                                .id("\(sequence.id) count")
                                         }
-                                    } // first ViewThatFits option
+                                    } // first ViewThatFits option: HStack
 
                                     VStack(alignment: .leading, spacing: 0) {
                                         HStack(spacing: 0) {
@@ -240,6 +259,7 @@ struct MiniSequencePickerSidebar: View {
                                                 .lineLimit(1...2)
                                                 .layoutPriority(0.5)
                                                 .padding(.trailing, -12)
+                                                .id("\(sequence.id) text")
 
                                             Spacer()
                                         }
@@ -253,9 +273,11 @@ struct MiniSequencePickerSidebar: View {
                                                     .font(.system(size: 16))
                                                     .foregroundStyle(Color(.disabledControlTextColor))
                                                     .layoutPriority(0.2)
+                                                    .padding(.top, 4)
+                                                    .id("\(sequence.id) count")
                                             }
                                         }
-                                    } // second ViewThatFits option
+                                    } // second ViewThatFits option: overflow VStack
                                 }
                             }
                             .contentShape(Rectangle())
@@ -293,16 +315,7 @@ struct SequencePickerView: View {
         return Array(sectionedSequences)
             .map {
                 // Sorts the individual ChatSequences within a section
-                ($0.0, $0.1.sorted {
-                    if $0.lastMessageDate == nil {
-                        return false
-                    }
-                    if $1.lastMessageDate == nil {
-                        return true
-                    }
-
-                    return $0.lastMessageDate! > $1.lastMessageDate!
-                })
+                ($0.0, $0.1.sorted())
             }
             .sorted { $0.0 > $1.0 }
     }
@@ -314,12 +327,14 @@ struct SequencePickerView: View {
             }
             .buttonStyle(.accessoryBar)
             .padding(12)
+            .layoutPriority(0.2)
 
             Button("Refresh 500", systemImage: "arrow.clockwise") {
                 chatService.fetchPinnedSequences(500)
             }
             .buttonStyle(.accessoryBar)
             .padding(12)
+            .layoutPriority(0.2)
 
             Spacer()
 
@@ -330,6 +345,7 @@ struct SequencePickerView: View {
                     .buttonStyle(.accessoryBar)
                     .padding(12)
             }
+            .layoutPriority(0.5)
         }
         .padding(24)
         .frame(maxWidth: 1000)

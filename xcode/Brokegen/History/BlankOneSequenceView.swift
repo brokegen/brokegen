@@ -149,6 +149,7 @@ struct BlankOneSequenceView: View {
             HStack {
                 Text(submitting ? "Submitting ChatMessage/Sequence" : "Ready")
                     .foregroundStyle(Color(.disabledControlTextColor))
+                    .layoutPriority(0.2)
 
                 Spacer()
 
@@ -156,6 +157,7 @@ struct BlankOneSequenceView: View {
                     ProgressView()
                         .progressViewStyle(.linear)
                         .frame(maxWidth: 120)
+                        .layoutPriority(0.2)
                 }
             }
             .padding(.leading, 24)

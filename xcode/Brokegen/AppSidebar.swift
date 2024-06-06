@@ -8,7 +8,7 @@ struct ASSStyle: DisclosureGroupStyle {
                     configuration.isExpanded.toggle()
                 }
             } label: {
-                HStack {
+                HStack(alignment: .bottom, spacing: 0) {
                     configuration.label
                         .padding(4)
                         .font(.system(size: 24))
@@ -77,7 +77,7 @@ struct ASRow: View {
     }
 
     var body: some View {
-        HStack {
+        HStack(alignment: .top, spacing: 0) {
             Text(text)
                 .lineLimit(1...2)
                 .layoutPriority(0.5)

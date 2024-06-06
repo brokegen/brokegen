@@ -107,6 +107,10 @@ async def do_proxy_generate(
     modified_headers = original_request.headers.mutablecopy()
     del modified_headers['content-length']
 
+    # https://github.com/encode/httpx/discussions/2959
+    # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
+    modified_headers['connection'] = 'close'
+
     if request_content_json['raw']:
         for unsupported_field in ['template', 'system', 'context']:
             if unsupported_field in request_content_json:

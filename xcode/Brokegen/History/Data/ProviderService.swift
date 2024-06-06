@@ -31,6 +31,8 @@ public struct InferenceModel: Identifiable {
     /// Additional inference stats, added if available.
     /// Surfaced to client for the sake of sorting models + choosing ones they'd probably want.
     public let stats: [String : Any]?
+    /// Redundant with the providerIdentifiers; this should be source of truth.
+    public let label: [String : String]?
 }
 
 extension InferenceModel {
@@ -65,7 +67,8 @@ extension InferenceModel {
             providerIdentifiers: jsonDict["provider_identifiers"] as! String,
             modelIdentifiers: (jsonDict["model_identifiers"] as! [String : Any]),
             combinedInferenceParameters: jsonDict["combined_inference_parameters"] as? JSONObject,
-            stats: (jsonDict["stats"] as! [String : Any])
+            stats: (jsonDict["stats"] as? [String : Any]),
+            label: (jsonDict["label"] as? [String : String])
         )
     }
 
@@ -79,7 +82,8 @@ extension InferenceModel {
             providerIdentifiers: self.providerIdentifiers,
             modelIdentifiers: self.modelIdentifiers,
             combinedInferenceParameters: self.combinedInferenceParameters,
-            stats: self.stats
+            stats: self.stats,
+            label: self.label
         )
     }
 }
@@ -235,7 +239,7 @@ class ProviderService: Observable, ObservableObject {
 
     func fetchAvailableModels() {
         Task.init {
-            if let data = await getDataAsJsonDict("/models/available") {
+            if let data = await getDataAsJsonDict("/providers/any/any/models") {
                 let sortedData = data.sorted(by: { Int($0.0) ?? -1 < Int($1.0) ?? -1 })
                 for (_, modelInfo) in sortedData {
                     if let modelInfo = modelInfo as? [String : Any?] {

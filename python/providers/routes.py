@@ -1,10 +1,12 @@
 import urllib.parse
+from typing import AsyncGenerator
 
 import fastapi
 import starlette.requests
 from fastapi import Depends
 from starlette.responses import RedirectResponse
 
+from providers.inference_models.orm import InferenceModelResponse
 from providers.orm import ProviderType, ProviderID, ProviderLabel
 from providers.registry import ProviderRegistry
 
@@ -38,10 +40,33 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
     async def get_all_provider_models(
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ):
-        async def list_models():
-            for provider in registry.by_label.values():
-                for model in (await provider.list_models()).values():
-                    yield model
+        async def list_models() -> AsyncGenerator[InferenceModelResponse, None]:
+            for label, provider in registry.by_label.items():
+                async for model in provider.list_models():
+                    new_imr = InferenceModelResponse(**model.model_dump())
+                    if new_imr.label is None:
+                        new_imr.label = label
+
+                    yield new_imr
+
+        return enumerate([m async for m in list_models()])
+
+    @router_ish.get("/providers/{provider_type:str}/any/models")
+    async def get_all_provider_models(
+            provider_type: ProviderType,
+            registry: ProviderRegistry = Depends(ProviderRegistry),
+    ):
+        async def list_models() -> AsyncGenerator[InferenceModelResponse, None]:
+            for label, provider in registry.by_label.items():
+                if label.type != provider_type:
+                    continue
+
+                async for model in provider.list_models():
+                    new_imr = InferenceModelResponse(**model.model_dump())
+                    if new_imr.label is None:
+                        new_imr.label = label
+
+                    yield new_imr
 
         return enumerate([m async for m in list_models()])
 
@@ -51,25 +76,15 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             provider_id: ProviderID,
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ):
-        label = ProviderLabel(type=provider_type, id=provider_id)
-        provider = registry.by_label[label]
+        async def list_models() -> AsyncGenerator[InferenceModelResponse, None]:
+            label = ProviderLabel(type=provider_type, id=provider_id)
+            provider = registry.by_label[label]
 
-        return await provider.list_models()
+            async for model in provider.list_models():
+                new_imr = InferenceModelResponse(**model.model_dump())
+                if new_imr.label is None:
+                    new_imr.label = label
 
-    @router_ish.get("/models/available")
-    async def list_available_models(
-            request: starlette.requests.Request,
-            # NB According to an older HTTP/1.1 spec, GET requests should not have meaningful content.
-            # So the arguments to this function might be removed by a middleman proxy, or whatever.
-            provider: ProviderLabel = ProviderLabel(
-                type="ollama",
-                id="http://localhost:11434",
-            ),
-    ):
-        constructed_url = request.url_for(
-            'get_provider_models',
-            provider_type=urllib.parse.quote_plus(provider.type),
-            provider_id=urllib.parse.quote_plus(provider.id),
-        )
+                yield new_imr
 
-        return RedirectResponse(constructed_url)
+        return enumerate([m async for m in list_models()])

@@ -177,8 +177,10 @@ async def keepalive_wrapper(
         """
         Screen timeout for an iOS device with FaceID is 30 seconds (which maps to network timeout for simple iOS apps),
         so set the keepalive to be a fraction of that.
+
+        TODO: Though, during things like RAG loading, we want updates more frequently than 9.5 seconds.
         """
-        async for chunk in emit_keepalive_chunks(primordial, 9.5, None):
+        async for chunk in emit_keepalive_chunks(primordial, 2.0, None):
             if chunk is None:
                 yield orjson.dumps({
                     "model": inference_model_human_id,
@@ -272,6 +274,8 @@ class OllamaEventBuilder:
             self._try_commit()
 
         async def post_forward_cleanup():
+            await upstream_response.aclose()
+
             for on_done_fn in on_done_fns:
                 if on_done_fn is not None:
                     try:

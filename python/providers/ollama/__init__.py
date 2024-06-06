@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, AsyncGenerator
 
 import httpx
 import orjson
@@ -9,7 +9,7 @@ from sqlalchemy import select
 from audit.http import get_db as get_audit_db, AuditDB
 from providers._util import local_provider_identifiers, local_fetch_machine_info
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import InferenceModelRecord
+from providers.inference_models.orm import InferenceModelRecord, InferenceModelResponse
 from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord
 from providers.registry import ProviderRegistry, BaseProvider
 
@@ -85,18 +85,15 @@ class ExternalOllamaProvider(BaseProvider):
 
         return ProviderRecord.from_orm(new_provider)
 
-    async def list_models(self) -> dict[int, InferenceModelRecord | Any]:
+    async def list_models(self) -> AsyncGenerator[InferenceModelResponse, None]:
         history_db: HistoryDB = next(get_history_db())
         audit_db: AuditDB = next(get_audit_db())
 
         # TODO: Avoid circular references in a different way.
         # Actually, all the Ollama code will probably have to move into this module.
         from history.ollama.model_routes import do_list_available_models
-        return await do_list_available_models(
-            self,
-            history_db,
-            audit_db,
-        )
+        async for model in do_list_available_models(self, history_db, audit_db):
+            yield model
 
 
 async def discover_ollama_servers():
@@ -115,17 +112,3 @@ async def discover_ollama_servers():
     registry.register_factory(factory)
 
     await registry.make(ProviderLabel(type="ollama", id="http://localhost:11434"))
-
-
-async def build_executor_record(
-        endpoint: str,
-        do_commit: bool = True,
-) -> ProviderRecord:
-    executor_singleton = ExternalOllamaProvider("http://localhost:11434")
-    if endpoint != executor_singleton.base_url:
-        logger.warning(f"Found `build_executor_record()` call with weird endpoint: {endpoint}")
-
-    if not do_commit:
-        logger.warning(f"Found a caller that wants {do_commit=}, ignoring")
-
-    return await executor_singleton.make_record()

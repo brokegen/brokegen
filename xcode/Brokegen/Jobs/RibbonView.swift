@@ -28,34 +28,7 @@ struct RibbonView: View {
             .frame(maxWidth: .infinity)
             .padding([.top, .bottom], 32)
             .padding([.leading, .trailing], 16)
-
-            /// TODO: Figure out how to make a ZStack element that doesn't consume all space
-//            HStack {
-//                Spacer()
-//
-//                VStack {
-//                    Button(
-//                        expandView ? "Expanded" : "Collapsed",
-//                        systemImage: expandView ? "chevron.down" : "chevron.left"
-//                    ) {
-//                        // TODO: This doesn't work
-//                        // _ = self.expandView(!expandView)
-//                    }
-//
-//                    Spacer()
-//                }
-//            }
         }
-//        .position(currentCenter)
-//        .gesture(DragGesture()
-//            .onChanged { value in
-//                print("drag-x: \(currentCenter.x) + \(value.translation.width)")
-//                print("")
-//            }
-//            .onEnded { value in
-//                print("end of drag")
-//            }
-//        )
     }
 
     func expandView(_ expandView: Bool) -> RibbonView {

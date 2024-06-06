@@ -14,7 +14,7 @@ struct JobsSidebarItem: View {
     }
 
     var body: some View {
-        HStack(alignment: .top) {
+        HStack(alignment: .top, spacing: 0) {
             Group {
                 switch job.status {
                 case .notStarted:

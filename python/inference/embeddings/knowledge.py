@@ -153,6 +153,8 @@ class KnowledgeSingleton(_Borg):
             shards_total = len(shards_generated)
 
             for index, (parent_dir, shard_id) in enumerate(shards_generated):
+                # Yield to other coroutines, particularly emit_keepalive_chunks()
+                await asyncio.sleep(0)
                 with RAMEstimator(logger.debug, shard_id):
                     status_holder.set(f"KnowledgeSingleton loading {index + 1} of {shards_total}: {shard_id}")
                     maybe_shard = await load_from(parent_dir, shard_id)

@@ -13,6 +13,7 @@ from starlette.exceptions import HTTPException
 
 from _util.json import safe_get, JSONArray, safe_get_arrayed
 from _util.json_streaming import JSONStreamingResponse, tee_stream_to_log_and_callback, consolidate_stream_to_json
+from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import PromptText, TemplatedPromptText
 from audit.http import AuditDB
 from audit.http_raw import HttpxLogger
@@ -20,8 +21,9 @@ from history.chat.database import lookup_chat_message, ChatMessage, ChatMessageO
 from history.ollama.chat_routes import lookup_model_offline
 from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, \
     consolidate_stream, OllamaEventBuilder
-from _util.status import ServerStatusHolder, StatusContext
-from inference.embeddings.retrieval import RetrievalPolicy
+from inference.embeddings.knowledge import get_knowledge
+from inference.embeddings.retrieval import RetrievalPolicy, RetrievalLabel, SimpleRetrievalPolicy, \
+    SummarizingRetrievalPolicy
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceEventOrm, InferenceReason
@@ -87,7 +89,9 @@ async def do_generate_raw_templated(
         method='POST',
         url="/api/generate",
         content=orjson.dumps(request_content),
-        headers=request_headers,
+        # https://github.com/encode/httpx/discussions/2959
+        # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
+        headers=[('Connection', 'close')],
         cookies=request_cookies,
     )
 
@@ -311,7 +315,7 @@ def do_capture_chat_messages(
 
 async def do_proxy_chat_rag(
         original_request: starlette.requests.Request,
-        retrieval_policy: RetrievalPolicy,
+        retrieval_label: RetrievalLabel,
         history_db: HistoryDB,
         audit_db: AuditDB,
         capture_chat_messages: bool = True,
@@ -380,12 +384,38 @@ async def do_proxy_chat_rag(
         response0_json = await consolidate_stream_to_json(response0.body_iterator)
         return response0_json['response']
 
-    with StatusContext(f"Applying {retrieval_policy}", status_holder):
-        prompt_override = await retrieval_policy.parse_chat_history(
-            chat_messages, generate_helper_fn, status_holder,
-        )
+    prompt_override: PromptText | None = None
+    with StatusContext(f"Retrieving documents with {retrieval_label=}", status_holder):
+        real_retrieval_policy: RetrievalPolicy | None = None
 
-    with StatusContext(f"Forwarding {len(chat_messages)} ChatMessages to ollama /api/generate", status_holder):
+        if retrieval_label.retrieval_policy == "skip":
+            real_retrieval_policy = None
+        elif retrieval_label.retrieval_policy == "simple":
+            real_retrieval_policy = SimpleRetrievalPolicy(get_knowledge())
+        elif retrieval_label.retrieval_policy == "summarizing":
+            init_kwargs = {
+                "knowledge": get_knowledge(),
+            }
+            if retrieval_label.retrieval_search_args is not None:
+                init_kwargs["search_args_json"] = retrieval_label.retrieval_search_args
+
+            real_retrieval_policy = SummarizingRetrievalPolicy(**init_kwargs)
+
+        if real_retrieval_policy is not None:
+            if retrieval_label.preferred_embedding_model is not None:
+                logger.warning(f"Ignoring requested embedding model, since we don't support overrides")
+
+            prompt_override = await real_retrieval_policy.parse_chat_history(
+                chat_messages, generate_helper_fn, status_holder,
+            )
+
+    status_desc = "Forwarding ChatMessage to ollama /api/generate"
+    if len(chat_messages) > 1:
+        status_desc = f"Forwarding {len(chat_messages)} messages to ollama /api/generate"
+    if prompt_override is not None:
+        status_desc += f" (with retrieval context of {len(prompt_override):_} chars)"
+
+    with StatusContext(status_desc, status_holder):
         ollama_response = await convert_chat_to_generate(
             original_request,
             request_content_json,

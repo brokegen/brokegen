@@ -7,11 +7,16 @@ struct ChatSequenceParameters: Codable, Hashable {
     let nextMessage: Message?
     let continuationModelId: InferenceModelRecordID?
     let fallbackModelId: InferenceModelRecordID?
+
     var retrievalPolicy: String? = nil
     var retrievalSearchArgs: String? = nil
+    var preferredEmbeddingModel: InferenceModelRecordID? = nil
 
-    // These parameters aren't passed to the server, but needed to complete the request.
-    // Due to shenanigans, they're passed to the server anyway.
+    // These parameters shouldn't be passed to the server,
+    // but the information is needed to complete the request.
+    //
+    // Since I don't want to make four separate structs, they're passed to the server anyway.
+    //
     let sequenceId: ChatSequenceServerID
 }
 
