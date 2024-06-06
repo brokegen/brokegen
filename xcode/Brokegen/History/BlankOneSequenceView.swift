@@ -32,58 +32,64 @@ struct ChatNameInput: View {
 
 struct InlineTextInput: View {
     @Binding var textInEdit: String
-    var isFocused: FocusState<Bool>.Binding
-    @State var isHovered: Bool = false
+    var submitFunc: (() -> Void)
 
-    /// Crossover length where we swap implementations to a TextEditor
-    let textFieldMaxChars: Int
+    @State var isHovered: Bool = false
+    var isFocused: FocusState<Bool>.Binding
 
     init(
         _ textInEdit: Binding<String>,
         isFocused: FocusState<Bool>.Binding,
-        textFieldMaxChars: Int = 280
+        submitFunc: (@escaping () -> Void)
     ) {
         _textInEdit = textInEdit
+        self.submitFunc = submitFunc
         self.isFocused = isFocused
-        self.textFieldMaxChars = textFieldMaxChars
     }
 
     var body: some View {
-        ZStack {
-            if textInEdit.count <= textFieldMaxChars {
-                TextField("Enter your message", text: $textInEdit, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .lineSpacing(6)
-
-                // Shared styling starts here; duplicated because it's only two entries
-                // and this we don't have to worry about type erasure that comes with ViewModifiers.
-                    .monospaced()
-                    .lineLimit(8...40)
-                    .padding(6)
-                    .onHover { isHovered in
-                        self.isHovered = isHovered
-                    }
-                    .focused(isFocused, equals: true)
-                    .background(isHovered ? Color(.selectedControlColor) : Color(.controlBackgroundColor))
+        TextEditor(text: $textInEdit)
+            .font(.system(size: 18))
+            .lineSpacing(6)
+            .monospaced()
+            .padding(8)
+            .background(Color(.controlBackgroundColor))
+            .padding(4)
+            .background(isHovered ? Color(.selectedControlColor) : Color(.controlBackgroundColor))
+            .onChange(of: textInEdit) {
+                if textInEdit.last?.isNewline == .some(true) {
+                    textInEdit.removeLast()
+                    self.submitFunc()
+                }
             }
-            else {
-                // TODO: TextEditor eats the Enter key when submitting.
-                TextEditor(text: $textInEdit)
-                    .lineSpacing(6)
+            .onHover { isHovered in
+                self.isHovered = isHovered
+            }
+            .focused(isFocused.projectedValue)
+    }
+}
 
-                // Shared styling starts here; duplicated because it's only two entries
-                // and this we don't have to worry about type erasure that comes with ViewModifiers.
-                    .monospaced()
-                    .lineLimit(8...40)
-                    .padding(6)
-                    .onHover { isHovered in
-                        self.isHovered = isHovered
-                    }
-                    .focused(isFocused, equals: true)
-                    .background(isHovered ? Color(.selectedControlColor) : Color(.controlBackgroundColor))
+#Preview(traits: .fixedLayout(width: 800, height: 800)) {
+    struct ViewHolder: View {
+        @State var textInEdit = "typed text"
+        @FocusState var isFocused: Bool
+
+        var body: some View {
+            GeometryReader{geometry in
+                VSplitView {
+                    Text("upper view")
+                        .frame(maxHeight: .infinity)
+                        .frame(maxWidth: .infinity)
+
+                    InlineTextInput($textInEdit, isFocused: $isFocused) {}
+                        .frame(minHeight: 200)
+                }
+                .frame(width: geometry.size.width, height: geometry.size.height)
             }
         }
     }
+
+    return ViewHolder()
 }
 
 struct BlankOneSequenceView: View {
@@ -164,7 +170,9 @@ struct BlankOneSequenceView: View {
             .padding(.trailing, 24)
 
             HStack {
-                InlineTextInput($promptInEdit, isFocused: $focusTextInput)
+                InlineTextInput($promptInEdit, isFocused: $focusTextInput) {
+                    submit()
+                }
                     .focused($focusTextInput)
                     .onAppear {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -203,6 +211,7 @@ struct BlankOneSequenceView: View {
             }
             .padding(.trailing, 12)
             .background(inputBackgroundStyle)
+            .frame(minHeight: 240)
         }
         .frame(maxHeight: .infinity)
         .onTapGesture {

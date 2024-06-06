@@ -101,17 +101,20 @@ struct SequenceViewTwo: View {
             // Tab.simple
             VStack(spacing: 0) {
                 HStack {
-                    InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
-                        .focused($focusTextInput)
+                    InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput) {
+                        if viewModel.promptInEdit.isEmpty && allowContinuation {
+                            _ = viewModel.requestContinue()
+                        }
+                        else {
+                            viewModel.requestExtend()
+                        }
+                    }
                         .onAppear {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                 self.focusTextInput = true
                             }
                         }
                         .backgroundStyle(inputBackgroundStyle)
-                        .onSubmit {
-                            viewModel.requestExtend()
-                        }
 
                     let buttonName: String = {
                         if viewModel.submitting || viewModel.responseInEdit != nil {
@@ -147,7 +150,19 @@ struct SequenceViewTwo: View {
             // Tab.retrieval
             VStack(spacing: 0) {
                 HStack {
-                    InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
+                    InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput) {
+                        if viewModel.promptInEdit.isEmpty && allowContinuation {
+                            _ = viewModel.requestContinue()
+                        }
+                        else {
+                            if !showSeparateRetrievalButton && forceRetrieval {
+                                viewModel.requestExtendWithRetrieval()
+                            }
+                            else {
+                                viewModel.requestExtend()
+                            }
+                        }
+                    }
                         .focused($focusTextInput)
                         .onAppear {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -155,9 +170,6 @@ struct SequenceViewTwo: View {
                             }
                         }
                         .backgroundStyle(inputBackgroundStyle)
-                        .onSubmit {
-                            viewModel.requestExtend()
-                        }
 
                     let buttonName: String = {
                         if viewModel.submitting || viewModel.responseInEdit != nil {
@@ -283,123 +295,129 @@ struct SequenceViewTwo: View {
         }
         .tabBarPosition(.edge(.leading))
         .toggleStyle(.switch)
-        // TODO: This is very oddly hard-coded. Try layoutPriority on the CustomTabView, next.
-        // It's probably something in CustomTabView that's adjusting the height.
-        // Or the ComposeTabsView has infinite height.
-        .frame(maxHeight: 180)
     }
 
     var body: some View {
-        ScrollViewReader { proxy in
-            VStack(spacing: 0) {
-                if viewModel.pinSequenceTitle {
-                    HStack(spacing: 0) {
-                        Text(viewModel.displayHumanDesc)
-                            .font(.system(size: 36))
-                            .foregroundColor(.gray)
-                            .lineLimit(1)
-                            .layoutPriority(0.2)
-
-                        Spacer()
-
-                        Button(action: {
-                            viewModel.pinSequenceTitle = false
-                        }) {
-                            Image(systemName: "pin")
-                                .font(.system(size: 24))
-                                .padding(12)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .id("sequence title")
-                    .padding(.bottom, 12)
-                    .padding(.leading, 24)
-                    .padding(.trailing, 24)
-                }
-
-                ScrollView(.vertical) {
-                    if !viewModel.pinSequenceTitle {
-                        HStack(spacing: 0) {
-                            Text(viewModel.displayHumanDesc)
-                                .font(.system(size: 36))
-                                .foregroundColor(.gray)
-                                .lineLimit(1...10)
-                                .layoutPriority(0.2)
-
-                            Spacer()
-
-                            Button(action: {
-                                viewModel.pinSequenceTitle = true
-                            }) {
-                                Image(systemName: "pin.slash")
-                                    .font(.system(size: 24))
-                                    .padding(12)
-                                    .contentShape(Rectangle())
-                                    .foregroundStyle(Color(.disabledControlTextColor))
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        .id("sequence title")
-                        .padding(.bottom, 12)
-                        .padding(.leading, 24)
-                        .padding(.trailing, 24)
-                    }
-
-                    ForEach(viewModel.sequence.messages) { message in
-                        OneMessageView(message)
-                            .padding(24)
-                            .padding(.top, 16)
-                    }
-
-                    if viewModel.responseInEdit != nil {
-                        OneMessageView(viewModel.responseInEdit!, stillUpdating: true)
-                            .padding(24)
-                            .padding(.top, 16)
-                    }
-                }
-
-                VStack(spacing: 0) {
-                    if viewModel.submitting || viewModel.responseInEdit != nil || viewModel.displayedStatus != nil {
-                        // TODO: This doesn't seem like the right UI move, but I don't understand colors yet
-                        Divider()
-
-                        HStack {
-                            if viewModel.displayedStatus != nil {
-                                // TODO: Find a way to persist any changes for at least a few seconds
-                                Text(viewModel.displayedStatus ?? "")
-                                    .foregroundStyle(Color(.disabledControlTextColor))
+        GeometryReader { geometry in
+            ScrollViewReader { proxy in
+                VSplitView {
+                    VStack(spacing: 0) {
+                        if viewModel.pinSequenceTitle {
+                            HStack(spacing: 0) {
+                                Text(viewModel.displayHumanDesc)
+                                    .font(.system(size: 36))
+                                    .foregroundColor(.gray)
+                                    .lineLimit(1)
                                     .layoutPriority(0.2)
+
+                                Spacer()
+
+                                Button(action: {
+                                    viewModel.pinSequenceTitle = false
+                                }) {
+                                    Image(systemName: "pin")
+                                        .font(.system(size: 24))
+                                        .padding(12)
+                                        .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .id("sequence title")
+                            .padding(.bottom, 12)
+                            .padding(.leading, 24)
+                            .padding(.trailing, 24)
+                        }
+
+                        ScrollView(.vertical) {
+                            if !viewModel.pinSequenceTitle {
+                                HStack(spacing: 0) {
+                                    Text(viewModel.displayHumanDesc)
+                                        .font(.system(size: 36))
+                                        .foregroundColor(.gray)
+                                        .lineLimit(1...10)
+                                        .layoutPriority(0.2)
+
+                                    Spacer()
+
+                                    Button(action: {
+                                        viewModel.pinSequenceTitle = true
+                                    }) {
+                                        Image(systemName: "pin.slash")
+                                            .font(.system(size: 24))
+                                            .padding(12)
+                                            .contentShape(Rectangle())
+                                            .foregroundStyle(Color(.disabledControlTextColor))
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                                .id("sequence title")
+                                .padding(.bottom, 12)
+                                .padding(.leading, 24)
+                                .padding(.trailing, 24)
                             }
 
-                            Spacer()
+                            ForEach(viewModel.sequence.messages) { message in
+                                OneMessageView(message)
+                                    .padding(24)
+                                    .padding(.top, 16)
+                            }
 
-                            if viewModel.submitting || viewModel.responseInEdit != nil {
-                                ProgressView()
-                                    .progressViewStyle(.linear)
-                                    .frame(maxWidth: 120)
-                                    .layoutPriority(0.2)
+                            if viewModel.responseInEdit != nil {
+                                OneMessageView(viewModel.responseInEdit!, stillUpdating: true)
+                                    .padding(24)
+                                    .padding(.top, 16)
                             }
                         }
-                        .padding(.leading, 24)
-                        .padding(.trailing, 24)
                     }
+                    .frame(minHeight: 80)
 
-                    tabsView
-                } // end of entire lower VStack
-                .background(inputBackgroundStyle)
+                    VStack(spacing: 0) {
+                        if viewModel.submitting || viewModel.responseInEdit != nil || viewModel.displayedStatus != nil {
+                            // TODO: This doesn't seem like the right UI move, but I don't understand colors yet
+                            Divider()
+
+                            HStack {
+                                if viewModel.displayedStatus != nil {
+                                    // TODO: Find a way to persist any changes for at least a few seconds
+                                    Text(viewModel.displayedStatus ?? "")
+                                        .foregroundStyle(Color(.disabledControlTextColor))
+                                        .layoutPriority(0.2)
+                                }
+
+                                Spacer()
+
+                                if viewModel.submitting || viewModel.responseInEdit != nil {
+                                    ProgressView()
+                                        .progressViewStyle(.linear)
+                                        .frame(maxWidth: 120)
+                                        .layoutPriority(0.2)
+                                }
+                            }
+                            .padding(.leading, 24)
+                            .padding(.trailing, 24)
+                        }
+
+                        tabsView
+                            .frame(minHeight: 180, maxHeight: max(
+                                180,
+                                // TODO: Figure out how to set initial size, and yet resizable.
+                                viewModel.promptInEdit.isEmpty ? geometry.size.height * 0.2 : geometry.size.height * 0.7))
+                    } // end of entire lower VStack
+                    .background(inputBackgroundStyle)
+                }
+                .defaultScrollAnchor(.bottom)
+                .onAppear {
+                    proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+                }
+                .onChange(of: viewModel.sequence.messages) { old, new in
+                    proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+                }
+                .onChange(of: viewModel.responseInEdit?.content) {
+                    // TODO: Replace this with a GeometryReader that merely nudges us, if we're already close to the bottom
+                    proxy.scrollTo(viewModel.responseInEdit, anchor: .bottom)
+                }
             }
-            .defaultScrollAnchor(.bottom)
-            .onAppear {
-                proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
-            }
-            .onChange(of: viewModel.sequence.messages) { old, new in
-                proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
-            }
-            .onChange(of: viewModel.responseInEdit?.content) {
-                // TODO: Replace this with a GeometryReader that merely nudges us, if we're already close to the bottom
-                proxy.scrollTo(viewModel.responseInEdit, anchor: .bottom)
-            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
     }
 }
@@ -434,5 +452,19 @@ struct SequenceViewTwo: View {
     }
     catch {
         return Text("Failed to construct SequenceViewTwo")
+    }
+}
+
+#Preview(traits: .fixedLayout(width: 800, height: 800)) {
+    VSplitView {
+        GeometryReader{geometry in
+           HSplitView(){
+              Rectangle().foregroundColor(.red).frame(minWidth:200, idealWidth: 200, maxWidth: .infinity)
+              HSplitView(){
+                  Rectangle().foregroundColor(.black).layoutPriority(1)
+                  Rectangle().foregroundColor(.green).frame(minWidth:200, idealWidth: 200, maxWidth: .infinity)
+              }.layoutPriority(1)
+           }.frame(width: geometry.size.width, height: geometry.size.height)
+        }
     }
 }

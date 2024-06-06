@@ -49,9 +49,9 @@ struct OneSequenceView: View {
                                 .foregroundColor(.gray)
                                 .lineLimit(1...10)
                                 .layoutPriority(0.2)
-                            
+
                             Spacer()
-                            
+
                             Button(action: {
                                 viewModel.pinSequenceTitle = true
                             }) {
@@ -109,14 +109,21 @@ struct OneSequenceView: View {
                     HStack {
                         let disableControls: Bool = viewModel.submitting || viewModel.responseInEdit != nil
 
-                        InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
-                            .focused($focusTextInput)
-                            .onAppear {
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    self.focusTextInput = true
-                                }
+                        InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput) {
+                            if viewModel.promptInEdit.isEmpty {
+                                _ = viewModel.requestContinue()
                             }
-                            .backgroundStyle(inputBackgroundStyle)
+                            else {
+                                viewModel.requestExtend()
+                            }
+                        }
+                        .focused($focusTextInput)
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                self.focusTextInput = true
+                            }
+                        }
+                        .backgroundStyle(inputBackgroundStyle)
 
                         Group {
                             Button(action: {
