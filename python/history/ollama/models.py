@@ -68,9 +68,7 @@ def build_models_from_api_tags(
 
         else:
             logger.info(f"GET /api/tags returned a new InferenceModelRecord: {safe_get(sorted_model_json, 'name')}")
-            new_model = InferenceModelRecordOrm(
-                **model_in.model_dump(),
-            )
+            new_model = InferenceModelRecordOrm(**model_in.model_dump())
             history_db.add(new_model)
             history_db.commit()
 

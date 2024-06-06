@@ -1,10 +1,13 @@
 import urllib.parse
+from typing import AsyncIterable, Any, cast, AsyncGenerator
 
 import fastapi
 import starlette.requests
 from fastapi import Depends
 from starlette.responses import RedirectResponse
 
+from providers.inference_models.orm import InferenceModelRecord
+from providers.openai.lm_studio import LMStudioProvider
 from providers.orm import ProviderType, ProviderID, ProviderLabel
 from providers.registry import ProviderRegistry
 
@@ -38,9 +41,24 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
     async def get_all_provider_models(
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ):
-        async def list_models():
+        async def list_models() -> AsyncGenerator[InferenceModelRecord | Any]:
             for provider in registry.by_label.values():
-                for model in (await provider.list_models()).values():
+                async for model in provider.list_models():
+                    yield model
+
+        return enumerate([m async for m in list_models()])
+
+    @router_ish.get("/providers/{provider_type:str}/any/models")
+    async def get_all_provider_models(
+            provider_type: ProviderType,
+            registry: ProviderRegistry = Depends(ProviderRegistry),
+    ):
+        async def list_models() -> AsyncIterable[InferenceModelRecord | Any]:
+            for label, provider in registry.by_label.items():
+                if label.type != provider_type:
+                    continue
+
+                async for model in provider.list_models():
                     yield model
 
         return enumerate([m async for m in list_models()])

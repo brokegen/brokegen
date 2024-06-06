@@ -1,8 +1,5 @@
-import functools
-import itertools
 import logging
-import operator
-from typing import cast, Any, Generator
+from typing import cast, Any, Generator, Iterable, AsyncGenerator
 
 import httpx
 import orjson
@@ -11,12 +8,33 @@ from fastapi import Request
 
 import providers
 from _util.json import safe_get
-from _util.typing import InferenceModelRecordID, InferenceModelHumanID
+from _util.typing import InferenceModelHumanID
 from audit.http import AuditDB
 from history.ollama.json import OllamaEventBuilder
 from history.ollama.models import build_model_from_api_show, build_models_from_api_tags
 from providers.inference_models.database import HistoryDB
-from providers.inference_models.orm import InferenceModelRecord, InferenceModelRecordOrm, inject_inference_stats
+from providers.inference_models.orm import InferenceModelRecord, InferenceModelRecordOrm, inject_inference_stats, \
+    InferenceModelWithStats
+from providers.ollama import ExternalOllamaProvider
+from providers.orm import ProviderLabel
+from providers.registry import ProviderRegistry, BaseProvider
+import logging
+from typing import cast, Any, Generator, Iterable, AsyncGenerator
+
+import httpx
+import orjson
+import starlette.responses
+from fastapi import Request
+
+import providers
+from _util.json import safe_get
+from _util.typing import InferenceModelHumanID
+from audit.http import AuditDB
+from history.ollama.json import OllamaEventBuilder
+from history.ollama.models import build_model_from_api_show, build_models_from_api_tags
+from providers.inference_models.database import HistoryDB
+from providers.inference_models.orm import InferenceModelRecord, InferenceModelRecordOrm, inject_inference_stats, \
+    InferenceModelWithStats
 from providers.ollama import ExternalOllamaProvider
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry, BaseProvider
@@ -38,7 +56,7 @@ async def do_list_available_models(
         provider: ExternalOllamaProvider,
         history_db: HistoryDB,
         audit_db: AuditDB,
-) -> dict[int, InferenceModelRecord | Any]:
+) -> AsyncGenerator[InferenceModelRecord | Any, None]:
     intercept = OllamaEventBuilder("ollama:/api/tags", audit_db)
     cached_accessed_at = intercept.wrapped_event.accessed_at
 
@@ -52,12 +70,13 @@ async def do_list_available_models(
     response: httpx.Response = await provider.client.send(upstream_request)
     response: starlette.responses.Response = await intercept.wrap_response(response)
 
-    available_models_generator: Generator[InferenceModelRecord, None, None] = build_models_from_api_tags(
-        await provider.make_record(),
-        cached_accessed_at,
-        orjson.loads(response.body),
-        history_db=history_db,
-    )
+    available_models_generator: Generator[InferenceModelRecord, None, None] = \
+        build_models_from_api_tags(
+            await provider.make_record(),
+            cached_accessed_at,
+            orjson.loads(response.body),
+            history_db=history_db,
+        )
 
     async def api_show_injector(
             inference_models: Generator[InferenceModelRecord, None, None]
@@ -68,19 +87,15 @@ async def do_list_available_models(
             inference_model_orm = await do_api_show(inference_model.human_id, history_db, audit_db)
             yield InferenceModelRecord.from_orm(inference_model_orm)
 
-    models_and_sort_keys = inject_inference_stats(
-        [amodel async for amodel in api_show_injector(available_models_generator)],
-        history_db)
+    # NB This sorting is basically useless, because we don't have a way to sort models across providers.
+    # NB Swift JSON decode does not preserve order, because JSON dict spec does not preserve order.
+    models_and_sort_keys: Iterable[tuple[InferenceModelWithStats, tuple]] = \
+        inject_inference_stats(
+            [amodel async for amodel in api_show_injector(available_models_generator)],
+            history_db)
 
-    # NB Swift JSON decode does not preserve order, because JSON does not preserve order
-    sorted_masks = sorted(models_and_sort_keys, key=operator.itemgetter(1), reverse=True)
-    dicted_masks = dict(
-        [(index, model) for index, (model, sort_key) in enumerate(sorted_masks)]
-    )
-    for k, v in itertools.islice(dicted_masks.items(), 5):
-        logger.debug(f"InferenceModel #{k}: {v.stats}")
-
-    return dicted_masks
+    for mask in models_and_sort_keys:
+        yield mask[0]
 
 
 async def do_api_tags(
@@ -121,7 +136,8 @@ async def do_api_show(
     intercept = OllamaEventBuilder("ollama:/api/show", audit_db)
     logger.debug(f"ollama proxy: start handler for POST /api/show")
 
-    provider: BaseProvider = ProviderRegistry().by_label[ProviderLabel(type="ollama", id=str(_real_ollama_client.base_url))]
+    provider: BaseProvider = ProviderRegistry().by_label[
+        ProviderLabel(type="ollama", id=str(_real_ollama_client.base_url))]
     provider: providers.ollama.ExternalOllamaProvider = cast(providers.ollama.ExternalOllamaProvider, provider)
     upstream_request = provider.client.build_request(
         method="POST",

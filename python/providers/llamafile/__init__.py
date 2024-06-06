@@ -4,17 +4,20 @@ import logging
 import os
 import subprocess
 from datetime import datetime, timezone
-from typing import Union, Any
+from typing import Union, Any, AsyncGenerator, AsyncIterable
 
 import httpx
 import orjson
 from sqlalchemy import select
 
+from _util.json import safe_get
 from providers._util import local_provider_identifiers, local_fetch_machine_info
-from providers.inference_models.database import HistoryDB, get_db
-from providers.inference_models.orm import InferenceModelRecord
+from providers.inference_models.orm import InferenceModelRecord, InferenceModelAddRequest, \
+    lookup_inference_model_detailed, InferenceModelRecordOrm
 from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord
 from providers.registry import ProviderRegistry, BaseProvider
+
+from providers.inference_models.database import HistoryDB, get_db as get_history_db
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +77,7 @@ class LlamafileProvider(BaseProvider):
         return True
 
     async def make_record(self) -> ProviderRecord:
-        history_db: HistoryDB = next(get_db())
+        history_db: HistoryDB = next(get_history_db())
 
         provider_identifiers_dict = {
             "name": "llamafile",
@@ -114,8 +117,7 @@ class LlamafileProvider(BaseProvider):
 
         return sha256_hasher.hexdigest()
 
-
-    async def list_models(self) -> dict[int, InferenceModelRecord | Any]:
+    async def list_models(self) -> AsyncIterable[InferenceModelRecord | Any]:
         model_name = os.path.basename(self.filename)
         if model_name[-10:] == '.llamafile':
             model_name = model_name[:-10]
@@ -124,19 +126,38 @@ class LlamafileProvider(BaseProvider):
             "name": model_name,
             "size": os.path.getsize(self.filename),
             "hash-sha256": self.compute_hash(),
+            "file-ctime": os.path.getctime(self.filename),
+            "file-mtime": os.path.getmtime(self.filename)
         }
 
-        imr = InferenceModelRecord(
-            id=1000,
+        access_time = datetime.now(tz=timezone.utc)
+        model_in = InferenceModelAddRequest(
             human_id=model_name,
-            first_seen_at=os.path.getmtime(self.filename),
-            last_seen=datetime.now(tz=timezone.utc),
-            # TODO: This gets doubly JSON-encoded, but I guess we'll live.
-            provider_identifiers=(await self.make_record()).model_dump_json(),
+            first_seen_at=access_time,
+            last_seen=access_time,
+            provider_identifiers=(await self.make_record()).identifiers,
             model_identifiers=model_identifiers,
             combined_inference_parameters=None,
         )
-        return {0: imr}
+
+        history_db: HistoryDB = next(get_history_db())
+
+        maybe_model = lookup_inference_model_detailed(model_in, history_db)
+        if maybe_model is not None:
+            maybe_model.merge_in_updates(model_in)
+            history_db.add(maybe_model)
+            history_db.commit()
+
+            yield InferenceModelRecord.from_orm(maybe_model)
+
+        else:
+            logger.info(f".llamafile constructed a new InferenceModelRecord: {model_in.model_dump_json()}")
+            new_model = InferenceModelRecordOrm(**model_in.model_dump())
+            history_db.add(new_model)
+            history_db.commit()
+
+            yield InferenceModelRecord.from_orm(new_model)
+
 
     @staticmethod
     def _version_info(filename: str) -> str | None:

@@ -138,8 +138,9 @@ def run_proxy(
         """
         return starlette.responses.Response(status_code=200)
 
-    asyncio.run(providers.ollama.discover_ollama_servers())
+    asyncio.run(providers.openai.lm_studio.discover_lm_studio_servers())
     asyncio.run(providers.llamafile.discover_llamafiles_in('dist'))
+    asyncio.run(providers.ollama.discover_ollama_servers())
 
     history.ollama.install_test_points(app)
     history.ollama.install_forwards(app, force_ollama_rag)

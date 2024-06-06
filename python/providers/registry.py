@@ -9,7 +9,7 @@ Current known providers generally have two things to look for: Type, and ID.
 """
 import logging
 from abc import abstractmethod
-from typing import TypeAlias, Callable, Awaitable, Any
+from typing import TypeAlias, Callable, Awaitable, Any, AsyncGenerator, AsyncIterable
 
 from providers.inference_models.orm import InferenceModelRecord
 from providers.orm import ProviderLabel, ProviderRecord
@@ -27,7 +27,9 @@ class BaseProvider:
         raise NotImplementedError()
 
     @abstractmethod
-    async def list_models(self) -> dict[int, InferenceModelRecord | Any]:
+    async def list_models(self) -> (
+            AsyncGenerator[InferenceModelRecord | Any, None]
+            | AsyncIterable[InferenceModelRecord | Any]):
         raise NotImplementedError()
 
 
