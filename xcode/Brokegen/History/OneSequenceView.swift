@@ -2,6 +2,8 @@ import Combine
 import CustomTabView
 import SwiftUI
 
+let inputBackgroundStyle = Color(.controlBackgroundColor)
+
 enum Tab: String, Hashable, CaseIterable {
     case simple, retrieval, uiOptions, modelOptions, systemOptions
 }
