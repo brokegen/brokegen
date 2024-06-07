@@ -65,7 +65,7 @@ struct ComposeTabsView: View {
     }
 }
 
-struct SequenceViewTwo: View {
+struct OneSequenceView: View {
     @ObservedObject var viewModel: ChatSequenceClientModel
 
     @FocusState var focusTextInput: Bool
@@ -517,7 +517,7 @@ struct SequenceViewTwo: View {
         let chatService = ChatSyncService()
         let sequence = try ChatSequence(-1, data: try encoder.encode(parameters))
         let viewModel = ChatSequenceClientModel(sequence, chatService: chatService, inferenceModelSettings: InferenceModelSettings())
-        return SequenceViewTwo(viewModel)
+        return OneSequenceView(viewModel)
     }
     catch {
         return Text("Failed to construct SequenceViewTwo")

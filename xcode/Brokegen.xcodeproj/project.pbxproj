@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		CE2988322C09101F00A997A1 /* SequenceViewTwo.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE2988312C09101F00A997A1 /* SequenceViewTwo.swift */; };
+		CE2988322C09101F00A997A1 /* OneSequenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE2988312C09101F00A997A1 /* OneSequenceView.swift */; };
 		CE4634DE2BF937320063142E /* JobsSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634DD2BF937320063142E /* JobsSidebar.swift */; };
 		CE4634E02BF963210063142E /* BaseJob.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634DF2BF963210063142E /* BaseJob.swift */; };
 		CE4634E22BF97A180063142E /* JobOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634E12BF97A180063142E /* JobOutputView.swift */; };
@@ -62,7 +62,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		CE2988312C09101F00A997A1 /* SequenceViewTwo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequenceViewTwo.swift; sourceTree = "<group>"; };
+		CE2988312C09101F00A997A1 /* OneSequenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneSequenceView.swift; sourceTree = "<group>"; };
 		CE4634DD2BF937320063142E /* JobsSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsSidebar.swift; sourceTree = "<group>"; };
 		CE4634DF2BF963210063142E /* BaseJob.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseJob.swift; sourceTree = "<group>"; };
 		CE4634E12BF97A180063142E /* JobOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobOutputView.swift; sourceTree = "<group>"; };
@@ -143,7 +143,7 @@
 				CEAA2B6E2C070AAE002BEB26 /* Data */,
 				CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */,
 				CE7FFE172C06772400DB7CFA /* BlankOneSequenceView.swift */,
-				CE2988312C09101F00A997A1 /* SequenceViewTwo.swift */,
+				CE2988312C09101F00A997A1 /* OneSequenceView.swift */,
 				CE4634F12BFBB4730063142E /* SequencePickerView.swift */,
 			);
 			path = History;
@@ -338,7 +338,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CE4634E72BFA6A050063142E /* JobsSidebarItem.swift in Sources */,
-				CE2988322C09101F00A997A1 /* SequenceViewTwo.swift in Sources */,
+				CE2988322C09101F00A997A1 /* OneSequenceView.swift in Sources */,
 				CE6D8A7F2BF6DF1800A7934D /* RibbonView.swift in Sources */,
 				CECA47AA2BF6D62E007A28F2 /* SystemInfoView.swift in Sources */,
 				CEFEB4762BFDA67400334522 /* SimplePing.swift in Sources */,
