@@ -320,9 +320,6 @@ struct OneSequenceView: View {
 
                         Text("deny")
                             .tag(false)
-
-                        Text("server default")
-                            .tag(nil as Bool?)
                     }
                 }, label: {
                     Text("Generation Options")
