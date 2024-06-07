@@ -14,7 +14,7 @@ from fastapi import Depends, FastAPI, Request
 
 from audit.http import init_db as init_audit_db, AuditDB, get_db as get_audit_db
 from audit.http_raw import SqlLoggingMiddleware
-from history.ollama.forward_routes import forward_request, forward_request_nodetails
+from history.ollama.forwarding import forward_request, forward_request_nodetails
 
 
 def install_proxy_routes(app: FastAPI):

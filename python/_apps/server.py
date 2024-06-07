@@ -1,4 +1,7 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
+import history.ollama.direct_routes
+import history.ollama.forwarding_routes
+
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
@@ -144,8 +147,8 @@ def run_proxy(
     asyncio.run(providers.llamafile.discover_llamafiles_in('dist'))
     asyncio.run(providers.ollama.discover_ollama_servers())
 
-    history.ollama.install_test_points(app)
-    history.ollama.install_forwards(app, force_ollama_rag)
+    history.ollama.direct_routes.install_test_points(app)
+    history.ollama.forwarding_routes.install_forwards(app, force_ollama_rag)
     history.chat.install_routes(app)
     providers.inference_models.routes.install_routes(app)
     providers.routes.install_routes(app)
