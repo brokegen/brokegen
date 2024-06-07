@@ -101,67 +101,13 @@ struct SequenceViewTwo: View {
         return CustomTabView(tabBarView: composeTabsView, tabs: Tab.allCases, selection: selectedTab) {
             // Tab.simple
             VStack(spacing: 0) {
-                HStack {
+                HStack(spacing: 0) {
                     InlineTextInput($viewModel.promptInEdit, allowNewlineSubmit: $allowNewlineSubmit, isFocused: $focusTextInput) {
                         if viewModel.promptInEdit.isEmpty && allowContinuation {
                             _ = viewModel.requestContinue()
                         }
                         else {
                             viewModel.requestExtend()
-                        }
-                    }
-                        .onAppear {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                self.focusTextInput = true
-                            }
-                        }
-                        .backgroundStyle(inputBackgroundStyle)
-
-                    let buttonName: String = {
-                        if viewModel.submitting || viewModel.responseInEdit != nil {
-                            return "stop.fill"
-                        }
-
-                        return "arrowshape.up"
-                    }()
-
-                    Button(action: {
-                        if viewModel.promptInEdit.isEmpty && allowContinuation {
-                            _ = viewModel.requestContinue()
-                        }
-                        else {
-                            viewModel.requestExtend()
-                        }
-                    }) {
-                        Image(systemName: buttonName)
-                            .font(.system(size: 32))
-                            .disabled(
-                                (viewModel.promptInEdit.isEmpty && !allowContinuation)
-                            )
-                            .foregroundStyle(
-                                (viewModel.promptInEdit.isEmpty && !allowContinuation)
-                                ? Color(.disabledControlTextColor)
-                                : Color.accentColor)
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.trailing, 12)
-                }
-            }
-
-            // Tab.retrieval
-            VStack(spacing: 0) {
-                HStack {
-                    InlineTextInput($viewModel.promptInEdit, allowNewlineSubmit: $allowNewlineSubmit, isFocused: $focusTextInput) {
-                        if viewModel.promptInEdit.isEmpty && allowContinuation {
-                            _ = viewModel.requestContinue()
-                        }
-                        else {
-                            if !showSeparateRetrievalButton && forceRetrieval {
-                                viewModel.requestExtendWithRetrieval()
-                            }
-                            else {
-                                viewModel.requestExtend()
-                            }
                         }
                     }
                         .focused($focusTextInput)
@@ -177,12 +123,74 @@ struct SequenceViewTwo: View {
                             return "stop.fill"
                         }
 
-                        if !showSeparateRetrievalButton && forceRetrieval {
-                            return "arrow.up.doc"
-                        }
-
                         return "arrowshape.up"
                     }()
+
+                    let buttonDisabled: Bool = {
+                        if viewModel.submitting || viewModel.responseInEdit != nil {
+                            return false
+                        }
+                        else {
+                            if viewModel.promptInEdit.isEmpty {
+                                return !allowContinuation || forceRetrieval
+                            }
+                            else {
+                                return false
+                            }
+                        }
+                    }()
+
+                    Button(action: {
+                        if viewModel.submitting || viewModel.responseInEdit != nil {
+                            viewModel.stopSubmitAndReceive(userRequested: true)
+                        }
+                        else {
+                            if viewModel.promptInEdit.isEmpty {
+                                if allowContinuation {
+                                    _ = viewModel.requestContinue()
+                                }
+                            }
+                            else {
+                                viewModel.requestExtend()
+                            }
+                        }
+                    }) {
+                        Image(systemName: buttonName)
+                            .font(.system(size: 32))
+                            .disabled(buttonDisabled)
+                            .foregroundStyle(
+                                buttonDisabled
+                                ? Color(.disabledControlTextColor)
+                                : Color.accentColor)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.trailing, 12)
+                }
+            }
+
+            // Tab.retrieval
+            VStack(spacing: 0) {
+                HStack(spacing: 12) {
+                    InlineTextInput($viewModel.promptInEdit, allowNewlineSubmit: $allowNewlineSubmit, isFocused: $focusTextInput) {
+                        if viewModel.promptInEdit.isEmpty && allowContinuation {
+                            _ = viewModel.requestContinue()
+                        }
+                        else {
+                            if !showSeparateRetrievalButton && forceRetrieval {
+                                viewModel.requestExtendWithRetrieval()
+                            }
+                            else {
+                                viewModel.requestExtend()
+                            }
+                        }
+                    }
+                    .focused($focusTextInput)
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            self.focusTextInput = true
+                        }
+                    }
+                    .backgroundStyle(inputBackgroundStyle)
 
                     if showSeparateRetrievalButton {
                         Button(action: {
@@ -199,34 +207,91 @@ struct SequenceViewTwo: View {
                         .buttonStyle(.plain)
                     }
 
-                    Button(action: {
-                        if viewModel.promptInEdit.isEmpty && allowContinuation {
-                            _ = viewModel.requestContinue()
+                    let aioButtonName: String = {
+                        if viewModel.submitting || viewModel.responseInEdit != nil {
+                            return "stop.fill"
+                        }
+
+                        if !showSeparateRetrievalButton && forceRetrieval {
+                            return "arrow.up.doc"
+                        }
+
+                        return "arrowshape.up"
+                    }()
+
+                    let aioButtonDisabled: Bool = {
+                        if viewModel.submitting || viewModel.responseInEdit != nil {
+                            return false
                         }
                         else {
-                            if !showSeparateRetrievalButton && forceRetrieval {
-                                viewModel.requestExtendWithRetrieval()
+                            if showSeparateRetrievalButton {
+                                return viewModel.promptInEdit.isEmpty && !allowContinuation
                             }
                             else {
-                                viewModel.requestExtend()
+                                if viewModel.promptInEdit.isEmpty {
+                                    return !allowContinuation || forceRetrieval
+                                }
+                                else {
+                                    return false
+                                }
+                            }
+                        }
+                    }()
+
+                    Button(action: {
+                        if viewModel.submitting || viewModel.responseInEdit != nil {
+                            viewModel.stopSubmitAndReceive(userRequested: true)
+                        }
+                        else {
+                            if showSeparateRetrievalButton {
+                                if viewModel.promptInEdit.isEmpty {
+                                    if allowContinuation {
+                                        _ = viewModel.requestContinue()
+                                    }
+                                    else {}
+                                }
+                                else {
+                                    viewModel.requestExtend()
+                                }
+                            }
+                            else {
+                                if viewModel.promptInEdit.isEmpty {
+                                    if allowContinuation {
+                                        if forceRetrieval {
+                                            // Do nothing; should be grayed out, since we don't support this
+                                        }
+                                        else {
+                                            _ = viewModel.requestContinue()
+                                        }
+                                    }
+                                    else {}
+                                }
+                                else {
+                                    if forceRetrieval {
+                                        viewModel.requestExtendWithRetrieval()
+                                    }
+                                    else {
+                                        viewModel.requestExtend()
+                                    }
+                                }
                             }
                         }
                     }) {
-                        Image(systemName: buttonName)
+                        Image(systemName: aioButtonName)
                             .font(.system(size: 32))
-                            .disabled(
-                                (viewModel.promptInEdit.isEmpty && !allowContinuation)
-                                || (viewModel.promptInEdit.isEmpty && !showSeparateRetrievalButton && forceRetrieval)
-                            )
+                            .disabled(aioButtonDisabled)
                             .foregroundStyle(
-                                (viewModel.promptInEdit.isEmpty && !allowContinuation)
-                                || (viewModel.promptInEdit.isEmpty && !showSeparateRetrievalButton && forceRetrieval)
+                                aioButtonDisabled
                                 ? Color(.disabledControlTextColor)
                                 : Color.accentColor)
                     }
                     .buttonStyle(.plain)
                     .padding(.trailing, 12)
                 }
+                .padding(.leading, 24)
+                .padding(.trailing, 12)
+                .background(inputBackgroundStyle)
+                .frame(minHeight: 240)
             }
 
             // Tab.uiOptions
@@ -379,7 +444,7 @@ struct SequenceViewTwo: View {
                             // TODO: This doesn't seem like the right UI move, but I don't understand colors yet
                             Divider()
 
-                            HStack {
+                            HStack(spacing: 0) {
                                 if viewModel.displayedStatus != nil {
                                     // TODO: Find a way to persist any changes for at least a few seconds
                                     Text(viewModel.displayedStatus ?? "")
@@ -398,6 +463,7 @@ struct SequenceViewTwo: View {
                             }
                             .padding(.leading, 24)
                             .padding(.trailing, 24)
+                            .frame(minHeight: 24)
                         }
 
                         tabsView

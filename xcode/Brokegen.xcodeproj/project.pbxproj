@@ -32,7 +32,6 @@
 		CE9867632BF41954008D6C41 /* BrokegenAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867622BF41954008D6C41 /* BrokegenAppView.swift */; };
 		CEAA2B702C070AE3002BEB26 /* ChatSequence+Extend.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA2B6F2C070AE3002BEB26 /* ChatSequence+Extend.swift */; };
 		CEAA2B722C070B2E002BEB26 /* ChatSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA2B712C070B2E002BEB26 /* ChatSequence.swift */; };
-		CEAA2B742C07A8E4002BEB26 /* OneSequenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA2B732C07A8E4002BEB26 /* OneSequenceView.swift */; };
 		CEB773232C0160530051F41C /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = CEB773222C0160530051F41C /* Alamofire */; };
 		CEBAA28C2C003F4B00D43E22 /* InteractiveJobOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEBAA28B2C003F4B00D43E22 /* InteractiveJobOutputView.swift */; };
 		CECA47A82BF6D5B8007A28F2 /* System.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECA47A72BF6D5B8007A28F2 /* System.swift */; };
@@ -88,7 +87,6 @@
 		CE9867622BF41954008D6C41 /* BrokegenAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrokegenAppView.swift; sourceTree = "<group>"; };
 		CEAA2B6F2C070AE3002BEB26 /* ChatSequence+Extend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChatSequence+Extend.swift"; sourceTree = "<group>"; };
 		CEAA2B712C070B2E002BEB26 /* ChatSequence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSequence.swift; sourceTree = "<group>"; };
-		CEAA2B732C07A8E4002BEB26 /* OneSequenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneSequenceView.swift; sourceTree = "<group>"; };
 		CEBAA28B2C003F4B00D43E22 /* InteractiveJobOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractiveJobOutputView.swift; sourceTree = "<group>"; };
 		CECA47A72BF6D5B8007A28F2 /* System.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = System.swift; sourceTree = "<group>"; };
 		CECA47A92BF6D62E007A28F2 /* SystemInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemInfoView.swift; sourceTree = "<group>"; };
@@ -145,7 +143,6 @@
 				CEAA2B6E2C070AAE002BEB26 /* Data */,
 				CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */,
 				CE7FFE172C06772400DB7CFA /* BlankOneSequenceView.swift */,
-				CEAA2B732C07A8E4002BEB26 /* OneSequenceView.swift */,
 				CE2988312C09101F00A997A1 /* SequenceViewTwo.swift */,
 				CE4634F12BFBB4730063142E /* SequencePickerView.swift */,
 			);
@@ -370,7 +367,6 @@
 				CE4634E02BF963210063142E /* BaseJob.swift in Sources */,
 				CEE99E632C0E7D9F008E1B07 /* OneInferenceModelView.swift in Sources */,
 				CEAA2B722C070B2E002BEB26 /* ChatSequence.swift in Sources */,
-				CEAA2B742C07A8E4002BEB26 /* OneSequenceView.swift in Sources */,
 				CEE99E692C0FD9FC008E1B07 /* InferenceModelSettings.swift in Sources */,
 				CEBAA28C2C003F4B00D43E22 /* InteractiveJobOutputView.swift in Sources */,
 			);
