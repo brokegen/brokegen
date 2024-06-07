@@ -17,8 +17,8 @@ test:
 
 
 
--include python/_apps/rag-proxy.mk
 -include python/_apps/targets.mk
+-include python/_apps/server.mk
 -include python/ingest/targets.mk
 
 venv:
