@@ -5,7 +5,7 @@ from starlette.requests import Request
 from _util.json import safe_get
 from _util.status import ServerStatusHolder
 from audit.http import AuditDB, get_db as get_audit_db
-from history.ollama.chat_rag_routes import do_proxy_chat_rag
+from history.ollama.chat import do_proxy_chat_rag
 from history.ollama.chat_routes import do_proxy_generate
 from history.ollama.direct_routes import logger
 from history.ollama.forwarding import forward_request_nolog, forward_request

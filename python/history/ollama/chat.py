@@ -6,6 +6,7 @@ from typing import TypeAlias, Callable, Awaitable, Any
 import httpx
 import orjson
 import sqlalchemy
+import sqlalchemy.exc
 import starlette.datastructures
 import starlette.requests
 from sqlalchemy import select
