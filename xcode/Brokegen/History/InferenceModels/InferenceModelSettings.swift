@@ -10,6 +10,9 @@ class InferenceModelSettings: Observable, ObservableObject {
     public var chatSummaryModel: InferenceModel? = nil
     public var preferredEmbeddingModel: InferenceModel? = nil
 
+    // TODO: This isn't working; probably need to plumb the value through from ProviderService.
+    public var stillLoading = true
+
     @AppStorage("defaultInferenceModelId")
     private var defaultInferenceModelId: InferenceModelRecordID = INVALID_MODEL_ID
     @AppStorage("fallbackInferenceModelId")
@@ -47,6 +50,7 @@ class InferenceModelSettings: Observable, ObservableObject {
             }
         }
 
+        stillLoading = false
         objectWillChange.send()
         return self
     }

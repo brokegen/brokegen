@@ -127,7 +127,7 @@ struct BlankOneSequenceView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            VStack {
+            VStack(spacing: 0) {
                 ChatNameInput($chatSequenceHumanDesc)
                     .frame(maxWidth: .infinity)
                     .padding(24)
@@ -229,9 +229,10 @@ struct BlankOneSequenceView: View {
             }
             .sheet(isPresented: $showModelPicker) {
                 ModelPickerView(modelSelection: $modelSelection)
+                // Frame is very wide because the way we're positioning incorrectly ignores the sidebar
                     .frame(
-                        width: max(800, geometry.size.width * 0.8),
-                        height: max(800, geometry.size.height * 0.8),
+                        width: geometry.size.width,
+                        height: geometry.size.height * 0.8,
                         alignment: .top)
                     .animation(.linear(duration: 0.2))
             }
