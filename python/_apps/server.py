@@ -69,23 +69,25 @@ async def lifespan_logging(app: FastAPI):
 
 
 @click.command()
-@click.option('--data-dir', default='data/',
+@click.option('--data-dir', default='data/', show_default=True,
               help='Filesystem directory to store/read data from',
               type=click.Path(exists=True, writable=True, file_okay=False))
-@click.option('--bind-host', default="127.0.0.1",
+@click.option('--bind-host', default="127.0.0.1", show_default=True,
               help='uvicorn bind host')
-@click.option('--bind-port', default=6635, type=click.IntRange(0, 65535),
-              help='uvicorn bind port')
-@click.option('--log-level', default='DEBUG',
+@click.option('--bind-port', default=6635, show_default=True,
+              help='uvicorn bind port',
+              type=click.IntRange(1, 65535))
+@click.option('--log-level', default='DEBUG', show_default=True,
               help='loglevel to pass to Python `logging`',
               type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'FATAL'], case_sensitive=False))
-@click.option('--enable-colorlog', default=False)
-@click.option('--trace-sqlalchemy', default=False, type=click.BOOL)
-@click.option('--trace-fastapi-http', default=True,
+@click.option('--enable-colorlog', default=False, show_default=True, type=click.BOOL)
+@click.option('--trace-sqlalchemy', default=False, show_default=True, type=click.BOOL)
+@click.option('--trace-fastapi-http', default=True, show_default=True,
               help='Record FastAPI ingress/egress, at the HTTP request/response level',
               type=click.BOOL)
-@click.option('--force-ollama-rag', default=False, type=click.BOOL,
-              help='Load FAISS files from --data-dir, and apply them to any ollama-proxy /api/chat calls')
+@click.option('--force-ollama-rag', default=False, show_default=True,
+              help='Load FAISS files from --data-dir, and apply them to any ollama-proxy /api/chat calls',
+              type=click.BOOL)
 def run_proxy(
         data_dir,
         bind_host,
@@ -169,4 +171,4 @@ def run_proxy(
 
 
 if __name__ == "__main__":
-    run_proxy()
+    run_proxy(max_content_width=192)
