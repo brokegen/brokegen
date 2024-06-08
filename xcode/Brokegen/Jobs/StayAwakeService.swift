@@ -20,11 +20,19 @@ class StayAwake {
         _ = self.destroyAssertion()
     }
 
+    /// It's not entirely clear what assertion(s) to use to keep Ollama running in the background.
+    /// `caffeinate -dut 3600` works to keep the system awake for a while, but can we avoid keeping the display on?
+    ///
+    /// - kIOPMAssertionTypePreventUserIdleSystemSleep: doesn't work, computation is delayed during entire sleep, throwing off metrics
+    /// - kIOPMAssertionTypeNoIdleSleep: TODO
+    /// - kIOPMAssertionTypeNoDisplaySleep: TODO
+    /// - kIOPMAssertionTypePreventUserIdleDisplaySleep: TODO
+    ///
     func createAssertion(reason: String) -> Bool {
         guard !assertionIsActive else { return false }
 
         let result = IOPMAssertionCreateWithName(
-            kIOPMAssertionTypePreventUserIdleSystemSleep as CFString,
+            kIOPMAssertionTypeNoIdleSleep as CFString,
             IOPMAssertionLevel(kIOPMAssertionLevelOn),
             reason as CFString,
             &pmAssertionID)
