@@ -8,11 +8,11 @@ from sqlalchemy import select, or_, func
 
 from _util.json import safe_get
 from _util.typing import InferenceModelHumanID
-from history.ollama.json import OllamaResponseContentJSON
 from providers.inference_models.database import HistoryDB
-from providers.inference_models.orm import InferenceModelRecordOrm, InferenceModelRecord, \
-    InferenceModelAddRequest, lookup_inference_model_detailed
+from providers.inference_models.orm import InferenceModelRecordOrm, InferenceModelRecord, InferenceModelAddRequest, \
+    lookup_inference_model_detailed
 from providers.orm import ProviderRecordOrm, ProviderRecord
+from providers_ollama.json import OllamaResponseContentJSON
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +131,8 @@ def build_model_from_api_show(
     parent_model_id = safe_get(sorted_response_json, "details", "parent_model")
     if parent_model_id:
         # Noticed starting with Ollama 0.1.33+e9ae607e
-        logger.warning(f"ollama /api/show: Erasing parent_model info, because it's inconsistent: {parent_model_id} => {human_id}")
+        logger.warning(
+            f"ollama /api/show: Erasing parent_model info, because it's inconsistent: {parent_model_id} => {human_id}")
         sorted_response_json["details"]["parent_model"] = ""
 
     # reference_model_details = orjson.dumps(safe_get(sorted_response_json, "details")).decode()

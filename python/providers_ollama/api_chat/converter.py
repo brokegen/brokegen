@@ -10,9 +10,9 @@ from _util.json import safe_get
 from _util.json_streaming import JSONStreamingResponse
 from _util.typing import PromptText, TemplatedPromptText
 from audit.http import AuditDB
-from history.ollama.chat_rag_util import do_generate_raw_templated
-from history.ollama.chat_routes import lookup_model_offline
-from history.ollama.json import OllamaRequestContentJSON
+from providers_ollama.chat_rag_util import do_generate_raw_templated
+from providers_ollama.chat_routes import lookup_model_offline
+from providers_ollama.json import OllamaRequestContentJSON
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB
 

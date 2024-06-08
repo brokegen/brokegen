@@ -10,7 +10,6 @@ from fastapi import Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 
-import history.ollama
 from _util.json import safe_get
 from _util.json_streaming import JSONStreamingResponse
 from _util.status import ServerStatusHolder, StatusContext
@@ -20,12 +19,12 @@ from audit.http import get_db as get_audit_db
 from history.chat.database import ChatMessageOrm, ChatSequence, lookup_chat_message, ChatMessage, \
     lookup_sequence_parents
 from history.chat.sequence_get import do_get_sequence
-from history.ollama.chat_rag_util import finalize_inference_job, do_generate_raw_templated
-from history.ollama.json import consolidate_stream_sync, keepalive_wrapper
 from inference.embeddings.retrieval import RetrievalPolicyID, RetrievalLabel
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, InferenceReason
+from providers_ollama.chat_rag_util import finalize_inference_job, do_generate_raw_templated
+from providers_ollama.json import consolidate_stream_sync, keepalive_wrapper
 
 logger = logging.getLogger(__name__)
 

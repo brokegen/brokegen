@@ -13,18 +13,18 @@ from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import PromptText
 from audit.http import AuditDB
 from history.chat.database import ChatMessageOrm, ChatSequence
-from history.ollama.chat_rag_util import finalize_inference_job, do_generate_raw_templated
-from history.ollama.chat_routes import lookup_model_offline
-from history.ollama.api_chat.intercept import do_capture_chat_messages
-from history.ollama.api_chat.converter import convert_chat_to_generate
-from history.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, \
-    consolidate_stream
 from inference.embeddings.knowledge import get_knowledge
 from inference.embeddings.retrieval import RetrievalPolicy, RetrievalLabel, SimpleRetrievalPolicy, \
     SummarizingRetrievalPolicy
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceEventOrm, InferenceReason
+from providers_ollama.api_chat.converter import convert_chat_to_generate
+from providers_ollama.api_chat.intercept import do_capture_chat_messages
+from providers_ollama.chat_rag_util import finalize_inference_job, do_generate_raw_templated
+from providers_ollama.chat_routes import lookup_model_offline
+from providers_ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, \
+    consolidate_stream
 
 logger = logging.getLogger(__name__)
 
@@ -176,9 +176,9 @@ async def do_proxy_chat_rag(
                 response_in = ChatMessageOrm(
                     role="assistant",
                     content=safe_get(consolidated_response, "response")
-                        or safe_get(consolidated_response, "message", "content"),
+                            or safe_get(consolidated_response, "message", "content"),
                     created_at=datetime.fromisoformat(safe_get(consolidated_response, "created_at"))
-                        or datetime.now(tz=timezone.utc),
+                               or datetime.now(tz=timezone.utc),
                 )
                 if response_in.content:
                     history_db.add(response_in)

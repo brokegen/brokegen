@@ -13,13 +13,13 @@ import providers
 from _util.json import safe_get
 from _util.typing import InferenceModelHumanID
 from audit.http import AuditDB
-from history.ollama.json import OllamaEventBuilder
-from history.ollama.models import build_model_from_api_show, build_models_from_api_tags
 from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceModelRecord, InferenceModelRecordOrm, inject_inference_stats, \
     InferenceModelResponse
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry, BaseProvider
+from providers_ollama.json import OllamaEventBuilder
+from providers_ollama.models import build_model_from_api_show, build_models_from_api_tags
 
 _real_ollama_client = httpx.AsyncClient(
     base_url="http://localhost:11434",

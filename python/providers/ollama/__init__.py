@@ -12,6 +12,7 @@ from providers.inference_models.database import HistoryDB, get_db as get_history
 from providers.inference_models.orm import InferenceModelResponse
 from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord
 from providers.registry import ProviderRegistry, BaseProvider
+from providers_ollama.model_routes import do_list_available_models
 
 logger = logging.getLogger(__name__)
 
@@ -89,8 +90,6 @@ class ExternalOllamaProvider(BaseProvider):
         history_db: HistoryDB = next(get_history_db())
         audit_db: AuditDB = next(get_audit_db())
 
-        # TODO: the circularest of imports
-        from history.ollama.model_routes import do_list_available_models
         async for model in do_list_available_models(self, history_db, audit_db):
             yield model
 
