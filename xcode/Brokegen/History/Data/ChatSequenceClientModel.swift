@@ -128,7 +128,8 @@ class ChatSequenceClientModel: Observable, ObservableObject {
     }
 
     func requestContinue(
-        model continuationModelId: InferenceModelRecordID? = nil
+        model continuationModelId: InferenceModelRecordID? = nil,
+        withRetrieval: Bool = false
     ) -> Self {
         print("[INFO] ChatSequenceClientModel.requestContinue(\(continuationModelId))")
 
@@ -160,15 +161,19 @@ class ChatSequenceClientModel: Observable, ObservableObject {
         return self
     }
 
-    func requestExtend() {
+    func requestExtend(
+        withRetrieval: Bool = false
+    ) {
         Task.init {
             guard !self.promptInEdit.isEmpty else { return }
             guard submitting == false else {
-                print("[ERROR] ChatSequenceClientModel.requestExtend during another submission")
+                print("[ERROR] ChatSequenceClientModel.requestExtend(withRetrieval: \(withRetrieval)) during another submission")
                 return
             }
-            submitting = true
-            displayedStatus = "/sequences/\(sequence.serverId!)/extend: submitting request"
+            DispatchQueue.main.async {
+                self.submitting = true
+                self.displayedStatus = "/sequences/\(self.sequence.serverId!)/extend: submitting request"
+            }
 
             let nextMessage = Message(
                 role: "user",
@@ -181,6 +186,9 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                     nextMessage: nextMessage,
                     continuationModelId: nil,
                     fallbackModelId: inferenceModelSettings.fallbackInferenceModel?.serverId,
+                    retrievalPolicy: withRetrieval ? "simple" : nil,
+                    retrievalSearchArgs: withRetrieval ? "{\"k\": 18}" : nil,
+                    preferredEmbeddingModel: withRetrieval ? inferenceModelSettings.preferredEmbeddingModel?.serverId : nil,
                     sequenceId: sequence.serverId!
                 )
             )
@@ -188,46 +196,9 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                 caller: "ChatSyncService.sequenceExtend",
                 endpoint: "/sequences/\(sequence.serverId!)/extend"
             ), receiveValue: receiveHandler(
-                caller: "ChatSequenceClientModel.requestExtend",
+                caller: "ChatSequenceClientModel.requestExtend(withRetrieval: \(withRetrieval))",
                 endpoint: "/sequences/\(sequence.serverId!)/extend",
                 maybeNextMessage: nextMessage
-            ))
-        }
-    }
-
-    func requestExtendWithRetrieval() {
-        Task.init {
-            guard !self.promptInEdit.isEmpty else { return }
-            guard submitting == false else {
-                print("[ERROR] ChatSequenceClientModel.requestExtendWithRetrieval during another submission")
-                return
-            }
-            submitting = true
-            displayedStatus = "/sequences/\(sequence.serverId!)/extend: submitting request"
-
-            let nextMessage = Message(
-                role: "user",
-                content: promptInEdit,
-                createdAt: Date.now
-            )
-
-            receivingStreamer = await chatService.sequenceExtend(
-                ChatSequenceParameters(
-                    nextMessage: nextMessage,
-                    continuationModelId: nil,
-                    fallbackModelId: inferenceModelSettings.fallbackInferenceModel?.serverId,
-                    retrievalPolicy: "simple",
-                    retrievalSearchArgs: "{\"k\": 18}",
-                    preferredEmbeddingModel: inferenceModelSettings.preferredEmbeddingModel?.serverId,
-                    sequenceId: sequence.serverId!
-                )
-            )
-            .sink(receiveCompletion: completionHandler(
-                caller: "ChatSyncService.sequenceExtend",
-                endpoint: "/sequences/\(sequence.serverId!)/extend"
-            ), receiveValue: receiveHandler(
-                caller: "ChatSequenceClientModel.requestExtendWithRetrieval",
-                endpoint: "/sequences/\(sequence.serverId!)/extend"
             ))
         }
     }

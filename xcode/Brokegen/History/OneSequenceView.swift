@@ -179,7 +179,7 @@ struct OneSequenceView: View {
                         }
                         else {
                             if !showSeparateRetrievalButton && forceRetrieval {
-                                viewModel.requestExtendWithRetrieval()
+                                viewModel.requestExtend(withRetrieval: true)
                             }
                             else {
                                 viewModel.requestExtend()
@@ -197,7 +197,7 @@ struct OneSequenceView: View {
                     if showSeparateRetrievalButton {
                         Button(action: {
                             // TODO: Implement continuation with retrieval.
-                            viewModel.requestExtendWithRetrieval()
+                            viewModel.requestExtend(withRetrieval: true)
                         }) {
                             Image(systemName: "arrow.up.doc")
                                 .font(.system(size: 32))
@@ -270,7 +270,7 @@ struct OneSequenceView: View {
                                 }
                                 else {
                                     if forceRetrieval {
-                                        viewModel.requestExtendWithRetrieval()
+                                        viewModel.requestExtend(withRetrieval: true)
                                     }
                                     else {
                                         viewModel.requestExtend()
