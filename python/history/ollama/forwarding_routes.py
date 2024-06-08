@@ -1,3 +1,5 @@
+import logging
+
 import orjson
 from fastapi import FastAPI, APIRouter, Depends
 from starlette.requests import Request
@@ -5,15 +7,16 @@ from starlette.requests import Request
 from _util.json import safe_get
 from _util.status import ServerStatusHolder
 from audit.http import AuditDB, get_db as get_audit_db
-from history.ollama.chat import do_proxy_chat_rag
+from history.ollama.api_chat.inject_rag import do_proxy_chat_rag
 from history.ollama.chat_routes import do_proxy_generate
-from history.ollama.direct_routes import logger
 from history.ollama.forwarding import forward_request_nolog, forward_request
 from history.ollama.json import keepalive_wrapper, OllamaRequestContentJSON
 from history.ollama.model_routes import do_api_tags, do_api_show
 from inference.embeddings.retrieval import RetrievalLabel
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceReason
+
+logger = logging.getLogger(__name__)
 
 
 def install_forwards(app: FastAPI, force_ollama_rag: bool):

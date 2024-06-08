@@ -20,7 +20,7 @@ from audit.http import get_db as get_audit_db
 from history.chat.database import ChatMessageOrm, ChatSequence, lookup_chat_message, ChatMessage, \
     lookup_sequence_parents
 from history.chat.sequence_get import do_get_sequence
-from history.ollama.chat import finalize_inference_job, do_generate_raw_templated
+from history.ollama.chat_rag_util import finalize_inference_job, do_generate_raw_templated
 from history.ollama.json import consolidate_stream_sync, keepalive_wrapper
 from inference.embeddings.retrieval import RetrievalPolicyID, RetrievalLabel
 from inference.prompting.templating import apply_llm_template
