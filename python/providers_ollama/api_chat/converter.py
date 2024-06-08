@@ -10,11 +10,11 @@ from _util.json import safe_get
 from _util.json_streaming import JSONStreamingResponse
 from _util.typing import PromptText, TemplatedPromptText
 from audit.http import AuditDB
-from providers_ollama.chat_rag_util import do_generate_raw_templated
-from providers_ollama.chat_routes import lookup_model_offline
-from providers_ollama.json import OllamaRequestContentJSON
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB
+from providers_ollama.chat_rag_util import do_generate_raw_templated
+from providers_ollama.chat_routes import lookup_model
+from providers_ollama.json import OllamaRequestContentJSON
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +27,10 @@ async def convert_chat_to_generate(
         history_db: HistoryDB,
         audit_db: AuditDB,
 ):
-    model, executor_record = await lookup_model_offline(
+    model, executor_record = await lookup_model(
         chat_request_content['model'],
         history_db,
+        audit_db,
     )
 
     model_template = (
