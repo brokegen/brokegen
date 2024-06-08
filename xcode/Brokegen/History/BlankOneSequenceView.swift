@@ -199,13 +199,27 @@ struct BlankOneSequenceView: View {
                             }
                             .backgroundStyle(inputBackgroundStyle)
 
+                            Button(action: {
+                                if !promptInEdit.isEmpty {
+                                    submit(withRetrieval: true)
+                                }
+                            }) {
+                                Image(systemName: "arrow.up.doc")
+                                    .font(.system(size: 32))
+                                    .disabled(promptInEdit.isEmpty)
+                                    .foregroundStyle(promptInEdit.isEmpty
+                                                     ? Color(.disabledControlTextColor)
+                                                     : Color.accentColor)
+                            }
+                            .buttonStyle(.plain)
+
                         Button(action: {
                             if submitting {
                                 stopSubmitAndReceive()
                             }
                             else {
                                 if !promptInEdit.isEmpty {
-                                    submit()
+                                    submit(withRetrieval: false)
                                 }
                                 else {
                                     // This is the only disabled case
@@ -286,7 +300,7 @@ struct BlankOneSequenceView: View {
         }
     }
 
-    func submit() {
+    func submit(withRetrieval: Bool = false) {
         Task.init {
             submitting = true
 
@@ -314,7 +328,7 @@ struct BlankOneSequenceView: View {
 
             pathHost.push(
                 chatService.clientModel(for: nextSequence!, inferenceModelSettings: settings)
-                    .requestContinue(model: modelSelection!.serverId)
+                    .requestContinue(model: modelSelection!.serverId, withRetrieval: withRetrieval)
                 )
         }
     }

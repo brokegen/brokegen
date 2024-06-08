@@ -134,7 +134,7 @@ struct OneSequenceView: View {
                         }
                         else {
                             if viewModel.promptInEdit.isEmpty {
-                                return !allowContinuation || forceRetrieval
+                                return !allowContinuation
                             }
                             else {
                                 return false
@@ -175,7 +175,12 @@ struct OneSequenceView: View {
                 HStack(spacing: 12) {
                     InlineTextInput($viewModel.promptInEdit, allowNewlineSubmit: $allowNewlineSubmit, isFocused: $focusTextInput) {
                         if viewModel.promptInEdit.isEmpty && allowContinuation {
-                            _ = viewModel.requestContinue()
+                            if !showSeparateRetrievalButton && forceRetrieval {
+                                _ = viewModel.requestContinue(withRetrieval: true)
+                            }
+                            else {
+                                _ = viewModel.requestContinue()
+                            }
                         }
                         else {
                             if !showSeparateRetrievalButton && forceRetrieval {
@@ -196,8 +201,12 @@ struct OneSequenceView: View {
 
                     if showSeparateRetrievalButton {
                         Button(action: {
-                            // TODO: Implement continuation with retrieval.
-                            viewModel.requestExtend(withRetrieval: true)
+                            if viewModel.promptInEdit.isEmpty && allowContinuation {
+                                _ = viewModel.requestContinue(withRetrieval: true)
+                            }
+                            else {
+                                viewModel.requestExtend(withRetrieval: true)
+                            }
                         }) {
                             Image(systemName: "arrow.up.doc")
                                 .font(.system(size: 32))
@@ -226,17 +235,7 @@ struct OneSequenceView: View {
                             return false
                         }
                         else {
-                            if showSeparateRetrievalButton {
-                                return viewModel.promptInEdit.isEmpty && !allowContinuation
-                            }
-                            else {
-                                if viewModel.promptInEdit.isEmpty {
-                                    return !allowContinuation || forceRetrieval
-                                }
-                                else {
-                                    return false
-                                }
-                            }
+                            return viewModel.promptInEdit.isEmpty && !allowContinuation
                         }
                     }()
 
@@ -259,22 +258,12 @@ struct OneSequenceView: View {
                             else {
                                 if viewModel.promptInEdit.isEmpty {
                                     if allowContinuation {
-                                        if forceRetrieval {
-                                            // Do nothing; should be grayed out, since we don't support this
-                                        }
-                                        else {
-                                            _ = viewModel.requestContinue()
-                                        }
+                                        _ = viewModel.requestContinue(withRetrieval: forceRetrieval)
                                     }
                                     else {}
                                 }
                                 else {
-                                    if forceRetrieval {
-                                        viewModel.requestExtend(withRetrieval: true)
-                                    }
-                                    else {
-                                        viewModel.requestExtend()
-                                    }
+                                    viewModel.requestExtend(withRetrieval: forceRetrieval)
                                 }
                             }
                         }

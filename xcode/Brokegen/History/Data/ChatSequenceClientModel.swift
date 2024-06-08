@@ -131,21 +131,26 @@ class ChatSequenceClientModel: Observable, ObservableObject {
         model continuationModelId: InferenceModelRecordID? = nil,
         withRetrieval: Bool = false
     ) -> Self {
-        print("[INFO] ChatSequenceClientModel.requestContinue(\(continuationModelId))")
+        print("[INFO] ChatSequenceClientModel.requestContinue(\(continuationModelId), withRetrieval: \(withRetrieval))")
 
         Task.init {
             guard submitting == false else {
-                print("[ERROR] ChatSequenceClientModel.requestContinue during another submission")
+                print("[ERROR] ChatSequenceClientModel.requestContinue(withRetrieval: \(withRetrieval)) during another submission")
                 return
             }
-            submitting = true
-            displayedStatus = "/sequences/\(sequence.serverId!)/continue: submitting request"
+            DispatchQueue.main.async {
+                self.submitting = true
+                self.displayedStatus = "/sequences/\(self.sequence.serverId!)/continue: submitting request"
+            }
 
             receivingStreamer = await chatService.sequenceContinue(
                 ChatSequenceParameters(
                     nextMessage: nil,
                     continuationModelId: continuationModelId,
                     fallbackModelId: inferenceModelSettings.fallbackInferenceModel?.serverId,
+                    retrievalPolicy: withRetrieval ? "simple" : nil,
+                    retrievalSearchArgs: withRetrieval ? "{\"k\": 18}" : nil,
+                    preferredEmbeddingModel: withRetrieval ? inferenceModelSettings.preferredEmbeddingModel?.serverId : nil,
                     sequenceId: sequence.serverId!
                 )
             )
@@ -153,7 +158,7 @@ class ChatSequenceClientModel: Observable, ObservableObject {
                     caller: "ChatSyncService.sequenceContinue",
                     endpoint: "/sequences/\(sequence.serverId!)/continue"
                 ), receiveValue: receiveHandler(
-                    caller: "ChatSequenceClientModel.requestContinue",
+                    caller: "ChatSequenceClientModel.requestContinue(withRetrieval: \(withRetrieval))",
                     endpoint: "/sequences/\(sequence.serverId!)/continue"
                 ))
         }
