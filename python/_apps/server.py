@@ -148,8 +148,8 @@ def run_proxy(
     asyncio.run(providers.llamafile.discover_llamafiles_in('dist'))
     asyncio.run(providers.ollama.discover_ollama_servers())
 
-    providers_ollama.ollama.direct_routes.install_test_points(app)
-    providers_ollama.ollama.forwarding_routes.install_forwards(app, force_ollama_rag)
+    providers_ollama.direct_routes.install_test_points(app)
+    providers_ollama.forwarding_routes.install_forwards(app, force_ollama_rag)
     history.chat.install_routes(app)
     providers.inference_models.routes.install_routes(app)
     providers.routes.install_routes(app)

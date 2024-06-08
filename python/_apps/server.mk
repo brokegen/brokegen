@@ -27,7 +27,7 @@ server-onedir: $(pyinstaller_inference_venv)
 			--target-architecture x86_64 \
 			--noupx --console \
 			--noconfirm \
-			--debug imports --debug bootloader --debug noarchive \
+			--debug noarchive \
 			--paths $(python_root) \
 			--specpath dist \
 			--onedir --name "brokegen-server-onedir" \
