@@ -1,7 +1,4 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
-import history.ollama.direct_routes
-import history.ollama.forwarding_routes
-
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
@@ -21,7 +18,11 @@ from fastapi import FastAPI
 import audit
 import history
 import history.ollama
+import history.ollama.direct_routes
+import history.ollama.forwarding_routes
+import providers.llamafile
 import providers.ollama
+import providers.openai
 from audit.http import get_db as get_audit_db
 from audit.http_raw import SqlLoggingMiddleware
 from inference.embeddings.knowledge import get_knowledge

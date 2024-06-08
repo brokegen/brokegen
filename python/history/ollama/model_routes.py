@@ -18,7 +18,6 @@ from history.ollama.models import build_model_from_api_show, build_models_from_a
 from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceModelRecord, InferenceModelRecordOrm, inject_inference_stats, \
     InferenceModelResponse
-from providers.ollama import ExternalOllamaProvider
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry, BaseProvider
 
@@ -36,7 +35,8 @@ logger = logging.getLogger(__name__)
 
 
 async def do_list_available_models(
-        provider: ExternalOllamaProvider,
+        # TODO :circular import
+        provider: "providers.ollama.ExternalOllamaProvider",
         history_db: HistoryDB,
         audit_db: AuditDB,
 ) -> AsyncGenerator[InferenceModelResponse, None]:

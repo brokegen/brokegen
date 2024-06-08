@@ -10,9 +10,9 @@ from audit.http import AuditDB
 from audit.http_raw import HttpxLogger
 from history.ollama.chat_routes import lookup_model_offline
 from history.ollama.json import OllamaResponseContentJSON, OllamaRequestContentJSON, OllamaEventBuilder
+from history.ollama.model_routes import _real_ollama_client
 from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceEventOrm, InferenceReason
-from providers.ollama import _real_ollama_client
 
 OllamaModelName: TypeAlias = str
 
