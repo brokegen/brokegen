@@ -176,6 +176,8 @@ struct MiniSequencePickerSidebar: View {
         }
 
         return Array(sectionedSomeSequences)
+            // Make sure the section names are sorted, because I guess they don't stay sorted
+            .sorted { $0.0 > $1.0 }
     }
 
     func sectionedSequences() -> [(String, [ChatSequence])] {
