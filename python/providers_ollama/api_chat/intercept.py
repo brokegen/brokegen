@@ -25,7 +25,7 @@ def do_capture_chat_messages(
                 logger.warning(f'Received several "system" messages, overwriting previous {system_message=}')
             system_message = safe_get(message_copy, "content") or system_message
         elif safe_get(message_copy, "role") not in ("user", "assistant"):
-            logger.warning(f"Received unknown Ollama role, continuing anyway: {safe_get(message_copy, "role")}")
+            logger.warning(f"Received unknown Ollama role, continuing anyway: {safe_get(message_copy, 'role')}")
 
         if safe_get_arrayed(chat_messages, index, 'images'):
             logger.error("Client submitted images for upload, ignoring")
