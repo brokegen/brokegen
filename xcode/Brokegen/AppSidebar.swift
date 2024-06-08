@@ -162,8 +162,7 @@ struct AppSidebar: View {
         .listStyle(.sidebar)
         .toolbar(.hidden)
         .navigationDestination(for: InferenceModelSettings.self) { settings in
-            InferenceModelSettingsView()
-                .environmentObject(settings.inflateModels(providerService))
+            InferenceModelSettingsView(settings)
         }
     }
 }

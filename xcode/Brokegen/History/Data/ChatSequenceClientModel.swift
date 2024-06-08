@@ -6,7 +6,7 @@ import SwiftData
 // TODO: Keep active Models around, rather than constructing one.
 // This probably means it has to live under ChatSyncService.
 @Observable
-class ChatSequenceClientModel: Observable, ObservableObject {
+class ChatSequenceClientModel: ObservableObject {
     var sequence: ChatSequence
     let chatService: ChatSyncService
     let inferenceModelSettings: InferenceModelSettings

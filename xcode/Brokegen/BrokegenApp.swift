@@ -1,16 +1,32 @@
+import Combine
 import Foundation
 import SwiftUI
 
 @main
 struct BrokegenApp: App {
     @State private var chatService: ChatSyncService = ChatSyncService()
-    @State private var jobsService: JobsManagerService
+    @State private var jobsService: JobsManagerService = DefaultJobsManagerService()
     @State private var providerService: ProviderService = ProviderService()
-    @State private var inferenceModelSettings: InferenceModelSettings
+
+    private var settingsService = SettingsService()
+    @State private var inferenceModelSettingsUpdater: AnyCancellable? = nil
 
     init() {
-        self.jobsService = DefaultJobsManagerService()
-        self.inferenceModelSettings = InferenceModelSettings()
+        // Do on-startup init, because otherwise we store no data and app is empty
+        callInitializers()
+    }
+
+    func callInitializers() {
+        inferenceModelSettingsUpdater = providerService.$allModels.sink { _ in
+            settingsService.inflateModels(providerService)
+        }
+
+        Task { await chatService.fetchPinnedSequences() }
+
+        Task {
+            await providerService.fetchAvailableModels()
+            settingsService.inflateModels(providerService)
+        }
     }
 
     var body: some Scene {
@@ -19,7 +35,8 @@ struct BrokegenApp: App {
                 .environment(chatService)
                 .environment(jobsService)
                 .environment(providerService)
-                .environment(inferenceModelSettings)
+                .environment(settingsService.inferenceModelSettings)
+                .environment(settingsService.sequenceSettings)
         }
         .windowStyle(.hiddenTitleBar)
     }

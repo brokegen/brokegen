@@ -102,7 +102,6 @@ struct InlineTextInput: View {
 struct BlankOneSequenceView: View {
     @Environment(ChatSyncService.self) private var chatService
     @Environment(PathHost.self) private var pathHost
-    // This doesn't need to be an @EnvironmentObject because we don't care about getting settings updates pushed
     @Environment(InferenceModelSettings.self) var settings: InferenceModelSettings
 
     // variables that should be in a ChatSequenceClientModel
@@ -328,7 +327,7 @@ struct BlankOneSequenceView: View {
 
             pathHost.push(
                 chatService.clientModel(for: nextSequence!, inferenceModelSettings: settings)
-                    .requestContinue(model: modelSelection!.serverId, withRetrieval: withRetrieval)
+                    .requestContinue(model: modelSelection?.serverId, withRetrieval: withRetrieval)
                 )
         }
     }
