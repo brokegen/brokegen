@@ -210,8 +210,8 @@ struct OneSequenceView: View {
                         }) {
                             Image(systemName: "arrow.up.doc")
                                 .font(.system(size: 32))
-                                .disabled(viewModel.promptInEdit.isEmpty)
-                                .foregroundStyle(viewModel.promptInEdit.isEmpty
+                                .disabled(viewModel.promptInEdit.isEmpty && !allowContinuation)
+                                .foregroundStyle(viewModel.promptInEdit.isEmpty && !allowContinuation
                                                  ? Color(.disabledControlTextColor)
                                                  : Color.accentColor)
                         }
