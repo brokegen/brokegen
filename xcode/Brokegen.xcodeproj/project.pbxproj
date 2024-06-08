@@ -45,6 +45,8 @@
 		CEE99E6B2C1002F9008E1B07 /* AppSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E6A2C1002F8008E1B07 /* AppSidebar.swift */; };
 		CEFA69452C14AE67007EEF8D /* ChatSequenceSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA69442C14AE67007EEF8D /* ChatSequenceSettings.swift */; };
 		CEFA69472C14B692007EEF8D /* InferenceModelSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA69462C14B692007EEF8D /* InferenceModelSettings.swift */; };
+		CEFA69492C14C525007EEF8D /* VFlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA69482C14C525007EEF8D /* VFlowLayout.swift */; };
+		CEFA694B2C14C7BC007EEF8D /* ChatSequenceSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA694A2C14C7BC007EEF8D /* ChatSequenceSettingsView.swift */; };
 		CEFEB4762BFDA67400334522 /* SimplePing.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFEB4752BFDA67400334522 /* SimplePing.swift */; };
 		CEFEB4782BFDA6C900334522 /* TimeJob.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFEB4772BFDA6C900334522 /* TimeJob.swift */; };
 		CEFEB47E2BFE399500334522 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = CEFEB47D2BFE399500334522 /* SwiftTerm */; };
@@ -101,6 +103,8 @@
 		CEE99E6A2C1002F8008E1B07 /* AppSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSidebar.swift; sourceTree = "<group>"; };
 		CEFA69442C14AE67007EEF8D /* ChatSequenceSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSequenceSettings.swift; sourceTree = "<group>"; };
 		CEFA69462C14B692007EEF8D /* InferenceModelSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceModelSettings.swift; sourceTree = "<group>"; };
+		CEFA69482C14C525007EEF8D /* VFlowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VFlowLayout.swift; sourceTree = "<group>"; };
+		CEFA694A2C14C7BC007EEF8D /* ChatSequenceSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSequenceSettingsView.swift; sourceTree = "<group>"; };
 		CEFEB4752BFDA67400334522 /* SimplePing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimplePing.swift; sourceTree = "<group>"; };
 		CEFEB4772BFDA6C900334522 /* TimeJob.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeJob.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -183,6 +187,7 @@
 				CE9867502BF4047C008D6C41 /* BrokegenApp.swift */,
 				CEE99E6A2C1002F8008E1B07 /* AppSidebar.swift */,
 				CE9867622BF41954008D6C41 /* BrokegenAppView.swift */,
+				CEFA69482C14C525007EEF8D /* VFlowLayout.swift */,
 				CE9867542BF4047E008D6C41 /* Assets.xcassets */,
 				CE9867572BF4047E008D6C41 /* Preview Content */,
 			);
@@ -255,6 +260,7 @@
 			children = (
 				CEE99E672C0FD9FC008E1B07 /* SettingsService.swift */,
 				CEFA69442C14AE67007EEF8D /* ChatSequenceSettings.swift */,
+				CEFA694A2C14C7BC007EEF8D /* ChatSequenceSettingsView.swift */,
 				CEFA69462C14B692007EEF8D /* InferenceModelSettings.swift */,
 			);
 			path = Settings;
@@ -361,6 +367,7 @@
 				CE7FFE142C04435D00DB7CFA /* ProviderService.swift in Sources */,
 				CE7FFE182C06772400DB7CFA /* BlankOneSequenceView.swift in Sources */,
 				CE4634DE2BF937320063142E /* JobsSidebar.swift in Sources */,
+				CEFA694B2C14C7BC007EEF8D /* ChatSequenceSettingsView.swift in Sources */,
 				CE4634F22BFBB4730063142E /* SequencePickerView.swift in Sources */,
 				CE9867632BF41954008D6C41 /* BrokegenAppView.swift in Sources */,
 				CEAA2B702C070AE3002BEB26 /* ChatSequence+Extend.swift in Sources */,
@@ -380,6 +387,7 @@
 				CEE99E682C0FD9FC008E1B07 /* InferenceModelSettingsView.swift in Sources */,
 				CE4634E02BF963210063142E /* BaseJob.swift in Sources */,
 				CEE99E632C0E7D9F008E1B07 /* OneInferenceModelView.swift in Sources */,
+				CEFA69492C14C525007EEF8D /* VFlowLayout.swift in Sources */,
 				CEAA2B722C070B2E002BEB26 /* ChatSequence.swift in Sources */,
 				CEFA69472C14B692007EEF8D /* InferenceModelSettings.swift in Sources */,
 				CEFA69452C14AE67007EEF8D /* ChatSequenceSettings.swift in Sources */,

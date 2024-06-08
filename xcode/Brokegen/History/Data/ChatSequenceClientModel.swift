@@ -11,6 +11,10 @@ class ChatSequenceClientModel: ObservableObject {
     let chatService: ChatSyncService
     let inferenceModelSettings: InferenceModelSettings
 
+    // TODO: This should be initialized some other way
+    var globalSequenceSettings: GlobalChatSequenceClientSettings = GlobalChatSequenceClientSettings()
+    var sequenceSettings: ChatSequenceClientSettings = ChatSequenceClientSettings()
+
     var pinSequenceTitle: Bool
 
     var promptInEdit: String = ""

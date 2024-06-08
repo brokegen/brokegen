@@ -35,7 +35,7 @@ struct ModelPickerView: View {
                 // Which makes it very hard to track items in a particular spot,
                 // especially since sorting is virtually random.
                 ScrollView {
-                    FlowLayout(spacing: 24) {
+                    VFlowLayout(spacing: 24) {
                         ForEach(providerService.allModels) { model in
                             OneInferenceModelView(
                                 model: model,

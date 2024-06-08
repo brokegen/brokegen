@@ -69,29 +69,15 @@ struct ComposeTabsView: View {
 
 struct OneSequenceView: View {
     @ObservedObject var viewModel: ChatSequenceClientModel
+    @Bindable var settings: CombinedCSCSettings
 
     @FocusState var focusTextInput: Bool
     @State private var selectedTab: Tab = .retrieval
-
-    // per-chat options
-    @State var overrideSystemPrompt: String = ""
-    @State var retrieverOptions: String = ""
-
-    // entire-model options
-    @State var overrideInferenceTemplate: String = ""
-    @State var inferenceOptions: String = ""
-
-    // UI options
-    // @AppStorage("allowContinuation")
-    @State var allowContinuation: Bool = true
-    @State var showSeparateRetrievalButton: Bool = true
-    @State var forceRetrieval: Bool = false
-    @State var allowNewlineSubmit: Bool = false
-
-    @State var autoSummarizeChats: Bool = true
+    @State private var splitViewLoaded: Bool = false
 
     init(_ viewModel: ChatSequenceClientModel) {
         self.viewModel = viewModel
+        settings = CombinedCSCSettings(globalSettings: viewModel.globalSequenceSettings, sequenceSettings: viewModel.sequenceSettings)
     }
 
     var tabsView: some View {
@@ -104,8 +90,12 @@ struct OneSequenceView: View {
             // Tab.simple
             VStack(spacing: 0) {
                 HStack(spacing: 0) {
-                    InlineTextInput($viewModel.promptInEdit, allowNewlineSubmit: $allowNewlineSubmit, isFocused: $focusTextInput) {
-                        if viewModel.promptInEdit.isEmpty && allowContinuation {
+                    InlineTextInput(
+                        $viewModel.promptInEdit,
+                        allowNewlineSubmit: $settings.allowNewlineSubmit,
+                        isFocused: $focusTextInput
+                    ) {
+                        if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
                             _ = viewModel.requestContinue()
                         }
                         else {
@@ -134,7 +124,7 @@ struct OneSequenceView: View {
                         }
                         else {
                             if viewModel.promptInEdit.isEmpty {
-                                return !allowContinuation
+                                return !settings.allowContinuation
                             }
                             else {
                                 return false
@@ -148,7 +138,7 @@ struct OneSequenceView: View {
                         }
                         else {
                             if viewModel.promptInEdit.isEmpty {
-                                if allowContinuation {
+                                if settings.allowContinuation {
                                     _ = viewModel.requestContinue()
                                 }
                             }
@@ -173,9 +163,9 @@ struct OneSequenceView: View {
             // Tab.retrieval
             VStack(spacing: 0) {
                 HStack(spacing: 12) {
-                    InlineTextInput($viewModel.promptInEdit, allowNewlineSubmit: $allowNewlineSubmit, isFocused: $focusTextInput) {
-                        if viewModel.promptInEdit.isEmpty && allowContinuation {
-                            if !showSeparateRetrievalButton && forceRetrieval {
+                    InlineTextInput($viewModel.promptInEdit, allowNewlineSubmit: $settings.allowNewlineSubmit, isFocused: $focusTextInput) {
+                        if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
+                            if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
                                 _ = viewModel.requestContinue(withRetrieval: true)
                             }
                             else {
@@ -183,7 +173,7 @@ struct OneSequenceView: View {
                             }
                         }
                         else {
-                            if !showSeparateRetrievalButton && forceRetrieval {
+                            if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
                                 viewModel.requestExtend(withRetrieval: true)
                             }
                             else {
@@ -199,9 +189,9 @@ struct OneSequenceView: View {
                     }
                     .backgroundStyle(inputBackgroundStyle)
 
-                    if showSeparateRetrievalButton {
+                    if settings.showSeparateRetrievalButton {
                         Button(action: {
-                            if viewModel.promptInEdit.isEmpty && allowContinuation {
+                            if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
                                 _ = viewModel.requestContinue(withRetrieval: true)
                             }
                             else {
@@ -210,8 +200,8 @@ struct OneSequenceView: View {
                         }) {
                             Image(systemName: "arrow.up.doc")
                                 .font(.system(size: 32))
-                                .disabled(viewModel.promptInEdit.isEmpty && !allowContinuation)
-                                .foregroundStyle(viewModel.promptInEdit.isEmpty && !allowContinuation
+                                .disabled(viewModel.promptInEdit.isEmpty && !settings.allowContinuation)
+                                .foregroundStyle(viewModel.promptInEdit.isEmpty && !settings.allowContinuation
                                                  ? Color(.disabledControlTextColor)
                                                  : Color.accentColor)
                         }
@@ -223,7 +213,7 @@ struct OneSequenceView: View {
                             return "stop.fill"
                         }
 
-                        if !showSeparateRetrievalButton && forceRetrieval {
+                        if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
                             return "arrow.up.doc"
                         }
 
@@ -235,7 +225,7 @@ struct OneSequenceView: View {
                             return false
                         }
                         else {
-                            return viewModel.promptInEdit.isEmpty && !allowContinuation
+                            return viewModel.promptInEdit.isEmpty && !settings.allowContinuation
                         }
                     }()
 
@@ -244,9 +234,9 @@ struct OneSequenceView: View {
                             viewModel.stopSubmitAndReceive(userRequested: true)
                         }
                         else {
-                            if showSeparateRetrievalButton {
+                            if settings.showSeparateRetrievalButton {
                                 if viewModel.promptInEdit.isEmpty {
-                                    if allowContinuation {
+                                    if settings.allowContinuation {
                                         _ = viewModel.requestContinue()
                                     }
                                     else {}
@@ -257,13 +247,13 @@ struct OneSequenceView: View {
                             }
                             else {
                                 if viewModel.promptInEdit.isEmpty {
-                                    if allowContinuation {
-                                        _ = viewModel.requestContinue(withRetrieval: forceRetrieval)
+                                    if settings.allowContinuation {
+                                        _ = viewModel.requestContinue(withRetrieval: settings.forceRetrieval)
                                     }
                                     else {}
                                 }
                                 else {
-                                    viewModel.requestExtend(withRetrieval: forceRetrieval)
+                                    viewModel.requestExtend(withRetrieval: settings.forceRetrieval)
                                 }
                             }
                         }
@@ -285,54 +275,27 @@ struct OneSequenceView: View {
             }
 
             // Tab.uiOptions
-            FlowLayout(spacing: 0) {
-                GroupBox(content: {
-                    VStack(alignment: .leading, spacing: 24) {
-                        Toggle(isOn: $allowContinuation, label: { Text("allowContinuation") })
-                        Toggle(isOn: $showSeparateRetrievalButton, label: { Text("showSeparateRetrievalButton")})
-                        Toggle(isOn: $forceRetrieval, label: { Text("forceRetrieval") })
-                            .disabled(showSeparateRetrievalButton)
-                        Toggle(isOn: $allowNewlineSubmit, label: { Text("allowNewlineSubmit") })
-                        Toggle(isOn: $autoSummarizeChats, label: { Text("autoSummarizeChats") })
-                    }
-                    .padding(24)
-                }, label: {
-                    Text("Submit Button")
-                })
-
-                GroupBox(content: {
-                    Text("override generation options")
-                    Picker("autoSummarizeChats", selection: $autoSummarizeChats) {
-                        Text("allow")
-                            .tag(true)
-
-                        Text("deny")
-                            .tag(false)
-                    }
-                }, label: {
-                    Text("Generation Options")
-                })
-            }
+            ChatSequenceSettingsView(globalSettings: $viewModel.globalSequenceSettings, settings: $viewModel.sequenceSettings)
 
             // Tab.modelOptions
-            FlowLayout(spacing: 0) {
+            VFlowLayout(spacing: 0) {
                 GroupBox(content: {
-                    TextField("overrideInferenceTemplate", text: $overrideSystemPrompt)
+                    TextField("sequenceSettings.overrideSystemPrompt", text: settings.overrideSystemPrompt())
                 }, label: {
-                    Text("overrideInferenceTemplate")
+                    Text("sequenceSettings.overrideSystemPrompt")
                 })
 
                 GroupBox(content: {
-                    TextField("inferenceOptions", text: $inferenceOptions)
+                    TextField("inferenceOptions", text: settings.inferenceOptions())
                 }, label: {
                     Text("inferenceOptions")
                 })
             }
 
             // Tab.systemOptions
-            FlowLayout(spacing: 0) {
+            VFlowLayout(spacing: 0) {
                 GroupBox(content: {
-                    TextEditor(text: $overrideSystemPrompt)
+                    TextEditor(text: settings.overrideSystemPrompt())
                         .frame(width: 360, height: 72)
                         .lineLimit(4...12)
                 }, label: {
@@ -340,7 +303,7 @@ struct OneSequenceView: View {
                 })
 
                 GroupBox(content: {
-                    TextEditor(text: $retrieverOptions)
+                    TextEditor(text: settings.retrieverOptions())
                         .frame(width: 360, height: 72)
                         .lineLimit(4...12)
                 }, label: {
@@ -456,14 +419,17 @@ struct OneSequenceView: View {
                         tabsView
                             .frame(minHeight: 180, maxHeight: max(
                                 180,
-                                // TODO: Figure out how to set initial size, and yet resizable.
-                                viewModel.promptInEdit.isEmpty ? geometry.size.height * 0.2 : geometry.size.height * 0.7))
+                                splitViewLoaded ? geometry.size.height * 0.7 : geometry.size.height * 0.2))
                     } // end of entire lower VStack
                     .background(inputBackgroundStyle)
                 }
                 .defaultScrollAnchor(.bottom)
                 .onAppear {
                     proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        splitViewLoaded = true
+                    }
                 }
                 .onChange(of: viewModel.sequence.messages) { old, new in
                     proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
