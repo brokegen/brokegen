@@ -22,6 +22,7 @@ struct JobOutputView: View {
                     .monospaced()
                     .font(.title2)
             }
+            .animation(.linear(duration: 0.2))
 
             Spacer()
         }
