@@ -23,6 +23,7 @@ from inference.embeddings.retrieval import RetrievalPolicyID, RetrievalLabel
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, InferenceReason
+from providers_ollama.api_chat.inject_rag import do_proxy_chat_rag
 from providers_ollama.chat_rag_util import finalize_inference_job, do_generate_raw_templated
 from providers_ollama.json import consolidate_stream_sync, keepalive_wrapper
 
@@ -283,7 +284,7 @@ async def do_continuation(
         return upstream_response
 
     return await wrap_response(
-        await history.ollama.chat_rag_routes.do_proxy_chat_rag(
+        await do_proxy_chat_rag(
             empty_request,
             constructed_ollama_request_content_json,
             retrieval_label,
