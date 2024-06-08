@@ -3,7 +3,7 @@ import Combine
 import Foundation
 import SwiftData
 
-// TODO: Keep active Models around, rather than constructing one.
+// TODO: Keep active ChatSequenceClientModel around, rather than constructing one.
 // This probably means it has to live under ChatSyncService.
 @Observable
 class ChatSequenceClientModel: ObservableObject {
@@ -20,6 +20,7 @@ class ChatSequenceClientModel: ObservableObject {
     /// `nil` before first data, and then reset to `nil` once we're done receiving.
     var responseInEdit: Message? = nil
     var receivingStreamer: AnyCancellable? = nil
+    var stayAwake: StayAwake = StayAwake()
 
     var displayedStatus: String? = nil
 
@@ -44,6 +45,8 @@ class ChatSequenceClientModel: ObservableObject {
         endpoint: String
     ) -> ((Subscribers.Completion<AFErrorAndData>) -> Void) {
         return { [self] completion in
+            _ = self.stayAwake.destroyAssertion()
+
             switch completion {
             case .finished:
                 if responseInEdit == nil {
@@ -132,8 +135,9 @@ class ChatSequenceClientModel: ObservableObject {
         withRetrieval: Bool = false
     ) -> Self {
         print("[INFO] ChatSequenceClientModel.requestContinue(\(continuationModelId), withRetrieval: \(withRetrieval))")
+        _ = stayAwake.createAssertion(reason: "ChatSequenceClientModel.requestContinue")
 
-        Task.init {
+        Task {
             guard submitting == false else {
                 print("[ERROR] ChatSequenceClientModel.requestContinue(withRetrieval: \(withRetrieval)) during another submission")
                 return
@@ -169,7 +173,10 @@ class ChatSequenceClientModel: ObservableObject {
     func requestExtend(
         withRetrieval: Bool = false
     ) {
-        Task.init {
+        print("[INFO] ChatSequenceClientModel.requestExtend(withRetrieval: \(withRetrieval))")
+        _ = stayAwake.createAssertion(reason: "ChatSequenceClientModel.requestExtend")
+
+        Task {
             guard !self.promptInEdit.isEmpty else { return }
             guard submitting == false else {
                 print("[ERROR] ChatSequenceClientModel.requestExtend(withRetrieval: \(withRetrieval)) during another submission")
