@@ -49,6 +49,10 @@ struct JobsSidebarItem: View {
                 }
             }
             .frame(width: JobsSidebarItem.LEADING_BUTTON_WIDTH)
+            .contentShape(Rectangle())
+            .onHover { isHovered in
+                self.isButtonHovered = isHovered
+            }
             .layoutPriority(0.5)
 
             Text(job.sidebarTitle)

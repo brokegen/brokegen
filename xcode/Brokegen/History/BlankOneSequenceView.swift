@@ -185,7 +185,7 @@ struct BlankOneSequenceView: View {
                     }
                     .padding(.leading, 24)
                     .padding(.trailing, 24)
-                    .frame(minHeight: 24)
+                    .frame(minHeight: 36)
 
                     HStack(spacing: 12) {
                         InlineTextInput($promptInEdit, allowNewlineSubmit: $allowNewlineSubmit, isFocused: $focusTextInput) {
