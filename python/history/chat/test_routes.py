@@ -15,7 +15,7 @@ from providers.inference_models.database import HistoryDB
 def chat_test_app():
     test_app = fastapi.FastAPI()
     history.chat.install_routes(test_app)
-    providers_ollama.sequence_extend.install_routes(app)
+    providers_ollama.sequence_extend.install_routes(test_app)
 
     yield test_app
 
@@ -41,6 +41,7 @@ def test_unchecked_write(test_client, history_db):
     response0 = test_client.post("/messages", content=json.dumps({
         "role": "user",
         "content": "test_write_read() is great content",
+        "created_at": None,
     }))
 
     assert response0.status_code == 201
@@ -55,6 +56,7 @@ def test_write_read(test_client):
     response0 = test_client.post("/messages", content=json.dumps({
         "role": "user",
         "content": test_content,
+        "created_at": None,
     }))
 
     assert response0.status_code == 201
