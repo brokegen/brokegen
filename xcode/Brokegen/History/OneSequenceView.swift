@@ -282,7 +282,6 @@ struct OneSequenceView: View {
                 .padding(.leading, 24)
                 .padding(.trailing, 12)
                 .background(inputBackgroundStyle)
-                .frame(minHeight: 240)
             }
 
             // Tab.uiOptions
