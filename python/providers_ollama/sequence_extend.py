@@ -173,6 +173,9 @@ async def do_continuation(
         # Only strip when both leading and trailing, otherwise we're probably just dropping half of a set.
         if len(machine_desc) > 0:
             machine_desc = machine_desc.strip()
+            # Or, if there's literally only one quote at the end
+            if machine_desc.count('"') == 1 and machine_desc[-1] == '"':
+                machine_desc = machine_desc[:-1]
         if len(machine_desc) > 2:
             if machine_desc[0] == '"' and machine_desc[-1] == '"':
                 machine_desc = machine_desc.strip('"')
