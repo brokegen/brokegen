@@ -10,8 +10,8 @@ from typing_extensions import deprecated
 
 from audit.http import AuditDB
 from audit.http_raw import HttpxLogger
-from providers.ollama import _real_ollama_client
 from providers_ollama.json import OllamaEventBuilder, OllamaResponseContentJSON
+from providers_ollama.model_routes import _real_ollama_client
 
 logger = logging.getLogger(__name__)
 
