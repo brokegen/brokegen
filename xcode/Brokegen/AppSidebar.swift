@@ -119,18 +119,21 @@ struct AppSidebar: View {
                         Image(systemName: "sink")
                             .padding(.trailing, 0)
 
-                        Text("Experiments")
+                        Text("Inspectors")
                     }) {
                         NavigationLink(destination: {
                             ModelPickerView()
                         }) {
-                            ASRow("Model Inspector")
+                            ASRow("Inference Models")
                         }
+
+                        ASRow("Chat Templates")
+                            .foregroundStyle(Color(.disabledControlTextColor))
 
                         ASRow("Tokenization Check")
                             .foregroundStyle(Color(.disabledControlTextColor))
 
-                        ASRow("Completions")
+                        ASRow("Vector Stores")
                             .foregroundStyle(Color(.disabledControlTextColor))
                     }
 
@@ -150,8 +153,11 @@ struct AppSidebar: View {
                     .foregroundStyle(Color(.disabledControlTextColor))
 
                 NavigationLink(value: inferenceModelSettings) {
-                    ASRow("Defaults", showChevron: true)
+                    ASRow("Inference Models", showChevron: true)
                 }
+
+                ASRow("Retrieval and Vector Stores", showChevron: true)
+                    .foregroundStyle(Color(.disabledControlTextColor))
 
                 NavigationLink(destination: SystemInfoView()) {
                     ASRow("System Info")
