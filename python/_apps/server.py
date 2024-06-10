@@ -16,7 +16,7 @@ import starlette.responses
 from fastapi import FastAPI
 
 import audit
-import history
+import client
 import providers.llamafile
 import providers.ollama
 import providers.openai
@@ -150,7 +150,7 @@ def run_proxy(
 
     providers_ollama.direct_routes.install_test_points(app)
     providers_ollama.forwarding_routes.install_forwards(app, force_ollama_rag)
-    history.chat.install_routes(app)
+    client.install_routes(app)
     providers_ollama.sequence_extend.install_routes(app)
     providers.inference_models.routes.install_routes(app)
     providers.routes.install_routes(app)

@@ -16,9 +16,9 @@ from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import ChatSequenceID, InferenceModelRecordID, PromptText
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
-from history.chat.database import ChatMessageOrm, ChatSequence, lookup_chat_message, ChatMessage, \
+from client.database import ChatMessageOrm, ChatSequence, lookup_chat_message, ChatMessage, \
     lookup_sequence_parents
-from history.chat.sequence_get import do_get_sequence
+from client.sequence_get import do_get_sequence
 from inference.embeddings.retrieval import RetrievalPolicyID, RetrievalLabel
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB, get_db as get_history_db

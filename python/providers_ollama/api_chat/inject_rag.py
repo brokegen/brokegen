@@ -12,7 +12,7 @@ from _util.json_streaming import JSONStreamingResponse, tee_stream_to_log_and_ca
 from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import PromptText
 from audit.http import AuditDB
-from history.chat.database import ChatMessageOrm, ChatSequence
+from client.database import ChatMessageOrm, ChatSequence
 from inference.embeddings.knowledge import get_knowledge
 from inference.embeddings.retrieval import RetrievalPolicy, RetrievalLabel, SimpleRetrievalPolicy, \
     SummarizingRetrievalPolicy

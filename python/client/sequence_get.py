@@ -8,8 +8,8 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from _util.typing import ChatSequenceID, RoleName, PromptText
-from history.chat.database import ChatMessageOrm, lookup_sequence_parents, ChatMessage
-from history.chat.database import ChatSequence
+from client.database import ChatMessageOrm, lookup_sequence_parents, ChatMessage
+from client.database import ChatSequence
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecordOrm, lookup_inference_model_for_event_id
 
