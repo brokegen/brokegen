@@ -93,15 +93,14 @@ struct OneMessageView: View {
         }
         .frame(maxWidth: .infinity)
     }
-
-    public func expandDetails(_ expandDetails: Bool) -> OneMessageView {
-        var view = self
-        view.expandDetails = expandDetails
-
-        return view
-    }
 }
 
+extension OneMessageView {
+    func expandDetails(_ expandDetails: Bool) -> Self {
+        self.expandDetails = expandDetails
+        return self
+    }
+}
 
 #Preview(traits: .fixedLayout(width: 800, height: 800)) {
     VStack {
