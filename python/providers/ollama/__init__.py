@@ -16,16 +16,6 @@ from providers_ollama.model_routes import do_list_available_models
 
 logger = logging.getLogger(__name__)
 
-_real_ollama_client = httpx.AsyncClient(
-    base_url="http://localhost:11434",
-    http2=True,
-    proxy=None,
-    cert=None,
-    timeout=httpx.Timeout(2.0, read=None),
-    max_redirects=0,
-    follow_redirects=False,
-)
-
 
 class ExternalOllamaProvider(BaseProvider):
     base_url: str
@@ -92,6 +82,11 @@ class ExternalOllamaProvider(BaseProvider):
 
         async for model in do_list_available_models(self, history_db, audit_db):
             yield model
+
+    async def stream_get(self, url):
+        return self.client.build_request(
+
+        )
 
 
 async def discover_ollama_servers():
