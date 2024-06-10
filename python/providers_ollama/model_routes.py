@@ -101,7 +101,7 @@ async def do_api_tags(
     )
 
     async def on_done_fetching(response_content_json):
-        provider = ProviderRegistry().by_label[ProviderLabel(type="ollama", id=_real_ollama_client.base_url)]
+        provider = ProviderRegistry().by_label[ProviderLabel(type="ollama", id=str(_real_ollama_client.base_url))]
         list(build_models_from_api_tags(
             await provider.make_record(),
             cached_accessed_at,

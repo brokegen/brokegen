@@ -44,7 +44,7 @@ async def lookup_model(
     try:
         return await lookup_model_offline(model_name, history_db)
     except (ValueError, HTTPException):
-        provider = ProviderRegistry().by_label[ProviderLabel(type="ollama", id=_real_ollama_client.base_url)]
+        provider = ProviderRegistry().by_label[ProviderLabel(type="ollama", id=str(_real_ollama_client.base_url))]
         return await do_api_show(model_name, history_db, audit_db), await provider.make_record()
 
 
