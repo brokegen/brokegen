@@ -19,6 +19,9 @@
 		CE4634EF2BFAFA340063142E /* StayAwakeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634EE2BFAFA340063142E /* StayAwakeService.swift */; };
 		CE4634F22BFBB4730063142E /* SequencePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634F12BFBB4730063142E /* SequencePickerView.swift */; };
 		CE4634F42BFBB4900063142E /* ChatSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634F32BFBB4900063142E /* ChatSyncService.swift */; };
+		CE66FAFC2C1679C700BD8745 /* SwiftyJSON in Frameworks */ = {isa = PBXBuildFile; productRef = CE66FAFB2C1679C700BD8745 /* SwiftyJSON */; };
+		CE66FAFE2C16818800BD8745 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE66FAFD2C16818800BD8745 /* ChatMessage.swift */; };
+		CE66FB132C16968C00BD8745 /* ChatMessageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE66FAFF2C16915C00BD8745 /* ChatMessageTests.swift */; };
 		CE67A9E52C091709008BFA1D /* CustomTabView in Frameworks */ = {isa = PBXBuildFile; productRef = CE67A9E42C091709008BFA1D /* CustomTabView */; };
 		CE6D8A7F2BF6DF1800A7934D /* RibbonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */; };
 		CE7FFE142C04435D00DB7CFA /* ProviderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE132C04435D00DB7CFA /* ProviderService.swift */; };
@@ -52,6 +55,16 @@
 		CEFEB47E2BFE399500334522 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = CEFEB47D2BFE399500334522 /* SwiftTerm */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		CE66FB0E2C16966900BD8745 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CE9867452BF4047C008D6C41 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CE98674C2BF4047C008D6C41;
+			remoteInfo = Brokegen;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXCopyFilesBuildPhase section */
 		CEB773212C015F950051F41C /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -78,6 +91,9 @@
 		CE4634EE2BFAFA340063142E /* StayAwakeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StayAwakeService.swift; sourceTree = "<group>"; };
 		CE4634F12BFBB4730063142E /* SequencePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequencePickerView.swift; sourceTree = "<group>"; };
 		CE4634F32BFBB4900063142E /* ChatSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSyncService.swift; sourceTree = "<group>"; };
+		CE66FAFD2C16818800BD8745 /* ChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessage.swift; sourceTree = "<group>"; };
+		CE66FAFF2C16915C00BD8745 /* ChatMessageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessageTests.swift; sourceTree = "<group>"; };
+		CE66FB0A2C16966900BD8745 /* BrokegenTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BrokegenTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RibbonView.swift; sourceTree = "<group>"; };
 		CE7FFE132C04435D00DB7CFA /* ProviderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderService.swift; sourceTree = "<group>"; };
 		CE7FFE152C04482900DB7CFA /* ModelPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelPickerView.swift; sourceTree = "<group>"; };
@@ -110,12 +126,20 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		CE66FB072C16966900BD8745 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		CE98674A2BF4047C008D6C41 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				CEB773232C0160530051F41C /* Alamofire in Frameworks */,
 				CEFEB47E2BFE399500334522 /* SwiftTerm in Frameworks */,
+				CE66FAFC2C1679C700BD8745 /* SwiftyJSON in Frameworks */,
 				CE67A9E52C091709008BFA1D /* CustomTabView in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -157,12 +181,21 @@
 			path = History;
 			sourceTree = "<group>";
 		};
+		CE66FB0B2C16966900BD8745 /* BrokegenTests */ = {
+			isa = PBXGroup;
+			children = (
+				CE66FAFF2C16915C00BD8745 /* ChatMessageTests.swift */,
+			);
+			path = BrokegenTests;
+			sourceTree = "<group>";
+		};
 		CE9867442BF4047C008D6C41 = {
 			isa = PBXGroup;
 			children = (
 				CE4634E82BFA71E10063142E /* brokegen-ollama-proxy */,
 				CE4634EA2BFA71E70063142E /* brokegen-server */,
 				CE98674F2BF4047C008D6C41 /* Brokegen */,
+				CE66FB0B2C16966900BD8745 /* BrokegenTests */,
 				CE98674E2BF4047C008D6C41 /* Products */,
 				CEB7731D2C015F850051F41C /* Frameworks */,
 			);
@@ -172,6 +205,7 @@
 			isa = PBXGroup;
 			children = (
 				CE98674D2BF4047C008D6C41 /* Brokegen.app */,
+				CE66FB0A2C16966900BD8745 /* BrokegenTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -225,6 +259,7 @@
 				CE4634F32BFBB4900063142E /* ChatSyncService.swift */,
 				CE7FFE132C04435D00DB7CFA /* ProviderService.swift */,
 				CEE99E582C0D85AD008E1B07 /* ChatSequenceClientModel.swift */,
+				CE66FAFD2C16818800BD8745 /* ChatMessage.swift */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -277,6 +312,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		CE66FB092C16966900BD8745 /* BrokegenTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CE66FB102C16966900BD8745 /* Build configuration list for PBXNativeTarget "BrokegenTests" */;
+			buildPhases = (
+				CE66FB062C16966900BD8745 /* Sources */,
+				CE66FB072C16966900BD8745 /* Frameworks */,
+				CE66FB082C16966900BD8745 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CE66FB0F2C16966900BD8745 /* PBXTargetDependency */,
+			);
+			name = BrokegenTests;
+			productName = BrokegenTests;
+			productReference = CE66FB0A2C16966900BD8745 /* BrokegenTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		CE98674C2BF4047C008D6C41 /* Brokegen */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = CE98675C2BF4047E008D6C41 /* Build configuration list for PBXNativeTarget "Brokegen" */;
@@ -295,6 +348,7 @@
 				CEFEB47D2BFE399500334522 /* SwiftTerm */,
 				CEB773222C0160530051F41C /* Alamofire */,
 				CE67A9E42C091709008BFA1D /* CustomTabView */,
+				CE66FAFB2C1679C700BD8745 /* SwiftyJSON */,
 			);
 			productName = Brokegen;
 			productReference = CE98674D2BF4047C008D6C41 /* Brokegen.app */;
@@ -310,6 +364,10 @@
 				LastSwiftUpdateCheck = 1520;
 				LastUpgradeCheck = 1520;
 				TargetAttributes = {
+					CE66FB092C16966900BD8745 = {
+						CreatedOnToolsVersion = 15.2;
+						TestTargetID = CE98674C2BF4047C008D6C41;
+					};
 					CE98674C2BF4047C008D6C41 = {
 						CreatedOnToolsVersion = 15.2;
 					};
@@ -328,17 +386,26 @@
 				CEFEB4792BFDAABC00334522 /* XCRemoteSwiftPackageReference "Alamofire" */,
 				CEFEB47C2BFE399500334522 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
 				CE67A9E32C091709008BFA1D /* XCRemoteSwiftPackageReference "SwiftUI-CustomTabView" */,
+				CE66FAFA2C1679C700BD8745 /* XCRemoteSwiftPackageReference "SwiftyJSON" */,
 			);
 			productRefGroup = CE98674E2BF4047C008D6C41 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				CE98674C2BF4047C008D6C41 /* Brokegen */,
+				CE66FB092C16966900BD8745 /* BrokegenTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		CE66FB082C16966900BD8745 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		CE98674B2BF4047C008D6C41 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -353,6 +420,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		CE66FB062C16966900BD8745 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CE66FB132C16968C00BD8745 /* ChatMessageTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		CE9867492BF4047C008D6C41 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -393,12 +468,57 @@
 				CEFA69452C14AE67007EEF8D /* ChatSequenceSettings.swift in Sources */,
 				CEE99E692C0FD9FC008E1B07 /* SettingsService.swift in Sources */,
 				CEBAA28C2C003F4B00D43E22 /* InteractiveJobOutputView.swift in Sources */,
+				CE66FAFE2C16818800BD8745 /* ChatMessage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		CE66FB0F2C16966900BD8745 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CE98674C2BF4047C008D6C41 /* Brokegen */;
+			targetProxy = CE66FB0E2C16966900BD8745 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		CE66FB112C16966900BD8745 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = faux.BrokegenTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Brokegen.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Brokegen";
+			};
+			name = Debug;
+		};
+		CE66FB122C16966900BD8745 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = faux.BrokegenTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Brokegen.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Brokegen";
+			};
+			name = Release;
+		};
 		CE98675A2BF4047E008D6C41 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -592,6 +712,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		CE66FB102C16966900BD8745 /* Build configuration list for PBXNativeTarget "BrokegenTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CE66FB112C16966900BD8745 /* Debug */,
+				CE66FB122C16966900BD8745 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		CE9867482BF4047C008D6C41 /* Build configuration list for PBXProject "Brokegen" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -613,6 +742,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		CE66FAFA2C1679C700BD8745 /* XCRemoteSwiftPackageReference "SwiftyJSON" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SwiftyJSON/SwiftyJSON.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.2;
+			};
+		};
 		CE67A9E32C091709008BFA1D /* XCRemoteSwiftPackageReference "SwiftUI-CustomTabView" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/NicFontana/SwiftUI-CustomTabView";
@@ -640,6 +777,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		CE66FAFB2C1679C700BD8745 /* SwiftyJSON */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CE66FAFA2C1679C700BD8745 /* XCRemoteSwiftPackageReference "SwiftyJSON" */;
+			productName = SwiftyJSON;
+		};
 		CE67A9E42C091709008BFA1D /* CustomTabView */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = CE67A9E32C091709008BFA1D /* XCRemoteSwiftPackageReference "SwiftUI-CustomTabView" */;

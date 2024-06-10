@@ -286,7 +286,7 @@ struct BlankOneSequenceView: View {
         encoder.keyEncodingStrategy = .convertToSnakeCase
 
         do {
-            let jsonDict = try await chatService.postData(
+            let jsonDict = try await chatService.postDataAsJson(
                 try encoder.encode(params),
                 endpoint: "/sequences")
             guard jsonDict != nil else { return nil }

@@ -197,7 +197,7 @@ extension ChatSyncService {
         return dateFormatter.string(from: date!)
     }
 
-    func postData(_ httpBody: Data?, endpoint: String) async throws -> [String : Any]? {
+    func postDataAsJson(_ httpBody: Data?, endpoint: String) async throws -> [String : Any]? {
         return try await withCheckedThrowingContinuation { continuation in
             session.request(
                 serverBaseURL + endpoint
@@ -228,7 +228,7 @@ extension ChatSyncService {
         }
     }
 
-    private func constructMessage(_ message: Message) async -> ChatMessageServerID? {
+    private func doConstructUserMessage(_ message: Message) async -> ChatMessageServerID? {
         let parameters: [String : String?] = [
             "role": message.role,
             "content": message.content,
@@ -242,7 +242,7 @@ extension ChatSyncService {
         do {
             let httpBody: Data = try encoder.encode(parameters)
 
-            let jsonDict = try await postData(httpBody, endpoint: "/messages")
+            let jsonDict = try await postDataAsJson(httpBody, endpoint: "/messages")
             guard jsonDict != nil else { return nil }
 
             let messageID: ChatMessageServerID? = jsonDict!["message_id"] as? Int
@@ -262,6 +262,6 @@ extension ChatSyncService {
             createdAt: Date.now
         )
 
-        return await constructMessage(userMessage)
+        return await doConstructUserMessage(userMessage)
     }
 }
