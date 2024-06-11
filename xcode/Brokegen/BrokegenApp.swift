@@ -21,8 +21,6 @@ struct BrokegenApp: App {
             settingsService.inflateModels(providerService)
         }
 
-        Task { await chatService.fetchPinnedSequences() }
-
         Task {
             await providerService.fetchAvailableModels()
             settingsService.inflateModels(providerService)

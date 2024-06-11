@@ -46,14 +46,16 @@ struct ASSStyle: DisclosureGroupStyle {
 }
 
 struct AppSidebarSection<Label: View, Content: View>: View {
-    @State var isExpanded: Bool = true
+    @State var isExpanded: Bool
     let label: () -> Label
     let content: () -> Content
 
     init(
+        isExpanded: Bool = true,
         @ViewBuilder label: @escaping () -> Label,
         @ViewBuilder content: @escaping () -> Content
     ) {
+        self.isExpanded = isExpanded
         self.label = label
         self.content = content
     }
@@ -100,6 +102,8 @@ struct AppSidebar: View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: 0) {
+                    MiniSequencePickerSidebar()
+
                     AppSidebarSection(label: {
                         HStack {
                             Image(systemName: "person.3")
@@ -109,11 +113,9 @@ struct AppSidebar: View {
                         }
                     }) {
                         ASRow("IRC Simulator")
+                            .disabled(true)
+                            .foregroundStyle(Color(.disabledControlTextColor))
                     }
-                    .disabled(true)
-                    .foregroundStyle(Color(.disabledControlTextColor))
-
-                    MiniSequencePickerSidebar()
 
                     AppSidebarSection(label: {
                         Image(systemName: "sink")
@@ -141,7 +143,7 @@ struct AppSidebar: View {
                 }
             }
 
-            AppSidebarSection(label: {
+            AppSidebarSection(isExpanded: false, label: {
                 HStack {
                     Image(systemName: "gear")
                         .padding(.trailing, 0)

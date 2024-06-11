@@ -8,13 +8,16 @@ struct JobPickerView: View {
     }
 
     var body: some View {
-        VFlowLayout() {
-            ForEach(jobs) { job in
-                NavigationLink(destination: JobOutputView(job: job)) {
-                    JobsSidebarItem(job: job)
-                        .padding(24)
+        ScrollView {
+            VFlowLayout(spacing: 36) {
+                ForEach(jobs) { job in
+                    NavigationLink(destination: JobOutputView(job: job)) {
+                        JobsSidebarItem(job: job)
+                            .padding(12)
+                    }
                 }
             }
         }
+        .font(.system(size: 18))
     }
 }

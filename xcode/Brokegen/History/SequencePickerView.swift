@@ -162,6 +162,8 @@ struct MiniSequencePickerSidebar: View {
     @Environment(InferenceModelSettings.self) public var inferenceModelSettings
     let navLimit: Int
 
+    @State private var timesRefreshClicked = 0
+
     init(navLimit: Int = 10) {
         self.navLimit = navLimit
     }
@@ -208,19 +210,51 @@ struct MiniSequencePickerSidebar: View {
                 HStack {
                     Image(systemName: "plus")
                         .padding(.trailing, 0)
+                        .layoutPriority(0.2)
                     Text("New")
                         .layoutPriority(0.5)
+
+                    Spacer()
                 }
                 .contentShape(Rectangle())
+                .foregroundStyle(Color.accentColor)
             }
             .padding(.leading, -24)
             .padding(.trailing, -24)
+            .frame(maxWidth: .infinity)
 
-            NavigationLink(destination: SequencePickerView()) {
-                ASRow("Browse Recent", showChevron: true)
+            if chatService.loadedChatSequences.isEmpty {
+                if navLimit <= 0 {
+                    NavigationLink(destination: SequencePickerView()) {
+                        ASRow("Browse Recent", showChevron: true)
+                    }
+                }
+                else {
+                    if timesRefreshClicked > 0 {
+                        // TODO: This always shows for a bit while ChatSyncService is updating,
+                        // do something with ProgressView and timeouts.
+                        Button("Refresh Chats List", systemImage: "arrow.clockwise") {
+                            timesRefreshClicked += 1
+                            Task { await chatService.fetchPinnedSequences() }
+                        }
+                        .padding(.leading, -24)
+                        .padding(.trailing, -24)
+                    }
+                    else {
+                        Button("Load Chats", systemImage: "arrowshape.down") {
+                            timesRefreshClicked += 1
+                            Task { await chatService.fetchPinnedSequences() }
+                        }
+                        .padding(.leading, -24)
+                        .padding(.trailing, -24)
+                    }
+                }
             }
+            else {
+                NavigationLink(destination: SequencePickerView()) {
+                    ASRow("Browse Recent", showChevron: true)
+                }
 
-            if !chatService.loadedChatSequences.isEmpty && navLimit > 0 {
                 Divider()
 
                 ForEach(someSectionedSequences(limit: navLimit), id: \.0) { pair in
@@ -228,34 +262,18 @@ struct MiniSequencePickerSidebar: View {
 
                     Section(content: {
                         ForEach(sectionSequences) { sequence in
-                            HStack(alignment: .top, spacing: 0) {
-                                Image(systemName: "bubble")
-                                    .padding(.leading, -4)
-                                    .padding(.top, 2)
-                                    .padding(.trailing, 8)
+                            Button(action: {
+                                pathHost.push(
+                                    chatService.clientModel(for: sequence, inferenceModelSettings: inferenceModelSettings)
+                                )
+                            }, label: {
+                                HStack(alignment: .top, spacing: 0) {
+                                    Image(systemName: "bubble")
+                                        .padding(.leading, -4)
+                                        .padding(.top, 2)
+                                        .padding(.trailing, 8)
 
-                                ViewThatFits(in: .horizontal) {
-                                    HStack(spacing: 0) {
-                                        Text(sequence.displayHumanDesc())
-                                            .lineLimit(1...2)
-                                            .layoutPriority(0.5)
-                                            .padding(.trailing, -12)
-                                            .id("\(sequence.id) text")
-
-                                        Spacer()
-
-                                        if sequence.messages.count > 4 {
-                                            Text("\(sequence.messages.count) messages")
-                                                .lineLimit(1)
-                                                .font(.system(size: 16))
-                                                .foregroundStyle(Color(.disabledControlTextColor))
-                                                .layoutPriority(0.2)
-                                                .padding(.leading, 12)
-                                                .id("\(sequence.id) count")
-                                        }
-                                    } // first ViewThatFits option: HStack
-
-                                    VStack(alignment: .leading, spacing: 0) {
+                                    ViewThatFits(in: .horizontal) {
                                         HStack(spacing: 0) {
                                             Text(sequence.displayHumanDesc())
                                                 .lineLimit(1...2)
@@ -264,30 +282,46 @@ struct MiniSequencePickerSidebar: View {
                                                 .id("\(sequence.id) text")
 
                                             Spacer()
-                                        }
 
-                                        if sequence.messages.count > 4 {
-                                            HStack(spacing: 0) {
-                                                Spacer()
-
+                                            if sequence.messages.count > 4 {
                                                 Text("\(sequence.messages.count) messages")
                                                     .lineLimit(1)
                                                     .font(.system(size: 16))
                                                     .foregroundStyle(Color(.disabledControlTextColor))
                                                     .layoutPriority(0.2)
-                                                    .padding(.top, 4)
+                                                    .padding(.leading, 12)
                                                     .id("\(sequence.id) count")
                                             }
-                                        }
-                                    } // second ViewThatFits option: overflow VStack
+                                        } // first ViewThatFits option: HStack
+
+                                        VStack(alignment: .leading, spacing: 0) {
+                                            HStack(spacing: 0) {
+                                                Text(sequence.displayHumanDesc())
+                                                    .lineLimit(1...2)
+                                                    .layoutPriority(0.5)
+                                                    .padding(.trailing, -12)
+                                                    .id("\(sequence.id) text")
+
+                                                Spacer()
+                                            }
+
+                                            if sequence.messages.count > 4 {
+                                                HStack(spacing: 0) {
+                                                    Spacer()
+
+                                                    Text("\(sequence.messages.count) messages")
+                                                        .lineLimit(1)
+                                                        .font(.system(size: 16))
+                                                        .foregroundStyle(Color(.disabledControlTextColor))
+                                                        .layoutPriority(0.2)
+                                                        .padding(.top, 4)
+                                                        .id("\(sequence.id) count")
+                                                }
+                                            }
+                                        } // second ViewThatFits option: overflow VStack
+                                    }
                                 }
-                            }
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                pathHost.push(
-                                    chatService.clientModel(for: sequence, inferenceModelSettings: inferenceModelSettings)
-                                )
-                            }
+                            })
                         }
                     }, header: {
                         Text(sectionName)
