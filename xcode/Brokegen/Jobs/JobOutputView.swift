@@ -5,26 +5,38 @@ import AppKit
 struct JobOutputView: View {
     @ObservedObject var job: BaseJob
 
+    var splitOutput: [String] {
+        get {
+//            return [job.displayedOutput]
+            return job.displayedOutput.split(separator: "\n").map { String($0) }
+        }
+    }
+
     var body: some View {
-        ScrollViewReader { scrollViewProxy in
+        VStack(alignment: .leading, spacing: 0) {
             RibbonView(job.ribbonText)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(12)
                 .padding(.top, -20)
-                .frame(maxHeight: 200)
+                .frame(height: 196)
 
-            List {
-                Text(job.displayedStatus)
-                    .monospaced()
-                    .font(.title2)
+            Text(job.displayedStatus)
+                .monospaced()
+                .font(.title2)
 
-                Text(job.displayedOutput)
-                    .monospaced()
-                    .font(.title2)
+            Divider()
+                .padding(24)
+
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(0..<splitOutput.count, id: \.self) { index in
+                        Text(splitOutput[index])
+                            .monospaced()
+                            .font(.title2)
+                    }
+                }
+                .padding(24)
             }
-            .animation(.linear(duration: 0.2))
-
-            Spacer()
         }
     }
 }
