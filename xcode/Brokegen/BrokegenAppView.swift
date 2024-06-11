@@ -26,9 +26,12 @@ struct BrokegenAppView: View {
     @State private var pathHost: PathHost = PathHost()
     @Environment(InferenceModelSettings.self) public var inferenceModelSettings
 
+    @State private var sidebarVisibility = NavigationSplitViewVisibility.automatic
+    @State private var sidebarVisibilityTimesChanged: Int = 0
+
     var body: some View {
         NavigationStack(path: $pathHost.path) {
-            NavigationSplitView(sidebar: { AppSidebar() }, detail: {
+            NavigationSplitView(columnVisibility: $sidebarVisibility, sidebar: { AppSidebar() }, detail: {
                 SequencePickerView()
                     .environmentObject(chatService)
             })
@@ -36,6 +39,18 @@ struct BrokegenAppView: View {
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {
                     OneSequenceView(clientModel)
                 })
+            }
+            // Show the sidebar on initial re-load
+            // TODO: Once we have keyboard shortcuts or context menus, use those to re-show the sidebar.
+            .onChange(of: sidebarVisibility, initial: true) { oldValue, newValue in
+                if sidebarVisibilityTimesChanged < 1 {
+                    if newValue == .detailOnly {
+                        sidebarVisibilityTimesChanged += 1
+                        DispatchQueue.main.async {
+                            sidebarVisibility = .all
+                        }
+                    }
+                }
             }
         }
         .environment(pathHost)
