@@ -111,8 +111,9 @@ struct BlankOneSequenceView: View {
     @State var promptInEdit: String = ""
 
     @State var showModelPicker: Bool
-    @FocusState var focusTextInput: Bool
     @State var allowNewlineSubmit: Bool = false
+    @FocusState var focusTextInput: Bool
+    @State private var splitViewLoaded: Bool = false
 
     init(_ initialModel: InferenceModel? = nil) {
         if initialModel == nil {
@@ -239,7 +240,14 @@ struct BlankOneSequenceView: View {
                     .padding(.leading, 24)
                     .padding(.trailing, 12)
                     .background(inputBackgroundStyle)
-                    .frame(minHeight: 240)
+                    .frame(minHeight: 180, maxHeight: max(
+                        180,
+                        splitViewLoaded ? geometry.size.height * 0.7 : geometry.size.height * 0.2))
+                }
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+                        splitViewLoaded = true
+                    }
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)

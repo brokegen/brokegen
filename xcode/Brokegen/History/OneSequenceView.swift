@@ -427,7 +427,7 @@ struct OneSequenceView: View {
                 .onAppear {
                     proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
 
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
                         splitViewLoaded = true
                     }
                 }
