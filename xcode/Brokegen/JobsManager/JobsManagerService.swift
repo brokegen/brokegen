@@ -19,6 +19,7 @@ class DefaultJobsManagerService: JobsManagerService {
             SimplePing("brokegen-server heartbeat", "http://localhost:6635", timeInterval: 23),
             SimplePing("ollama heartbeat", "http://localhost:11434", timeInterval: 13),
             StayAwakeService(),
+            TimeJob("fast infinitimer", timeInterval: 0.1, maxTimesFired: -1),
         ]
 
         self.sidebarRenderableJobs = importantJobs
