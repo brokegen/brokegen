@@ -148,8 +148,7 @@ def run_proxy(
 
     (
         ProviderRegistry()
-        # DEBUG: disable ollama, for testing
-        # .register_factory(providers_ollama.registry.ExternalOllamaFactory())
+        .register_factory(providers_ollama.registry.ExternalOllamaFactory())
         .register_factory(providers.openai.lm_studio.LMStudioFactory())
         .register_factory(providers_llamafile.registry.LlamafileFactory(['dist']))
     )
