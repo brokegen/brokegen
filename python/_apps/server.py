@@ -19,8 +19,8 @@ import audit
 import client
 import client_ollama
 import providers.inference_models.database
-import providers.llamafile
 import providers.openai.lm_studio
+import providers_llamafile
 import providers_ollama.direct_routes
 import providers_ollama.forwarding_routes
 import providers_ollama.sequence_extend
@@ -149,15 +149,16 @@ def run_proxy(
     (
         ProviderRegistry()
         # DEBUG: disable ollama, for testing
-        #.register_factory(providers_ollama.registry.ExternalOllamaFactory())
+        # .register_factory(providers_ollama.registry.ExternalOllamaFactory())
         .register_factory(providers.openai.lm_studio.LMStudioFactory())
-        .register_factory(providers.llamafile.LlamafileFactory(['dist']))
+        .register_factory(providers_llamafile.registry.LlamafileFactory(['dist']))
     )
 
     providers_ollama.forwarding_routes.install_forwards(app, force_ollama_rag)
     client_ollama.install_forwards(app)
 
     providers_ollama.direct_routes.install_test_points(app)
+    providers_llamafile.direct_routes.install_routes(app)
 
     # brokegen-specific endpoints
     providers.routes.install_routes(app)

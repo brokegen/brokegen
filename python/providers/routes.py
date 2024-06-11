@@ -1,11 +1,11 @@
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Iterable
 
 import fastapi
 from fastapi import Depends
 from starlette.responses import RedirectResponse
 
 from providers.inference_models.orm import InferenceModelResponse
-from providers.orm import ProviderType, ProviderID, ProviderLabel
+from providers.orm import ProviderType, ProviderID, ProviderLabel, ProviderRecord
 from providers.registry import ProviderRegistry
 
 
@@ -13,7 +13,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
     @router_ish.get("/providers")
     def list_any_providers(
             registry: ProviderRegistry = Depends(ProviderRegistry),
-    ):
+    ) -> Iterable[tuple[ProviderLabel, ProviderRecord]]:
         record_by_provider = dict([(v, k) for k, v in registry.by_record.items()])
 
         for label, provider in registry.by_label.items():
@@ -34,6 +34,20 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         return RedirectResponse(
             request.url_for('list_any_providers')
         )
+
+    @router_ish.get("/providers/{provider_type:str}/any/.discover")
+    async def discover_specific_providers(
+            provider_type: ProviderType,
+            registry: ProviderRegistry = Depends(ProviderRegistry),
+    ):
+        async def do_load() -> AsyncGenerator[tuple[ProviderLabel, ProviderRecord], None]:
+            for factory in registry.factories:
+                await factory.discover(provider_type, registry=registry)
+
+            for label, provider in registry.by_label.items():
+                yield get_provider(label.type, label.id, registry)
+
+        return [(pt[0], pt[1]) async for pt in do_load()]
 
     @router_ish.get("/providers/{provider_type:str}/{provider_id}")
     def get_provider(

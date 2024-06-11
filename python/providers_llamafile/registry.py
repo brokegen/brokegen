@@ -43,6 +43,11 @@ class LlamafileProvider(BaseProvider):
         self.filename = filename
         self.server_process_cmdline = (
             f"{filename} --server --nobrowser "
+            # Set a 24 hour timeout when llamafile is talking to llama.cpp
+            "--timeout 86400 "
+            # Lowest context size is 4096 for LLaVA models, use that as lowest common denominator
+            # TODO: We're gonna need per-model tuning and contexts, etc etc. And also limits-testing.
+            "--embedding --parallel 2 --ctx-size 4096 "
             f"--port {target_port} --host {target_host}"
         )
         self.server_comms = httpx.AsyncClient(
