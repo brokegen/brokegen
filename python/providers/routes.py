@@ -2,6 +2,7 @@ from typing import AsyncGenerator
 
 import fastapi
 from fastapi import Depends
+from starlette.responses import RedirectResponse
 
 from providers.inference_models.orm import InferenceModelResponse
 from providers.orm import ProviderType, ProviderID, ProviderLabel
@@ -19,12 +20,20 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             record = record_by_provider[provider]
             yield label, record
 
-    @router_ish.post("/providers/any/.discover")
+    @router_ish.get("/providers/any/.discover")
     async def discover_any_providers(
+            request: fastapi.Request,
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ):
+        """
+        This method is an HTTP GET, because we do a redirect once the discovery process is done.
+        """
         for factory in registry.factories:
             await factory.discover(provider_type=None, registry=registry)
+
+        return RedirectResponse(
+            request.url_for('list_providers')
+        )
 
     @router_ish.post("/providers/{provider_type:str}/.discover")
     async def discover_providers(
