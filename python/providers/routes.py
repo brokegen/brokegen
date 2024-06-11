@@ -11,7 +11,7 @@ from providers.registry import ProviderRegistry
 
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
     @router_ish.get("/providers")
-    def list_providers(
+    def list_any_providers(
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ):
         record_by_provider = dict([(v, k) for k, v in registry.by_record.items()])
@@ -32,16 +32,8 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             await factory.discover(provider_type=None, registry=registry)
 
         return RedirectResponse(
-            request.url_for('list_providers')
+            request.url_for('list_any_providers')
         )
-
-    @router_ish.post("/providers/{provider_type:str}/.discover")
-    async def discover_providers(
-            provider_type: ProviderType,
-            registry: ProviderRegistry = Depends(ProviderRegistry),
-    ):
-        for factory in registry.factories:
-            await factory.discover(provider_type, registry)
 
     @router_ish.get("/providers/{provider_type:str}/{provider_id}")
     def get_provider(

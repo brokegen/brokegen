@@ -63,7 +63,7 @@ extension ProviderService {
     public func fetchAllProviders() async throws -> [ProviderClientModel] {
         var allProviders: [ProviderClientModel] = []
 
-        let providersData: Data? = await self.getData("/providers")
+        let providersData: Data? = await self.getData("/providers/any/.discover")
         guard providersData != nil else { throw ProviderServiceError.noResponseContentReturned }
 
         for (_, providerJson) in JSON(providersData!) {

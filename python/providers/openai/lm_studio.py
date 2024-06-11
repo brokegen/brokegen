@@ -1,4 +1,5 @@
 import logging
+import os.path
 from datetime import datetime, timezone
 from typing import AsyncIterable
 
@@ -117,7 +118,7 @@ class LMStudioProvider(BaseProvider):
         access_time = datetime.now(tz=timezone.utc)
         for model_identifiers in response_content["data"]:
             model_in = InferenceModelAddRequest(
-                human_id=safe_get(model_identifiers, 'id'),
+                human_id=os.path.basename(safe_get(model_identifiers, 'id')),
                 first_seen_at=access_time,
                 last_seen=access_time,
                 provider_identifiers=(await self.make_record()).identifiers,

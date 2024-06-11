@@ -28,6 +28,21 @@ struct ModelPickerView: View {
         }
     }
 
+    var sortedModels: [InferenceModel] {
+        get {
+            providerService.allModels
+            .sorted {
+                if $0.firstSeenAt == nil {
+                    return false
+                }
+                if $1.firstSeenAt == nil {
+                    return false
+                }
+                return $0.firstSeenAt! > $1.firstSeenAt!
+            }
+        }
+    }
+
     var body: some View {
         ZStack(alignment: Alignment(horizontal: .trailing, vertical: .top)) {
             ViewThatFits(in: .horizontal) {
@@ -36,7 +51,7 @@ struct ModelPickerView: View {
                 // especially since sorting is virtually random.
                 ScrollView {
                     VFlowLayout(spacing: 24) {
-                        ForEach(providerService.allModels) { model in
+                        ForEach(sortedModels) { model in
                             OneInferenceModelView(
                                 model: model,
                                 modelAvailable: providerService.availableModels.contains {
@@ -51,7 +66,7 @@ struct ModelPickerView: View {
                 .padding(24)
 
                 List {
-                    ForEach(providerService.allModels) { model in
+                    ForEach(sortedModels) { model in
                         OneInferenceModelView(
                             model: model,
                             modelAvailable: providerService.availableModels.contains {
