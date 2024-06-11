@@ -79,3 +79,14 @@ def install_forwards(router_ish: FastAPI):
             return await do_api_show(request_content_json['name'], history_db, audit_db)
 
         return await forward_request(original_request, audit_db)
+
+    @router_ish.head("/providers/{provider_type:str}/{provider_id:path}/ollama/")
+    async def ollama_head(
+            original_request: Request,
+            provider_type: ProviderType,
+            provider_id: ProviderID,
+    ):
+        """
+        This implementation isn't correct, but clients only check "HEAD /", anyway.
+        """
+        pass

@@ -1,6 +1,4 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
-import client_ollama
-
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
@@ -19,15 +17,17 @@ from fastapi import FastAPI
 
 import audit
 import client
+import client_ollama
+import providers.inference_models.database
 import providers.llamafile
-import providers.ollama
-import providers.openai
+import providers.openai.lm_studio
 import providers_ollama.direct_routes
 import providers_ollama.forwarding_routes
 import providers_ollama.sequence_extend
 from audit.http import get_db as get_audit_db
 from audit.http_raw import SqlLoggingMiddleware
 from inference.embeddings.knowledge import get_knowledge
+from providers.registry import ProviderRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -146,9 +146,12 @@ def run_proxy(
         """
         return starlette.responses.Response(status_code=200)
 
-    asyncio.run(providers.openai.lm_studio.discover_lm_studio_servers())
-    asyncio.run(providers.llamafile.discover_llamafiles_in('dist'))
-    asyncio.run(providers.ollama.discover_ollama_servers())
+    (
+        ProviderRegistry()
+        .register_factory(providers_ollama.registry.ExternalOllamaFactory())
+        .register_factory(providers.openai.lm_studio.LMStudioFactory())
+        .register_factory(providers.llamafile.LlamafileFactory(['dist']))
+    )
 
     providers_ollama.direct_routes.install_test_points(app)
     providers_ollama.forwarding_routes.install_forwards(app, force_ollama_rag)

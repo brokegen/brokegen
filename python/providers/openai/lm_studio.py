@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from typing import Any, AsyncIterable
+from typing import AsyncIterable
 
 import fastapi
 import httpx
@@ -13,8 +13,8 @@ from providers.inference_models.database import HistoryDB, get_db as get_history
 from providers.inference_models.orm import InferenceModelRecord
 from providers.inference_models.orm import lookup_inference_model_detailed, \
     InferenceModelAddRequest, InferenceModelRecordOrm
-from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord
-from providers.registry import ProviderRegistry, BaseProvider
+from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord, ProviderType
+from providers.registry import ProviderRegistry, BaseProvider, ProviderFactory
 
 logger = logging.getLogger(__name__)
 
@@ -146,8 +146,8 @@ class LMStudioProvider(BaseProvider):
                 continue
 
 
-async def discover_lm_studio_servers():
-    async def factory(label: ProviderLabel) -> LMStudioProvider | None:
+class LMStudioFactory(ProviderFactory):
+    async def try_make(self, label: ProviderLabel) -> LMStudioProvider | None:
         if label.type != 'lm_studio':
             return None
 
@@ -158,7 +158,8 @@ async def discover_lm_studio_servers():
 
         return maybe_provider
 
-    registry = ProviderRegistry()
-    registry.register_factory(factory)
+    async def discover(self, provider_type: ProviderType | None, registry: ProviderRegistry) -> None:
+        if provider_type != 'lm_studio':
+            return
 
-    await registry.make(ProviderLabel(type="lm_studio", id="http://localhost:1234"))
+        await registry.make(ProviderLabel(type="lm_studio", id="http://localhost:1234"))

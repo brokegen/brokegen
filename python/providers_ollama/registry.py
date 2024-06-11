@@ -10,8 +10,8 @@ from audit.http import get_db as get_audit_db, AuditDB
 from providers._util import local_provider_identifiers, local_fetch_machine_info
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelResponse
-from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord
-from providers.registry import ProviderRegistry, BaseProvider
+from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord, ProviderType
+from providers.registry import ProviderRegistry, BaseProvider, ProviderFactory
 from providers_ollama.model_routes import do_list_available_models
 
 logger = logging.getLogger(__name__)
@@ -84,13 +84,11 @@ class ExternalOllamaProvider(BaseProvider):
             yield model
 
     async def stream_get(self, url):
-        return self.client.build_request(
-
-        )
+        return self.client.build_request()
 
 
-async def discover_ollama_servers():
-    async def factory(label: ProviderLabel) -> ExternalOllamaProvider | None:
+class ExternalOllamaFactory(ProviderFactory):
+    async def try_make(self, label: ProviderLabel) -> ExternalOllamaProvider | None:
         if label.type != 'ollama':
             return None
 
@@ -101,7 +99,8 @@ async def discover_ollama_servers():
 
         return maybe_provider
 
-    registry = ProviderRegistry()
-    registry.register_factory(factory)
+    async def discover(self, provider_type: ProviderType | None, registry: ProviderRegistry) -> None:
+        if provider_type != 'ollama':
+            return
 
-    await registry.make(ProviderLabel(type="ollama", id="http://localhost:11434"))
+        await registry.make(ProviderLabel(type="ollama", id="http://localhost:11434"))

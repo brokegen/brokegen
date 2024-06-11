@@ -15,8 +15,8 @@ from providers._util import local_provider_identifiers, local_fetch_machine_info
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecord, InferenceModelAddRequest, \
     lookup_inference_model_detailed, InferenceModelRecordOrm
-from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord
-from providers.registry import ProviderRegistry, BaseProvider
+from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord, ProviderType
+from providers.registry import ProviderRegistry, BaseProvider, ProviderFactory
 
 logger = logging.getLogger(__name__)
 
@@ -209,8 +209,13 @@ class LlamafileProvider(BaseProvider):
         return LlamafileProvider(filename)
 
 
-async def discover_llamafiles_in(*search_paths: str):
-    async def factory(label: ProviderLabel) -> LlamafileProvider | None:
+class LlamafileFactory(ProviderFactory):
+    search_dirs: list[str]
+
+    def __init__(self, search_dirs: list[str]):
+        self.search_dirs = search_dirs
+
+    async def try_make(self, label: ProviderLabel) -> LlamafileProvider | None:
         if label.type != 'llamafile':
             return None
 
@@ -219,18 +224,19 @@ async def discover_llamafiles_in(*search_paths: str):
 
         return LlamafileProvider.from_filename(label.id)
 
-    registry = ProviderRegistry()
-    registry.register_factory(factory)
+    async def discover(self, provider_type: ProviderType | None, registry: ProviderRegistry) -> None:
+        if provider_type != 'llamafile':
+            return
 
-    def _generate_filenames():
-        for rootpath in search_paths:
-            logger.debug(f"LlamafileProvider: checking dir {os.path.abspath(rootpath)}")
-            for dirpath, _, filenames in os.walk(rootpath):
-                for file in filenames:
-                    if file[-10:] != '.llamafile':
-                        continue
+        def _generate_filenames():
+            for rootpath in self.search_dirs:
+                logger.debug(f"LlamafileProvider: checking dir {os.path.abspath(rootpath)}")
+                for dirpath, _, filenames in os.walk(rootpath):
+                    for file in filenames:
+                        if file[-10:] != '.llamafile':
+                            continue
 
-                    yield os.path.abspath(os.path.join(rootpath, file))
+                        yield os.path.abspath(os.path.join(rootpath, file))
 
-    for file in _generate_filenames():
-        await registry.make(ProviderLabel(type="llamafile", id=file))
+        for file in _generate_filenames():
+            await registry.make(ProviderLabel(type="llamafile", id=file))
