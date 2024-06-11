@@ -225,7 +225,7 @@ class LlamafileFactory(ProviderFactory):
         return LlamafileProvider.from_filename(label.id)
 
     async def discover(self, provider_type: ProviderType | None, registry: ProviderRegistry) -> None:
-        if provider_type != 'llamafile':
+        if provider_type is not None and provider_type != 'llamafile':
             return
 
         def _generate_filenames():

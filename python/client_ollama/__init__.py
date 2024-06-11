@@ -1,3 +1,4 @@
+import hashlib
 import logging
 from typing import AsyncIterable
 
@@ -17,23 +18,34 @@ logger = logging.getLogger(__name__)
 
 
 async def emulate_api_tags(
+        label: ProviderLabel,
         provider: BaseProvider,
 ) -> AsyncIterable[JSONDict]:
     async for model in provider.list_models():
-        # If it's an Ollama-compatible record, just return that
-        if safe_get(model.model_identifiers, 'name'):
-            yield {
-                "provider": model.provider_identifiers,
-                **model.model_identifiers,
-            }
+        def compute_hash() -> str:
+            sha256_hasher = hashlib.sha256()
+            sha256_hasher.update(model.provider_identifiers.encode())
+            sha256_hasher.update(orjson.dumps(model.model_identifiers, option=orjson.OPT_SORT_KEYS))
 
-        else:
-            model_out = {
-                "name": model.human_id,
-                "details": model.model_identifiers,
-                "provider": model.provider_identifiers,
-            }
-            yield model_out
+            return sha256_hasher.hexdigest()
+
+        # If it's an Ollama-compatible record, just return that
+        model_out = {
+            "name": f"{label.type}::{label.id}::{model.human_id}",
+            "model": model.human_id,
+            "digest": compute_hash(),
+            "size": 0,
+            # TODO: Figure out when to append "Z", and why it isn't appended sometimes.
+            "modified_at": model.first_seen_at.isoformat() + "Z",
+            "details": {
+                "parent_model": "",
+                "format": "gguf",
+            },
+            "model_identifiers": model.model_identifiers,
+            "provider_identifiers": model.provider_identifiers,
+        }
+
+        yield model_out
 
 
 def install_forwards(router_ish: FastAPI):
@@ -47,9 +59,9 @@ def install_forwards(router_ish: FastAPI):
     ):
         if ollama_get_path == "api/tags":
             collected_model_info = []
-            for _, provider in ProviderRegistry().by_label.items():
+            for label, provider in ProviderRegistry().by_label.items():
                 collected_model_info.extend(
-                    [m async for m in emulate_api_tags(provider)]
+                    [m async for m in emulate_api_tags(label, provider)]
                 )
 
             return {"models": collected_model_info}

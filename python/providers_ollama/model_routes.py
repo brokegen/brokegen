@@ -10,6 +10,7 @@ import starlette.responses
 from fastapi import Request
 
 import providers
+import providers_ollama
 from _util.json import safe_get
 from _util.typing import InferenceModelHumanID
 from audit.http import AuditDB
@@ -123,7 +124,7 @@ async def do_api_show(
 
     provider: BaseProvider = ProviderRegistry().by_label[
         ProviderLabel(type="ollama", id=str(_real_ollama_client.base_url))]
-    provider: providers.ollama.ExternalOllamaProvider = cast(providers.ollama.ExternalOllamaProvider, provider)
+    provider: providers_ollama.registry.ExternalOllamaProvider = cast(providers_ollama.registry.ExternalOllamaProvider, provider)
     upstream_request = provider.client.build_request(
         method="POST",
         url="/api/show",

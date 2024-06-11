@@ -100,7 +100,7 @@ class ExternalOllamaFactory(ProviderFactory):
         return maybe_provider
 
     async def discover(self, provider_type: ProviderType | None, registry: ProviderRegistry) -> None:
-        if provider_type != 'ollama':
+        if provider_type is not None and provider_type != 'ollama':
             return
 
         await registry.make(ProviderLabel(type="ollama", id="http://localhost:11434"))

@@ -159,7 +159,7 @@ class LMStudioFactory(ProviderFactory):
         return maybe_provider
 
     async def discover(self, provider_type: ProviderType | None, registry: ProviderRegistry) -> None:
-        if provider_type != 'lm_studio':
+        if provider_type is not None and provider_type != 'lm_studio':
             return
 
         await registry.make(ProviderLabel(type="lm_studio", id="http://localhost:1234"))
