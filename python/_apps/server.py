@@ -148,18 +148,23 @@ def run_proxy(
 
     (
         ProviderRegistry()
-        .register_factory(providers_ollama.registry.ExternalOllamaFactory())
+        # DEBUG: disable ollama, for testing
+        #.register_factory(providers_ollama.registry.ExternalOllamaFactory())
         .register_factory(providers.openai.lm_studio.LMStudioFactory())
         .register_factory(providers.llamafile.LlamafileFactory(['dist']))
     )
 
-    providers_ollama.direct_routes.install_test_points(app)
     providers_ollama.forwarding_routes.install_forwards(app, force_ollama_rag)
-    client.install_routes(app)
     client_ollama.install_forwards(app)
-    providers_ollama.sequence_extend.install_routes(app)
-    providers.inference_models.routes.install_routes(app)
+
+    providers_ollama.direct_routes.install_test_points(app)
+
+    # brokegen-specific endpoints
     providers.routes.install_routes(app)
+    providers.inference_models.routes.install_routes(app)
+    client.install_routes(app)
+
+    providers_ollama.sequence_extend.install_routes(app)
 
     get_knowledge().load_shards_from(None)
     get_knowledge().queue_data_dir(data_dir)
