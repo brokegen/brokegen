@@ -1,4 +1,6 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
+import client_ollama
+
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
@@ -151,6 +153,7 @@ def run_proxy(
     providers_ollama.direct_routes.install_test_points(app)
     providers_ollama.forwarding_routes.install_forwards(app, force_ollama_rag)
     client.install_routes(app)
+    client_ollama.install_forwards(app)
     providers_ollama.sequence_extend.install_routes(app)
     providers.inference_models.routes.install_routes(app)
     providers.routes.install_routes(app)
