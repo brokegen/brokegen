@@ -98,6 +98,9 @@ struct AppSidebar: View {
     @Environment(ProviderService.self) private var providerService
     @Environment(InferenceModelSettings.self) private var inferenceModelSettings
 
+    @AppStorage("showDebugSidebarItems")
+    private var showDebugSidebarItems: Bool = true
+
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
@@ -123,11 +126,17 @@ struct AppSidebar: View {
 
                         Text("Inspectors")
                     }) {
+                        NavigationLink(destination: ProviderPickerView(providerService: providerService)) {
+                            ASRow("Providers")
+                        }
+
                         NavigationLink(destination: {
                             ModelPickerView()
                         }) {
                             ASRow("Inference Models")
                         }
+
+                        Divider()
 
                         ASRow("Chat Templates")
                             .foregroundStyle(Color(.disabledControlTextColor))
@@ -137,6 +146,27 @@ struct AppSidebar: View {
 
                         ASRow("Vector Stores")
                             .foregroundStyle(Color(.disabledControlTextColor))
+                    }
+
+                    if showDebugSidebarItems {
+                        AppSidebarSection(label: {
+                            Text("[DEBUG] Inspectors")
+                        }) {
+                            ASRow("InferenceJobs")
+                                .foregroundStyle(Color(.disabledControlTextColor))
+
+                            ASRow("ChatSequences")
+                                .foregroundStyle(Color(.disabledControlTextColor))
+
+                            ASRow("ChatMessages")
+                                .foregroundStyle(Color(.disabledControlTextColor))
+
+                            Divider()
+
+                            NavigationLink(destination: SystemInfoView()) {
+                                ASRow("System Info")
+                            }
+                        }
                     }
 
                     MiniJobsSidebar()
@@ -151,9 +181,8 @@ struct AppSidebar: View {
                     Text("Settings")
                 }
             }) {
-                NavigationLink(destination: ProviderPickerView(providerService: providerService)) {
-                    ASRow("Providers", showChevron: true)
-                }
+                ASRow("Providers", showChevron: true)
+                    .foregroundStyle(Color(.disabledControlTextColor))
 
                 NavigationLink(value: inferenceModelSettings) {
                     ASRow("Inference Models", showChevron: true)
@@ -161,11 +190,7 @@ struct AppSidebar: View {
 
                 ASRow("Retrieval and Vector Stores", showChevron: true)
                     .foregroundStyle(Color(.disabledControlTextColor))
-
-                NavigationLink(destination: SystemInfoView()) {
-                    ASRow("System Info")
-                }
-                .padding(.bottom, 24)
+                    .padding(.bottom, 24)
             }
         }
         .listStyle(.sidebar)

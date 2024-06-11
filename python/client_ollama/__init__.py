@@ -37,7 +37,7 @@ async def emulate_api_tags(
 
 
 def install_forwards(router_ish: FastAPI):
-    @router_ish.get("/providers/any/any/{ollama_get_path:path}")
+    @router_ish.get("/providers/any/any/ollama/{ollama_get_path:path}")
     async def ollama_get(
             original_request: Request,
             ollama_get_path: str,
@@ -56,8 +56,8 @@ def install_forwards(router_ish: FastAPI):
 
         raise HTTPException(501, "\"any\" provider_id not implemented")
 
-    @router_ish.get("/providers/{provider_type:str}/{provider_id:path}/{ollama_get_path:path}")
-    @router_ish.get("/providers/{provider_type:str}/{provider_id:path}/{ollama_post_path:path}")
+    @router_ish.get("/providers/{provider_type:str}/{provider_id:path}/ollama/{ollama_get_path:path}")
+    @router_ish.get("/providers/{provider_type:str}/{provider_id:path}/ollama/{ollama_post_path:path}")
     async def ollama_get_or_post(
             original_request: Request,
             provider_type: ProviderType,
