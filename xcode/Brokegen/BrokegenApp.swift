@@ -22,6 +22,7 @@ struct BrokegenApp: App {
         }
 
         Task {
+            _ = try? await providerService.fetchAllProviders()
             await providerService.fetchAvailableModels()
             settingsService.inflateModels(providerService)
         }
