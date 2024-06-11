@@ -1,3 +1,4 @@
+import asyncio
 import functools
 import hashlib
 import logging
@@ -10,7 +11,7 @@ import httpx
 import orjson
 from sqlalchemy import select
 
-from _util.json import safe_get
+from _util.json import safe_get, JSONDict
 from providers._util import local_provider_identifiers, local_fetch_machine_info
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecord, InferenceModelAddRequest, \
@@ -60,7 +61,13 @@ class LlamafileProvider(BaseProvider):
             follow_redirects=False,
         )
 
-    def launch(self):
+    async def try_launch(self) -> None:
+        if self.server_process is not None:
+            while not await self.available():
+                await asyncio.sleep(5)
+
+            return
+
         self.server_process = subprocess.Popen(
             self.server_process_cmdline,
             shell=True,
@@ -140,9 +147,23 @@ class LlamafileProvider(BaseProvider):
             "name": model_name,
             "size": os.path.getsize(self.filename),
             "hash-sha256": self.compute_hash(),
-            "file-ctime": os.path.getctime(self.filename),
-            "file-mtime": os.path.getmtime(self.filename)
+            "file-ctime": datetime.fromtimestamp(os.path.getctime(self.filename)).isoformat(),
+            "file-mtime": datetime.fromtimestamp(os.path.getmtime(self.filename)).isoformat(),
         }
+
+        # Read the parameters from the server
+        await self.try_launch()
+
+        model_props: JSONDict | None
+        try:
+            response = await self.server_comms.request(
+                method="GET",
+                url="/props",
+            )
+            model_props = response.json()
+
+        except httpx.ConnectError:
+            return
 
         access_time = datetime.now(tz=timezone.utc)
         model_in = InferenceModelAddRequest(
@@ -151,7 +172,7 @@ class LlamafileProvider(BaseProvider):
             last_seen=access_time,
             provider_identifiers=(await self.make_record()).identifiers,
             model_identifiers=model_identifiers,
-            combined_inference_parameters=None,
+            combined_inference_parameters=model_props,
         )
 
         history_db: HistoryDB = next(get_history_db())
