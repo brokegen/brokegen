@@ -151,8 +151,9 @@ struct AppSidebar: View {
                     Text("Settings")
                 }
             }) {
-                ASRow("Providers", showChevron: true)
-                    .foregroundStyle(Color(.disabledControlTextColor))
+                NavigationLink(destination: ProviderPickerView(providerService: providerService)) {
+                    ASRow("Providers", showChevron: true)
+                }
 
                 NavigationLink(value: inferenceModelSettings) {
                     ASRow("Inference Models", showChevron: true)
