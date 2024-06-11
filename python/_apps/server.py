@@ -153,11 +153,13 @@ def run_proxy(
         .register_factory(providers_llamafile.registry.LlamafileFactory(['dist']))
     )
 
+    # Ollama proxy & emulation
     providers_ollama.forwarding_routes.install_forwards(app, force_ollama_rag)
     client_ollama.install_forwards(app)
 
+    # Direct test points, only used in Swagger test UI
     providers_ollama.direct_routes.install_test_points(app)
-    providers_llamafile.direct_routes.install_routes(app)
+    providers_llamafile.direct_routes.install_test_points(app)
 
     # brokegen-specific endpoints
     providers.routes.install_routes(app)

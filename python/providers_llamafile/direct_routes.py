@@ -22,7 +22,7 @@ from providers.registry import BaseProvider, ProviderRegistry
 logger = logging.getLogger(__name__)
 
 
-def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
+def install_test_points(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
     @router_ish.post("/providers/llamafile/{provider_id:path}/models/any/completion")
     async def generate_from_provider(
             provider_id: ProviderID,
