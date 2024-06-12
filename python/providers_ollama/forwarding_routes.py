@@ -7,7 +7,7 @@ from starlette.requests import Request
 from _util.json import safe_get
 from _util.status import ServerStatusHolder
 from audit.http import AuditDB, get_db as get_audit_db
-from inference.embeddings.retrieval import RetrievalLabel
+from retrieval.embeddings.retrieval import RetrievalLabel
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceReason
 from providers.registry import ProviderRegistry

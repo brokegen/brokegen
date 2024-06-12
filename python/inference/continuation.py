@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 from _util.typing import InferenceModelRecordID, ChatSequenceID
 from client.database import ChatMessage, lookup_sequence_parents
-from inference.embeddings.retrieval import RetrievalPolicyID
+from retrieval.embeddings.retrieval import RetrievalPolicyID
 from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceEventOrm, InferenceModelRecordOrm
 

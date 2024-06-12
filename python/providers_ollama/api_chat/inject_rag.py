@@ -13,9 +13,6 @@ from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import PromptText
 from audit.http import AuditDB
 from client.database import ChatMessageOrm, ChatSequence
-from inference.embeddings.knowledge import get_knowledge
-from inference.embeddings.retrieval import RetrievalPolicy, RetrievalLabel, SimpleRetrievalPolicy, \
-    SummarizingRetrievalPolicy
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceEventOrm, InferenceReason
@@ -25,6 +22,9 @@ from providers_ollama.chat_rag_util import finalize_inference_job, do_generate_r
 from providers_ollama.chat_routes import lookup_model_offline
 from providers_ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, \
     consolidate_stream
+from retrieval.embeddings.knowledge import get_knowledge
+from retrieval.embeddings.retrieval import RetrievalPolicy, RetrievalLabel, SimpleRetrievalPolicy, \
+    SummarizingRetrievalPolicy
 
 logger = logging.getLogger(__name__)
 

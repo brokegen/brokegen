@@ -24,13 +24,12 @@ import os
 import sys
 from contextlib import asynccontextmanager
 from pprint import pprint
-from typing import Iterable
 
 import click
 import pypandoc
 
 import ingest.filesystem
-from inference.embeddings.knowledge import get_knowledge
+from retrieval.embeddings.knowledge import get_knowledge
 
 logger = logging.getLogger(__name__)
 

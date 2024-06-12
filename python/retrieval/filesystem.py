@@ -4,7 +4,7 @@ import os
 
 import filelock
 
-from inference.embeddings.knowledge import KnowledgeSingleton
+from retrieval.embeddings.knowledge import KnowledgeSingleton
 
 logger = logging.getLogger(__name__)
 
