@@ -1,5 +1,20 @@
 import SwiftUI
 
+struct ForegroundAccentColor: ViewModifier {
+    let enabled: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if enabled {
+            content
+                .foregroundStyle(Color.accentColor)
+        }
+        else {
+            content
+        }
+    }
+}
+
 struct OneMessageView: View {
     let message: Message
     let sequence: ChatSequence?
@@ -54,6 +69,7 @@ struct OneMessageView: View {
                         Image(systemName: expandContent ? "chevron.down" : "chevron.left")
                             .font(.system(size: 18))
                             .frame(width: 20, height: 18)
+                            .modifier(ForegroundAccentColor(enabled: !expandContent))
                     }
                     .padding(12)
                     .contentShape(Rectangle())
