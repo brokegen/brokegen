@@ -227,7 +227,10 @@ class ChatSequenceClientModel: ObservableObject {
         displayedStatus = nil
 
         if responseInEdit != nil {
-            sequence.messages.append(responseInEdit!)
+            // TODO: There's all sort of error conditions we could/should actually check for.
+            if !responseInEdit!.content.isEmpty {
+                sequence.messages.append(responseInEdit!)
+            }
             responseInEdit = nil
 
             if userRequested {

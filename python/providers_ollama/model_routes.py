@@ -51,7 +51,12 @@ async def do_list_available_models(
         # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
         headers=[('Connection', 'close')],
     )
-    response: httpx.Response = await provider.client.send(upstream_request)
+    try:
+        response: httpx.Response = await provider.client.send(upstream_request)
+    except httpx.ConnectError:
+        logger.exception("Failed to fetch new Ollama models")
+        return
+
     response: starlette.responses.Response = await intercept.wrap_response(response)
 
     available_models_generator: Generator[InferenceModelRecord, None, None] = \
