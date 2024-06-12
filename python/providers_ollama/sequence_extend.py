@@ -17,13 +17,13 @@ from audit.http import get_db as get_audit_db
 from client.database import ChatMessageOrm, ChatSequence, lookup_chat_message, ChatMessage
 from client.sequence_get import do_get_sequence
 from inference.continuation import ContinueRequest, ExtendRequest, select_continuation_model
-from retrieval.embeddings.retrieval import RetrievalLabel
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, InferenceReason
 from providers_ollama.api_chat.inject_rag import do_proxy_chat_rag
 from providers_ollama.chat_rag_util import finalize_inference_job, do_generate_raw_templated
 from providers_ollama.json import consolidate_stream_sync, keepalive_wrapper
+from retrieval.faiss.retrieval import RetrievalLabel
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +105,7 @@ async def do_continuation(
                 # NB This only works as a system message on models that respect that.
                 #    So, append it to both.
                 system_message="You are a concise summarizer, seizing on easily identifiable + distinguishing factors of the text.",
-                user_prompt="Provide a summary of the provided text in a few words, suitable as a short description for a tab title." +
+                user_prompt="Provide a summary of the provided text in a few words, suitable as a short description for a tab title. " +
                             "Answer with that title only.\n\n" +
                             '\n'.join([m.content for m in messages_list]),
                 assistant_response="Tab title: "

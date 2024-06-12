@@ -18,7 +18,7 @@ from starlette.background import BackgroundTask
 from starlette.concurrency import iterate_in_threadpool
 from starlette.responses import JSONResponse, StreamingResponse
 
-from retrieval.embeddings.knowledge import KnowledgeSingleton
+from retrieval.faiss.knowledge import KnowledgeSingleton
 
 logger = logging.getLogger(__name__)
 

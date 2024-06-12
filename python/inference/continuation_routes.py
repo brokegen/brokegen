@@ -17,7 +17,7 @@ from audit.http import get_db as get_audit_db
 from client.database import ChatMessageOrm, ChatSequence, lookup_chat_message, ChatMessage
 from client.sequence_get import do_get_sequence
 from inference.continuation import ContinueRequest, ExtendRequest, select_continuation_model
-from retrieval.embeddings.retrieval import RetrievalLabel
+from retrieval.faiss.retrieval import RetrievalLabel
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecordOrm
 

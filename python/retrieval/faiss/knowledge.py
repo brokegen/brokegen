@@ -7,7 +7,7 @@ import tracemalloc
 from typing import Generator, Dict, Coroutine
 
 from _util.status import ServerStatusHolder, StatusContext
-from retrieval.embeddings.vectorestore import VectorStoreReadOnly, EmbedderConfig, VectorStoreShardID, VectorStoreShard
+from .vectorestore import VectorStoreReadOnly, EmbedderConfig, VectorStoreShardID, VectorStoreShard
 
 logger = logging.getLogger(__name__)
 

@@ -26,7 +26,7 @@ import providers_ollama.forwarding_routes
 import providers_ollama.sequence_extend
 from audit.http import get_db as get_audit_db
 from audit.http_raw import SqlLoggingMiddleware
-from retrieval.embeddings.knowledge import get_knowledge
+from retrieval.faiss.knowledge import get_knowledge
 from providers.registry import ProviderRegistry
 
 logger = logging.getLogger(__name__)

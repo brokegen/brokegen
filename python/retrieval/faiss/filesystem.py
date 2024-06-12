@@ -4,7 +4,7 @@ import os
 
 import filelock
 
-from retrieval.embeddings.knowledge import KnowledgeSingleton
+from retrieval.faiss.knowledge import KnowledgeSingleton
 
 logger = logging.getLogger(__name__)
 

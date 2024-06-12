@@ -22,8 +22,8 @@ from providers_ollama.chat_rag_util import finalize_inference_job, do_generate_r
 from providers_ollama.chat_routes import lookup_model_offline
 from providers_ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, \
     consolidate_stream
-from retrieval.embeddings.knowledge import get_knowledge
-from retrieval.embeddings.retrieval import RetrievalPolicy, RetrievalLabel, SimpleRetrievalPolicy, \
+from retrieval.faiss.knowledge import get_knowledge
+from retrieval.faiss.retrieval import RetrievalPolicy, RetrievalLabel, SimpleRetrievalPolicy, \
     SummarizingRetrievalPolicy
 
 logger = logging.getLogger(__name__)

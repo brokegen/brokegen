@@ -29,7 +29,7 @@ import click
 import pypandoc
 
 import ingest.filesystem
-from retrieval.embeddings.knowledge import get_knowledge
+from retrieval.faiss.knowledge import get_knowledge
 
 logger = logging.getLogger(__name__)
 
