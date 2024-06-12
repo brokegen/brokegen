@@ -2,8 +2,6 @@ import Combine
 import CustomTabView
 import SwiftUI
 
-let inputBackgroundStyle = Color(.controlBackgroundColor)
-
 enum Tab: String, Hashable, CaseIterable {
     case simple, retrieval, uiOptions, modelOptions, systemOptions
 }
@@ -27,7 +25,6 @@ struct ComposeTabsView: View {
                         .layoutPriority(1)
                 }
                 .padding(.trailing, 12)
-                .frame(maxWidth: .infinity)
                 .frame(maxHeight: 32)
                 .background(selection == tab
                             ? Color(.selectedControlColor)
@@ -50,7 +47,6 @@ struct ComposeTabsView: View {
                         .frame(minWidth: 0)
                 }
                 .padding(.leading, 12)
-                .frame(maxWidth: .infinity)
                 .frame(maxHeight: 32)
                 .background(selection == tab
                             ? Color(.selectedControlColor)
@@ -63,7 +59,6 @@ struct ComposeTabsView: View {
                 .layoutPriority(0.2)
             }
         }
-        .frame(maxWidth: 120)
     }
 }
 
@@ -84,6 +79,7 @@ struct OneSequenceView: View {
         let composeTabsView = ComposeTabsView(selection: $selectedTab) { tab in
             print("Picked tab \(tab.rawValue)")
         }
+            .frame(maxWidth: 120)
             .frame(maxHeight: .infinity)
 
         return CustomTabView(tabBarView: composeTabsView, tabs: Tab.allCases, selection: selectedTab) {
@@ -275,7 +271,18 @@ struct OneSequenceView: View {
             }
 
             // Tab.uiOptions
-            ChatSequenceSettingsView(globalSettings: $viewModel.globalSequenceSettings, settings: $viewModel.sequenceSettings)
+            ViewThatFits {
+                VFlowLayout {
+                    ChatSequenceSettingsView(globalSettings: $viewModel.globalSequenceSettings, settings: $viewModel.sequenceSettings)
+                }
+
+                ScrollView {
+                    VFlowLayout(spacing: 0) {
+                        ChatSequenceSettingsView(globalSettings: $viewModel.globalSequenceSettings, settings: $viewModel.sequenceSettings)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
 
             // Tab.modelOptions
             VFlowLayout(spacing: 0) {
@@ -390,38 +397,31 @@ struct OneSequenceView: View {
                     .frame(minHeight: 80)
 
                     VStack(spacing: 0) {
-                        if viewModel.submitting || viewModel.responseInEdit != nil || viewModel.displayedStatus != nil {
-                            // TODO: This doesn't seem like the right UI move, but I don't understand colors yet
-                            Divider()
+                        HStack(spacing: 0) {
+                            // TODO: Find a way to persist any changes for at least a few seconds
+                            Text(viewModel.displayedStatus ?? "Ready")
+                                .foregroundStyle(Color(.disabledControlTextColor))
+                                .layoutPriority(0.2)
 
-                            HStack(spacing: 0) {
-                                if viewModel.displayedStatus != nil {
-                                    // TODO: Find a way to persist any changes for at least a few seconds
-                                    Text(viewModel.displayedStatus ?? "")
-                                        .foregroundStyle(Color(.disabledControlTextColor))
-                                        .layoutPriority(0.2)
-                                }
+                            Spacer()
 
-                                Spacer()
-
-                                if viewModel.submitting || viewModel.responseInEdit != nil {
-                                    ProgressView()
-                                        .progressViewStyle(.linear)
-                                        .frame(maxWidth: 120)
-                                        .layoutPriority(0.2)
-                                }
+                            if viewModel.submitting || viewModel.responseInEdit != nil {
+                                ProgressView()
+                                    .progressViewStyle(.linear)
+                                    .frame(maxWidth: 120)
+                                    .layoutPriority(0.2)
                             }
-                            .padding(.leading, 24)
-                            .padding(.trailing, 24)
-                            .frame(minHeight: 36)
                         }
+                        .padding(.leading, 24)
+                        .padding(.trailing, 24)
+                        .frame(minHeight: 36)
 
                         tabsView
-                            .frame(minHeight: 180, maxHeight: max(
-                                180,
-                                splitViewLoaded ? geometry.size.height * 0.7 : geometry.size.height * 0.2))
                     } // end of entire lower VStack
                     .background(inputBackgroundStyle)
+                    .frame(minHeight: 180, maxHeight: max(
+                        180,
+                        splitViewLoaded ? geometry.size.height * 0.7 : geometry.size.height * 0.2))
                 }
                 .defaultScrollAnchor(.bottom)
                 .onAppear {

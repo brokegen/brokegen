@@ -12,7 +12,7 @@ struct ChatSequenceSettingsView: View {
         self.settings = settings
     }
 
-    @ViewBuilder var boxMaker: some View {
+    var body: some View {
         GroupBox(content: {
             VFlowLayout(spacing: 24) {
                 Toggle(isOn: globalSettings.allowContinuation, label: { Text("allowContinuation") })
@@ -127,21 +127,6 @@ struct ChatSequenceSettingsView: View {
         }, label: {
             Text("ChatSequence Generation Options")
         })
-    }
-
-    var body: some View {
-        ViewThatFits {
-            VFlowLayout {
-                boxMaker
-            }
-
-            ScrollView {
-                VFlowLayout(spacing: 0) {
-                    boxMaker
-                }
-                .frame(maxWidth: .infinity)
-            }
-        }
     }
 }
 

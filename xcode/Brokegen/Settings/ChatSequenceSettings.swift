@@ -19,7 +19,7 @@ class GlobalChatSequenceClientSettings {
     var showSeparateRetrievalButton: Bool = true
     var forceRetrieval: Bool = false
 
-    var allowNewlineSubmit: Bool = true
+    var allowNewlineSubmit: Bool = false
     var stayAwakeDuringInference: Bool = true
 }
 

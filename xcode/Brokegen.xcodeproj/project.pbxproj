@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		CE145DA32C18071E00577314 /* ProviderPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE145DA22C18071E00577314 /* ProviderPickerView.swift */; };
 		CE145DA52C18074100577314 /* InferenceModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE145DA42C18074100577314 /* InferenceModel.swift */; };
+		CE145DA82C1A0DFD00577314 /* SequenceWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE145DA72C1A0DFD00577314 /* SequenceWidgets.swift */; };
+		CE145DAA2C1A0E9800577314 /* ProSequenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE145DA92C1A0E9800577314 /* ProSequenceView.swift */; };
+		CE145DAD2C1A106A00577314 /* ProMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE145DAC2C1A106A00577314 /* ProMessageView.swift */; };
 		CE2988322C09101F00A997A1 /* OneSequenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE2988312C09101F00A997A1 /* OneSequenceView.swift */; };
 		CE4634DE2BF937320063142E /* JobsSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634DD2BF937320063142E /* JobsSidebar.swift */; };
 		CE4634E02BF963210063142E /* BaseJob.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634DF2BF963210063142E /* BaseJob.swift */; };
@@ -83,6 +86,9 @@
 /* Begin PBXFileReference section */
 		CE145DA22C18071E00577314 /* ProviderPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderPickerView.swift; sourceTree = "<group>"; };
 		CE145DA42C18074100577314 /* InferenceModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceModel.swift; sourceTree = "<group>"; };
+		CE145DA72C1A0DFD00577314 /* SequenceWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequenceWidgets.swift; sourceTree = "<group>"; };
+		CE145DA92C1A0E9800577314 /* ProSequenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProSequenceView.swift; sourceTree = "<group>"; };
+		CE145DAC2C1A106A00577314 /* ProMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProMessageView.swift; sourceTree = "<group>"; };
 		CE2988312C09101F00A997A1 /* OneSequenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneSequenceView.swift; sourceTree = "<group>"; };
 		CE4634DD2BF937320063142E /* JobsSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsSidebar.swift; sourceTree = "<group>"; };
 		CE4634DF2BF963210063142E /* BaseJob.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseJob.swift; sourceTree = "<group>"; };
@@ -164,11 +170,22 @@
 			isa = PBXGroup;
 			children = (
 				CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */,
+				CE145DA72C1A0DFD00577314 /* SequenceWidgets.swift */,
 				CE7FFE172C06772400DB7CFA /* BlankOneSequenceView.swift */,
 				CE2988312C09101F00A997A1 /* OneSequenceView.swift */,
 				CE4634F12BFBB4730063142E /* SequencePickerView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		CE145DAB2C1A103C00577314 /* ProViews */ = {
+			isa = PBXGroup;
+			children = (
+				CE66FAFD2C16818800BD8745 /* ChatMessage.swift */,
+				CE145DAC2C1A106A00577314 /* ProMessageView.swift */,
+				CE145DA92C1A0E9800577314 /* ProSequenceView.swift */,
+			);
+			path = ProViews;
 			sourceTree = "<group>";
 		};
 		CE4634DC2BF937020063142E /* JobsManager */ = {
@@ -199,6 +216,7 @@
 				CEE99E612C0E7D13008E1B07 /* InferenceModels */,
 				CEAA2B6E2C070AAE002BEB26 /* Data */,
 				CE145DA62C1A0A1E00577314 /* Views */,
+				CE145DAB2C1A103C00577314 /* ProViews */,
 			);
 			path = History;
 			sourceTree = "<group>";
@@ -276,7 +294,6 @@
 		CEAA2B6E2C070AAE002BEB26 /* Data */ = {
 			isa = PBXGroup;
 			children = (
-				CE66FAFD2C16818800BD8745 /* ChatMessage.swift */,
 				CEAA2B712C070B2E002BEB26 /* ChatSequence.swift */,
 				CEAA2B6F2C070AE3002BEB26 /* ChatSequence+Extend.swift */,
 				CE4634F32BFBB4900063142E /* ChatSyncService.swift */,
@@ -462,6 +479,7 @@
 				CEFEB4762BFDA67400334522 /* SimplePing.swift in Sources */,
 				CEE99E6B2C1002F9008E1B07 /* AppSidebar.swift in Sources */,
 				CEE99E592C0D85AD008E1B07 /* ChatSequenceClientModel.swift in Sources */,
+				CE145DAD2C1A106A00577314 /* ProMessageView.swift in Sources */,
 				CE7FFE142C04435D00DB7CFA /* ProviderService.swift in Sources */,
 				CE7FFE182C06772400DB7CFA /* BlankOneSequenceView.swift in Sources */,
 				CE4634DE2BF937320063142E /* JobsSidebar.swift in Sources */,
@@ -486,12 +504,14 @@
 				CEE99E682C0FD9FC008E1B07 /* InferenceModelSettingsView.swift in Sources */,
 				CE4634E02BF963210063142E /* BaseJob.swift in Sources */,
 				CEE99E632C0E7D9F008E1B07 /* OneInferenceModelView.swift in Sources */,
+				CE145DA82C1A0DFD00577314 /* SequenceWidgets.swift in Sources */,
 				CEFA69492C14C525007EEF8D /* VFlowLayout.swift in Sources */,
 				CEAA2B722C070B2E002BEB26 /* ChatSequence.swift in Sources */,
 				CEFA69472C14B692007EEF8D /* InferenceModelSettings.swift in Sources */,
 				CEFA69452C14AE67007EEF8D /* ChatSequenceSettings.swift in Sources */,
 				CEE99E692C0FD9FC008E1B07 /* SettingsService.swift in Sources */,
 				CEBAA28C2C003F4B00D43E22 /* InteractiveJobOutputView.swift in Sources */,
+				CE145DAA2C1A0E9800577314 /* ProSequenceView.swift in Sources */,
 				CE66FAFE2C16818800BD8745 /* ChatMessage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
