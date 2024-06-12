@@ -1,20 +1,5 @@
 import SwiftUI
 
-struct ForegroundAccentColor: ViewModifier {
-    let enabled: Bool
-
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        if enabled {
-            content
-                .foregroundStyle(Color.accentColor)
-        }
-        else {
-            content
-        }
-    }
-}
-
 struct OneMessageView: View {
     let message: Message
     let sequence: ChatSequence?

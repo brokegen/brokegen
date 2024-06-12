@@ -62,6 +62,9 @@ class LlamafileProvider(BaseProvider):
         )
 
     async def try_launch(self) -> None:
+        """
+        TODO: explicitly an externally launched llamafile process.
+        """
         if self.server_process is not None:
             while not await self.available():
                 await asyncio.sleep(5)

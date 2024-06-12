@@ -143,13 +143,10 @@ struct OneSequenceView: View {
                 }) {
                     Image(systemName: buttonName)
                         .font(.system(size: 32))
-                        .disabled(buttonDisabled)
-                        .foregroundStyle(
-                            buttonDisabled
-                            ? Color(.disabledControlTextColor)
-                            : Color.accentColor)
                         .padding(12)
                 }
+                .disabled(buttonDisabled)
+                .modifier(ForegroundAccentColor(enabled: !buttonDisabled))
                 .buttonStyle(.plain)
             }
 
@@ -204,12 +201,10 @@ struct OneSequenceView: View {
                     }) {
                         Image(systemName: "arrow.up.doc")
                             .font(.system(size: 32))
-                            .disabled(retrievalButtonDisabled)
-                            .foregroundStyle(retrievalButtonDisabled
-                                             ? Color(.disabledControlTextColor)
-                                             : Color.accentColor)
                             .padding(12)
                     }
+                    .disabled(retrievalButtonDisabled)
+                    .modifier(ForegroundAccentColor(enabled: !retrievalButtonDisabled))
                     .buttonStyle(.plain)
                 }
 
@@ -265,15 +260,12 @@ struct OneSequenceView: View {
                 }) {
                     Image(systemName: aioButtonName)
                         .font(.system(size: 32))
-                        .disabled(aioButtonDisabled)
-                        .foregroundStyle(
-                            aioButtonDisabled
-                            ? Color(.disabledControlTextColor)
-                            : Color.accentColor)
                         .padding(12)
                         .padding(.trailing, 12)
                         .padding(.leading, -6)
                 }
+                .disabled(aioButtonDisabled)
+                .modifier(ForegroundAccentColor(enabled: !aioButtonDisabled))
                 .buttonStyle(.plain)
             }
 

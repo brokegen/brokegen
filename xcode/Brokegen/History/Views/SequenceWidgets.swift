@@ -2,6 +2,21 @@ import SwiftUI
 
 let inputBackgroundStyle = Color(.controlBackgroundColor)
 
+struct ForegroundAccentColor: ViewModifier {
+    let enabled: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if enabled {
+            content
+                .foregroundStyle(Color.accentColor)
+        }
+        else {
+            content
+        }
+    }
+}
+
 struct ChatNameInput: View {
     @Binding var textInEdit: String
     @State private var isHovered: Bool = false

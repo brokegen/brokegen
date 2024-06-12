@@ -88,31 +88,30 @@ struct BlankOneSequenceView: View {
                     .padding(.trailing, 24)
                     .frame(minHeight: 36)
 
-                    HStack(spacing: 12) {
+                    HStack(spacing: 0) {
                         InlineTextInput($promptInEdit, allowNewlineSubmit: $allowNewlineSubmit, isFocused: $focusTextInput) {
                             submit()
                         }
                         .focused($focusTextInput)
-                            .onAppear {
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    self.focusTextInput = true
-                                }
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                self.focusTextInput = true
                             }
-                            .backgroundStyle(inputBackgroundStyle)
+                        }
+                        .backgroundStyle(inputBackgroundStyle)
 
-                            Button(action: {
-                                if !promptInEdit.isEmpty {
-                                    submit(withRetrieval: true)
-                                }
-                            }) {
-                                Image(systemName: "arrow.up.doc")
-                                    .font(.system(size: 32))
-                                    .disabled(promptInEdit.isEmpty)
-                                    .foregroundStyle(promptInEdit.isEmpty
-                                                     ? Color(.disabledControlTextColor)
-                                                     : Color.accentColor)
+                        Button(action: {
+                            if !promptInEdit.isEmpty {
+                                submit(withRetrieval: true)
                             }
-                            .buttonStyle(.plain)
+                        }) {
+                            Image(systemName: "arrow.up.doc")
+                                .font(.system(size: 32))
+                                .padding(12)
+                        }
+                        .disabled(submitting || promptInEdit.isEmpty)
+                        .modifier(ForegroundAccentColor(enabled: !submitting && !promptInEdit.isEmpty))
+                        .buttonStyle(.plain)
 
                         Button(action: {
                             if submitting {
@@ -129,17 +128,14 @@ struct BlankOneSequenceView: View {
                         }) {
                             Image(systemName: submitting ? "stop.fill" : "arrowshape.up")
                                 .font(.system(size: 32))
-                                .disabled(!submitting && promptInEdit.isEmpty)
-                                .foregroundStyle(
-                                    !submitting && promptInEdit.isEmpty
-                                    ? Color(.disabledControlTextColor)
-                                    : Color.accentColor)
+                                .padding(12)
+                                .padding(.trailing, 12)
+                                .padding(.leading, -6)
                         }
+                        .disabled(!submitting && promptInEdit.isEmpty)
+                        .modifier(ForegroundAccentColor(enabled: submitting || !promptInEdit.isEmpty))
                         .buttonStyle(.plain)
-                        .padding(.trailing, 12)
                     }
-                    .padding(.leading, 24)
-                    .padding(.trailing, 12)
                     .background(inputBackgroundStyle)
                     .frame(minHeight: 180, maxHeight: max(
                         180,

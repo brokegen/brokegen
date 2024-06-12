@@ -119,6 +119,7 @@ struct ProMessageView: View {
                         Image(systemName: expandContent ? "chevron.down" : "chevron.left")
                             .font(.system(size: 18))
                             .frame(width: 20, height: 18)
+                            .modifier(ForegroundAccentColor(enabled: !expandContent))
                     }
                     .padding(12)
                     .contentShape(Rectangle())
