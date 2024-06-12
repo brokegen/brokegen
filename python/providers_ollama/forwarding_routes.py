@@ -52,7 +52,7 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
 
         # Check for Ollama providers
         # TODO: Refactor this into shared code
-        ollama_providers = [provider for (label, provider) in registry.by_label.items() if label.name == "ollama"]
+        ollama_providers = [provider for (label, provider) in registry.by_label.items() if label.type == "ollama"]
         if not ollama_providers:
             await ExternalOllamaFactory().discover(None, registry)
 
