@@ -10,11 +10,13 @@ from audit.http import AuditDB, get_db as get_audit_db
 from inference.embeddings.retrieval import RetrievalLabel
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceReason
+from providers.registry import ProviderRegistry
 from providers_ollama.api_chat.inject_rag import do_proxy_chat_rag
 from providers_ollama.chat_routes import do_proxy_generate
 from providers_ollama.forwarding import forward_request_nolog, forward_request
 from providers_ollama.json import keepalive_wrapper, OllamaRequestContentJSON
 from providers_ollama.model_routes import do_api_tags, do_api_show
+from providers_ollama.registry import ExternalOllamaFactory
 
 logger = logging.getLogger(__name__)
 
@@ -43,9 +45,16 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
             request: Request,
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
+            registry: ProviderRegistry = Depends(ProviderRegistry),
     ):
         inference_model_human_id = safe_get(orjson.loads(await request.body()), "model")
         status_holder = ServerStatusHolder(f"Received /api/chat request for {inference_model_human_id}, processing")
+
+        # Check for Ollama providers
+        # TODO: Refactor this into shared code
+        ollama_providers = [provider for (label, provider) in registry.by_label.items() if label.name == "ollama"]
+        if not ollama_providers:
+            await ExternalOllamaFactory().discover(None, registry)
 
         retrieval_label = RetrievalLabel(
             retrieval_policy="simple" if force_ollama_rag else "skip",
