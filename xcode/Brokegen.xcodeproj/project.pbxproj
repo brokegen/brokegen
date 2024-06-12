@@ -160,6 +160,17 @@
 			path = Providers;
 			sourceTree = "<group>";
 		};
+		CE145DA62C1A0A1E00577314 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */,
+				CE7FFE172C06772400DB7CFA /* BlankOneSequenceView.swift */,
+				CE2988312C09101F00A997A1 /* OneSequenceView.swift */,
+				CE4634F12BFBB4730063142E /* SequencePickerView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
 		CE4634DC2BF937020063142E /* JobsManager */ = {
 			isa = PBXGroup;
 			children = (
@@ -187,10 +198,7 @@
 				CE145DA12C1806F400577314 /* Providers */,
 				CEE99E612C0E7D13008E1B07 /* InferenceModels */,
 				CEAA2B6E2C070AAE002BEB26 /* Data */,
-				CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */,
-				CE7FFE172C06772400DB7CFA /* BlankOneSequenceView.swift */,
-				CE2988312C09101F00A997A1 /* OneSequenceView.swift */,
-				CE4634F12BFBB4730063142E /* SequencePickerView.swift */,
+				CE145DA62C1A0A1E00577314 /* Views */,
 			);
 			path = History;
 			sourceTree = "<group>";
