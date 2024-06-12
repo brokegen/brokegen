@@ -265,4 +265,6 @@ class LlamafileFactory(ProviderFactory):
                         yield os.path.abspath(os.path.join(rootpath, file))
 
         for file in _generate_filenames():
-            await registry.make(ProviderLabel(type="llamafile", id=file))
+            label = ProviderLabel(type="llamafile", id=file)
+            if label not in registry.by_label:
+                await registry.make(ProviderLabel(type="llamafile", id=file))

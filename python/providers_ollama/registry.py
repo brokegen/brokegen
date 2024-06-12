@@ -103,4 +103,6 @@ class ExternalOllamaFactory(ProviderFactory):
         if provider_type is not None and provider_type != 'ollama':
             return
 
-        await registry.make(ProviderLabel(type="ollama", id="http://localhost:11434"))
+        label = ProviderLabel(type="ollama", id="http://localhost:11434")
+        if label not in registry.by_label:
+            await registry.make(label)

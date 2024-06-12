@@ -163,4 +163,6 @@ class LMStudioFactory(ProviderFactory):
         if provider_type is not None and provider_type != 'lm_studio':
             return
 
-        await registry.make(ProviderLabel(type="lm_studio", id="http://localhost:1234"))
+        label = ProviderLabel(type="lm_studio", id="http://localhost:1234")
+        if label not in registry.by_label:
+            await registry.make(label)

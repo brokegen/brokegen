@@ -15,7 +15,6 @@ from _util.typing import TemplatedPromptText
 from audit.http import AuditDB, get_db as get_audit_db
 from audit.http_raw import HttpxLogger
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import InferenceModelRecord
 from providers.orm import ProviderID
 from providers.registry import BaseProvider, ProviderRegistry
 
