@@ -112,6 +112,7 @@ class KnowledgeSingleton(_Borg):
             for data_dir in self.data_dirs_queued:
                 if force_reload or data_dir not in self.data_dirs_loaded:
                     yield from _generate_on_disk_shard_ids(data_dir)
+                    self.data_dirs_loaded.add(data_dir)
 
         async def load_from(parent_dir: str, shard_id: VectorStoreShardID):
             return store._load_from(parent_dir, shard_id)
@@ -144,6 +145,7 @@ class KnowledgeSingleton(_Borg):
             for data_dir in self.data_dirs_queued:
                 if force_reload or data_dir not in self.data_dirs_loaded:
                     yield from _generate_on_disk_shard_ids(data_dir)
+                    self.data_dirs_loaded.add(data_dir)
 
         async def load_from(parent_dir: str, shard_id: VectorStoreShardID):
             return store._load_from(parent_dir, shard_id)
