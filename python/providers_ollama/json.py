@@ -342,6 +342,7 @@ class OllamaEventBuilder:
                 self.wrapped_event.response_content = {
                     "status_code": upstream_response.status_code,
                     "reason_phrase": upstream_response.reason_phrase,
+                    # NB This is explicitly decoded into UTF-8 strings, and not JSON objects, because scanning strings is easier.
                     "content": [chunk0.decode() for chunk0 in all_chunks],
                     "headers": dict(upstream_response.headers),
                     "http_version": upstream_response.http_version,

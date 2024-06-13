@@ -1,17 +1,22 @@
+import asyncio
 import logging
 from datetime import datetime, timezone
+from typing import Awaitable, AsyncIterator, AsyncGenerator
 
 import fastapi.routing
+import orjson
 import starlette.datastructures
 import starlette.datastructures
 import starlette.requests
 import starlette.requests
 from fastapi import Depends, HTTPException
 from sqlalchemy import select
+from starlette.background import BackgroundTask
 
-from _util.json_streaming import JSONStreamingResponse
+from _util.json import JSONDict, safe_get
+from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks
 from _util.status import ServerStatusHolder
-from _util.typing import ChatSequenceID
+from _util.typing import ChatSequenceID, ChatMessageID
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
 from client.database import ChatMessageOrm, ChatSequence, lookup_chat_message, ChatMessage
@@ -24,51 +29,93 @@ from providers.inference_models.orm import InferenceModelRecordOrm
 logger = logging.getLogger(__name__)
 
 
+async def keepalive_emitter(
+        real_response_maker: Awaitable[JSONStreamingResponse],
+        status_holder: ServerStatusHolder,
+        background: BackgroundTask | None = None,
+) -> JSONStreamingResponse:
+
+
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
     @router_ish.post("/v2/sequences/{sequence_id:int}/continue")
     async def sequence_continue(
-            empty_request: starlette.requests.Request,
+            request: starlette.requests.Request,
             sequence_id: ChatSequenceID,
             params: ContinueRequest,
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
     ) -> JSONStreamingResponse:
-        original_sequence = history_db.execute(
-            select(ChatSequence)
-            .filter_by(id=sequence_id)
-        ).scalar_one()
-
-        messages_list: list[ChatMessage] = \
-            do_get_sequence(sequence_id, history_db, include_model_info_diffs=False)
-
-        # Decide how to continue inference for this sequence
-        inference_model: InferenceModelRecordOrm = \
-            select_continuation_model(sequence_id, params.continuation_model_id, params.fallback_model_id, history_db)
-
         status_holder = ServerStatusHolder(
-            f"/sequences/{sequence_id}/continue: processing on {inference_model.human_id}")
-
-        # And RetrievalLabel
-        retrieval_label = RetrievalLabel(
-            retrieval_policy=params.retrieval_policy,
-            retrieval_search_args=params.retrieval_search_args,
-            preferred_embedding_model=params.preferred_embedding_model,
+            f"{request.url_for('sequence_continue', sequence_id=sequence_id)}: setting up"
         )
 
-        raise HTTPException(501)
+        async def real_response_maker():
+            # DEBUG: Check that everyone is responsive during long waits
+            await asyncio.sleep(10)
 
-    @router_ish.post("/v2/sequences/{sequence_id:int}/extend")
-    async def sequence_extend(
-            empty_request: starlette.requests.Request,
+            original_sequence = history_db.execute(
+                select(ChatSequence)
+                .filter_by(id=sequence_id)
+            ).scalar_one()
+
+            messages_list: list[ChatMessage] = \
+                do_get_sequence(sequence_id, history_db, include_model_info_diffs=False)
+
+            # Decide how to continue inference for this sequence
+            inference_model: InferenceModelRecordOrm = \
+                select_continuation_model(sequence_id, params.continuation_model_id, params.fallback_model_id, history_db)
+
+            nonlocal status_holder
+            status_holder.push(
+                f"/sequences/{sequence_id}/continue: processing on {inference_model.human_id}")
+
+            # And RetrievalLabel
+            retrieval_label = RetrievalLabel(
+                retrieval_policy=params.retrieval_policy,
+                retrieval_search_args=params.retrieval_search_args,
+                preferred_embedding_model=params.preferred_embedding_model,
+            )
+
+            inference_model_human_id = safe_get(orjson.loads(await request.body()), "model")
+            status_holder.push(f"Received /api/chat request for {inference_model_human_id}, processing")
+
+            yield {"done": True}
+
+        async def nonblocking_response_maker() -> AsyncIterator[JSONDict]:
+            # TODO: This one is not gonna be async.
+            async for item in real_response_maker():
+                yield item
+
+        async def do_keepalive(
+                primordial: AsyncIterator[JSONDict],
+        ) -> AsyncGenerator[JSONDict, None]:
+            async for chunk in emit_keepalive_chunks(primordial, 2.0, None):
+                if chunk is None:
+                    yield orjson.dumps({
+                        "created_at": datetime.now(tz=timezone.utc),
+                        "done": False,
+                        "status": status_holder.get(),
+                    })
+                    continue
+
+                yield orjson.dumps(chunk)
+
+        return JSONStreamingResponse(
+            content=do_keepalive(nonblocking_response_maker()),
+            status_code=218,
+        )
+
+    @router_ish.post("/v2/sequences/{sequence_id:int}/add/{message_id:int}")
+    async def sequence_add(
             sequence_id: ChatSequenceID,
-            params: ExtendRequest,
+            message_id: ChatMessageID,
             history_db: HistoryDB = Depends(get_history_db),
-            audit_db: AuditDB = Depends(get_audit_db),
-    ) -> JSONStreamingResponse:
-        # Manually fetch the message + model config history from our requests
-        messages_list: list[ChatMessage] = \
-            do_get_sequence(sequence_id, history_db, include_model_info_diffs=False)
+    ):
+        """
+        This just stacks a new user message onto the end of our chain.
 
+        Rely on /continue to run any inference.
+        """
         # First, store the message that was painstakingly generated for us.
         original_sequence = history_db.execute(
             select(ChatSequence)
@@ -82,18 +129,12 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             generation_complete=False,
         )
 
-        maybe_message = lookup_chat_message(params.next_message, history_db)
-        if maybe_message is not None:
-            messages_list.append(ChatMessage.from_orm(maybe_message))
-            user_sequence.current_message = maybe_message.id
-            user_sequence.generation_complete = True
-        else:
-            new_message = ChatMessageOrm(**params.next_message.model_dump())
-            history_db.add(new_message)
-            history_db.commit()
-            messages_list.append(ChatMessage.from_orm(new_message))
-            user_sequence.current_message = new_message.id
-            user_sequence.generation_complete = True
+        maybe_message = lookup_chat_message(message_id, history_db)
+        if maybe_message is None:
+            raise HTTPException(400, f"Can't find ChatMessage#{message_id}")
+
+        user_sequence.current_message = maybe_message.id
+        user_sequence.generation_complete = True
 
         # Mark this user response as the current up-to-date
         user_sequence.user_pinned = original_sequence.user_pinned
@@ -103,18 +144,4 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         history_db.add(user_sequence)
         history_db.commit()
 
-        # Decide how to continue inference for this sequence
-        inference_model: InferenceModelRecordOrm = \
-            select_continuation_model(sequence_id, params.continuation_model_id, params.fallback_model_id, history_db)
-
-        status_holder = ServerStatusHolder(
-            f"/sequences/{sequence_id}/extend: processing on {inference_model.human_id}")
-
-        # And RetrievalLabel
-        retrieval_label = RetrievalLabel(
-            retrieval_policy=params.retrieval_policy,
-            retrieval_search_args=params.retrieval_search_args,
-            preferred_embedding_model=params.preferred_embedding_model,
-        )
-
-        raise HTTPException(501)
+        return {"sequence_id": user_sequence.id}

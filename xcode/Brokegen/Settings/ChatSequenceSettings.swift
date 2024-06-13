@@ -14,8 +14,7 @@ class GlobalChatSequenceClientSettings {
     var retrieverOptions: String = ""
     var chatAutoNaming: ChatAutoNaming = .serverDefault
 
-    // UI options
-    // @AppStorage("allowContinuation")
+    // Local, UI-specific options
     var allowContinuation: Bool = true
     var showSeparateRetrievalButton: Bool = true
     var forceRetrieval: Bool = false
