@@ -101,6 +101,11 @@ struct AppSidebar: View {
 
     @AppStorage("showDebugSidebarItems")
     private var showDebugSidebarItems: Bool = true
+    @Binding private var useSimplifiedSequenceViews: Bool
+
+    init(useSimplifiedSequenceViews: Binding<Bool>) {
+        self._useSimplifiedSequenceViews = useSimplifiedSequenceViews
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -191,7 +196,17 @@ struct AppSidebar: View {
 
                 ASRow("Retrieval and Vector Stores", showChevron: true)
                     .foregroundStyle(Color(.disabledControlTextColor))
-                    .padding(.bottom, 24)
+
+                Toggle(isOn: $useSimplifiedSequenceViews, label: {
+                    HStack(spacing: 0) {
+                        Text("Simplified Chat Interface")
+                            .layoutPriority(0.2)
+                        
+                        Spacer()
+                    }
+                })
+                .toggleStyle(.switch)
+                .padding(.bottom, 24)
             }
         }
         .listStyle(.sidebar)

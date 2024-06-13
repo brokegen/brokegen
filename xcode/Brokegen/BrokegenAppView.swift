@@ -28,16 +28,27 @@ struct BrokegenAppView: View {
 
     @State private var sidebarVisibility = NavigationSplitViewVisibility.automatic
     @State private var sidebarVisibilityTimesChanged: Int = 0
+    @State private var useSimplifiedSequenceViews: Bool = false
+
 
     var body: some View {
         NavigationStack(path: $pathHost.path) {
-            NavigationSplitView(columnVisibility: $sidebarVisibility, sidebar: { AppSidebar() }, detail: {
+            NavigationSplitView(columnVisibility: $sidebarVisibility, sidebar: {
+                AppSidebar(useSimplifiedSequenceViews: $useSimplifiedSequenceViews)
+            }, detail: {
                 SequencePickerView()
                     .environmentObject(chatService)
             })
             .navigationDestination(for: ChatSequenceClientModel.self) { clientModel in
-                NavigationSplitView(sidebar: { AppSidebar() }, detail: {
-                    ProSequenceView(clientModel)
+                NavigationSplitView(sidebar: {
+                    AppSidebar(useSimplifiedSequenceViews: $useSimplifiedSequenceViews)
+                }, detail: {
+                    if useSimplifiedSequenceViews {
+                        OneSequenceView(clientModel)
+                    }
+                    else {
+                        ProSequenceView(clientModel)
+                    }
                 })
             }
             // Show the sidebar on initial re-load
@@ -68,7 +79,7 @@ struct BrokegenAppView: View {
         jobs.storedJobs.append(job)
     }
 
-    return AppSidebar()
+    return AppSidebar(useSimplifiedSequenceViews: Binding.constant(true))
         .environment(jobs)
 }
 
