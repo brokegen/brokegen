@@ -1,5 +1,5 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
-import inference.continuation_routes
+from datetime import timezone, datetime
 
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
@@ -16,10 +16,14 @@ from contextlib import asynccontextmanager
 import click
 import starlette.responses
 from fastapi import FastAPI
+from starlette.background import BackgroundTask
+from starlette.exceptions import HTTPException
+from starlette.requests import Request
 
 import audit
 import client
 import client_ollama
+import inference.continuation_routes
 import providers.inference_models.database
 import providers.openai.lm_studio
 import providers_llamafile
@@ -28,8 +32,8 @@ import providers_ollama.forwarding_routes
 import providers_ollama.sequence_extend
 from audit.http import get_db as get_audit_db
 from audit.http_raw import SqlLoggingMiddleware
-from retrieval.faiss.knowledge import get_knowledge
 from providers.registry import ProviderRegistry
+from retrieval.faiss.knowledge import get_knowledge
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +100,9 @@ async def lifespan_logging(app: FastAPI):
 @click.option('--force-ollama-rag', default=False, show_default=True,
               help='Load FAISS files from --data-dir, and apply them to any ollama-proxy /api/chat calls',
               type=click.BOOL)
+@click.option('--exit-on-exceptions', default=False, show_default=True,
+              help='Exit Python/FastAPI when an HTTP exception is thrown',
+              type=click.BOOL)
 def run_proxy(
         data_dir,
         bind_host,
@@ -105,6 +112,7 @@ def run_proxy(
         trace_sqlalchemy: bool,
         trace_fastapi_http: bool,
         force_ollama_rag: bool,
+        exit_on_exceptions: bool,
 ):
     numeric_log_level = getattr(logging, str(log_level).upper(), None)
     logging.getLogger().setLevel(level=numeric_log_level)
@@ -148,6 +156,43 @@ def run_proxy(
         """
         return starlette.responses.Response(status_code=200)
 
+    @app.on_event('shutdown')
+    def shutdown_event():
+        logger.error(f"Detected FastAPI \"shutdown\" event")
+
+    expecting_eventloop_stop = False
+
+    async def exit_app():
+        nonlocal expecting_eventloop_stop
+        expecting_eventloop_stop = True
+        loop = asyncio.get_running_loop()
+        loop.stop()
+
+    if exit_on_exceptions:
+        @app.exception_handler(HTTPException)
+        async def http_exception_handler(
+                request: starlette.requests.Request,
+                exc,
+        ):
+            """
+            NB Installing this causes the app to exit on any HTTP exceptions!
+            """
+            return starlette.responses.PlainTextResponse(
+                str(exc.detail),
+                status_code=exc.status_code,
+                background=BackgroundTask(exit_app),
+            )
+
+    @app.put("/terminate")
+    async def terminate_app():
+        return starlette.responses.JSONResponse(
+            {
+                "status": "handling exit",
+                "timestamp": datetime.now(tz=timezone.utc)
+            },
+            background=BackgroundTask(exit_app),
+        )
+
     (
         ProviderRegistry()
         .register_factory(providers_ollama.registry.ExternalOllamaFactory())
@@ -189,6 +234,10 @@ def run_proxy(
 
     except KeyboardInterrupt:
         print("Caught KeyboardInterrupt, exiting gracefully")
+
+    except RuntimeError as e:
+        if not expecting_eventloop_stop:
+            logger.fatal(f"Stopped: {e}")
 
 
 if __name__ == "__main__":
