@@ -9,6 +9,7 @@ enum ChatAutoNaming: String {
 class GlobalChatSequenceClientSettings {
     var inferenceOptions: String = ""
     var overrideSystemPrompt: String = ""
+    var seedAssistantResponse: String = ""
 
     var retrieverOptions: String = ""
     var chatAutoNaming: ChatAutoNaming = .serverDefault
@@ -27,6 +28,7 @@ class GlobalChatSequenceClientSettings {
 class ChatSequenceClientSettings {
     var inferenceOptions: String? = nil
     var overrideSystemPrompt: String? = nil
+    var seedAssistantResponse: String? = nil
 
     var retrieverOptions: String? = nil
     var chatAutoNaming: ChatAutoNaming? = nil
@@ -71,6 +73,19 @@ class CombinedCSCSettings {
                 }
                 else {
                     self.sequenceSettings.overrideSystemPrompt = value
+                }
+            })
+    }
+
+    func seedAssistantResponse(overrideGlobal: Bool? = nil) -> Binding<String> {
+        return Binding(
+            get: { self.sequenceSettings.seedAssistantResponse ?? self.globalSettings.seedAssistantResponse },
+            set: { value in
+                if overrideGlobal != nil && overrideGlobal! {
+                    self.globalSettings.seedAssistantResponse = value
+                }
+                else {
+                    self.sequenceSettings.seedAssistantResponse = value
                 }
             })
     }

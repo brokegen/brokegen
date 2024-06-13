@@ -4,7 +4,7 @@ struct ProSequenceView: View {
     @ObservedObject var viewModel: ChatSequenceClientModel
     @Bindable var settings: CombinedCSCSettings
 
-    @FocusState var focusTextInput: Bool
+    @FocusState private var focusTextInput: Bool
     @State private var splitViewLoaded: Bool = false
 
     init(_ viewModel: ChatSequenceClientModel) {
@@ -131,13 +131,17 @@ struct ProSequenceView: View {
 
     @State private var showTextEntryView: Bool = true
     @State private var showUiOptions: Bool = false
-    @State private var showSystemPromptOverride: Bool = false
     @State private var showInferenceOptions: Bool = false
     @State private var showRetrievalOptions: Bool = false
     @State private var stayAwakeOnInference: Bool = true
 
+    @State private var showSystemPromptOverride: Bool = true
+    @FocusState private var focusSystemPromptOverride: Bool
+    @State private var showAssistantResponseSeed: Bool = false
+    @FocusState private var focusAssistantResponseSeed: Bool
+
     @ViewBuilder var lowerVStack: some View {
-        if showUiOptions || showSystemPromptOverride || showInferenceOptions || showRetrievalOptions {
+        if showUiOptions || showInferenceOptions || showRetrievalOptions {
             ScrollView {
                 VFlowLayout(spacing: 24) {
                     if showUiOptions {
@@ -146,16 +150,6 @@ struct ProSequenceView: View {
                     }
 
                     // Tab.modelOptions
-                    if showSystemPromptOverride {
-                        GroupBox(content: {
-                            TextEditor(text: settings.overrideSystemPrompt())
-                                .frame(width: 360, height: 144)
-                                .lineLimit(4...12)
-                        }, label: {
-                            Text("Override System Prompt")
-                        })
-                    }
-
                     if showInferenceOptions {
                         GroupBox(content: {
                             TextEditor(text: settings.inferenceOptions())
@@ -211,6 +205,10 @@ struct ProSequenceView: View {
             Button(action: {
                 showSystemPromptOverride = !showSystemPromptOverride
             }, label: {
+                Image(systemName: "person.badge.shield.checkmark")
+                    .padding(.leading, 12)
+                    .padding(.trailing, -12)
+
                 Text("System Prompt")
                     .lineLimit(1...3)
                     .font(.system(size: 12))
@@ -221,6 +219,24 @@ struct ProSequenceView: View {
             .contentShape(Rectangle())
             .buttonStyle(.plain)
             .background(showSystemPromptOverride ? Color(.selectedControlColor) : Color(.clear))
+
+            Button(action: {
+                showAssistantResponseSeed = !showAssistantResponseSeed
+            }, label: {
+                Image(systemName: "bubble.right")
+                    .padding(.leading, 12)
+                    .padding(.trailing, -12)
+
+                Text("Response Seed")
+                    .lineLimit(1...3)
+                    .font(.system(size: 12))
+                    .padding(.leading, 12)
+                    .padding(.trailing, 12)
+                    .frame(height: 48)
+            })
+            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .background(showAssistantResponseSeed ? Color(.selectedControlColor) : Color(.clear))
 
             Button(action: {
                 showInferenceOptions = !showInferenceOptions
@@ -364,9 +380,33 @@ struct ProSequenceView: View {
                         .padding(.top, 12)
                         .padding(.bottom, 12)
 
+                        if showSystemPromptOverride {
+                            ZStack {
+                                InlineTextInput(settings.overrideSystemPrompt(), allowNewlineSubmit: .constant(false), isFocused: $focusSystemPromptOverride) {}
+
+                                Text("Override System Prompt")
+                                    .foregroundStyle(Color(.disabledControlTextColor))
+                                    .opacity(settings.overrideSystemPrompt().wrappedValue.isEmpty ? 1.0 : 0.0)
+                            }
+
+                            Divider()
+                        }
+
                         if showTextEntryView {
                             textEntryView
                                 .frame(minHeight: 48, maxHeight: geometry.size.height * 0.7)
+                        }
+
+                        if showAssistantResponseSeed {
+                            Divider()
+
+                            ZStack {
+                                InlineTextInput(settings.seedAssistantResponse(), allowNewlineSubmit: .constant(false), isFocused: $focusAssistantResponseSeed) {}
+
+                                Text("Seed Assistant Response")
+                                    .foregroundStyle(Color(.disabledControlTextColor))
+                                    .opacity(settings.seedAssistantResponse().wrappedValue.isEmpty ? 1.0 : 0.0)
+                            }
                         }
                     }
 
