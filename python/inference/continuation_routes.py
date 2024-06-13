@@ -29,13 +29,6 @@ from providers.inference_models.orm import InferenceModelRecordOrm
 logger = logging.getLogger(__name__)
 
 
-async def keepalive_emitter(
-        real_response_maker: Awaitable[JSONStreamingResponse],
-        status_holder: ServerStatusHolder,
-        background: BackgroundTask | None = None,
-) -> JSONStreamingResponse:
-
-
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
     @router_ish.post("/v2/sequences/{sequence_id:int}/continue")
     async def sequence_continue(
