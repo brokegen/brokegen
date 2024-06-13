@@ -1,4 +1,6 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
+import inference.continuation_routes
+
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
@@ -164,6 +166,7 @@ def run_proxy(
     # brokegen-specific endpoints
     providers.routes.install_routes(app)
     providers.inference_models.routes.install_routes(app)
+    inference.continuation_routes.install_routes(app)
     client.install_routes(app)
 
     providers_ollama.sequence_extend.install_routes(app)

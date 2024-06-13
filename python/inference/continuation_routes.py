@@ -1,7 +1,8 @@
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Awaitable, AsyncIterator, AsyncGenerator
+from time import sleep
+from typing import Awaitable, AsyncIterator, AsyncGenerator, Annotated
 
 import fastapi.routing
 import orjson
@@ -9,7 +10,7 @@ import starlette.datastructures
 import starlette.datastructures
 import starlette.requests
 import starlette.requests
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Body
 from sqlalchemy import select
 from starlette.background import BackgroundTask
 
@@ -34,17 +35,17 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
     async def sequence_continue(
             request: starlette.requests.Request,
             sequence_id: ChatSequenceID,
-            params: ContinueRequest,
+            parameters: Annotated[ContinueRequest, Body],
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
     ) -> JSONStreamingResponse:
-        status_holder = ServerStatusHolder(
-            f"{request.url_for('sequence_continue', sequence_id=sequence_id)}: setting up"
-        )
+        function_id = request.url_for('sequence_continue', sequence_id=sequence_id)
+        status_holder = ServerStatusHolder(f"{function_id}: setting up")
 
         async def real_response_maker():
             # DEBUG: Check that everyone is responsive during long waits
-            await asyncio.sleep(10)
+            await asyncio.sleep(0)
+            sleep(10)
 
             original_sequence = history_db.execute(
                 select(ChatSequence)
@@ -56,21 +57,20 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
             # Decide how to continue inference for this sequence
             inference_model: InferenceModelRecordOrm = \
-                select_continuation_model(sequence_id, params.continuation_model_id, params.fallback_model_id, history_db)
+                select_continuation_model(sequence_id, parameters.continuation_model_id, parameters.fallback_model_id, history_db)
 
             nonlocal status_holder
-            status_holder.push(
-                f"/sequences/{sequence_id}/continue: processing on {inference_model.human_id}")
+            status_holder.push(f"{function_id}: processing on {inference_model.human_id}")
 
             # And RetrievalLabel
             retrieval_label = RetrievalLabel(
-                retrieval_policy=params.retrieval_policy,
-                retrieval_search_args=params.retrieval_search_args,
-                preferred_embedding_model=params.preferred_embedding_model,
+                retrieval_policy=parameters.retrieval_policy,
+                retrieval_search_args=parameters.retrieval_search_args,
+                preferred_embedding_model=parameters.preferred_embedding_model,
             )
 
             inference_model_human_id = safe_get(orjson.loads(await request.body()), "model")
-            status_holder.push(f"Received /api/chat request for {inference_model_human_id}, processing")
+            status_holder.push(f"{function_id}: processing request with {inference_model_human_id}")
 
             yield {"done": True}
 
@@ -88,10 +88,10 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                         "created_at": datetime.now(tz=timezone.utc),
                         "done": False,
                         "status": status_holder.get(),
-                    })
+                    }) + b'\n'
                     continue
 
-                yield orjson.dumps(chunk)
+                yield orjson.dumps(chunk) + b'\n'
 
         return JSONStreamingResponse(
             content=do_keepalive(nonblocking_response_maker()),
