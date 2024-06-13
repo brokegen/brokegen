@@ -1,12 +1,13 @@
-from typing import AsyncGenerator, Iterable
+import asyncio
+from typing import AsyncGenerator, Iterable, Coroutine, Awaitable, TypeAlias, AsyncIterable
 
 import fastapi
 from fastapi import Depends
 from starlette.responses import RedirectResponse
 
-from providers.inference_models.orm import InferenceModelResponse
+from providers.inference_models.orm import InferenceModelResponse, InferenceModelRecord
 from providers.orm import ProviderType, ProviderID, ProviderLabel, ProviderRecord
-from providers.registry import ProviderRegistry
+from providers.registry import ProviderRegistry, BaseProvider
 
 
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
@@ -28,8 +29,12 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         """
         This method is an HTTP GET, because we do a redirect once the discovery process is done.
         """
-        for factory in registry.factories:
-            await factory.discover(provider_type=None, registry=registry)
+        discoverers: list[Awaitable[None]] = [
+            factory.discover(provider_type=None, registry=registry)
+            for factory in registry.factories
+        ]
+        for done in asyncio.as_completed(discoverers):
+            _ = await done
 
         return RedirectResponse(
             request.url_for('list_any_providers')
@@ -67,16 +72,41 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
     async def get_all_provider_models(
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ):
-        async def list_models() -> AsyncGenerator[InferenceModelResponse, None]:
-            for label, provider in registry.by_label.items():
-                async for model in provider.list_models():
+        """
+        This returns a set of ordered pairs, to reflect how the models should be ranked to the user.
+
+        TODO:  client doesn't check the ordering anymore, and neither should we.
+        """
+        async def generator_to_awaitable(
+                label: ProviderLabel,
+                provider: BaseProvider,
+        ) -> list[InferenceModelResponse]:
+            def to_response(model: InferenceModelRecord | InferenceModelResponse):
+                if isinstance(model, InferenceModelResponse):
+                    return model
+                else:
                     new_imr = InferenceModelResponse(**model.model_dump())
                     if new_imr.label is None:
                         new_imr.label = label
 
-                    yield new_imr
+                    return new_imr
 
-        return enumerate([m async for m in list_models()])
+            return [to_response(model) async for model in provider.list_models()]
+
+        async def list_models_per_provider() -> AsyncIterable[list[InferenceModelResponse]]:
+            model_listers: list[Awaitable[list[InferenceModelResponse]]] = [
+                generator_to_awaitable(label, provider)
+                for label, provider in registry.by_label.items()
+            ]
+
+            for done_list in asyncio.as_completed(model_listers):
+                yield await done_list
+
+        return enumerate([
+            model
+            async for model_list in list_models_per_provider()
+            for model in model_list
+        ])
 
     @router_ish.get("/providers/{provider_type:str}/any/models")
     async def get_all_provider_models(

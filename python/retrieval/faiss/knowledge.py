@@ -4,7 +4,7 @@ import os
 import pprint
 import threading
 import tracemalloc
-from typing import Generator, Dict, Coroutine
+from typing import Generator, Dict, Awaitable
 
 from _util.status import ServerStatusHolder, StatusContext
 from .vectorestore import VectorStoreReadOnly, EmbedderConfig, VectorStoreShardID, VectorStoreShard
@@ -119,7 +119,7 @@ class KnowledgeSingleton(_Borg):
 
         with StatusContext("KnowledgeSingleton.load_queued_data_dirs()", status_holder):
             with RAMEstimator(logger.info, "KnowledgeSingleton.load_queued_data_dirs()"):
-                shard_loaders: list[Coroutine[str, VectorStoreShardID, VectorStoreShard | None]] = [
+                shard_loaders: list[Awaitable[VectorStoreShard | None]] = [
                     load_from(parent_dir, shard_id)
                     for (parent_dir, shard_id)
                     in shards_generator()

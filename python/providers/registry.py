@@ -90,6 +90,6 @@ class ProviderRegistry(_Borg):
                     self.by_record[await result.make_record()] = result
                     return result
             except Exception as e:
-                logger.exception(f"Could not load {label}: {e}")
+                logger.error(f"Could not load {label}: {e}")
 
         return None
