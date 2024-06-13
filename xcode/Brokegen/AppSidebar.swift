@@ -197,6 +197,8 @@ struct AppSidebar: View {
                 ASRow("Retrieval and Vector Stores", showChevron: true)
                     .foregroundStyle(Color(.disabledControlTextColor))
 
+                Divider()
+
                 Toggle(isOn: $useSimplifiedSequenceViews, label: {
                     HStack(spacing: 0) {
                         Text("Simplified Chat Interface")

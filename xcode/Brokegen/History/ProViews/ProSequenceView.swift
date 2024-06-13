@@ -358,21 +358,23 @@ struct ProSequenceView: View {
 
                         ScrollViewReader { proxy in
                             ScrollView(.vertical) {
-                                if !viewModel.pinSequenceTitle {
-                                    ChatNameReadOnly(
-                                        Binding(
-                                            get: { viewModel.displayHumanDesc },
-                                            set: { _, _ in }),
-                                        pinChatName: $viewModel.pinSequenceTitle)
-                                    .id("sequence title")
-                                }
-
-                                ForEach(viewModel.sequence.messages) { message in
-                                    ProMessageView(message)
-                                }
-
-                                if viewModel.responseInEdit != nil {
-                                    ProMessageView(viewModel.responseInEdit!, stillUpdating: true)
+                                VStack(spacing: 0) {
+                                    if !viewModel.pinSequenceTitle {
+                                        ChatNameReadOnly(
+                                            Binding(
+                                                get: { viewModel.displayHumanDesc },
+                                                set: { _, _ in }),
+                                            pinChatName: $viewModel.pinSequenceTitle)
+                                        .id("sequence title")
+                                    }
+                                    
+                                    ForEach(viewModel.sequence.messages) { message in
+                                        ProMessageView(message)
+                                    }
+                                    
+                                    if viewModel.responseInEdit != nil {
+                                        ProMessageView(viewModel.responseInEdit!, stillUpdating: true)
+                                    }
                                 }
                             }
                             .defaultScrollAnchor(.bottom)
