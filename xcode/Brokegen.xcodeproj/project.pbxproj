@@ -27,7 +27,6 @@
 		CE66FAFC2C1679C700BD8745 /* SwiftyJSON in Frameworks */ = {isa = PBXBuildFile; productRef = CE66FAFB2C1679C700BD8745 /* SwiftyJSON */; };
 		CE66FAFE2C16818800BD8745 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE66FAFD2C16818800BD8745 /* ChatMessage.swift */; };
 		CE66FB132C16968C00BD8745 /* ChatMessageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE66FAFF2C16915C00BD8745 /* ChatMessageTests.swift */; };
-		CE67A9E52C091709008BFA1D /* CustomTabView in Frameworks */ = {isa = PBXBuildFile; productRef = CE67A9E42C091709008BFA1D /* CustomTabView */; };
 		CE6D8A7F2BF6DF1800A7934D /* RibbonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */; };
 		CE7FFE142C04435D00DB7CFA /* ProviderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE132C04435D00DB7CFA /* ProviderService.swift */; };
 		CE7FFE162C04482900DB7CFA /* ModelPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE152C04482900DB7CFA /* ModelPickerView.swift */; };
@@ -150,7 +149,6 @@
 				CEB773232C0160530051F41C /* Alamofire in Frameworks */,
 				CEFEB47E2BFE399500334522 /* SwiftTerm in Frameworks */,
 				CE66FAFC2C1679C700BD8745 /* SwiftyJSON in Frameworks */,
-				CE67A9E52C091709008BFA1D /* CustomTabView in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -386,7 +384,6 @@
 			packageProductDependencies = (
 				CEFEB47D2BFE399500334522 /* SwiftTerm */,
 				CEB773222C0160530051F41C /* Alamofire */,
-				CE67A9E42C091709008BFA1D /* CustomTabView */,
 				CE66FAFB2C1679C700BD8745 /* SwiftyJSON */,
 			);
 			productName = Brokegen;
@@ -424,7 +421,6 @@
 			packageReferences = (
 				CEFEB4792BFDAABC00334522 /* XCRemoteSwiftPackageReference "Alamofire" */,
 				CEFEB47C2BFE399500334522 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
-				CE67A9E32C091709008BFA1D /* XCRemoteSwiftPackageReference "SwiftUI-CustomTabView" */,
 				CE66FAFA2C1679C700BD8745 /* XCRemoteSwiftPackageReference "SwiftyJSON" */,
 			);
 			productRefGroup = CE98674E2BF4047C008D6C41 /* Products */;
@@ -794,14 +790,6 @@
 				minimumVersion = 5.0.2;
 			};
 		};
-		CE67A9E32C091709008BFA1D /* XCRemoteSwiftPackageReference "SwiftUI-CustomTabView" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/NicFontana/SwiftUI-CustomTabView";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
-		};
 		CEFEB4792BFDAABC00334522 /* XCRemoteSwiftPackageReference "Alamofire" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Alamofire/Alamofire.git";
@@ -825,11 +813,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = CE66FAFA2C1679C700BD8745 /* XCRemoteSwiftPackageReference "SwiftyJSON" */;
 			productName = SwiftyJSON;
-		};
-		CE67A9E42C091709008BFA1D /* CustomTabView */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CE67A9E32C091709008BFA1D /* XCRemoteSwiftPackageReference "SwiftUI-CustomTabView" */;
-			productName = CustomTabView;
 		};
 		CEB773222C0160530051F41C /* Alamofire */ = {
 			isa = XCSwiftPackageProductDependency;

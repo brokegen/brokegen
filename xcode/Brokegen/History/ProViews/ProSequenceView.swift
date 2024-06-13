@@ -1,5 +1,7 @@
 import SwiftUI
 
+let tabBarHeight: CGFloat = 48
+
 struct ProSequenceView: View {
     @ObservedObject var viewModel: ChatSequenceClientModel
     @Bindable var settings: CombinedCSCSettings
@@ -337,7 +339,7 @@ struct ProSequenceView: View {
         }
         .toggleStyle(.button)
         .font(.system(size: 24))
-        .frame(height: 48)
+        .frame(height: tabBarHeight)
     }
 
     var body: some View {
@@ -404,7 +406,7 @@ struct ProSequenceView: View {
                     VStack(spacing: 0) {
                         lowerVStack
                     }
-                        .frame(minHeight: 180, maxHeight: max(180, maxInputHeight))
+                        .frame(minHeight: 180 - tabBarHeight, maxHeight: max(180, maxInputHeight) - tabBarHeight)
 
                     lowerVStackOptions
                         .frame(maxWidth: .infinity)
@@ -421,6 +423,33 @@ struct ProSequenceView: View {
                 ? "ChatSequence#\(viewModel.sequence.serverId!)"
                 : "")
         }
+    }
+}
+
+#Preview(traits: .fixedLayout(width: 800, height: 800)) {
+    struct Parameters: Codable {
+        let humanDesc: String?
+        let userPinned: Bool
+        var messages: [Message] = []
+    }
+
+    let parameters = Parameters(
+        humanDesc: "xcode preview",
+        userPinned: true,
+        messages: []
+    )
+    let encoder = JSONEncoder()
+    encoder.keyEncodingStrategy = .convertToSnakeCase
+
+    do {
+        let chatService = ChatSyncService()
+        let sequence = try ChatSequence(-1, data: try encoder.encode(parameters))
+        let viewModel = ChatSequenceClientModel(sequence, chatService: chatService, inferenceModelSettings: InferenceModelSettings())
+
+        return ProSequenceView(viewModel)
+    }
+    catch {
+        return Text("Failed to construct SequenceViewTwo")
     }
 }
 

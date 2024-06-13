@@ -179,7 +179,7 @@ struct AppSidebar: View {
                 }
             }
 
-            AppSidebarSection(isExpanded: false, label: {
+            AppSidebarSection(label: {
                 HStack {
                     Image(systemName: "gear")
                         .padding(.trailing, 0)

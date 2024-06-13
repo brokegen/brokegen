@@ -1,73 +1,11 @@
 import Combine
-import CustomTabView
 import SwiftUI
-
-enum Tab: String, Hashable, CaseIterable {
-    case simple, retrieval, uiOptions
-}
-
-struct ComposeTabsView: View {
-    @Binding var selection: Tab
-    let onTabSelection: (Tab) -> Void
-
-    init(selection: Binding<Tab>, onTabSelection: @escaping (Tab) -> Void) {
-        self._selection = selection
-        self.onTabSelection = onTabSelection
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Image(systemName: "bubble")
-                .padding(12)
-                .frame(width: 60)
-                .background(selection == Tab.simple
-                            ? Color(.selectedControlColor)
-                            : inputBackgroundStyle)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    selection = Tab.simple
-                    onTabSelection(Tab.simple)
-                }
-                .layoutPriority(0.2)
-
-            Image(systemName: "doc.text")
-                .padding(12)
-                .frame(width: 60)
-                .background(selection == Tab.retrieval
-                            ? Color(.selectedControlColor)
-                            : inputBackgroundStyle)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    selection = Tab.retrieval
-                    onTabSelection(Tab.retrieval)
-                }
-                .layoutPriority(0.2)
-
-            Spacer()
-
-            Image(systemName: "gear")
-                .padding(12)
-                .frame(width: 60)
-                .background(selection == Tab.uiOptions
-                            ? Color(.selectedControlColor)
-                            : inputBackgroundStyle)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    selection = Tab.uiOptions
-                    onTabSelection(Tab.uiOptions)
-                }
-                .layoutPriority(0.2)
-        }
-        .font(.system(size: 24))
-    }
-}
 
 struct OneSequenceView: View {
     @ObservedObject var viewModel: ChatSequenceClientModel
     @Bindable var settings: CombinedCSCSettings
 
     @FocusState var focusTextInput: Bool
-    @State private var selectedTab: Tab = .retrieval
     @State private var splitViewLoaded: Bool = false
 
     init(_ viewModel: ChatSequenceClientModel) {
@@ -75,216 +13,125 @@ struct OneSequenceView: View {
         settings = CombinedCSCSettings(globalSettings: viewModel.globalSequenceSettings, sequenceSettings: viewModel.sequenceSettings)
     }
 
-    var tabsView: some View {
-        let composeTabsView = ComposeTabsView(selection: $selectedTab) { tab in
-            print("Picked tab \(tab.rawValue)")
-        }
-            .frame(maxHeight: .infinity)
-
-        return CustomTabView(tabBarView: composeTabsView, tabs: Tab.allCases, selection: selectedTab) {
-            // Tab.simple
-            HStack(spacing: 0) {
-                InlineTextInput(
-                    $viewModel.promptInEdit,
-                    allowNewlineSubmit: $settings.allowNewlineSubmit,
-                    isFocused: $focusTextInput
-                ) {
-                    if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
+    var textEntryView: some View {
+        // Tab.retrieval
+        HStack(spacing: 0) {
+            InlineTextInput(
+                $viewModel.promptInEdit,
+                allowNewlineSubmit: $settings.allowNewlineSubmit,
+                isFocused: $focusTextInput
+            ) {
+                if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
+                    if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
+                        _ = viewModel.requestContinue(withRetrieval: true)
+                    }
+                    else {
                         _ = viewModel.requestContinue()
+                    }
+                }
+                else {
+                    if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
+                        viewModel.requestExtend(withRetrieval: true)
                     }
                     else {
                         viewModel.requestExtend()
                     }
                 }
-                .focused($focusTextInput)
-                .onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        self.focusTextInput = true
-                    }
+            }
+            .focused($focusTextInput)
+            .onAppear {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    self.focusTextInput = true
                 }
-                .backgroundStyle(inputBackgroundStyle)
+            }
+            .backgroundStyle(inputBackgroundStyle)
 
-                let buttonName: String = {
-                    if viewModel.submitting || viewModel.responseInEdit != nil {
-                        return "stop.fill"
-                    }
+            let retrievalButtonDisabled: Bool = {
+                if viewModel.submitting || viewModel.responseInEdit != nil {
+                    return true
+                }
 
-                    return "arrowshape.up"
-                }()
+                return viewModel.promptInEdit.isEmpty && !settings.allowContinuation
+            }()
 
-                let buttonDisabled: Bool = {
-                    if viewModel.submitting || viewModel.responseInEdit != nil {
-                        return false
-                    }
-                    else {
-                        if viewModel.promptInEdit.isEmpty {
-                            return !settings.allowContinuation
-                        }
-                        else {
-                            return false
-                        }
-                    }
-                }()
-
+            if settings.showSeparateRetrievalButton {
                 Button(action: {
-                    if viewModel.submitting || viewModel.responseInEdit != nil {
-                        viewModel.stopSubmitAndReceive(userRequested: true)
+                    if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
+                        _ = viewModel.requestContinue(withRetrieval: true)
                     }
                     else {
+                        viewModel.requestExtend(withRetrieval: true)
+                    }
+                }) {
+                    Image(systemName: "arrow.up.doc")
+                        .font(.system(size: 32))
+                        .padding(12)
+                }
+                .disabled(retrievalButtonDisabled)
+                .modifier(ForegroundAccentColor(enabled: !retrievalButtonDisabled))
+                .buttonStyle(.plain)
+            }
+
+            let aioButtonName: String = {
+                if viewModel.submitting || viewModel.responseInEdit != nil {
+                    return "stop.fill"
+                }
+
+                if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
+                    return "arrow.up.doc"
+                }
+
+                return "arrowshape.up"
+            }()
+
+            let aioButtonDisabled: Bool = {
+                if viewModel.submitting || viewModel.responseInEdit != nil {
+                    return false
+                }
+                else {
+                    return viewModel.promptInEdit.isEmpty && !settings.allowContinuation
+                }
+            }()
+
+            Button(action: {
+                if viewModel.submitting || viewModel.responseInEdit != nil {
+                    viewModel.stopSubmitAndReceive(userRequested: true)
+                }
+                else {
+                    if settings.showSeparateRetrievalButton {
                         if viewModel.promptInEdit.isEmpty {
                             if settings.allowContinuation {
                                 _ = viewModel.requestContinue()
                             }
+                            else {}
                         }
                         else {
                             viewModel.requestExtend()
                         }
                     }
-                }) {
-                    Image(systemName: buttonName)
-                        .font(.system(size: 32))
-                        .padding(12)
-                }
-                .disabled(buttonDisabled)
-                .modifier(ForegroundAccentColor(enabled: !buttonDisabled))
-                .buttonStyle(.plain)
-            }
-
-            // Tab.retrieval
-            HStack(spacing: 0) {
-                InlineTextInput(
-                    $viewModel.promptInEdit,
-                    allowNewlineSubmit: $settings.allowNewlineSubmit,
-                    isFocused: $focusTextInput
-                ) {
-                    if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
-                        if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
-                            _ = viewModel.requestContinue(withRetrieval: true)
-                        }
-                        else {
-                            _ = viewModel.requestContinue()
-                        }
-                    }
                     else {
-                        if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
-                            viewModel.requestExtend(withRetrieval: true)
+                        if viewModel.promptInEdit.isEmpty {
+                            if settings.allowContinuation {
+                                _ = viewModel.requestContinue(withRetrieval: settings.forceRetrieval)
+                            }
+                            else {}
                         }
                         else {
-                            viewModel.requestExtend()
+                            viewModel.requestExtend(withRetrieval: settings.forceRetrieval)
                         }
                     }
                 }
-                .focused($focusTextInput)
-                .onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        self.focusTextInput = true
-                    }
-                }
-                .backgroundStyle(inputBackgroundStyle)
-
-                let retrievalButtonDisabled: Bool = {
-                    if viewModel.submitting || viewModel.responseInEdit != nil {
-                        return true
-                    }
-
-                    return viewModel.promptInEdit.isEmpty && !settings.allowContinuation
-                }()
-
-                if settings.showSeparateRetrievalButton {
-                    Button(action: {
-                        if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
-                            _ = viewModel.requestContinue(withRetrieval: true)
-                        }
-                        else {
-                            viewModel.requestExtend(withRetrieval: true)
-                        }
-                    }) {
-                        Image(systemName: "arrow.up.doc")
-                            .font(.system(size: 32))
-                            .padding(12)
-                    }
-                    .disabled(retrievalButtonDisabled)
-                    .modifier(ForegroundAccentColor(enabled: !retrievalButtonDisabled))
-                    .buttonStyle(.plain)
-                }
-
-                let aioButtonName: String = {
-                    if viewModel.submitting || viewModel.responseInEdit != nil {
-                        return "stop.fill"
-                    }
-
-                    if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
-                        return "arrow.up.doc"
-                    }
-
-                    return "arrowshape.up"
-                }()
-
-                let aioButtonDisabled: Bool = {
-                    if viewModel.submitting || viewModel.responseInEdit != nil {
-                        return false
-                    }
-                    else {
-                        return viewModel.promptInEdit.isEmpty && !settings.allowContinuation
-                    }
-                }()
-
-                Button(action: {
-                    if viewModel.submitting || viewModel.responseInEdit != nil {
-                        viewModel.stopSubmitAndReceive(userRequested: true)
-                    }
-                    else {
-                        if settings.showSeparateRetrievalButton {
-                            if viewModel.promptInEdit.isEmpty {
-                                if settings.allowContinuation {
-                                    _ = viewModel.requestContinue()
-                                }
-                                else {}
-                            }
-                            else {
-                                viewModel.requestExtend()
-                            }
-                        }
-                        else {
-                            if viewModel.promptInEdit.isEmpty {
-                                if settings.allowContinuation {
-                                    _ = viewModel.requestContinue(withRetrieval: settings.forceRetrieval)
-                                }
-                                else {}
-                            }
-                            else {
-                                viewModel.requestExtend(withRetrieval: settings.forceRetrieval)
-                            }
-                        }
-                    }
-                }) {
-                    Image(systemName: aioButtonName)
-                        .font(.system(size: 32))
-                        .padding(12)
-                        .padding(.trailing, 12)
-                        .padding(.leading, -6)
-                }
-                .disabled(aioButtonDisabled)
-                .modifier(ForegroundAccentColor(enabled: !aioButtonDisabled))
-                .buttonStyle(.plain)
+            }) {
+                Image(systemName: aioButtonName)
+                    .font(.system(size: 32))
+                    .padding(12)
+                    .padding(.trailing, 12)
+                    .padding(.leading, -6)
             }
-
-            // Tab.uiOptions
-            ViewThatFits {
-                VFlowLayout {
-                    ChatSequenceSettingsView(globalSettings: $viewModel.globalSequenceSettings, settings: $viewModel.sequenceSettings)
-                }
-
-                ScrollView {
-                    VFlowLayout(spacing: 0) {
-                        ChatSequenceSettingsView(globalSettings: $viewModel.globalSequenceSettings, settings: $viewModel.sequenceSettings)
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            }
+            .disabled(aioButtonDisabled)
+            .modifier(ForegroundAccentColor(enabled: !aioButtonDisabled))
+            .buttonStyle(.plain)
         }
-        .tabBarPosition(.edge(.leading))
-        .toggleStyle(.switch)
     }
 
     var body: some View {
@@ -358,7 +205,7 @@ struct OneSequenceView: View {
                     .frame(minHeight: 80)
 
                     let maxInputHeight = {
-                        if splitViewLoaded || selectedTab == .uiOptions {
+                        if splitViewLoaded {
                             geometry.size.height * 0.7
                         }
                         else {
@@ -368,7 +215,6 @@ struct OneSequenceView: View {
 
                     VStack(spacing: 0) {
                         HStack(spacing: 0) {
-                            // TODO: Find a way to persist any changes for at least a few seconds
                             Text(viewModel.displayedStatus ?? "Ready")
                                 .foregroundStyle(Color(.disabledControlTextColor))
                                 .lineSpacing(9)
@@ -388,7 +234,7 @@ struct OneSequenceView: View {
                         .frame(minHeight: 36)
                         .background(BackgroundEffectView().ignoresSafeArea())
 
-                        tabsView
+                        textEntryView
                     } // end of entire lower VStack
                     .background(inputBackgroundStyle)
                     .frame(minHeight: 180, maxHeight: max(180, maxInputHeight))

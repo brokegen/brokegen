@@ -47,7 +47,6 @@ struct ChatNameReadOnly: View {
             Text(textInEdit)
                 .font(.system(size: 36))
                 .foregroundColor(.gray)
-                .padding([.top, .bottom], 12)
                 .lineLimit(1...10)
                 .layoutPriority(0.2)
 
@@ -64,6 +63,7 @@ struct ChatNameReadOnly: View {
             }
             .buttonStyle(.plain)
         }
+        .padding(.bottom, 12)
         .padding([.leading, .trailing], 24)
     }
 }
