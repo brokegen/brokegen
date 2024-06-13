@@ -154,7 +154,7 @@ extension TemporaryChatMessage: Encodable {
                 }
 
                 var container = encoder.singleValueContainer()
-                try container.encode(microsecondDateFormatter.string(from: date))
+                try container.encode(dateString)
             }
         }
         else {
