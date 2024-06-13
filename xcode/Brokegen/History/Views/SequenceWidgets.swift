@@ -33,6 +33,41 @@ struct BackgroundEffectView: NSViewRepresentable {
     }
 }
 
+struct ChatNameReadOnly: View {
+    @Binding var textInEdit: String
+    @Binding var pinChatName: Bool
+
+    init(_ textInEdit: Binding<String>, pinChatName: Binding<Bool>) {
+        _textInEdit = textInEdit
+        _pinChatName = pinChatName
+    }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            Text(textInEdit)
+                .font(.system(size: 36))
+                .foregroundColor(.gray)
+                .padding([.top, .bottom], 12)
+                .lineLimit(1...10)
+                .layoutPriority(0.2)
+
+            Spacer()
+
+            Button(action: {
+                pinChatName = !pinChatName
+            }) {
+                Image(systemName: pinChatName ? "pin" : "pin.slash")
+                    .font(.system(size: 24))
+                    .padding(12)
+                    .contentShape(Rectangle())
+                    .foregroundStyle(pinChatName ? Color(.controlTextColor) : Color(.disabledControlTextColor))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding([.leading, .trailing], 24)
+    }
+}
+
 struct ChatNameInput: View {
     @Binding var textInEdit: String
     @State private var isHovered: Bool = false
@@ -42,22 +77,25 @@ struct ChatNameInput: View {
     }
 
     var body: some View {
-        TextField("(optional) ChatSequence name", text: $textInEdit, axis: .vertical)
+        TextField("Name (optional)", text: $textInEdit, axis: .vertical)
             .font(.system(size: 36))
             .foregroundColor(.gray)
-            .lineLimit(1...2)
             .textFieldStyle(.plain)
-            .background(
-                isHovered ? Color(.controlColor) : Color(.controlBackgroundColor)
-            )
-            .onHover { isHovered in
-                self.isHovered = isHovered
-            }
-            .padding(.bottom, 12)
-            // Draws a single baseline bar at the bottom of the control
+            .padding([.top, .bottom], 12)
+        // Draws a single baseline bar at the bottom of the control
             .overlay(
                 Divider().background(Color.accentColor), alignment: .bottom
             )
+            .lineLimit(1...10)
+            .scrollDisabled(false)
+            .background(isHovered ? Color(.selectedControlColor) : Color.clear)
+        // Add the tiniest of padding, so the background doesn't go out of the safe area.
+            .padding(.top, 1)
+            .padding([.leading, .trailing], 24)
+            .frame(maxWidth: .infinity)
+            .onHover { isHovered in
+                self.isHovered = isHovered
+            }
     }
 }
 
@@ -87,10 +125,15 @@ struct InlineTextInput: View {
             .font(.system(size: 18))
             .lineSpacing(6)
             .monospaced()
-            .padding(8)
-            .background(Color(.controlBackgroundColor))
-            .padding(4)
-            .background(isHovered ? Color(.selectedControlColor) : Color(.controlBackgroundColor))
+            .padding(12)
+            .scrollContentBackground(.hidden)
+            .background(
+                Rectangle()
+                    .fill(Color.clear)
+                    .strokeBorder(lineWidth: 4)
+                    .foregroundColor(Color(.selectedControlColor))
+                    .opacity(isHovered ? 1.0 : 0.0)
+                )
             .onChange(of: textInEdit) {
                 if allowNewlineSubmit {
                     // TODO: This is wonky as all hell, it submits when you paste text that ends with a newline

@@ -31,9 +31,7 @@ struct BlankOneSequenceView: View {
             VSplitView {
                 VStack(spacing: 0) {
                     ChatNameInput($chatSequenceHumanDesc)
-                        .frame(maxWidth: .infinity)
-                        .padding(.leading, 24)
-                        .padding(.trailing, 24)
+                        .padding(.bottom, 24)
 
                     // Display the model info, because otherwise there's nothing to see
                     if modelSelection != nil {

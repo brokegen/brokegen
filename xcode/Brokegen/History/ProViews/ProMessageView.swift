@@ -93,46 +93,69 @@ struct ProMessageView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 0) {
             // "Header" for the message
-            HStack(alignment: .bottom, spacing: 0) {
-                Text(message.role)
-                    .font(.title3.weight(.semibold))
-                    .foregroundColor(.accentColor)
-                    .layoutPriority(0.5)
+            HStack(spacing: 0) {
+                Button(action: {
+                    withAnimation(.snappy) {
+                        expandContent = !expandContent
+                    }
+                }, label: {
+                    HStack(alignment: .bottom, spacing: 0) {
+                        Image(systemName: expandContent ? "chevron.down" : "chevron.right")
+                            .contentTransition(.symbolEffect)
+                            .font(.system(size: 18))
+                            .frame(width: 20, height: 18)
+                            .modifier(ForegroundAccentColor(enabled: !expandContent))
+                            .padding(.trailing, 12)
 
-                if stillExpectingUpdate {
+                        Text(message.role)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color(.controlTextColor))
+                            .padding(.trailing, 12)
+                    }
+                    .contentShape(Rectangle())
+                })
+                .buttonStyle(.borderless)
+
+                if stillExpectingUpdate && (!message.content.isEmpty || !expandContent) {
                     ProgressView()
-                        .progressViewStyle(.circular)
                         .controlSize(.mini)
+                        .id("progress view")
                 }
 
                 Spacer()
 
-                Button(action: {
-                    expandContent = !expandContent
-                }, label: {
-                    HStack(alignment: .bottom, spacing: 0) {
-                        Text(message.createdAtString)
-                            .padding(.trailing, 18)
+                Text(message.createdAtString)
+                    .foregroundStyle(Color(.disabledControlTextColor))
+                    .padding(.trailing, 18)
+            }
+            .frame(height: 42)
+            .font(.system(size: 18))
+            .padding(.top, 16)
+            .padding([.leading, .trailing], 16)
 
-                        Image(systemName: expandContent ? "chevron.down" : "chevron.left")
-                            .font(.system(size: 18))
-                            .frame(width: 20, height: 18)
-                            .modifier(ForegroundAccentColor(enabled: !expandContent))
-                    }
-                    .padding(12)
-                    .contentShape(Rectangle())
-                })
-                .buttonStyle(.borderless)
+            if stillExpectingUpdate && (message.content.isEmpty && expandContent) {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .padding(16)
+                    .padding(.bottom, 8)
+                    .id("progress view")
             }
 
-                Text(expandContent ? message.content : "")
+            if expandContent && !message.content.isEmpty {
+                Text(message.content)
                     .font(.system(size: 18))
                     .lineSpacing(6)
                     .textSelection(.enabled)
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color(.controlBackgroundColor))
+                    )
+                    .padding(.bottom, 8)
+            }
         }
-        .frame(maxWidth: .infinity)
     }
 }
 

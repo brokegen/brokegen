@@ -37,7 +37,7 @@ struct BrokegenAppView: View {
             })
             .navigationDestination(for: ChatSequenceClientModel.self) { clientModel in
                 NavigationSplitView(sidebar: { AppSidebar() }, detail: {
-                    OneSequenceView(clientModel)
+                    ProSequenceView(clientModel)
                 })
             }
             // Show the sidebar on initial re-load

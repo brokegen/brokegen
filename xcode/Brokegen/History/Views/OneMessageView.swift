@@ -3,7 +3,7 @@ import SwiftUI
 struct OneMessageView: View {
     let message: Message
     let sequence: ChatSequence?
-    let stillUpdating: Bool
+    let stillExpectingUpdate: Bool
 
     @State var expandContent: Bool
 
@@ -14,7 +14,7 @@ struct OneMessageView: View {
     ) {
         self.message = message
         self.sequence = sequence
-        self.stillUpdating = stillUpdating
+        self.stillExpectingUpdate = stillUpdating
         self._expandContent = State(initialValue: message.role != "model config")
     }
 
@@ -44,7 +44,7 @@ struct OneMessageView: View {
                 })
                 .buttonStyle(.borderless)
 
-                if stillUpdating && (!message.content.isEmpty || !expandContent) {
+                if stillExpectingUpdate && (!message.content.isEmpty || !expandContent) {
                     ProgressView()
                         .controlSize(.mini)
                         .id("progress view")
@@ -70,7 +70,7 @@ struct OneMessageView: View {
             .padding(.top, 16)
             .padding([.leading, .trailing], 16)
 
-            if stillUpdating && (message.content.isEmpty && expandContent) {
+            if stillExpectingUpdate && (message.content.isEmpty && expandContent) {
                 ProgressView()
                     .progressViewStyle(.circular)
                     .padding(16)

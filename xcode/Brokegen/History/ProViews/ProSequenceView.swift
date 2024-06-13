@@ -41,7 +41,6 @@ struct ProSequenceView: View {
                         self.focusTextInput = true
                     }
                 }
-                .backgroundStyle(inputBackgroundStyle)
 
                 if settings.showSeparateRetrievalButton {
                     Button(action: {
@@ -125,7 +124,6 @@ struct ProSequenceView: View {
             }
             .padding(.leading, 24)
             .padding(.trailing, 12)
-            .background(inputBackgroundStyle)
         }
     }
 
@@ -135,12 +133,65 @@ struct ProSequenceView: View {
     @State private var showRetrievalOptions: Bool = false
     @State private var stayAwakeOnInference: Bool = true
 
-    @State private var showSystemPromptOverride: Bool = true
+    @State private var showSystemPromptOverride: Bool = false
     @FocusState private var focusSystemPromptOverride: Bool
     @State private var showAssistantResponseSeed: Bool = false
     @FocusState private var focusAssistantResponseSeed: Bool
 
     @ViewBuilder var lowerVStack: some View {
+        HStack(alignment: .bottom, spacing: 0) {
+            Text(viewModel.displayedStatus ?? "Ready")
+                .foregroundStyle(Color(.disabledControlTextColor))
+                .lineSpacing(9)
+                .layoutPriority(0.2)
+
+            Spacer()
+
+            if viewModel.submitting || viewModel.responseInEdit != nil {
+                ProgressView()
+                    .progressViewStyle(.linear)
+                    .frame(maxWidth: 120)
+                    .layoutPriority(0.2)
+            }
+        }
+        .padding([.leading, .trailing], 18)
+        .padding([.top, .bottom], 12)
+        .frame(minHeight: 36)
+        .background(BackgroundEffectView().ignoresSafeArea())
+
+        if showSystemPromptOverride {
+            ZStack {
+                Rectangle()
+                    .fill(Color.red.opacity(0.2))
+
+                InlineTextInput(settings.overrideSystemPrompt(), allowNewlineSubmit: .constant(false), isFocused: $focusSystemPromptOverride) {}
+
+                Text("Override System Prompt")
+                    .foregroundStyle(Color(.disabledControlTextColor))
+                    .opacity(settings.overrideSystemPrompt().wrappedValue.isEmpty ? 1.0 : 0.0)
+            }
+        }
+
+        if showTextEntryView {
+            textEntryView
+                .background(inputBackgroundStyle)
+        }
+
+        if showAssistantResponseSeed {
+            ZStack {
+                Rectangle()
+                    .fill(Color.blue.opacity(0.2))
+
+                InlineTextInput(settings.seedAssistantResponse(), allowNewlineSubmit: .constant(false), isFocused: $focusAssistantResponseSeed) {}
+
+                Text("Seed Assistant Response")
+                    .foregroundStyle(Color(.disabledControlTextColor))
+                    .opacity(settings.seedAssistantResponse().wrappedValue.isEmpty ? 1.0 : 0.0)
+            }
+        }
+    }
+
+    @ViewBuilder var lowerVStackOptions: some View {
         if showUiOptions || showInferenceOptions || showRetrievalOptions {
             ScrollView {
                 VFlowLayout(spacing: 24) {
@@ -172,13 +223,15 @@ struct ProSequenceView: View {
                 }
             }
         }
+    }
 
+    @ViewBuilder var lowerTabBar: some View {
         // Tab bar
         HStack(spacing: 0) {
             Button(action: {
                 showTextEntryView = !showTextEntryView
             }, label: {
-                Image(systemName: "bubble.fill")
+                Image(systemName: viewModel.promptInEdit.isEmpty ? "bubble" : "bubble.fill")
                     .padding(.leading, 12)
                     .padding(.trailing, 12)
                     .frame(height: 48)
@@ -206,6 +259,7 @@ struct ProSequenceView: View {
                 showSystemPromptOverride = !showSystemPromptOverride
             }, label: {
                 Image(systemName: "person.badge.shield.checkmark")
+                    .foregroundStyle(showSystemPromptOverride ? .red : Color(.controlTextColor))
                     .padding(.leading, 12)
                     .padding(.trailing, -12)
 
@@ -223,7 +277,8 @@ struct ProSequenceView: View {
             Button(action: {
                 showAssistantResponseSeed = !showAssistantResponseSeed
             }, label: {
-                Image(systemName: "bubble.right")
+                Image(systemName: settings.seedAssistantResponse().wrappedValue.isEmpty ? "bubble.right" : "bubble.right.fill")
+                    .foregroundStyle(showAssistantResponseSeed ? .blue : Color(.controlTextColor))
                     .padding(.leading, 12)
                     .padding(.trailing, -12)
 
@@ -287,155 +342,89 @@ struct ProSequenceView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            ScrollViewReader { proxy in
+            VStack(spacing: 0) {
                 VSplitView {
                     VStack(spacing: 0) {
                         if viewModel.pinSequenceTitle {
-                            HStack(spacing: 0) {
-                                Text(viewModel.displayHumanDesc)
-                                    .font(.system(size: 36))
-                                    .foregroundColor(.gray)
-                                    .lineLimit(1)
-                                    .layoutPriority(0.2)
-
-                                Spacer()
-
-                                Button(action: {
-                                    viewModel.pinSequenceTitle = false
-                                }) {
-                                    Image(systemName: "pin")
-                                        .font(.system(size: 24))
-                                        .padding(12)
-                                        .contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain)
-                            }
+                            ChatNameReadOnly(
+                                Binding(
+                                    get: { viewModel.displayHumanDesc },
+                                    set: { _, _ in }),
+                                pinChatName: $viewModel.pinSequenceTitle)
                             .id("sequence title")
-                            .padding(.bottom, 12)
-                            .padding(.leading, 24)
-                            .padding(.trailing, 24)
                         }
 
-                        ScrollView(.vertical) {
-                            if !viewModel.pinSequenceTitle {
-                                HStack(spacing: 0) {
-                                    Text(viewModel.displayHumanDesc)
-                                        .font(.system(size: 36))
-                                        .foregroundColor(.gray)
-                                        .lineLimit(1...10)
-                                        .layoutPriority(0.2)
-
-                                    Spacer()
-
-                                    Button(action: {
-                                        viewModel.pinSequenceTitle = true
-                                    }) {
-                                        Image(systemName: "pin.slash")
-                                            .font(.system(size: 24))
-                                            .padding(12)
-                                            .contentShape(Rectangle())
-                                            .foregroundStyle(Color(.disabledControlTextColor))
-                                    }
-                                    .buttonStyle(.plain)
+                        ScrollViewReader { proxy in
+                            ScrollView(.vertical) {
+                                if !viewModel.pinSequenceTitle {
+                                    ChatNameReadOnly(
+                                        Binding(
+                                            get: { viewModel.displayHumanDesc },
+                                            set: { _, _ in }),
+                                        pinChatName: $viewModel.pinSequenceTitle)
+                                    .id("sequence title")
                                 }
-                                .id("sequence title")
-                                .padding(.bottom, 12)
-                                .padding(.leading, 24)
-                                .padding(.trailing, 24)
-                            }
 
-                            ForEach(viewModel.sequence.messages) { message in
-                                ProMessageView(message)
-                                    .padding(24)
-                                    .padding(.top, 16)
-                            }
+                                ForEach(viewModel.sequence.messages) { message in
+                                    ProMessageView(message)
+                                }
 
-                            if viewModel.responseInEdit != nil {
-                                ProMessageView(viewModel.responseInEdit!, stillUpdating: true)
-                                    .padding(24)
-                                    .padding(.top, 16)
+                                if viewModel.responseInEdit != nil {
+                                    ProMessageView(viewModel.responseInEdit!, stillUpdating: true)
+                                }
+                            }
+                            .defaultScrollAnchor(.bottom)
+                            .onAppear {
+                                proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+                                    splitViewLoaded = true
+                                }
+                            }
+                            .onChange(of: viewModel.sequence.messages) { old, new in
+                                proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+                            }
+                            .onChange(of: viewModel.responseInEdit?.content) {
+                                // TODO: Replace this with a GeometryReader that merely nudges us, if we're already close to the bottom
+                                proxy.scrollTo(viewModel.responseInEdit, anchor: .bottom)
                             }
                         }
                     }
                     .frame(minHeight: 80)
 
+                    let maxInputHeight = {
+                        if splitViewLoaded || showSystemPromptOverride || showAssistantResponseSeed {
+                            geometry.size.height * 0.7
+                        }
+                        else {
+                            geometry.size.height * 0.2
+                        }
+                    }()
+
                     VStack(spacing: 0) {
-                        HStack(alignment: .bottom, spacing: 0) {
-                            Text(viewModel.displayedStatus ?? "Ready")
-                                .foregroundStyle(Color(.disabledControlTextColor))
-                                .lineSpacing(9)
-                                .layoutPriority(0.2)
-                                .lineLimit(1...3)
-
-                            Spacer()
-
-                            if viewModel.submitting || viewModel.responseInEdit != nil {
-                                ProgressView()
-                                    .progressViewStyle(.linear)
-                                    .frame(maxWidth: 120)
-                                    .layoutPriority(0.2)
-                            }
-                        }
-                        .padding(.leading, 18)
-                        .padding(.top, 12)
-                        .padding(.bottom, 12)
-
-                        if showSystemPromptOverride {
-                            ZStack {
-                                InlineTextInput(settings.overrideSystemPrompt(), allowNewlineSubmit: .constant(false), isFocused: $focusSystemPromptOverride) {}
-
-                                Text("Override System Prompt")
-                                    .foregroundStyle(Color(.disabledControlTextColor))
-                                    .opacity(settings.overrideSystemPrompt().wrappedValue.isEmpty ? 1.0 : 0.0)
-                            }
-
-                            Divider()
-                        }
-
-                        if showTextEntryView {
-                            textEntryView
-                                .frame(minHeight: 48, maxHeight: geometry.size.height * 0.7)
-                        }
-
-                        if showAssistantResponseSeed {
-                            Divider()
-
-                            ZStack {
-                                InlineTextInput(settings.seedAssistantResponse(), allowNewlineSubmit: .constant(false), isFocused: $focusAssistantResponseSeed) {}
-
-                                Text("Seed Assistant Response")
-                                    .foregroundStyle(Color(.disabledControlTextColor))
-                                    .opacity(settings.seedAssistantResponse().wrappedValue.isEmpty ? 1.0 : 0.0)
-                            }
-                        }
+                        lowerVStack
                     }
+                        .frame(minHeight: 180, maxHeight: max(180, maxInputHeight))
 
-                    lowerVStack
+                    lowerVStackOptions
                         .frame(maxWidth: .infinity)
                 }
-                .defaultScrollAnchor(.bottom)
-                .onAppear {
-                    proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
 
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
-                        splitViewLoaded = true
-                    }
-                }
-                .onChange(of: viewModel.sequence.messages) { old, new in
-                    proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
-                }
-                .onChange(of: viewModel.responseInEdit?.content) {
-                    // TODO: Replace this with a GeometryReader that merely nudges us, if we're already close to the bottom
-                    proxy.scrollTo(viewModel.responseInEdit, anchor: .bottom)
-                }
+                lowerTabBar
+                    .frame(maxWidth: .infinity)
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
-            .animation(.linear(duration: 0.3))
+            .background(BackgroundEffectView().ignoresSafeArea())
+            .navigationTitle(viewModel.displayHumanDesc)
+            .navigationSubtitle(
+                viewModel.sequence.serverId != nil
+                ? "ChatSequence#\(viewModel.sequence.serverId!)"
+                : "")
         }
     }
 }
 
-#Preview(traits: .fixedLayout(width: 800, height: 1200)) {
+#Preview(traits: .fixedLayout(width: 800, height: 800)) {
     let messages: [Message] = [
         Message(role: "user", content: "First message", createdAt: Date.distantPast),
         Message(role: "clown", content: "Second message", createdAt: Date.distantPast),

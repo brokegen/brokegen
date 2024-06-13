@@ -371,6 +371,7 @@ struct OneSequenceView: View {
                             // TODO: Find a way to persist any changes for at least a few seconds
                             Text(viewModel.displayedStatus ?? "Ready")
                                 .foregroundStyle(Color(.disabledControlTextColor))
+                                .lineSpacing(9)
                                 .layoutPriority(0.2)
 
                             Spacer()
@@ -382,8 +383,8 @@ struct OneSequenceView: View {
                                     .layoutPriority(0.2)
                             }
                         }
-                        .padding(.leading, 24)
-                        .padding(.trailing, 24)
+                        .padding([.leading, .trailing], 18)
+                        .padding([.top, .bottom], 12)
                         .frame(minHeight: 36)
                         .background(BackgroundEffectView().ignoresSafeArea())
 
@@ -404,7 +405,6 @@ struct OneSequenceView: View {
                     proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
                 }
                 .onChange(of: viewModel.responseInEdit?.content) {
-                    // TODO: Replace this with a GeometryReader that merely nudges us, if we're already close to the bottom
                     proxy.scrollTo(viewModel.responseInEdit, anchor: .bottom)
                 }
             }
