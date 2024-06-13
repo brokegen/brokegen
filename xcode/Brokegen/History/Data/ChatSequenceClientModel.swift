@@ -24,7 +24,8 @@ class ChatSequenceClientModel: ObservableObject {
     /// `nil` before first data, and then reset to `nil` once we're done receiving.
     var responseInEdit: Message? = nil
     var receivingStreamer: AnyCancellable? = nil
-    var stayAwake: StayAwake = StayAwake()
+    private var stayAwake: StayAwake = StayAwake()
+    var useStayAwake: Bool = true
 
     var displayedStatus: String? = nil
 
@@ -139,7 +140,9 @@ class ChatSequenceClientModel: ObservableObject {
         withRetrieval: Bool = false
     ) -> Self {
         print("[INFO] ChatSequenceClientModel.requestContinue(\(continuationModelId), withRetrieval: \(withRetrieval))")
-        _ = stayAwake.createAssertion(reason: "brokegen ChatSequenceClientModel.requestContinue() for ChatSequence#\(self.sequence.serverId ?? -1)")
+        if useStayAwake {
+            _ = stayAwake.createAssertion(reason: "brokegen ChatSequenceClientModel.requestContinue() for ChatSequence#\(self.sequence.serverId ?? -1)")
+        }
 
         Task {
             guard submitting == false else {
@@ -178,7 +181,9 @@ class ChatSequenceClientModel: ObservableObject {
         withRetrieval: Bool = false
     ) {
         print("[INFO] ChatSequenceClientModel.requestExtend(withRetrieval: \(withRetrieval))")
-        _ = stayAwake.createAssertion(reason: "brokegen ChatSequenceClientModel.requestExtend() for ChatSequence#\(self.sequence.serverId ?? -1)")
+        if useStayAwake {
+            _ = stayAwake.createAssertion(reason: "brokegen ChatSequenceClientModel.requestExtend() for ChatSequence#\(self.sequence.serverId ?? -1)")
+        }
 
         Task {
             guard !self.promptInEdit.isEmpty else { return }

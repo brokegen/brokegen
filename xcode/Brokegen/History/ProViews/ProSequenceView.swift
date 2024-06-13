@@ -133,7 +133,6 @@ struct ProSequenceView: View {
     @State private var showUiOptions: Bool = false
     @State private var showInferenceOptions: Bool = false
     @State private var showRetrievalOptions: Bool = false
-    @State private var stayAwakeOnInference: Bool = true
 
     @State private var showSystemPromptOverride: Bool = false
     @FocusState private var focusSystemPromptOverride: Bool
@@ -326,15 +325,16 @@ struct ProSequenceView: View {
             Spacer()
 
             Button(action: {
-                stayAwakeOnInference = !stayAwakeOnInference
+                viewModel.useStayAwake = !viewModel.useStayAwake
             }, label: {
-                Image(systemName: stayAwakeOnInference ? "bolt.horizontal.fill" : "bolt.horizontal")
-                    .foregroundStyle(stayAwakeOnInference ? .green : Color(.controlTextColor))
+                Image(systemName: viewModel.useStayAwake ? "bolt.fill" : "bolt.slash")
+                    .foregroundStyle(viewModel.useStayAwake ? Color(.controlTextColor) : .red)
                     .padding(.leading, 12)
                     .padding(.trailing, 12)
                     .frame(height: 48)
             })
             .contentShape(Rectangle())
+            .help("Keep macOS system awake during an inference request")
             .buttonStyle(.plain)
         }
         .toggleStyle(.button)
