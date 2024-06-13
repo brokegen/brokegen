@@ -227,11 +227,11 @@ class OllamaEventBuilder:
     def wrap_request(
             self,
             request_content: JSONDict,
-            remove_images: bool = False,
+            remove_images: bool = True,
     ):
         if remove_images:
             scrubbed_request_content = scrub_json(
-                request_content,
+                request_content.copy(),
                 logger.warning,
                 remove_images,
             )

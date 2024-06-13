@@ -4,7 +4,7 @@ import orjson
 from fastapi import FastAPI, APIRouter, Depends
 from starlette.requests import Request
 
-from _util.json import safe_get
+from _util.json import safe_get, JSONDict, safe_get_arrayed
 from _util.status import ServerStatusHolder
 from audit.http import AuditDB, get_db as get_audit_db
 from retrieval.faiss.retrieval import RetrievalLabel
@@ -67,6 +67,15 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
             logger.debug(
                 f"Intentionally disabling Ollama client request for {request_content_json['options']['temperature']=}")
             del request_content_json['options']['temperature']
+
+        last_message_images: JSONDict | None = safe_get_arrayed(request_content_json, 'messages', -1, 'images')
+        if last_message_images:
+            logger.info("Can't convert multimodal request, disabling RAG")
+            return await keepalive_wrapper(
+                inference_model_human_id,
+                forward_request(request, audit_db),
+                status_holder,
+            )
 
         return await keepalive_wrapper(
             inference_model_human_id,

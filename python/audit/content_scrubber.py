@@ -16,16 +16,19 @@ def _summarize(images_array: list[str]) -> str:
 
 
 def scrub_json(
-        content_json: JSONObject,
+        content_json_modifiable: JSONObject,
         logger_fn: Callable[[str], Any] | None = None,
         remove_images: bool = False,
 ) -> JSONObject:
+    """
+    NB This is destructive to the JSON passed in!
+    """
     if remove_images:
-        for message in safe_get(content_json, "messages") or []:
+        for message in safe_get(content_json_modifiable, "messages") or []:
             if "images" in message and message["images"]:
                 message["images"] = _summarize(message["images"])
 
-    return content_json
+    return content_json_modifiable
 
 
 async def scrub_bytes(
