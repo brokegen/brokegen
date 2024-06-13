@@ -17,6 +17,22 @@ struct ForegroundAccentColor: ViewModifier {
     }
 }
 
+struct BackgroundEffectView: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+
+        view.blendingMode = .behindWindow
+        view.state = .active
+        view.material = .underWindowBackground
+
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        //
+    }
+}
+
 struct ChatNameInput: View {
     @Binding var textInEdit: String
     @State private var isHovered: Bool = false

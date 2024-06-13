@@ -148,6 +148,7 @@ struct BlankOneSequenceView: View {
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
+            .background(BackgroundEffectView().ignoresSafeArea())
             .sheet(isPresented: $showModelPicker) {
                 ModelPickerView(modelSelection: $modelSelection)
                 // Frame is very wide because the way we're positioning incorrectly ignores the sidebar

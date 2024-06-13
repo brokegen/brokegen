@@ -121,6 +121,7 @@ struct InferenceModelSettingsView: View {
                 .frame(maxWidth: 840 + 2 * 24)
             }
             .frame(maxWidth: .infinity)
+            .background(BackgroundEffectView().ignoresSafeArea())
         }
     }
 }

@@ -4,11 +4,11 @@ struct ASSStyle: DisclosureGroupStyle {
     func makeBody(configuration: Configuration) -> some View {
         VStack(spacing: 0) {
             Button {
-                withAnimation {
+                withAnimation(.snappy) {
                     configuration.isExpanded.toggle()
                 }
             } label: {
-                HStack(alignment: .bottom, spacing: 0) {
+                HStack(spacing: 0) {
                     configuration.label
                         .padding(4)
                         .font(.system(size: 24))
@@ -20,9 +20,10 @@ struct ASSStyle: DisclosureGroupStyle {
                     Image(systemName: configuration.isExpanded ? "chevron.down" : "chevron.left")
                         .contentTransition(.symbolEffect)
                         .padding()
-                        .padding(.trailing, -12)
+                        .padding(.trailing, -6)
+                        .layoutPriority(0.2)
                 }
-                .padding(8)
+                .frame(height: 60)
             }
 
             if configuration.isExpanded {
