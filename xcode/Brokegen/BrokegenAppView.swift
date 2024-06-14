@@ -25,10 +25,10 @@ struct BrokegenAppView: View {
     // This is the only one that really belongs here, because multiple windows
     @State private var pathHost: PathHost = PathHost()
     @Environment(InferenceModelSettings.self) public var inferenceModelSettings
+    @EnvironmentObject public var chatSettingsService: CSCSettingsService
 
     @State private var sidebarVisibility = NavigationSplitViewVisibility.automatic
     @State private var sidebarVisibilityTimesChanged: Int = 0
-    @State private var useSimplifiedSequenceViews: Bool = false
 
     func bigReset() {
         DispatchQueue.main.async {
@@ -42,16 +42,16 @@ struct BrokegenAppView: View {
     var body: some View {
         NavigationStack(path: $pathHost.path) {
             NavigationSplitView(columnVisibility: $sidebarVisibility, sidebar: {
-                AppSidebar(useSimplifiedSequenceViews: $useSimplifiedSequenceViews, bigReset: bigReset)
+                AppSidebar(useSimplifiedSequenceViews: $chatSettingsService.useSimplifiedSequenceViews, bigReset: bigReset)
             }, detail: {
                 SequencePickerView()
                     .environmentObject(chatService)
             })
             .navigationDestination(for: OneSequenceViewModel.self) { clientModel in
                 NavigationSplitView(sidebar: {
-                    AppSidebar(useSimplifiedSequenceViews: $useSimplifiedSequenceViews, bigReset: bigReset)
+                    AppSidebar(useSimplifiedSequenceViews: $chatSettingsService.useSimplifiedSequenceViews, bigReset: bigReset)
                 }, detail: {
-                    if useSimplifiedSequenceViews {
+                    if chatSettingsService.useSimplifiedSequenceViews {
                         OneSequenceView(clientModel)
                     }
                     else {

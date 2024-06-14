@@ -4,6 +4,65 @@ enum ChatAutoNaming: String {
     case serverDefault, disable, summarizeAfterAsync, summarizeBefore
 }
 
+struct DefaultCSUISettings {
+    var allowContinuation: Bool = true
+    var showSeparateRetrievalButton: Bool = true
+    var forceRetrieval: Bool = false
+
+    var allowNewlineSubmit: Bool = false
+    var stayAwakeDuringInference: Bool = true
+}
+
+struct OverrideCSUISettings {
+    var allowContinuation: Bool? = nil
+    var showSeparateRetrievalButton: Bool? = nil
+    var forceRetrieval: Bool? = nil
+
+    var allowNewlineSubmit: Bool? = nil
+    var stayAwakeDuringInference: Bool? = nil
+}
+
+@Observable
+class CombinedCSUISettings {
+    let defaults: DefaultCSUISettings
+    var override: OverrideCSUISettings
+
+    init(defaults: DefaultCSUISettings, override: OverrideCSUISettings) {
+        self.defaults = defaults
+        self.override = override
+    }
+
+    func allowContinuation() -> Binding<Bool> {
+        return Binding(
+            get: { self.override.allowContinuation ?? self.defaults.allowContinuation },
+            set: { value in
+                self.override.allowContinuation = value
+            }
+        )
+    }
+}
+
+class CSCSettingsService: Observable, ObservableObject {
+    // Legacy, should be removed
+    @Bindable public var sequenceSettings: GlobalChatSequenceClientSettings = GlobalChatSequenceClientSettings()
+
+    @Published var useSimplifiedSequenceViews: Bool = false
+
+    @Published var defaultUiSettings = DefaultCSUISettings()
+    @Published var perSequenceUiSettings: [ChatSequence : OverrideCSUISettings] = [:]
+
+    public func uiSettings(for sequence: ChatSequence) -> CombinedCSUISettings {
+        if let existingSettings = perSequenceUiSettings[sequence] {
+            return CombinedCSUISettings(defaults: defaultUiSettings, override: existingSettings)
+        }
+        else {
+            let newSettings = OverrideCSUISettings()
+            perSequenceUiSettings[sequence] = newSettings
+            return CombinedCSUISettings(defaults: defaultUiSettings, override: newSettings)
+        }
+    }
+}
+
 /// NB Most of these currently do not work.
 @Observable
 class GlobalChatSequenceClientSettings {
@@ -38,10 +97,6 @@ class ChatSequenceClientSettings {
 
     var allowNewlineSubmit: Bool? = nil
     var stayAwakeDuringInference: Bool? = nil
-}
-
-class CSCSettingsService {
-    @Bindable public var sequenceSettings: GlobalChatSequenceClientSettings = GlobalChatSequenceClientSettings()
 }
 
 @Observable

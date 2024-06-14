@@ -10,7 +10,7 @@ struct BrokegenApp: App {
 
     private var inferenceSettings = InferenceSettingsService()
     @State private var inferenceSettingsUpdater: AnyCancellable? = nil
-    private var chatSettingsService = CSCSettingsService()
+    @StateObject private var chatSettingsService = CSCSettingsService()
 
     init() {
         // Do on-startup init, because otherwise we store no data and app is empty
@@ -37,6 +37,7 @@ struct BrokegenApp: App {
                 .environment(providerService)
                 .environment(inferenceSettings.inferenceModelSettings)
                 .environment(chatSettingsService.sequenceSettings)
+                .environmentObject(chatSettingsService)
         }
         .windowStyle(.hiddenTitleBar)
     }

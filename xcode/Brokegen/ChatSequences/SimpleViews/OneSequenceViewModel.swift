@@ -3,8 +3,6 @@ import Combine
 import Foundation
 import SwiftData
 
-// TODO: Keep active OneSequenceViewModel around, rather than constructing one.
-// This probably means it has to live under ChatSyncService.
 @Observable
 class OneSequenceViewModel: ObservableObject {
     var sequence: ChatSequence
