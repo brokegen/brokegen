@@ -208,6 +208,7 @@ struct AppSidebar: View {
                     }
                 })
                 .toggleStyle(.switch)
+                .padding(.trailing, -12)
                 .padding(.bottom, 24)
             }
         }

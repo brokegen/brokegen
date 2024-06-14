@@ -239,14 +239,16 @@ struct MiniSequencePickerSidebar: View {
                             timesRefreshClicked += 1
                             Task { await chatService.fetchPinnedSequences(navLimit) }
                         }
+                        .buttonStyle(.borderedProminent)
                         .padding(.leading, -24)
                         .padding(.trailing, -24)
                     }
                     else {
-                        Button("Load Chats", systemImage: "arrowshape.down") {
+                        Button("Load Chats", systemImage: "arrow.clockwise") {
                             timesRefreshClicked += 1
                             Task { await chatService.fetchPinnedSequences(navLimit) }
                         }
+                        .foregroundStyle(Color.accentColor)
                         .padding(.leading, -24)
                         .padding(.trailing, -24)
                     }
