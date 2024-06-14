@@ -105,8 +105,8 @@ async def do_continuation(
                 # NB This only works as a system message on models that respect that.
                 #    So, append it to both.
                 system_message="You are a concise summarizer, seizing on easily identifiable + distinguishing factors of the text.",
-                user_prompt="Provide a summary of the provided text in a few words, suitable as a short description for a tab title. " +
-                            "Answer with that title only.\n\n" +
+                user_prompt="Provide a summary of the provided text, suitable as a short description for a tab title. " +
+                            "Answer with that title only, do not provide additional information. Reply with at most one sentence.\n\n" +
                             '\n'.join([m.content for m in messages_list]),
                 assistant_response="Tab title: "
             )

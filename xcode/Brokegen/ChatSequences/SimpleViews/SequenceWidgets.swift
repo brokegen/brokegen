@@ -50,7 +50,7 @@ struct ChatNameReadOnly: View {
                 .textSelection(.enabled)
             // If the chat is pinned, allow a short, scrollable view at the top.
             // Otherwise, let it run long.
-                .lineLimit(pinChatSequenceDesc ? 1...2 : 1...30)
+                .lineLimit(pinChatSequenceDesc ? 1...1 : 1...30)
                 .scrollDisabled(!pinChatSequenceDesc)
                 .layoutPriority(0.2)
 
