@@ -47,7 +47,11 @@ struct ChatNameReadOnly: View {
             Text(textInEdit)
                 .font(.system(size: 36))
                 .foregroundColor(.gray)
-                .lineLimit(1...10)
+                .textSelection(.enabled)
+            // If the chat is pinned, allow a short, scrollable view at the top.
+            // Otherwise, let it run long.
+                .lineLimit(pinChatSequenceDesc ? 1...2 : 1...30)
+                .scrollDisabled(!pinChatSequenceDesc)
                 .layoutPriority(0.2)
 
             Spacer()

@@ -3,6 +3,8 @@ import Combine
 import Foundation
 import SwiftData
 
+let maxPinChatSequenceDesc = 140
+
 @Observable
 class OneSequenceViewModel: ObservableObject {
     var sequence: ChatSequence
@@ -37,7 +39,7 @@ class OneSequenceViewModel: ObservableObject {
         self.inferenceModelSettings = inferenceModelSettings
         self.uiSettings = chatSettingsService.uiSettings(for: sequence)
 
-        self.pinChatSequenceDesc = sequence.humanDesc != nil
+        self.pinChatSequenceDesc = sequence.humanDesc != nil && sequence.humanDesc!.count < maxPinChatSequenceDesc
     }
 
     init(_ sequence: ChatSequence, chatService: ChatSyncService, inferenceModelSettings: InferenceModelSettings) {
@@ -46,7 +48,7 @@ class OneSequenceViewModel: ObservableObject {
         self.inferenceModelSettings = inferenceModelSettings
         self.uiSettings = CombinedCSUISettings.fromNothing()
 
-        self.pinChatSequenceDesc = sequence.humanDesc != nil
+        self.pinChatSequenceDesc = sequence.humanDesc != nil && sequence.humanDesc!.count < maxPinChatSequenceDesc
     }
 
     var displayHumanDesc: String {
