@@ -1,5 +1,7 @@
 import SwiftUI
 
+let maxSidebarItems = 10
+
 fileprivate func dateToString(_ date: Date) -> String {
     let calendar = Calendar(identifier: .iso8601)
     let chatDate = calendar.startOfDay(for: date)
@@ -164,7 +166,7 @@ struct MiniSequencePickerSidebar: View {
 
     @State private var timesRefreshClicked = 0
 
-    init(navLimit: Int = 10) {
+    init(navLimit: Int = maxSidebarItems) {
         self.navLimit = navLimit
     }
 
@@ -235,7 +237,7 @@ struct MiniSequencePickerSidebar: View {
                         // do something with ProgressView and timeouts.
                         Button("Refresh Chats List", systemImage: "arrow.clockwise") {
                             timesRefreshClicked += 1
-                            Task { await chatService.fetchPinnedSequences() }
+                            Task { await chatService.fetchPinnedSequences(navLimit) }
                         }
                         .padding(.leading, -24)
                         .padding(.trailing, -24)
@@ -243,7 +245,7 @@ struct MiniSequencePickerSidebar: View {
                     else {
                         Button("Load Chats", systemImage: "arrowshape.down") {
                             timesRefreshClicked += 1
-                            Task { await chatService.fetchPinnedSequences() }
+                            Task { await chatService.fetchPinnedSequences(navLimit) }
                         }
                         .padding(.leading, -24)
                         .padding(.trailing, -24)
@@ -357,7 +359,7 @@ struct SequencePickerView: View {
     }
 
     var body: some View {
-        HStack {
+        HStack(spacing: 24) {
             Button("Refresh", systemImage: "arrow.clockwise") {
                 Task { await chatService.fetchPinnedSequences() }
             }
@@ -367,6 +369,14 @@ struct SequencePickerView: View {
 
             Button("Refresh 500", systemImage: "arrow.clockwise") {
                 Task { await chatService.fetchPinnedSequences(500) }
+            }
+            .buttonStyle(.accessoryBar)
+            .padding(12)
+            .layoutPriority(0.2)
+
+            // This ridiculously slow button is only here until we implement time-based cutoffs.
+            Button("Refresh 5000", systemImage: "arrow.clockwise") {
+                Task { await chatService.fetchPinnedSequences(5000) }
             }
             .buttonStyle(.accessoryBar)
             .padding(12)
@@ -384,6 +394,7 @@ struct SequencePickerView: View {
             .layoutPriority(0.5)
         }
         .padding(24)
+        .font(.system(size: 18))
         .frame(maxWidth: 1000)
 
         List {
