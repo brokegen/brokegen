@@ -158,15 +158,13 @@
 		CE145DA12C1806F400577314 /* Providers */ = {
 			isa = PBXGroup;
 			children = (
-				CEFA69432C14AD95007EEF8D /* Settings */,
+				CEF73F292C1BCBEA00C46AA5 /* Data */,
 				CEE99E612C0E7D13008E1B07 /* InferenceModels */,
-				CE7FFE132C04435D00DB7CFA /* ProviderService.swift */,
-				CE145DA22C18071E00577314 /* ProviderPickerView.swift */,
 			);
 			path = Providers;
 			sourceTree = "<group>";
 		};
-		CE145DA62C1A0A1E00577314 /* Views */ = {
+		CE145DA62C1A0A1E00577314 /* SimpleViews */ = {
 			isa = PBXGroup;
 			children = (
 				CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */,
@@ -176,15 +174,16 @@
 				CEE99E582C0D85AD008E1B07 /* OneSequenceViewModel.swift */,
 				CE4634F12BFBB4730063142E /* SequencePickerView.swift */,
 			);
-			path = Views;
+			path = SimpleViews;
 			sourceTree = "<group>";
 		};
 		CE145DAB2C1A103C00577314 /* ProViews */ = {
 			isa = PBXGroup;
 			children = (
-				CE66FAFD2C16818800BD8745 /* ChatMessage.swift */,
 				CE145DAC2C1A106A00577314 /* ProMessageView.swift */,
 				CE145DA92C1A0E9800577314 /* ProSequenceView.swift */,
+				CEFA69442C14AE67007EEF8D /* ChatSequenceSettings.swift */,
+				CEFA694A2C14C7BC007EEF8D /* ChatSequenceSettingsView.swift */,
 			);
 			path = ProViews;
 			sourceTree = "<group>";
@@ -214,7 +213,7 @@
 			isa = PBXGroup;
 			children = (
 				CEAA2B6E2C070AAE002BEB26 /* Data */,
-				CE145DA62C1A0A1E00577314 /* Views */,
+				CE145DA62C1A0A1E00577314 /* SimpleViews */,
 				CE145DAB2C1A103C00577314 /* ProViews */,
 			);
 			path = ChatSequences;
@@ -293,6 +292,7 @@
 		CEAA2B6E2C070AAE002BEB26 /* Data */ = {
 			isa = PBXGroup;
 			children = (
+				CE66FAFD2C16818800BD8745 /* ChatMessage.swift */,
 				CEAA2B712C070B2E002BEB26 /* ChatSequence.swift */,
 				CEAA2B6F2C070AE3002BEB26 /* ChatSequence+Extend.swift */,
 				CE4634F32BFBB4900063142E /* ChatSyncService.swift */,
@@ -322,20 +322,20 @@
 				CE145DA42C18074100577314 /* InferenceModel.swift */,
 				CEE99E622C0E7D9F008E1B07 /* OneInferenceModelView.swift */,
 				CE7FFE152C04482900DB7CFA /* ModelPickerView.swift */,
+				CEFA69462C14B692007EEF8D /* InferenceModelSettings.swift */,
 				CEE99E662C0FD9FC008E1B07 /* InferenceModelSettingsView.swift */,
 			);
 			path = InferenceModels;
 			sourceTree = "<group>";
 		};
-		CEFA69432C14AD95007EEF8D /* Settings */ = {
+		CEF73F292C1BCBEA00C46AA5 /* Data */ = {
 			isa = PBXGroup;
 			children = (
+				CE145DA22C18071E00577314 /* ProviderPickerView.swift */,
+				CE7FFE132C04435D00DB7CFA /* ProviderService.swift */,
 				CEE99E672C0FD9FC008E1B07 /* SettingsService.swift */,
-				CEFA69442C14AE67007EEF8D /* ChatSequenceSettings.swift */,
-				CEFA694A2C14C7BC007EEF8D /* ChatSequenceSettingsView.swift */,
-				CEFA69462C14B692007EEF8D /* InferenceModelSettings.swift */,
 			);
-			path = Settings;
+			path = Data;
 			sourceTree = "<group>";
 		};
 		CEFEB4742BFDA5FB00334522 /* Monitors */ = {
