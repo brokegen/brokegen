@@ -4,9 +4,8 @@ import SwiftUI
 /// Well, these should only ever be positive integers, anyway.
 fileprivate let INVALID_MODEL_ID: InferenceModelRecordID = -1
 
-class SettingsService {
+class InferenceSettingsService {
     @Bindable public var inferenceModelSettings: InferenceModelSettings = InferenceModelSettings()
-    @Bindable public var sequenceSettings: GlobalChatSequenceClientSettings = GlobalChatSequenceClientSettings()
 
     @AppStorage("defaultInferenceModelId")
     private var defaultInferenceModelId: InferenceModelRecordID = INVALID_MODEL_ID

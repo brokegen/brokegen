@@ -40,6 +40,10 @@ class ChatSequenceClientSettings {
     var stayAwakeDuringInference: Bool? = nil
 }
 
+class CSCSettingsService {
+    @Bindable public var sequenceSettings: GlobalChatSequenceClientSettings = GlobalChatSequenceClientSettings()
+}
+
 @Observable
 class CombinedCSCSettings {
     let globalSettings: GlobalChatSequenceClientSettings

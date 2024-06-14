@@ -8,8 +8,9 @@ struct BrokegenApp: App {
     @State private var jobsService: JobsManagerService = DefaultJobsManagerService()
     @State private var providerService: ProviderService = ProviderService()
 
-    private var settingsService = SettingsService()
-    @State private var inferenceModelSettingsUpdater: AnyCancellable? = nil
+    private var inferenceSettings = InferenceSettingsService()
+    @State private var inferenceSettingsUpdater: AnyCancellable? = nil
+    private var chatSettingsService = CSCSettingsService()
 
     init() {
         // Do on-startup init, because otherwise we store no data and app is empty
@@ -17,14 +18,14 @@ struct BrokegenApp: App {
     }
 
     func callInitializers() {
-        inferenceModelSettingsUpdater = providerService.$allModels.sink { _ in
-            settingsService.inflateModels(providerService)
+        inferenceSettingsUpdater = providerService.$allModels.sink { _ in
+            inferenceSettings.inflateModels(providerService)
         }
 
         Task {
             _ = try? await providerService.fetchAllProviders()
             await providerService.fetchAvailableModels()
-            settingsService.inflateModels(providerService)
+            inferenceSettings.inflateModels(providerService)
         }
     }
 
@@ -34,8 +35,8 @@ struct BrokegenApp: App {
                 .environment(chatService)
                 .environment(jobsService)
                 .environment(providerService)
-                .environment(settingsService.inferenceModelSettings)
-                .environment(settingsService.sequenceSettings)
+                .environment(inferenceSettings.inferenceModelSettings)
+                .environment(chatSettingsService.sequenceSettings)
         }
         .windowStyle(.hiddenTitleBar)
     }
