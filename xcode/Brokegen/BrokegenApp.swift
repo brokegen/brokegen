@@ -40,5 +40,34 @@ struct BrokegenApp: App {
                 .environmentObject(chatSettingsService)
         }
         .windowStyle(.hiddenTitleBar)
+        .commands {
+            CommandGroup(after: .newItem) {
+                NavigationLink(destination: EmptyView(), label: {
+                    Text("New Chat")
+                })
+                .keyboardShortcut("n", modifiers: [.command, .shift])
+                .disabled(true)
+            }
+
+            CommandGroup(after: .sidebar) {
+                Button(action: {
+                }, label: {
+                    Text("Toggle Sidebar")
+                })
+                .disabled(true)
+            }
+
+            CommandMenu("Generation", content: {
+                HStack {
+                    Image(systemName: "gear")
+                    Text("gear")
+                        .font(.system(size: 32))
+                }
+                VStack {
+                    Text("yeah")
+                    Divider()
+                }
+            })
+        }
     }
 }

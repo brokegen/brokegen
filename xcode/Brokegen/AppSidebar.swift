@@ -233,3 +233,20 @@ struct AppSidebar: View {
         }
     }
 }
+
+struct AppMenus: Commands {
+    var body: some Commands {
+        CommandGroup(after: .newItem) {
+            NavigationLink(destination: EmptyView(), label: {
+                Text("New Chat")
+            })
+            .keyboardShortcut("n", modifiers: [.command, .shift])
+        }
+        CommandGroup(after: .sidebar) {
+            Button(action: {
+            }, label: {
+                Text("Toggle Sidebar")
+            })
+        }
+    }
+}

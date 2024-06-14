@@ -206,9 +206,10 @@ struct MiniSequencePickerSidebar: View {
                 Text("Chats")
             }
         }) {
-            NavigationLink(destination: BlankOneSequenceView(
-                inferenceModelSettings.defaultInferenceModel
-            )) {
+            NavigationLink(destination: {
+                // TODO: Figure out how to re-pop up the model chooser if we click this link again
+                BlankOneSequenceView(inferenceModelSettings.defaultInferenceModel)
+            }) {
                 HStack {
                     Image(systemName: "plus")
                         .padding(.trailing, 0)
