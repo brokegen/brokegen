@@ -11,7 +11,6 @@ class OneSequenceViewModel: ObservableObject {
     let chatService: ChatSyncService
     let inferenceModelSettings: InferenceModelSettings
     var settings: CSCSettingsService.SettingsProxy
-    var uiSettings: CombinedCSUISettings
 
     // TODO: This should be initialized some other way
     var globalSequenceSettings: GlobalChatSequenceClientSettings = GlobalChatSequenceClientSettings()
@@ -39,7 +38,6 @@ class OneSequenceViewModel: ObservableObject {
         self.chatService = chatService
         self.inferenceModelSettings = inferenceModelSettings
         self.settings = chatSettingsService.settings(for: sequence)
-        self.uiSettings = chatSettingsService.uiSettings(for: sequence)
 
         self.pinChatSequenceDesc = sequence.humanDesc != nil && sequence.humanDesc!.count < maxPinChatSequenceDesc
     }
@@ -157,7 +155,7 @@ class OneSequenceViewModel: ObservableObject {
         withRetrieval: Bool = false
     ) -> Self {
         print("[INFO] OneSequenceViewModel.requestContinue(\(continuationModelId), withRetrieval: \(withRetrieval))")
-        if uiSettings.stayAwakeDuringInference.wrappedValue {
+        if settings.stayAwakeDuringInference {
             _ = stayAwake.createAssertion(reason: "brokegen OneSequenceViewModel.requestContinue() for ChatSequence#\(self.sequence.serverId ?? -1)")
         }
 
@@ -198,7 +196,7 @@ class OneSequenceViewModel: ObservableObject {
         withRetrieval: Bool = false
     ) {
         print("[INFO] OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval))")
-        if uiSettings.stayAwakeDuringInference.wrappedValue {
+        if settings.stayAwakeDuringInference {
             _ = stayAwake.createAssertion(reason: "brokegen OneSequenceViewModel.requestExtend() for ChatSequence#\(self.sequence.serverId ?? -1)")
         }
 

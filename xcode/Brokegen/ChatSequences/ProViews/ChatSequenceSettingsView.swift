@@ -49,14 +49,13 @@ struct WidePicker: View {
 struct ChatSequenceSettingsView: View {
     @ObservedObject var viewModel: OneSequenceViewModel
     @ObservedObject var settings: CSCSettingsService.SettingsProxy
-    @ObservedObject var uiSettings: CombinedCSUISettings
 
     init(
-        _ viewModel: OneSequenceViewModel
+        _ viewModel: OneSequenceViewModel,
+        settings: CSCSettingsService.SettingsProxy
     ) {
         self.viewModel = viewModel
-        self.settings = viewModel.settings
-        self.uiSettings = viewModel.uiSettings
+        self.settings = settings
     }
 
     var body: some View {
@@ -64,17 +63,14 @@ struct ChatSequenceSettingsView: View {
             VStack(spacing: 12) {
                 WideToggle(isOn: $settings.defaults.allowContinuation,
                            labelText: "Allow direct continuation (no user input)")
-                WideToggle(isOn: $uiSettings.defaults.showSeparateRetrievalButton,
+                WideToggle(isOn: $settings.defaults.showSeparateRetrievalButton,
                            labelText: "Show separate retrieval button")
-                WideToggle(isOn: $uiSettings.defaults.forceRetrieval,
+                WideToggle(isOn: $settings.defaults.forceRetrieval,
                            labelText: "Force retrieval-augmented generation on every query")
 
-//                WidePicker(defaultIsOn: uiSettings.defaults.pinChatSequenceDesc,
-//                           overrideIsOn: $uiSettings.override.pinChatSequenceDesc,
-//                           labelText: "Pin ChatSequence titles to top of window", trueText: "pin", falseText: "don't pin")
-                WideToggle(isOn: $uiSettings.defaults.allowNewlineSubmit,
+                WideToggle(isOn: $settings.defaults.allowNewlineSubmit,
                            labelText: "Allow mouseless submit by pressing enter (or if the last pasted character was a newline)")
-                WideToggle(isOn: $uiSettings.defaults.stayAwakeDuringInference,
+                WideToggle(isOn: $settings.defaults.stayAwakeDuringInference,
                            labelText: "Assert macOS wakelock during inference requests")
             }
             .toggleStyle(.switch)
@@ -85,26 +81,43 @@ struct ChatSequenceSettingsView: View {
 
         GroupBox(content: {
             VStack(spacing: 12) {
-                WidePicker(defaultIsOn: uiSettings.defaults.allowContinuation,
-                           overrideIsOn: $uiSettings.override.allowContinuation,
+                WidePicker(defaultIsOn: settings.defaults.allowContinuation,
+                           overrideIsOn: $settings.override.allowContinuation,
                            labelText: "Allow direct continuation", trueText: "allow", falseText: "deny")
 
-                WidePicker(defaultIsOn: uiSettings.defaults.showSeparateRetrievalButton,
-                           overrideIsOn: $uiSettings.override.showSeparateRetrievalButton,
+                WidePicker(defaultIsOn: settings.defaults.showSeparateRetrievalButton,
+                           overrideIsOn: $settings.override.showSeparateRetrievalButton,
                            labelText: "Show separate retrieval button", trueText: "show", falseText: "don't show")
 
-                WidePicker(defaultIsOn: uiSettings.defaults.forceRetrieval,
-                           overrideIsOn: $uiSettings.override.forceRetrieval,
+                WidePicker(defaultIsOn: settings.defaults.forceRetrieval,
+                           overrideIsOn: $settings.override.forceRetrieval,
                            labelText: "Force retrieval-augmented generation on every query", trueText: "always use retrieval", falseText: "never use retrieval")
-                .disabled(uiSettings.override.showSeparateRetrievalButton ?? uiSettings.defaults.showSeparateRetrievalButton)
+                .disabled(settings.override.showSeparateRetrievalButton ?? settings.defaults.showSeparateRetrievalButton)
 
+                Picker(selection: $settings.override.pinChatSequenceDesc, content: {
+                    Text("Allow default behavior (pin if a description is set)")
+                        .tag(nil as Bool?)
 
-                WidePicker(defaultIsOn: uiSettings.defaults.allowNewlineSubmit,
-                           overrideIsOn: $uiSettings.override.allowNewlineSubmit,
+                    Text("pin")
+                        .tag(true as Bool?)
+
+                    Text("don't pin")
+                        .tag(false as Bool?)
+                }, label: {
+                    HStack(spacing: 0) {
+                        Text("Keep ChatSequence description pinned to top of window")
+                            .lineLimit(1...4)
+
+                    }
+                })
+                .frame(maxWidth: .infinity)
+
+                WidePicker(defaultIsOn: settings.defaults.allowNewlineSubmit,
+                           overrideIsOn: $settings.override.allowNewlineSubmit,
                            labelText: "Allow mouseless submit by pressing enter", trueText: "allow", falseText: "don't allow")
 
-                WidePicker(defaultIsOn: uiSettings.defaults.stayAwakeDuringInference,
-                           overrideIsOn: $uiSettings.override.stayAwakeDuringInference,
+                WidePicker(defaultIsOn: settings.defaults.stayAwakeDuringInference,
+                           overrideIsOn: $settings.override.stayAwakeDuringInference,
                            labelText: "Assert macOS wakelock during inference requests", trueText: "stay awake", falseText: "don't stay awake")
             }
             .pickerStyle(.inline)

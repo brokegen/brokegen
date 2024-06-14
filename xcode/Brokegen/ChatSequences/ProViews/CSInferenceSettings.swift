@@ -1,10 +1,5 @@
 import SwiftUI
 
-struct PersistentDefaultCSUISettings {
-    @AppStorage("defaultUiSettings.allowContinuation")
-    var allowContinuation: Bool = true
-}
-
 @Observable
 class CSCSettingsService: Observable, ObservableObject {
     // Legacy, should be removed
@@ -14,8 +9,6 @@ class CSCSettingsService: Observable, ObservableObject {
     @ObservationIgnored public var useSimplifiedSequenceViews: Bool = false
 
     @ObservationIgnored let defaults: PersistentDefaultCSUISettings = PersistentDefaultCSUISettings()
-
-    var defaultUiSettings = DefaultCSUISettings()
     var perSequenceUiSettings: [ChatSequence : OverrideCSUISettings] = [:]
 
     class SettingsProxy: ObservableObject {
@@ -25,6 +18,11 @@ class CSCSettingsService: Observable, ObservableObject {
         init(defaults: PersistentDefaultCSUISettings, override: OverrideCSUISettings) {
             self.defaults = defaults
             self.override = override
+        }
+
+        var stayAwakeDuringInference: Bool {
+            get { override.stayAwakeDuringInference ?? defaults.stayAwakeDuringInference }
+            set { override.stayAwakeDuringInference = newValue }
         }
     }
 
@@ -36,17 +34,6 @@ class CSCSettingsService: Observable, ObservableObject {
             let newSettings = OverrideCSUISettings()
             perSequenceUiSettings[sequence] = newSettings
             return SettingsProxy(defaults: defaults, override: newSettings)
-        }
-    }
-
-    public func uiSettings(for sequence: ChatSequence) -> CombinedCSUISettings {
-        if let existingSettings = perSequenceUiSettings[sequence] {
-            return CombinedCSUISettings(defaults: defaultUiSettings, override: existingSettings)
-        }
-        else {
-            let newSettings = OverrideCSUISettings()
-            perSequenceUiSettings[sequence] = newSettings
-            return CombinedCSUISettings(defaults: defaultUiSettings, override: newSettings)
         }
     }
 }

@@ -220,7 +220,7 @@ struct ProSequenceView: View {
             VFlowLayout(spacing: 24) {
                 if showUiOptions {
                     // Tab.uiOptions
-                    ChatSequenceSettingsView(viewModel)
+                    ChatSequenceSettingsView(viewModel, settings: viewModel.settings)
                 }
 
                 // Tab.modelOptions
@@ -346,15 +346,15 @@ struct ProSequenceView: View {
             Spacer()
 
             Button(action: {
-                viewModel.uiSettings.stayAwakeDuringInference.wrappedValue = !viewModel.uiSettings.stayAwakeDuringInference.wrappedValue
+                viewModel.settings.stayAwakeDuringInference.toggle()
             }, label: {
                 Image(systemName:
                         viewModel.currentlyAwakeDuringInference
-                      ? (viewModel.uiSettings.stayAwakeDuringInference.wrappedValue ? "bolt.fill" : "bolt.slash")
-                      : (viewModel.uiSettings.stayAwakeDuringInference.wrappedValue ? "bolt" : "bolt.slash"))
+                      ? (viewModel.settings.stayAwakeDuringInference ? "bolt.fill" : "bolt.slash")
+                      : (viewModel.settings.stayAwakeDuringInference ? "bolt" : "bolt.slash"))
                 .foregroundStyle(
                     viewModel.currentlyAwakeDuringInference ? .green :
-                        viewModel.uiSettings.stayAwakeDuringInference.wrappedValue ? Color(.controlTextColor) : .red)
+                        viewModel.settings.stayAwakeDuringInference ? Color(.controlTextColor) : .red)
                 .padding(.leading, 12)
                 .padding(.trailing, 12)
                 .frame(height: 48)

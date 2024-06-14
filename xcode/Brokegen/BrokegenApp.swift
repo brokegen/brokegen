@@ -44,7 +44,7 @@ struct BrokegenApp: App {
                 .environmentObject(chatSettingsService)
                 .onReceive(chatSettingsService.objectWillChange) { entireService in
                     print("[TRACE] useSimplifiedSequenceView: \(chatSettingsService.useSimplifiedSequenceViews)")
-                    print("[TRACE] defaultUiSettings.allowContinuation: \(chatSettingsService.defaultUiSettings.allowContinuation)")
+                    print("[TRACE] defaultUiSettings.allowContinuation: \(chatSettingsService.defaults.allowContinuation)")
                 }
         }
         .windowStyle(.hiddenTitleBar)
