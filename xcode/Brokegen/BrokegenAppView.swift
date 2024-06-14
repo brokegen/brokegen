@@ -30,18 +30,26 @@ struct BrokegenAppView: View {
     @State private var sidebarVisibilityTimesChanged: Int = 0
     @State private var useSimplifiedSequenceViews: Bool = false
 
+    func bigReset() {
+        DispatchQueue.main.async {
+            chatService.chatSequenceClientModels = []
+            chatService.loadedChatSequences = []
+
+            providerService.allModels = []
+        }
+    }
 
     var body: some View {
         NavigationStack(path: $pathHost.path) {
             NavigationSplitView(columnVisibility: $sidebarVisibility, sidebar: {
-                AppSidebar(useSimplifiedSequenceViews: $useSimplifiedSequenceViews)
+                AppSidebar(useSimplifiedSequenceViews: $useSimplifiedSequenceViews, bigReset: bigReset)
             }, detail: {
                 SequencePickerView()
                     .environmentObject(chatService)
             })
             .navigationDestination(for: ChatSequenceClientModel.self) { clientModel in
                 NavigationSplitView(sidebar: {
-                    AppSidebar(useSimplifiedSequenceViews: $useSimplifiedSequenceViews)
+                    AppSidebar(useSimplifiedSequenceViews: $useSimplifiedSequenceViews, bigReset: bigReset)
                 }, detail: {
                     if useSimplifiedSequenceViews {
                         OneSequenceView(clientModel)
@@ -79,7 +87,7 @@ struct BrokegenAppView: View {
         jobs.storedJobs.append(job)
     }
 
-    return AppSidebar(useSimplifiedSequenceViews: Binding.constant(true))
+    return AppSidebar(useSimplifiedSequenceViews: Binding.constant(true), bigReset: {})
         .environment(jobs)
 }
 

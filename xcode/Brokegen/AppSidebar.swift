@@ -102,9 +102,14 @@ struct AppSidebar: View {
     @AppStorage("showDebugSidebarItems")
     private var showDebugSidebarItems: Bool = true
     @Binding private var useSimplifiedSequenceViews: Bool
+    private var bigReset: (() -> Void)
 
-    init(useSimplifiedSequenceViews: Binding<Bool>) {
+    init(
+        useSimplifiedSequenceViews: Binding<Bool>,
+        bigReset: (@escaping () -> Void)
+    ) {
         self._useSimplifiedSequenceViews = useSimplifiedSequenceViews
+        self.bigReset = bigReset
     }
 
     var body: some View {
@@ -179,7 +184,7 @@ struct AppSidebar: View {
                 }
             }
 
-            AppSidebarSection(label: {
+            AppSidebarSection(isExpanded: false, label: {
                 HStack {
                     Image(systemName: "gear")
                         .padding(.trailing, 0)
@@ -198,6 +203,15 @@ struct AppSidebar: View {
                     .foregroundStyle(Color(.disabledControlTextColor))
 
                 Divider()
+
+                if showDebugSidebarItems {
+                    Button("Reset Client State", systemImage: "exclamationmark.triangle") {
+                        bigReset()
+                    }
+                    .foregroundStyle(Color.yellow)
+                    .padding(.leading, -24)
+                    .padding(.trailing, -24)
+                }
 
                 Toggle(isOn: $useSimplifiedSequenceViews, label: {
                     HStack(spacing: 0) {

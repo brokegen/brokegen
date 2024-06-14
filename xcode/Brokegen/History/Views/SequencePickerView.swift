@@ -239,7 +239,6 @@ struct MiniSequencePickerSidebar: View {
                             timesRefreshClicked += 1
                             Task { await chatService.fetchPinnedSequences(navLimit) }
                         }
-                        .buttonStyle(.borderedProminent)
                         .padding(.leading, -24)
                         .padding(.trailing, -24)
                     }
