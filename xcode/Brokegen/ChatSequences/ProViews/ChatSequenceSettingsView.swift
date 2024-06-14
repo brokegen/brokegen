@@ -1,5 +1,51 @@
 import SwiftUI
 
+struct WideToggle: View {
+    let isOn: Binding<Bool>
+    let labelText: String
+
+    var body: some View {
+        Toggle(isOn: isOn, label: {
+            HStack(spacing: 0) {
+                Text(labelText)
+                    .lineLimit(1...4)
+                    .layoutPriority(0.2)
+
+                Spacer()
+            }
+        })
+        .frame(maxWidth: .infinity)
+    }
+}
+
+struct WidePicker: View {
+    var defaultIsOn: Bool
+    var overrideIsOn: Binding<Bool?>
+    let labelText: String
+    let trueText: String
+    let falseText: String
+
+    var body: some View {
+        Picker(selection: overrideIsOn, content: {
+            Text("inherit global: \(defaultIsOn ? trueText : falseText)")
+                .tag(nil as Bool?)
+
+            Text(trueText)
+                .tag(true as Bool?)
+
+            Text(falseText)
+                .tag(false as Bool?)
+        }, label: {
+            HStack(spacing: 0) {
+                Text(labelText)
+                    .lineLimit(1...4)
+
+            }
+        })
+        .frame(maxWidth: .infinity)
+    }
+}
+
 struct ChatSequenceSettingsView: View {
     @ObservedObject var viewModel: OneSequenceViewModel
     @ObservedObject var uiSettings: CombinedCSUISettings
@@ -13,84 +59,65 @@ struct ChatSequenceSettingsView: View {
 
     var body: some View {
         GroupBox(content: {
-            VFlowLayout(spacing: 24) {
-                Toggle(isOn: $uiSettings.defaults.allowContinuation, label: {
-                    Text("allowContinuation")
-                        .layoutPriority(0.2)
+            VStack(spacing: 12) {
+                WideToggle(isOn: $uiSettings.defaults.allowContinuation,
+                           labelText: "Allow direct continuation (no user input)")
+                WideToggle(isOn: $uiSettings.defaults.showSeparateRetrievalButton,
+                           labelText: "Show separate retrieval button")
+                WideToggle(isOn: $uiSettings.defaults.forceRetrieval,
+                           labelText: "Force retrieval-augmented generation on every query")
 
-                    Spacer()
-                })
-                Toggle(isOn: $uiSettings.defaults.showSeparateRetrievalButton, label: { Text("showSeparateRetrievalButton") })
-                Toggle(isOn: $uiSettings.defaults.forceRetrieval, label: { Text("forceRetrieval") })
-                    .disabled(uiSettings.defaults.forceRetrieval)
-
-                Spacer()
-
-                Toggle(isOn: $uiSettings.defaults.allowNewlineSubmit, label: { Text("allowNewlineSubmit") })
-                Toggle(isOn: $uiSettings.defaults.stayAwakeDuringInference, label: { Text("stayAwakeDuringInference") })
+//                WidePicker(defaultIsOn: uiSettings.defaults.pinSequenceTitle,
+//                           overrideIsOn: $uiSettings.override.pinSequenceTitle,
+//                           labelText: "Pin ChatSequence titles to top of window", trueText: "pin", falseText: "don't pin")
+                WideToggle(isOn: $uiSettings.defaults.allowNewlineSubmit,
+                           labelText: "Allow mouseless submit by pressing enter (or if the last pasted character was a newline)")
+                WideToggle(isOn: $uiSettings.defaults.stayAwakeDuringInference,
+                           labelText: "Assert macOS wakelock during inference requests")
             }
             .toggleStyle(.switch)
-            .frame(maxWidth: 768)
             .padding(24)
         }, label: {
             Text("Global Settings")
         })
 
         GroupBox(content: {
-            VFlowLayout(spacing: 24) {
-                Picker("allowContinuation", selection: $uiSettings.override.allowContinuation) {
-                    Text("inherit global: \(String(describing: uiSettings.defaults.allowContinuation))")
-                        .tag(nil as Bool?)
+            VStack(spacing: 12) {
+                WidePicker(defaultIsOn: uiSettings.defaults.allowContinuation,
+                           overrideIsOn: $uiSettings.override.allowContinuation,
+                           labelText: "Allow direct continuation", trueText: "allow", falseText: "deny")
 
-                    Text("allow")
-                        .tag(true as Bool?)
+                WidePicker(defaultIsOn: uiSettings.defaults.showSeparateRetrievalButton,
+                           overrideIsOn: $uiSettings.override.showSeparateRetrievalButton,
+                           labelText: "Show separate retrieval button", trueText: "show", falseText: "don't show")
 
-                    Text("deny")
-                        .tag(false as Bool?)
-                }
-                .pickerStyle(.segmented)
-
-                Picker("showSeparateRetrievalButton", selection: $uiSettings.override.showSeparateRetrievalButton) {
-                    Text("inherit global: \(String(describing: uiSettings.defaults.showSeparateRetrievalButton))")
-                        .tag(nil as Bool?)
-
-                    Text("show")
-                        .tag(true as Bool?)
-
-                    Text("don't show")
-                        .tag(false as Bool?)
-                }
-                .pickerStyle(.inline)
-
-                Picker("forceRetrieval", selection: $uiSettings.override.forceRetrieval) {
-                    Text("inherit global: \(String(describing: uiSettings.defaults.forceRetrieval))")
-                        .tag(nil as Bool?)
-
-                    Text("always use retrieval")
-                        .tag(true as Bool?)
-
-                    Text("never use retrieval")
-                        .tag(false as Bool?)
-                }
-                .pickerStyle(.palette)
+                WidePicker(defaultIsOn: uiSettings.defaults.forceRetrieval,
+                           overrideIsOn: $uiSettings.override.forceRetrieval,
+                           labelText: "Force retrieval-augmented generation on every query", trueText: "always use retrieval", falseText: "never use retrieval")
                 .disabled(uiSettings.override.showSeparateRetrievalButton ?? uiSettings.defaults.showSeparateRetrievalButton)
 
-                Picker("allowNewlineSubmit", selection: $uiSettings.override.allowNewlineSubmit) {
-                    Text("inherit global: \(String(describing: uiSettings.defaults.allowNewlineSubmit))")
-                        .tag(nil as Bool?)
 
-                    Text("show")
-                        .tag(true as Bool?)
+                WidePicker(defaultIsOn: uiSettings.defaults.allowNewlineSubmit,
+                           overrideIsOn: $uiSettings.override.allowNewlineSubmit,
+                           labelText: "Allow mouseless submit by pressing enter", trueText: "allow", falseText: "don't allow")
 
-                    Text("don't show")
-                        .tag(false as Bool?)
-                }
-                .pickerStyle(.radioGroup)
+                WidePicker(defaultIsOn: uiSettings.defaults.stayAwakeDuringInference,
+                           overrideIsOn: $uiSettings.override.stayAwakeDuringInference,
+                           labelText: "Assert macOS wakelock during inference requests", trueText: "stay awake", falseText: "don't stay awake")
             }
-            .frame(maxWidth: 768)
+            .pickerStyle(.inline)
             .padding(24)
         }, label: {
-            Text("ChatSequence Settings")
+            let chatLabel: String = {
+                if viewModel.sequence.serverId != nil {
+                    " for ChatSequence#\(viewModel.sequence.serverId!)"
+                }
+                else {
+                    ""
+                }
+            }()
+
+            Text("Override Settings\(chatLabel)")
         })
 
         GroupBox(content: {
@@ -133,10 +160,12 @@ struct ChatSequenceSettingsView: View {
         })
     }
 }
-//
+
 //#Preview(traits: .fixedLayout(width: 1600, height: 360)) {
 //    @State var globalSequenceSettings: GlobalChatSequenceClientSettings = GlobalChatSequenceClientSettings()
 //    @State var sequenceSettings: ChatSequenceClientSettings = ChatSequenceClientSettings()
+//
+//    var viewModel = OneSequenceViewModel()
 //
 //    return ChatSequenceSettingsView(globalSettings: $globalSequenceSettings, settings: $sequenceSettings)
 //}

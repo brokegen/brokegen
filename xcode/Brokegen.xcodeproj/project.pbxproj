@@ -50,7 +50,8 @@
 		CEE99E682C0FD9FC008E1B07 /* InferenceModelSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E662C0FD9FC008E1B07 /* InferenceModelSettingsView.swift */; };
 		CEE99E692C0FD9FC008E1B07 /* InferenceSettingsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E672C0FD9FC008E1B07 /* InferenceSettingsService.swift */; };
 		CEE99E6B2C1002F9008E1B07 /* AppSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E6A2C1002F8008E1B07 /* AppSidebar.swift */; };
-		CEFA69452C14AE67007EEF8D /* ChatSequenceSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA69442C14AE67007EEF8D /* ChatSequenceSettings.swift */; };
+		CEF73F2B2C1BE32200C46AA5 /* CSUISettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF73F2A2C1BE32200C46AA5 /* CSUISettings.swift */; };
+		CEFA69452C14AE67007EEF8D /* CSInferenceSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA69442C14AE67007EEF8D /* CSInferenceSettings.swift */; };
 		CEFA69472C14B692007EEF8D /* InferenceModelSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA69462C14B692007EEF8D /* InferenceModelSettings.swift */; };
 		CEFA69492C14C525007EEF8D /* VFlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA69482C14C525007EEF8D /* VFlowLayout.swift */; };
 		CEFA694B2C14C7BC007EEF8D /* ChatSequenceSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA694A2C14C7BC007EEF8D /* ChatSequenceSettingsView.swift */; };
@@ -126,7 +127,8 @@
 		CEE99E662C0FD9FC008E1B07 /* InferenceModelSettingsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InferenceModelSettingsView.swift; sourceTree = "<group>"; };
 		CEE99E672C0FD9FC008E1B07 /* InferenceSettingsService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InferenceSettingsService.swift; sourceTree = "<group>"; };
 		CEE99E6A2C1002F8008E1B07 /* AppSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSidebar.swift; sourceTree = "<group>"; };
-		CEFA69442C14AE67007EEF8D /* ChatSequenceSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSequenceSettings.swift; sourceTree = "<group>"; };
+		CEF73F2A2C1BE32200C46AA5 /* CSUISettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSUISettings.swift; sourceTree = "<group>"; };
+		CEFA69442C14AE67007EEF8D /* CSInferenceSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSInferenceSettings.swift; sourceTree = "<group>"; };
 		CEFA69462C14B692007EEF8D /* InferenceModelSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceModelSettings.swift; sourceTree = "<group>"; };
 		CEFA69482C14C525007EEF8D /* VFlowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VFlowLayout.swift; sourceTree = "<group>"; };
 		CEFA694A2C14C7BC007EEF8D /* ChatSequenceSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSequenceSettingsView.swift; sourceTree = "<group>"; };
@@ -182,7 +184,8 @@
 			children = (
 				CE145DAC2C1A106A00577314 /* ProMessageView.swift */,
 				CE145DA92C1A0E9800577314 /* ProSequenceView.swift */,
-				CEFA69442C14AE67007EEF8D /* ChatSequenceSettings.swift */,
+				CEF73F2A2C1BE32200C46AA5 /* CSUISettings.swift */,
+				CEFA69442C14AE67007EEF8D /* CSInferenceSettings.swift */,
 				CEFA694A2C14C7BC007EEF8D /* ChatSequenceSettingsView.swift */,
 			);
 			path = ProViews;
@@ -470,6 +473,7 @@
 				CE4634E72BFA6A050063142E /* JobsSidebarItem.swift in Sources */,
 				CE2988322C09101F00A997A1 /* OneSequenceView.swift in Sources */,
 				CE6D8A7F2BF6DF1800A7934D /* RibbonView.swift in Sources */,
+				CEF73F2B2C1BE32200C46AA5 /* CSUISettings.swift in Sources */,
 				CE145DA52C18074100577314 /* InferenceModel.swift in Sources */,
 				CECA47AA2BF6D62E007A28F2 /* SystemInfoView.swift in Sources */,
 				CEFEB4762BFDA67400334522 /* SimplePing.swift in Sources */,
@@ -504,7 +508,7 @@
 				CEFA69492C14C525007EEF8D /* VFlowLayout.swift in Sources */,
 				CEAA2B722C070B2E002BEB26 /* ChatSequence.swift in Sources */,
 				CEFA69472C14B692007EEF8D /* InferenceModelSettings.swift in Sources */,
-				CEFA69452C14AE67007EEF8D /* ChatSequenceSettings.swift in Sources */,
+				CEFA69452C14AE67007EEF8D /* CSInferenceSettings.swift in Sources */,
 				CEE99E692C0FD9FC008E1B07 /* InferenceSettingsService.swift in Sources */,
 				CEBAA28C2C003F4B00D43E22 /* InteractiveJobOutputView.swift in Sources */,
 				CE145DAA2C1A0E9800577314 /* ProSequenceView.swift in Sources */,
