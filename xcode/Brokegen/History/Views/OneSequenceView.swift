@@ -215,7 +215,7 @@ struct OneSequenceView: View {
 
                     VStack(spacing: 0) {
                         HStack(spacing: 0) {
-                            Text(viewModel.displayedStatus ?? "Ready")
+                            Text(viewModel.serverStatus ?? "Ready")
                                 .foregroundStyle(Color(.disabledControlTextColor))
                                 .lineSpacing(9)
                                 .layoutPriority(0.2)

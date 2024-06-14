@@ -27,7 +27,7 @@ class ChatSequenceClientModel: ObservableObject {
     private var stayAwake: StayAwake = StayAwake()
     var useStayAwake: Bool = true
 
-    var displayedStatus: String? = nil
+    var serverStatus: String? = nil
 
     init(_ sequence: ChatSequence, chatService: ChatSyncService, inferenceModelSettings: InferenceModelSettings) {
         self.sequence = sequence
@@ -43,6 +43,16 @@ class ChatSequenceClientModel: ObservableObject {
         }
 
         return "ChatSequence#\(sequence.serverId!)"
+    }
+
+    var displayServerStatus: String? {
+        get {
+            if serverStatus == nil || serverStatus!.isEmpty {
+                return nil
+            }
+
+            return serverStatus
+        }
     }
 
     private func completionHandler(
@@ -70,7 +80,7 @@ class ChatSequenceClientModel: ObservableObject {
                     String(data: errorAndData.data ?? Data(), encoding: .utf8)
                     ?? errorAndData.localizedDescription
                 )
-                displayedStatus = "[\(Date.now)] \(endpoint) failure: " + errorDesc
+                serverStatus = "[\(Date.now)] \(endpoint) failure: " + errorDesc
 
                 let errorMessage = Message(
                     role: "[ERROR] \(callerName): \(errorAndData.localizedDescription)",
@@ -104,11 +114,11 @@ class ChatSequenceClientModel: ObservableObject {
                 )
             }
 
-            displayedStatus = "\(endpoint) response: (\(responseInEdit!.content.count) characters so far)"
+            serverStatus = "\(endpoint) response: (\(responseInEdit!.content.count) characters so far)"
             do {
                 let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
                 if let status = jsonDict["status"] as? String {
-                    displayedStatus = status
+                    serverStatus = status
                 }
 
                 if let message = jsonDict["message"] as? [String : Any] {
@@ -151,7 +161,7 @@ class ChatSequenceClientModel: ObservableObject {
             }
             DispatchQueue.main.async {
                 self.submitting = true
-                self.displayedStatus = "/sequences/\(self.sequence.serverId!)/continue: submitting request"
+                self.serverStatus = "/sequences/\(self.sequence.serverId!)/continue: submitting request"
             }
 
             receivingStreamer = await chatService.sequenceContinue(
@@ -193,7 +203,7 @@ class ChatSequenceClientModel: ObservableObject {
             }
             DispatchQueue.main.async {
                 self.submitting = true
-                self.displayedStatus = "/sequences/\(self.sequence.serverId!)/extend: submitting request"
+                self.serverStatus = "/sequences/\(self.sequence.serverId!)/extend: submitting request"
             }
 
             let nextMessage = Message(
@@ -229,7 +239,7 @@ class ChatSequenceClientModel: ObservableObject {
         receivingStreamer = nil
 
         submitting = false
-        displayedStatus = nil
+        serverStatus = nil
 
         if responseInEdit != nil {
             // TODO: There's all sort of error conditions we could/should actually check for.
@@ -239,7 +249,7 @@ class ChatSequenceClientModel: ObservableObject {
             responseInEdit = nil
 
             if userRequested {
-                displayedStatus = "[WARNING] Requested stop of receive, but TODO: Ollama/server don't actually stop inference"
+                serverStatus = "[WARNING] Requested stop of receive, but TODO: Ollama/server don't actually stop inference"
             }
         }
     }

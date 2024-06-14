@@ -139,27 +139,38 @@ struct ProSequenceView: View {
     @State private var showAssistantResponseSeed: Bool = false
     @FocusState private var focusAssistantResponseSeed: Bool
 
-    @ViewBuilder var lowerVStack: some View {
+    var showStatusBar: Bool {
+        return viewModel.displayServerStatus != nil || viewModel.submitting || viewModel.responseInEdit != nil
+    }
+
+    @ViewBuilder var statusBar: some View {
         HStack(alignment: .bottom, spacing: 0) {
-            Text(viewModel.displayedStatus ?? "Ready")
-                .foregroundStyle(Color(.disabledControlTextColor))
-                .lineSpacing(9)
-                .layoutPriority(0.2)
+            if viewModel.displayServerStatus != nil {
+                Text(viewModel.displayServerStatus!)
+                    .foregroundStyle(Color(.disabledControlTextColor))
+                    .lineSpacing(9)
+                    .layoutPriority(0.2)
+            }
 
             Spacer()
 
             if viewModel.submitting || viewModel.responseInEdit != nil {
                 ProgressView()
                     .progressViewStyle(.linear)
-                    .frame(maxWidth: 120)
+                    .frame(maxWidth: 144)
                     .layoutPriority(0.2)
             }
         }
         .padding([.leading, .trailing], 18)
         .padding([.top, .bottom], 12)
-        .frame(minHeight: 36)
         .background(BackgroundEffectView().ignoresSafeArea())
+    }
 
+    var showLowerVStack: Bool {
+        return showSystemPromptOverride || showTextEntryView || showAssistantResponseSeed
+    }
+
+    @ViewBuilder var lowerVStack: some View {
         if showSystemPromptOverride {
             ZStack {
                 Rectangle()
@@ -192,35 +203,37 @@ struct ProSequenceView: View {
         }
     }
 
+    var showLowerVStackOptions: Bool {
+        return showUiOptions || showInferenceOptions || showRetrievalOptions
+    }
+
     @ViewBuilder var lowerVStackOptions: some View {
-        if showUiOptions || showInferenceOptions || showRetrievalOptions {
-            ScrollView {
-                VFlowLayout(spacing: 24) {
-                    if showUiOptions {
-                        // Tab.uiOptions
-                        ChatSequenceSettingsView(globalSettings: $viewModel.globalSequenceSettings, settings: $viewModel.sequenceSettings)
-                    }
+        ScrollView {
+            VFlowLayout(spacing: 24) {
+                if showUiOptions {
+                    // Tab.uiOptions
+                    ChatSequenceSettingsView(globalSettings: $viewModel.globalSequenceSettings, settings: $viewModel.sequenceSettings)
+                }
 
-                    // Tab.modelOptions
-                    if showInferenceOptions {
-                        GroupBox(content: {
-                            TextEditor(text: settings.inferenceOptions())
-                                .frame(width: 360, height: 36)
-                                .lineLimit(4...12)
-                        }, label: {
-                            Text("inferenceOptions")
-                        })
-                    }
+                // Tab.modelOptions
+                if showInferenceOptions {
+                    GroupBox(content: {
+                        TextEditor(text: settings.inferenceOptions())
+                            .frame(width: 360, height: 36)
+                            .lineLimit(4...12)
+                    }, label: {
+                        Text("inferenceOptions")
+                    })
+                }
 
-                    if showRetrievalOptions {
-                        GroupBox(content: {
-                            TextEditor(text: settings.retrieverOptions())
-                                .frame(width: 360, height: 36)
-                                .lineLimit(4...12)
-                        }, label: {
-                            Text("retrieverOptions")
-                        })
-                    }
+                if showRetrievalOptions {
+                    GroupBox(content: {
+                        TextEditor(text: settings.retrieverOptions())
+                            .frame(width: 360, height: 36)
+                            .lineLimit(4...12)
+                    }, label: {
+                        Text("retrieverOptions")
+                    })
                 }
             }
         }
@@ -342,6 +355,9 @@ struct ProSequenceView: View {
         .frame(height: tabBarHeight)
     }
 
+    @State private var statusBarHeight: CGFloat = 0
+    @State private var lowerVStackHeight: CGFloat = 0
+
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
@@ -394,10 +410,10 @@ struct ProSequenceView: View {
                             }
                         }
                     }
-                    .frame(minHeight: 80)
+                    .frame(minHeight: 240)
 
                     let maxInputHeight = {
-                        if splitViewLoaded || showSystemPromptOverride || showAssistantResponseSeed {
+                        if splitViewLoaded || showLowerVStack || showLowerVStackOptions {
                             geometry.size.height * 0.7
                         }
                         else {
@@ -405,17 +421,48 @@ struct ProSequenceView: View {
                         }
                     }()
 
-                    VStack(spacing: 0) {
-                        lowerVStack
-                    }
-                        .frame(minHeight: 180 - tabBarHeight, maxHeight: max(180, maxInputHeight) - tabBarHeight)
+                    if showStatusBar || showLowerVStack || showLowerVStackOptions {
+                        VStack(spacing: 0) {
+                            if showStatusBar {
+                                statusBar
+                                // Read and store the "preferred" height of the status bar
+                                    .background(
+                                        GeometryReader { statusBarGeometry in
+                                            Color.clear
+                                                .onAppear {
+                                                    statusBarHeight = statusBarGeometry.size.height
+                                                }
+                                        }
+                                    )
+                            }
 
-                    lowerVStackOptions
+                            if showLowerVStack {
+                                lowerVStack
+                                    .background(
+                                        GeometryReader { lowerVStackGeometry in
+                                            Color.clear
+                                                .onAppear {
+                                                    lowerVStackHeight = lowerVStackGeometry.size.height
+                                                }
+                                        }
+                                    )
+                            }
+                        }
+                        .frame(
+                            minHeight: statusBarHeight + max(72, lowerVStackHeight),
+                            maxHeight: max(
+                                statusBarHeight + max(72, lowerVStackHeight),
+                                maxInputHeight - statusBarHeight - lowerVStackHeight
+                            ))
+
+                        if showLowerVStackOptions {
+                            lowerVStackOptions
+                        }
+                    }
+
+                    lowerTabBar
                         .frame(maxWidth: .infinity)
                 }
-
-                lowerTabBar
-                    .frame(maxWidth: .infinity)
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
             .background(BackgroundEffectView().ignoresSafeArea())
