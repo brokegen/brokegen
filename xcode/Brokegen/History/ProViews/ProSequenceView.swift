@@ -45,6 +45,14 @@ struct ProSequenceView: View {
                 }
 
                 if settings.showSeparateRetrievalButton {
+                    let retrievalButtonDisabled: Bool = {
+                        if viewModel.submitting || viewModel.responseInEdit != nil {
+                            return true
+                        }
+
+                        return viewModel.promptInEdit.isEmpty && !settings.allowContinuation
+                    }()
+
                     Button(action: {
                         if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
                             _ = viewModel.requestContinue(withRetrieval: true)
@@ -55,8 +63,8 @@ struct ProSequenceView: View {
                     }) {
                         Image(systemName: "arrow.up.doc")
                             .font(.system(size: 32))
-                            .disabled(viewModel.promptInEdit.isEmpty && !settings.allowContinuation)
-                            .foregroundStyle(viewModel.promptInEdit.isEmpty && !settings.allowContinuation
+                            .disabled(retrievalButtonDisabled)
+                            .foregroundStyle(retrievalButtonDisabled
                                              ? Color(.disabledControlTextColor)
                                              : Color.accentColor)
                     }
