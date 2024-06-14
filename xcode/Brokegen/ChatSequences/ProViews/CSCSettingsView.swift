@@ -46,7 +46,7 @@ struct WidePicker: View {
     }
 }
 
-struct ChatSequenceSettingsView: View {
+struct CSCSettingsView: View {
     @ObservedObject var viewModel: OneSequenceViewModel
     @ObservedObject var settings: CSCSettingsService.SettingsProxy
 
@@ -136,38 +136,19 @@ struct ChatSequenceSettingsView: View {
         })
 
         GroupBox(content: {
-            Text("globalSettings.chatAutoNaming")
+            Text("ChatSequence auto-naming policy")
             Picker("", selection: $settings.chatAutoNaming) {
                 Text("server default")
-                    .tag(ChatAutoNaming.serverDefault)
+                    .tag(CSInferenceSettings.ChatAutoNaming.serverDefault)
 
                 Text("disable")
-                    .tag(ChatAutoNaming.disable)
+                    .tag(CSInferenceSettings.ChatAutoNaming.disable)
 
                 Text("summarize after inference (asynchronous)")
-                    .tag(ChatAutoNaming.summarizeAfterAsync)
+                    .tag(CSInferenceSettings.ChatAutoNaming.summarizeAfterAsync)
 
                 Text("summarize before inference")
-                    .tag(ChatAutoNaming.summarizeBefore)
-            }
-            .pickerStyle(.inline)
-
-            Text("chatAutoNaming")
-            Picker("", selection: $settings.chatAutoNaming) {
-                Text("inherit global: \(String(describing: settings.chatAutoNaming))")
-                    .tag(nil as ChatAutoNaming?)
-
-                Text("server default")
-                    .tag(ChatAutoNaming.serverDefault)
-
-                Text("disable")
-                    .tag(ChatAutoNaming.disable)
-
-                Text("summarize after inference (asynchronous)")
-                    .tag(ChatAutoNaming.summarizeAfterAsync)
-
-                Text("summarize before inference")
-                    .tag(ChatAutoNaming.summarizeBefore)
+                    .tag(CSInferenceSettings.ChatAutoNaming.summarizeBefore)
             }
             .pickerStyle(.inline)
         }, label: {
@@ -175,19 +156,3 @@ struct ChatSequenceSettingsView: View {
         })
     }
 }
-
-//#Preview(traits: .fixedLayout(width: 1600, height: 360)) {
-//    @State var globalSequenceSettings: GlobalChatSequenceClientSettings = GlobalChatSequenceClientSettings()
-//    @State var sequenceSettings: ChatSequenceClientSettings = ChatSequenceClientSettings()
-//
-//    var viewModel = OneSequenceViewModel()
-//
-//    return ChatSequenceSettingsView(globalSettings: $globalSequenceSettings, settings: $sequenceSettings)
-//}
-//
-//#Preview {
-//    @State var globalSequenceSettings: GlobalChatSequenceClientSettings = GlobalChatSequenceClientSettings()
-//    @State var sequenceSettings: ChatSequenceClientSettings = ChatSequenceClientSettings()
-//
-//    return ChatSequenceSettingsView(globalSettings: $globalSequenceSettings, settings: $sequenceSettings)
-//}

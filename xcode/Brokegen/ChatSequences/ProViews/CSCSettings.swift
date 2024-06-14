@@ -27,11 +27,11 @@ struct OverrideCSUISettings {
     var stayAwakeDuringInference: Bool? = nil
 }
 
-enum ChatAutoNaming: String {
-    case serverDefault, disable, summarizeAfterAsync, summarizeBefore
-}
-
 struct CSInferenceSettings {
+    enum ChatAutoNaming: String {
+        case serverDefault, disable, summarizeAfterAsync, summarizeBefore
+    }
+
     var inferenceOptions: String? = nil
     var overrideSystemPrompt: String? = nil
     var seedAssistantResponse: String? = nil

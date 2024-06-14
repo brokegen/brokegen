@@ -220,7 +220,7 @@ struct ProSequenceView: View {
             VFlowLayout(spacing: 24) {
                 if showUiOptions {
                     // Tab.uiOptions
-                    ChatSequenceSettingsView(viewModel, settings: viewModel.settings)
+                    CSCSettingsView(viewModel, settings: viewModel.settings)
                 }
 
                 // Tab.modelOptions

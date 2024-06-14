@@ -32,6 +32,8 @@ struct BrokegenAppView: View {
 
     func bigReset() {
         DispatchQueue.main.async {
+            UserDefaults.resetStandardUserDefaults()
+
             chatService.chatSequenceClientModels = []
             chatService.loadedChatSequences = []
 

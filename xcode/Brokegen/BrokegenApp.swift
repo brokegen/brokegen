@@ -40,11 +40,9 @@ struct BrokegenApp: App {
                 .environment(jobsService)
                 .environment(providerService)
                 .environment(inferenceSettings.inferenceModelSettings)
-                .environment(chatSettingsService.sequenceSettings)
                 .environmentObject(chatSettingsService)
                 .onReceive(chatSettingsService.objectWillChange) { entireService in
                     print("[TRACE] useSimplifiedSequenceView: \(chatSettingsService.useSimplifiedSequenceViews)")
-                    print("[TRACE] defaultUiSettings.allowContinuation: \(chatSettingsService.defaults.allowContinuation)")
                 }
         }
         .windowStyle(.hiddenTitleBar)
