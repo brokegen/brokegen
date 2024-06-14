@@ -6,10 +6,12 @@ class RestartableProcess: Job {
     var processes: [Process] = []
     let executableURL: URL
     let arguments: [String]
+    let environment: [String : String]
 
-    init(_ launchURL: URL, _ arguments: [String] = [], sidebarTitle: String? = nil) {
+    init(_ launchURL: URL, _ arguments: [String] = [], environment: [String : String] = [:], sidebarTitle: String? = nil) {
         self.executableURL = launchURL
         self.arguments = arguments
+        self.environment = environment
 
         super.init()
 
@@ -17,6 +19,9 @@ class RestartableProcess: Job {
         ribbonText = "\(launchURL.path(percentEncoded: false))"
         if arguments.count > 0 {
             ribbonText += "\n\(arguments)"
+        }
+        if environment.count > 0 {
+            ribbonText += "\n\(environment)"
         }
     }
 

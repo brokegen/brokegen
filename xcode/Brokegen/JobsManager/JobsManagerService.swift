@@ -24,11 +24,7 @@ class DefaultJobsManagerService: JobsManagerService {
 
         self.sidebarRenderableJobs = importantJobs
         self.storedJobs = importantJobs + [
-            SimplePing("ping rag-proxy", "http://localhost:6635", timeInterval: 17),
-            SimplePing("ping brokegen-server:norag", "http://localhost:6636", timeInterval: 7),
-            SimplePing("ping brokegen-server+rag", "http://localhost:6637", timeInterval: 11),
             TimeJob("quick timer", timeInterval: 0.2, maxTimesFired: 48),
-            SimplePing("ping ollama-proxy", "http://localhost:6633", timeInterval: 19),
             SimpleProcess("/usr/bin/pmset", ["-g", "rawlog"]).launch(),
             SimpleProcess("/sbin/ifconfig"),
             SimpleProcess("/bin/date"),
@@ -50,15 +46,18 @@ class DefaultJobsManagerService: JobsManagerService {
             return
         }
 
-        let ollamaProxy = SimpleProcess(
-            Bundle.main.url(forResource: "brokegen-ollama-proxy", withExtension: nil)!,
-            [
-                "--data-dir",
-                directoryPath.path(percentEncoded: false),
-                "--log-level=debug",
-            ]
+        let ollama = RestartableProcess(
+            Bundle.main.url(forResource: "ollama-darwin", withExtension: nil)!,
+            ["serve"],
+            environment: [
+                "OLLAMA_NUM_PARALLEL": "3",
+                "OLLAMA_MAX_LOADED_MODELS": "3",
+                "OLLAMA_KEEP_ALIVE": "4h",
+            ],
+            sidebarTitle: "ollama\n(embedded binary)"
         )
-        storedJobs.append(ollamaProxy)
+        self.sidebarRenderableJobs.insert(ollama, at: 0)
+        self.storedJobs.insert(ollama, at: 0)
 
         let server = RestartableProcess(
             Bundle.main.url(forResource: "brokegen-server", withExtension: nil)!,
@@ -67,7 +66,7 @@ class DefaultJobsManagerService: JobsManagerService {
                 directoryPath.path(percentEncoded: false),
                 "--log-level=debug",
             ],
-            sidebarTitle: "brokegen-server (x86 binary)"
+            sidebarTitle: "brokegen-server\n(embedded x86 binary)"
         )
         self.sidebarRenderableJobs.insert(server, at: 0)
         self.storedJobs.insert(server, at: 0)

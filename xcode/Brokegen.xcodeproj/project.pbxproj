@@ -18,7 +18,6 @@
 		CE4634E22BF97A180063142E /* JobOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634E12BF97A180063142E /* JobOutputView.swift */; };
 		CE4634E52BFA5F890063142E /* SimpleProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634E42BFA5F890063142E /* SimpleProcess.swift */; };
 		CE4634E72BFA6A050063142E /* JobsSidebarItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634E62BFA6A050063142E /* JobsSidebarItem.swift */; };
-		CE4634E92BFA71E10063142E /* brokegen-ollama-proxy in Resources */ = {isa = PBXBuildFile; fileRef = CE4634E82BFA71E10063142E /* brokegen-ollama-proxy */; };
 		CE4634EB2BFA71E70063142E /* brokegen-server in Resources */ = {isa = PBXBuildFile; fileRef = CE4634EA2BFA71E70063142E /* brokegen-server */; };
 		CE4634ED2BFAE3020063142E /* RestartableProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634EC2BFAE3020063142E /* RestartableProcess.swift */; };
 		CE4634EF2BFAFA340063142E /* StayAwakeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634EE2BFAFA340063142E /* StayAwakeService.swift */; };
@@ -51,6 +50,7 @@
 		CEE99E692C0FD9FC008E1B07 /* InferenceSettingsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E672C0FD9FC008E1B07 /* InferenceSettingsService.swift */; };
 		CEE99E6B2C1002F9008E1B07 /* AppSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E6A2C1002F8008E1B07 /* AppSidebar.swift */; };
 		CEF73F2B2C1BE32200C46AA5 /* CSUISettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF73F2A2C1BE32200C46AA5 /* CSUISettings.swift */; };
+		CEF73F2D2C1CA05D00C46AA5 /* ollama-darwin in Resources */ = {isa = PBXBuildFile; fileRef = CEF73F2C2C1CA05D00C46AA5 /* ollama-darwin */; };
 		CEFA69452C14AE67007EEF8D /* CSInferenceSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA69442C14AE67007EEF8D /* CSInferenceSettings.swift */; };
 		CEFA69472C14B692007EEF8D /* InferenceModelSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA69462C14B692007EEF8D /* InferenceModelSettings.swift */; };
 		CEFA69492C14C525007EEF8D /* VFlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA69482C14C525007EEF8D /* VFlowLayout.swift */; };
@@ -95,7 +95,6 @@
 		CE4634E12BF97A180063142E /* JobOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobOutputView.swift; sourceTree = "<group>"; };
 		CE4634E42BFA5F890063142E /* SimpleProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleProcess.swift; sourceTree = "<group>"; };
 		CE4634E62BFA6A050063142E /* JobsSidebarItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsSidebarItem.swift; sourceTree = "<group>"; };
-		CE4634E82BFA71E10063142E /* brokegen-ollama-proxy */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = "brokegen-ollama-proxy"; path = "../dist/brokegen-ollama-proxy"; sourceTree = "<group>"; };
 		CE4634EA2BFA71E70063142E /* brokegen-server */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = "brokegen-server"; path = "../dist/brokegen-server"; sourceTree = "<group>"; };
 		CE4634EC2BFAE3020063142E /* RestartableProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestartableProcess.swift; sourceTree = "<group>"; };
 		CE4634EE2BFAFA340063142E /* StayAwakeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StayAwakeService.swift; sourceTree = "<group>"; };
@@ -128,6 +127,7 @@
 		CEE99E672C0FD9FC008E1B07 /* InferenceSettingsService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InferenceSettingsService.swift; sourceTree = "<group>"; };
 		CEE99E6A2C1002F8008E1B07 /* AppSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSidebar.swift; sourceTree = "<group>"; };
 		CEF73F2A2C1BE32200C46AA5 /* CSUISettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSUISettings.swift; sourceTree = "<group>"; };
+		CEF73F2C2C1CA05D00C46AA5 /* ollama-darwin */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = "ollama-darwin"; path = "../dist/ollama-darwin"; sourceTree = "<group>"; };
 		CEFA69442C14AE67007EEF8D /* CSInferenceSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSInferenceSettings.swift; sourceTree = "<group>"; };
 		CEFA69462C14B692007EEF8D /* InferenceModelSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceModelSettings.swift; sourceTree = "<group>"; };
 		CEFA69482C14C525007EEF8D /* VFlowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VFlowLayout.swift; sourceTree = "<group>"; };
@@ -233,8 +233,8 @@
 		CE9867442BF4047C008D6C41 = {
 			isa = PBXGroup;
 			children = (
-				CE4634E82BFA71E10063142E /* brokegen-ollama-proxy */,
 				CE4634EA2BFA71E70063142E /* brokegen-server */,
+				CEF73F2C2C1CA05D00C46AA5 /* ollama-darwin */,
 				CE98674F2BF4047C008D6C41 /* Brokegen */,
 				CE66FB0B2C16966900BD8745 /* BrokegenTests */,
 				CE98674E2BF4047C008D6C41 /* Products */,
@@ -448,8 +448,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CEF73F2D2C1CA05D00C46AA5 /* ollama-darwin in Resources */,
 				CE4634EB2BFA71E70063142E /* brokegen-server in Resources */,
-				CE4634E92BFA71E10063142E /* brokegen-ollama-proxy in Resources */,
 				CE9867592BF4047E008D6C41 /* Preview Assets.xcassets in Resources */,
 				CE9867552BF4047E008D6C41 /* Assets.xcassets in Resources */,
 			);

@@ -50,7 +50,7 @@ class SimplePing: Job {
                     }
 
                     self.status = .startedWithOutput
-                    self.displayedOutput += "\(Date.now): HEAD success"
+                    self.displayedOutput += "\(Date.now): HEAD \(self.pingEndpoint) success"
                     if data != nil {
                         if let dataAsString = String(data: data!, encoding: .utf8) {
                             self.displayedOutput += ", \(dataAsString)"
