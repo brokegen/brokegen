@@ -26,3 +26,16 @@ struct OverrideCSUISettings {
     var allowNewlineSubmit: Bool? = nil
     var stayAwakeDuringInference: Bool? = nil
 }
+
+enum ChatAutoNaming: String {
+    case serverDefault, disable, summarizeAfterAsync, summarizeBefore
+}
+
+struct CSInferenceSettings {
+    var inferenceOptions: String? = nil
+    var overrideSystemPrompt: String? = nil
+    var seedAssistantResponse: String? = nil
+
+    var retrieverOptions: String? = nil
+    var chatAutoNaming: ChatAutoNaming = .serverDefault
+}

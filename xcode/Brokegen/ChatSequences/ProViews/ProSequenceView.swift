@@ -4,14 +4,14 @@ let tabBarHeight: CGFloat = 48
 
 struct ProSequenceView: View {
     @ObservedObject var viewModel: OneSequenceViewModel
-    @Bindable var settings: CombinedCSCSettings
+    @ObservedObject var settings: CSCSettingsService.SettingsProxy
 
     @FocusState private var focusTextInput: Bool
     @State private var splitViewLoaded: Bool = false
 
     init(_ viewModel: OneSequenceViewModel) {
         self.viewModel = viewModel
-        settings = CombinedCSCSettings(globalSettings: viewModel.globalSequenceSettings, sequenceSettings: viewModel.sequenceSettings)
+        self.settings = viewModel.settings
     }
 
     var textEntryView: some View {
@@ -184,11 +184,11 @@ struct ProSequenceView: View {
                 Rectangle()
                     .fill(Color.red.opacity(0.2))
 
-                InlineTextInput(settings.overrideSystemPrompt(), allowNewlineSubmit: .constant(false), isFocused: $focusSystemPromptOverride) {}
+                InlineTextInput($settings.overrideSystemPrompt, allowNewlineSubmit: .constant(false), isFocused: $focusSystemPromptOverride) {}
 
                 Text("Override System Prompt")
                     .foregroundStyle(Color(.disabledControlTextColor))
-                    .opacity(settings.overrideSystemPrompt().wrappedValue.isEmpty ? 1.0 : 0.0)
+                    .opacity(settings.overrideSystemPrompt.isEmpty ? 1.0 : 0.0)
             }
         }
 
@@ -202,11 +202,11 @@ struct ProSequenceView: View {
                 Rectangle()
                     .fill(Color.blue.opacity(0.2))
 
-                InlineTextInput(settings.seedAssistantResponse(), allowNewlineSubmit: .constant(false), isFocused: $focusAssistantResponseSeed) {}
+                InlineTextInput($settings.seedAssistantResponse, allowNewlineSubmit: .constant(false), isFocused: $focusAssistantResponseSeed) {}
 
                 Text("Seed Assistant Response")
                     .foregroundStyle(Color(.disabledControlTextColor))
-                    .opacity(settings.seedAssistantResponse().wrappedValue.isEmpty ? 1.0 : 0.0)
+                    .opacity(settings.seedAssistantResponse.isEmpty ? 1.0 : 0.0)
             }
         }
     }
@@ -226,7 +226,7 @@ struct ProSequenceView: View {
                 // Tab.modelOptions
                 if showInferenceOptions {
                     GroupBox(content: {
-                        TextEditor(text: settings.inferenceOptions())
+                        TextEditor(text: $settings.inferenceOptions)
                             .frame(width: 360, height: 36)
                             .lineLimit(4...12)
                     }, label: {
@@ -236,7 +236,7 @@ struct ProSequenceView: View {
 
                 if showRetrievalOptions {
                     GroupBox(content: {
-                        TextEditor(text: settings.retrieverOptions())
+                        TextEditor(text: $settings.retrieverOptions)
                             .frame(width: 360, height: 36)
                             .lineLimit(4...12)
                     }, label: {
@@ -299,7 +299,7 @@ struct ProSequenceView: View {
             Button(action: {
                 showAssistantResponseSeed = !showAssistantResponseSeed
             }, label: {
-                Image(systemName: settings.seedAssistantResponse().wrappedValue.isEmpty ? "bubble.right" : "bubble.right.fill")
+                Image(systemName: settings.seedAssistantResponse.isEmpty ? "bubble.right" : "bubble.right.fill")
                     .foregroundStyle(showAssistantResponseSeed ? .blue : Color(.controlTextColor))
                     .padding(.leading, 12)
                     .padding(.trailing, -12)
@@ -376,24 +376,24 @@ struct ProSequenceView: View {
             VStack(spacing: 0) {
                 VSplitView {
                     VStack(spacing: 0) {
-                        if viewModel.pinChatSequenceDesc {
+                        if settings.pinChatSequenceDesc {
                             ChatNameReadOnly(
                                 Binding(
                                     get: { viewModel.displayHumanDesc },
                                     set: { _, _ in }),
-                                pinChatName: $viewModel.pinChatSequenceDesc)
+                                pinChatName: $settings.pinChatSequenceDesc)
                             .id("sequence title")
                         }
 
                         ScrollViewReader { proxy in
                             ScrollView(.vertical) {
                                 VStack(spacing: 0) {
-                                    if !viewModel.pinChatSequenceDesc {
+                                    if !settings.pinChatSequenceDesc {
                                         ChatNameReadOnly(
                                             Binding(
                                                 get: { viewModel.displayHumanDesc },
                                                 set: { _, _ in }),
-                                            pinChatName: $viewModel.pinChatSequenceDesc)
+                                            pinChatName: $settings.pinChatSequenceDesc)
                                         .id("sequence title")
                                     }
                                     

@@ -137,7 +137,7 @@ struct ChatSequenceSettingsView: View {
 
         GroupBox(content: {
             Text("globalSettings.chatAutoNaming")
-            Picker("", selection: $viewModel.globalSequenceSettings.chatAutoNaming) {
+            Picker("", selection: $settings.chatAutoNaming) {
                 Text("server default")
                     .tag(ChatAutoNaming.serverDefault)
 
@@ -153,8 +153,8 @@ struct ChatSequenceSettingsView: View {
             .pickerStyle(.inline)
 
             Text("chatAutoNaming")
-            Picker("", selection: $viewModel.sequenceSettings.chatAutoNaming) {
-                Text("inherit global: \(String(describing: viewModel.globalSequenceSettings.chatAutoNaming))")
+            Picker("", selection: $settings.chatAutoNaming) {
+                Text("inherit global: \(String(describing: settings.chatAutoNaming))")
                     .tag(nil as ChatAutoNaming?)
 
                 Text("server default")

@@ -40,16 +40,20 @@ struct BrokegenAppView: View {
     }
 
     var body: some View {
+        // TODO: Should this be done a different way, somehow?
+        // How do I get these to share state and not "jump" during navigation?
+        let sharedSidebar = AppSidebar(useSimplifiedSequenceViews: $chatSettingsService.useSimplifiedSequenceViews, bigReset: bigReset)
+
         NavigationStack(path: $pathHost.path) {
             NavigationSplitView(columnVisibility: $sidebarVisibility, sidebar: {
-                AppSidebar(useSimplifiedSequenceViews: $chatSettingsService.useSimplifiedSequenceViews, bigReset: bigReset)
+                sharedSidebar
             }, detail: {
                 SequencePickerView()
                     .environmentObject(chatService)
             })
             .navigationDestination(for: OneSequenceViewModel.self) { clientModel in
                 NavigationSplitView(sidebar: {
-                    AppSidebar(useSimplifiedSequenceViews: $chatSettingsService.useSimplifiedSequenceViews, bigReset: bigReset)
+                    sharedSidebar
                 }, detail: {
                     if chatSettingsService.useSimplifiedSequenceViews {
                         OneSequenceView(clientModel)

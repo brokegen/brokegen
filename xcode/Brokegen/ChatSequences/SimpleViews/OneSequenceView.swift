@@ -3,14 +3,14 @@ import SwiftUI
 
 struct OneSequenceView: View {
     @ObservedObject var viewModel: OneSequenceViewModel
-    @Bindable var settings: CombinedCSCSettings
+    @ObservedObject var settings: CSCSettingsService.SettingsProxy
 
     @FocusState var focusTextInput: Bool
     @State private var splitViewLoaded: Bool = false
 
     init(_ viewModel: OneSequenceViewModel) {
         self.viewModel = viewModel
-        settings = CombinedCSCSettings(globalSettings: viewModel.globalSequenceSettings, sequenceSettings: viewModel.sequenceSettings)
+        self.settings = viewModel.settings
     }
 
     var textEntryView: some View {
@@ -139,7 +139,7 @@ struct OneSequenceView: View {
             ScrollViewReader { proxy in
                 VSplitView {
                     VStack(spacing: 0) {
-                        if viewModel.pinChatSequenceDesc {
+                        if settings.pinChatSequenceDesc {
                             HStack(spacing: 0) {
                                 Text(viewModel.displayHumanDesc)
                                     .font(.system(size: 36))
@@ -150,7 +150,7 @@ struct OneSequenceView: View {
                                 Spacer()
 
                                 Button(action: {
-                                    viewModel.pinChatSequenceDesc = false
+                                    settings.pinChatSequenceDesc = false
                                 }) {
                                     Image(systemName: "pin")
                                         .font(.system(size: 24))
@@ -166,7 +166,7 @@ struct OneSequenceView: View {
                         }
 
                         ScrollView(.vertical) {
-                            if !viewModel.pinChatSequenceDesc {
+                            if !settings.pinChatSequenceDesc {
                                 HStack(spacing: 0) {
                                     Text(viewModel.displayHumanDesc)
                                         .font(.system(size: 36))
@@ -177,7 +177,7 @@ struct OneSequenceView: View {
                                     Spacer()
 
                                     Button(action: {
-                                        viewModel.pinChatSequenceDesc = true
+                                        settings.pinChatSequenceDesc = true
                                     }) {
                                         Image(systemName: "pin.slash")
                                             .font(.system(size: 24))

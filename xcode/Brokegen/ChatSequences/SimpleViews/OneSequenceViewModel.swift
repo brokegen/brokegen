@@ -12,12 +12,6 @@ class OneSequenceViewModel: ObservableObject {
     let inferenceModelSettings: InferenceModelSettings
     var settings: CSCSettingsService.SettingsProxy
 
-    // TODO: This should be initialized some other way
-    var globalSequenceSettings: GlobalChatSequenceClientSettings = GlobalChatSequenceClientSettings()
-    var sequenceSettings: ChatSequenceClientSettings = ChatSequenceClientSettings()
-
-    var pinChatSequenceDesc: Bool
-
     var promptInEdit: String = ""
     var submitting: Bool = false
 
@@ -38,8 +32,6 @@ class OneSequenceViewModel: ObservableObject {
         self.chatService = chatService
         self.inferenceModelSettings = inferenceModelSettings
         self.settings = chatSettingsService.settings(for: sequence)
-
-        self.pinChatSequenceDesc = sequence.humanDesc != nil && sequence.humanDesc!.count < maxPinChatSequenceDesc
     }
 
     var displayHumanDesc: String {
