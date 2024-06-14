@@ -9,6 +9,7 @@ struct DefaultCSUISettings {
     var showSeparateRetrievalButton: Bool = true
     var forceRetrieval: Bool = false
 
+    var pinSequenceTitle: Bool? = nil
     var allowNewlineSubmit: Bool = false
     var stayAwakeDuringInference: Bool = true
 }
@@ -18,13 +19,14 @@ struct OverrideCSUISettings {
     var showSeparateRetrievalButton: Bool? = nil
     var forceRetrieval: Bool? = nil
 
+    var pinSequenceTitle: Bool? = nil
     var allowNewlineSubmit: Bool? = nil
     var stayAwakeDuringInference: Bool? = nil
 }
 
 @Observable
-class CombinedCSUISettings {
-    let defaults: DefaultCSUISettings
+class CombinedCSUISettings: ObservableObject {
+    var defaults: DefaultCSUISettings
     var override: OverrideCSUISettings
 
     init(defaults: DefaultCSUISettings, override: OverrideCSUISettings) {
@@ -32,11 +34,24 @@ class CombinedCSUISettings {
         self.override = override
     }
 
-    func allowContinuation() -> Binding<Bool> {
+    static func fromNothing() -> CombinedCSUISettings {
+        return CombinedCSUISettings(defaults: DefaultCSUISettings(), override: OverrideCSUISettings())
+    }
+
+    var allowContinuation: Binding<Bool> {
         return Binding(
             get: { self.override.allowContinuation ?? self.defaults.allowContinuation },
             set: { value in
                 self.override.allowContinuation = value
+            }
+        )
+    }
+
+    var stayAwakeDuringInference: Binding<Bool> {
+        return Binding(
+            get: { self.override.stayAwakeDuringInference ?? self.defaults.stayAwakeDuringInference },
+            set: { value in
+                self.override.stayAwakeDuringInference = value
             }
         )
     }

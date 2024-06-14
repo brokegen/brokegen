@@ -1,29 +1,33 @@
 import SwiftUI
 
 struct ChatSequenceSettingsView: View {
-    var globalSettings: Binding<GlobalChatSequenceClientSettings>
-    var settings: Binding<ChatSequenceClientSettings>
+    @ObservedObject var viewModel: OneSequenceViewModel
+    @ObservedObject var uiSettings: CombinedCSUISettings
 
     init(
-        globalSettings: Binding<GlobalChatSequenceClientSettings>,
-        settings: Binding<ChatSequenceClientSettings>
+        _ viewModel: OneSequenceViewModel
     ) {
-        self.globalSettings = globalSettings
-        self.settings = settings
+        self.viewModel = viewModel
+        self.uiSettings = viewModel.uiSettings
     }
 
     var body: some View {
         GroupBox(content: {
             VFlowLayout(spacing: 24) {
-                Toggle(isOn: globalSettings.allowContinuation, label: { Text("allowContinuation") })
-                Toggle(isOn: globalSettings.showSeparateRetrievalButton, label: { Text("showSeparateRetrievalButton") })
-                Toggle(isOn: globalSettings.forceRetrieval, label: { Text("forceRetrieval") })
-                    .disabled(globalSettings.forceRetrieval.wrappedValue)
+                Toggle(isOn: $uiSettings.defaults.allowContinuation, label: {
+                    Text("allowContinuation")
+                        .layoutPriority(0.2)
+
+                    Spacer()
+                })
+                Toggle(isOn: $uiSettings.defaults.showSeparateRetrievalButton, label: { Text("showSeparateRetrievalButton") })
+                Toggle(isOn: $uiSettings.defaults.forceRetrieval, label: { Text("forceRetrieval") })
+                    .disabled(uiSettings.defaults.forceRetrieval)
 
                 Spacer()
 
-                Toggle(isOn: globalSettings.allowNewlineSubmit, label: { Text("allowNewlineSubmit") })
-                Toggle(isOn: globalSettings.stayAwakeDuringInference, label: { Text("stayAwakeDuringInference") })
+                Toggle(isOn: $uiSettings.defaults.allowNewlineSubmit, label: { Text("allowNewlineSubmit") })
+                Toggle(isOn: $uiSettings.defaults.stayAwakeDuringInference, label: { Text("stayAwakeDuringInference") })
             }
             .toggleStyle(.switch)
             .frame(maxWidth: 768)
@@ -34,8 +38,8 @@ struct ChatSequenceSettingsView: View {
 
         GroupBox(content: {
             VFlowLayout(spacing: 24) {
-                Picker("allowContinuation", selection: settings.allowContinuation) {
-                    Text("inherit global: \(String(describing: globalSettings.allowContinuation.wrappedValue))")
+                Picker("allowContinuation", selection: $uiSettings.override.allowContinuation) {
+                    Text("inherit global: \(String(describing: uiSettings.defaults.allowContinuation))")
                         .tag(nil as Bool?)
 
                     Text("allow")
@@ -46,8 +50,8 @@ struct ChatSequenceSettingsView: View {
                 }
                 .pickerStyle(.segmented)
 
-                Picker("showSeparateRetrievalButton", selection: settings.showSeparateRetrievalButton) {
-                    Text("inherit global: \(String(describing: globalSettings.showSeparateRetrievalButton.wrappedValue))")
+                Picker("showSeparateRetrievalButton", selection: $uiSettings.override.showSeparateRetrievalButton) {
+                    Text("inherit global: \(String(describing: uiSettings.defaults.showSeparateRetrievalButton))")
                         .tag(nil as Bool?)
 
                     Text("show")
@@ -58,8 +62,8 @@ struct ChatSequenceSettingsView: View {
                 }
                 .pickerStyle(.inline)
 
-                Picker("forceRetrieval", selection: settings.forceRetrieval) {
-                    Text("inherit global: \(String(describing: globalSettings.forceRetrieval.wrappedValue))")
+                Picker("forceRetrieval", selection: $uiSettings.override.forceRetrieval) {
+                    Text("inherit global: \(String(describing: uiSettings.defaults.forceRetrieval))")
                         .tag(nil as Bool?)
 
                     Text("always use retrieval")
@@ -69,10 +73,10 @@ struct ChatSequenceSettingsView: View {
                         .tag(false as Bool?)
                 }
                 .pickerStyle(.palette)
-                .disabled(settings.showSeparateRetrievalButton.wrappedValue ?? globalSettings.showSeparateRetrievalButton.wrappedValue)
+                .disabled(uiSettings.override.showSeparateRetrievalButton ?? uiSettings.defaults.showSeparateRetrievalButton)
 
-                Picker("allowNewlineSubmit", selection: settings.allowNewlineSubmit) {
-                    Text("inherit global: \(String(describing: globalSettings.allowNewlineSubmit.wrappedValue))")
+                Picker("allowNewlineSubmit", selection: $uiSettings.override.allowNewlineSubmit) {
+                    Text("inherit global: \(String(describing: uiSettings.defaults.allowNewlineSubmit))")
                         .tag(nil as Bool?)
 
                     Text("show")
@@ -91,7 +95,7 @@ struct ChatSequenceSettingsView: View {
 
         GroupBox(content: {
             Text("globalSettings.chatAutoNaming")
-            Picker("", selection: globalSettings.chatAutoNaming) {
+            Picker("", selection: $viewModel.globalSequenceSettings.chatAutoNaming) {
                 Text("server default")
                     .tag(ChatAutoNaming.serverDefault)
 
@@ -107,8 +111,8 @@ struct ChatSequenceSettingsView: View {
             .pickerStyle(.inline)
 
             Text("chatAutoNaming")
-            Picker("", selection: settings.chatAutoNaming) {
-                Text("inherit global: \(String(describing: globalSettings.chatAutoNaming.wrappedValue))")
+            Picker("", selection: $viewModel.sequenceSettings.chatAutoNaming) {
+                Text("inherit global: \(String(describing: viewModel.globalSequenceSettings.chatAutoNaming))")
                     .tag(nil as ChatAutoNaming?)
 
                 Text("server default")
@@ -129,17 +133,17 @@ struct ChatSequenceSettingsView: View {
         })
     }
 }
-
-#Preview(traits: .fixedLayout(width: 1600, height: 360)) {
-    @State var globalSequenceSettings: GlobalChatSequenceClientSettings = GlobalChatSequenceClientSettings()
-    @State var sequenceSettings: ChatSequenceClientSettings = ChatSequenceClientSettings()
-
-    return ChatSequenceSettingsView(globalSettings: $globalSequenceSettings, settings: $sequenceSettings)
-}
-
-#Preview {
-    @State var globalSequenceSettings: GlobalChatSequenceClientSettings = GlobalChatSequenceClientSettings()
-    @State var sequenceSettings: ChatSequenceClientSettings = ChatSequenceClientSettings()
-
-    return ChatSequenceSettingsView(globalSettings: $globalSequenceSettings, settings: $sequenceSettings)
-}
+//
+//#Preview(traits: .fixedLayout(width: 1600, height: 360)) {
+//    @State var globalSequenceSettings: GlobalChatSequenceClientSettings = GlobalChatSequenceClientSettings()
+//    @State var sequenceSettings: ChatSequenceClientSettings = ChatSequenceClientSettings()
+//
+//    return ChatSequenceSettingsView(globalSettings: $globalSequenceSettings, settings: $sequenceSettings)
+//}
+//
+//#Preview {
+//    @State var globalSequenceSettings: GlobalChatSequenceClientSettings = GlobalChatSequenceClientSettings()
+//    @State var sequenceSettings: ChatSequenceClientSettings = ChatSequenceClientSettings()
+//
+//    return ChatSequenceSettingsView(globalSettings: $globalSequenceSettings, settings: $sequenceSettings)
+//}

@@ -8,6 +8,7 @@ class OneSequenceViewModel: ObservableObject {
     var sequence: ChatSequence
     let chatService: ChatSyncService
     let inferenceModelSettings: InferenceModelSettings
+    var uiSettings: CombinedCSUISettings
 
     // TODO: This should be initialized some other way
     var globalSequenceSettings: GlobalChatSequenceClientSettings = GlobalChatSequenceClientSettings()
@@ -22,18 +23,28 @@ class OneSequenceViewModel: ObservableObject {
     /// `nil` before first data, and then reset to `nil` once we're done receiving.
     var responseInEdit: Message? = nil
     var receivingStreamer: AnyCancellable? = nil
+
     private var stayAwake: StayAwake = StayAwake()
-    var stayAwakeDuringInference: Bool = true
     var currentlyAwakeDuringInference: Bool {
         get { stayAwake.assertionIsActive }
     }
 
     var serverStatus: String? = nil
 
+    init(_ sequence: ChatSequence, chatService: ChatSyncService, inferenceModelSettings: InferenceModelSettings, chatSettingsService: CSCSettingsService) {
+        self.sequence = sequence
+        self.chatService = chatService
+        self.inferenceModelSettings = inferenceModelSettings
+        self.uiSettings = chatSettingsService.uiSettings(for: sequence)
+
+        self.pinSequenceTitle = sequence.humanDesc != nil
+    }
+
     init(_ sequence: ChatSequence, chatService: ChatSyncService, inferenceModelSettings: InferenceModelSettings) {
         self.sequence = sequence
         self.chatService = chatService
         self.inferenceModelSettings = inferenceModelSettings
+        self.uiSettings = CombinedCSUISettings.fromNothing()
 
         self.pinSequenceTitle = sequence.humanDesc != nil
     }
@@ -151,7 +162,7 @@ class OneSequenceViewModel: ObservableObject {
         withRetrieval: Bool = false
     ) -> Self {
         print("[INFO] OneSequenceViewModel.requestContinue(\(continuationModelId), withRetrieval: \(withRetrieval))")
-        if stayAwakeDuringInference {
+        if uiSettings.stayAwakeDuringInference.wrappedValue {
             _ = stayAwake.createAssertion(reason: "brokegen OneSequenceViewModel.requestContinue() for ChatSequence#\(self.sequence.serverId ?? -1)")
         }
 
@@ -192,7 +203,7 @@ class OneSequenceViewModel: ObservableObject {
         withRetrieval: Bool = false
     ) {
         print("[INFO] OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval))")
-        if stayAwakeDuringInference {
+        if uiSettings.stayAwakeDuringInference.wrappedValue {
             _ = stayAwake.createAssertion(reason: "brokegen OneSequenceViewModel.requestExtend() for ChatSequence#\(self.sequence.serverId ?? -1)")
         }
 
