@@ -14,7 +14,7 @@ class OneSequenceViewModel: ObservableObject {
     var globalSequenceSettings: GlobalChatSequenceClientSettings = GlobalChatSequenceClientSettings()
     var sequenceSettings: ChatSequenceClientSettings = ChatSequenceClientSettings()
 
-    var pinSequenceTitle: Bool
+    var pinChatSequenceDesc: Bool
 
     var promptInEdit: String = ""
     var submitting: Bool = false
@@ -37,7 +37,7 @@ class OneSequenceViewModel: ObservableObject {
         self.inferenceModelSettings = inferenceModelSettings
         self.uiSettings = chatSettingsService.uiSettings(for: sequence)
 
-        self.pinSequenceTitle = sequence.humanDesc != nil
+        self.pinChatSequenceDesc = sequence.humanDesc != nil
     }
 
     init(_ sequence: ChatSequence, chatService: ChatSyncService, inferenceModelSettings: InferenceModelSettings) {
@@ -46,7 +46,7 @@ class OneSequenceViewModel: ObservableObject {
         self.inferenceModelSettings = inferenceModelSettings
         self.uiSettings = CombinedCSUISettings.fromNothing()
 
-        self.pinSequenceTitle = sequence.humanDesc != nil
+        self.pinChatSequenceDesc = sequence.humanDesc != nil
     }
 
     var displayHumanDesc: String {

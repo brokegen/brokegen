@@ -67,8 +67,8 @@ struct ChatSequenceSettingsView: View {
                 WideToggle(isOn: $uiSettings.defaults.forceRetrieval,
                            labelText: "Force retrieval-augmented generation on every query")
 
-//                WidePicker(defaultIsOn: uiSettings.defaults.pinSequenceTitle,
-//                           overrideIsOn: $uiSettings.override.pinSequenceTitle,
+//                WidePicker(defaultIsOn: uiSettings.defaults.pinChatSequenceDesc,
+//                           overrideIsOn: $uiSettings.override.pinChatSequenceDesc,
 //                           labelText: "Pin ChatSequence titles to top of window", trueText: "pin", falseText: "don't pin")
                 WideToggle(isOn: $uiSettings.defaults.allowNewlineSubmit,
                            labelText: "Allow mouseless submit by pressing enter (or if the last pasted character was a newline)")

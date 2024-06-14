@@ -139,7 +139,7 @@ struct OneSequenceView: View {
             ScrollViewReader { proxy in
                 VSplitView {
                     VStack(spacing: 0) {
-                        if viewModel.pinSequenceTitle {
+                        if viewModel.pinChatSequenceDesc {
                             HStack(spacing: 0) {
                                 Text(viewModel.displayHumanDesc)
                                     .font(.system(size: 36))
@@ -150,7 +150,7 @@ struct OneSequenceView: View {
                                 Spacer()
 
                                 Button(action: {
-                                    viewModel.pinSequenceTitle = false
+                                    viewModel.pinChatSequenceDesc = false
                                 }) {
                                     Image(systemName: "pin")
                                         .font(.system(size: 24))
@@ -166,7 +166,7 @@ struct OneSequenceView: View {
                         }
 
                         ScrollView(.vertical) {
-                            if !viewModel.pinSequenceTitle {
+                            if !viewModel.pinChatSequenceDesc {
                                 HStack(spacing: 0) {
                                     Text(viewModel.displayHumanDesc)
                                         .font(.system(size: 36))
@@ -177,7 +177,7 @@ struct OneSequenceView: View {
                                     Spacer()
 
                                     Button(action: {
-                                        viewModel.pinSequenceTitle = true
+                                        viewModel.pinChatSequenceDesc = true
                                     }) {
                                         Image(systemName: "pin.slash")
                                             .font(.system(size: 24))

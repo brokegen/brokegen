@@ -376,24 +376,24 @@ struct ProSequenceView: View {
             VStack(spacing: 0) {
                 VSplitView {
                     VStack(spacing: 0) {
-                        if viewModel.pinSequenceTitle {
+                        if viewModel.pinChatSequenceDesc {
                             ChatNameReadOnly(
                                 Binding(
                                     get: { viewModel.displayHumanDesc },
                                     set: { _, _ in }),
-                                pinChatName: $viewModel.pinSequenceTitle)
+                                pinChatName: $viewModel.pinChatSequenceDesc)
                             .id("sequence title")
                         }
 
                         ScrollViewReader { proxy in
                             ScrollView(.vertical) {
                                 VStack(spacing: 0) {
-                                    if !viewModel.pinSequenceTitle {
+                                    if !viewModel.pinChatSequenceDesc {
                                         ChatNameReadOnly(
                                             Binding(
                                                 get: { viewModel.displayHumanDesc },
                                                 set: { _, _ in }),
-                                            pinChatName: $viewModel.pinSequenceTitle)
+                                            pinChatName: $viewModel.pinChatSequenceDesc)
                                         .id("sequence title")
                                     }
                                     

@@ -35,11 +35,11 @@ struct BackgroundEffectView: NSViewRepresentable {
 
 struct ChatNameReadOnly: View {
     @Binding var textInEdit: String
-    @Binding var pinChatName: Bool
+    @Binding var pinChatSequenceDesc: Bool
 
     init(_ textInEdit: Binding<String>, pinChatName: Binding<Bool>) {
         _textInEdit = textInEdit
-        _pinChatName = pinChatName
+        _pinChatSequenceDesc = pinChatName
     }
 
     var body: some View {
@@ -53,13 +53,13 @@ struct ChatNameReadOnly: View {
             Spacer()
 
             Button(action: {
-                pinChatName = !pinChatName
+                pinChatSequenceDesc = !pinChatSequenceDesc
             }) {
-                Image(systemName: pinChatName ? "pin" : "pin.slash")
+                Image(systemName: pinChatSequenceDesc ? "pin" : "pin.slash")
                     .font(.system(size: 24))
                     .padding(12)
                     .contentShape(Rectangle())
-                    .foregroundStyle(pinChatName ? Color(.controlTextColor) : Color(.disabledControlTextColor))
+                    .foregroundStyle(pinChatSequenceDesc ? Color(.controlTextColor) : Color(.disabledControlTextColor))
             }
             .buttonStyle(.plain)
         }
