@@ -338,13 +338,18 @@ struct ProSequenceView: View {
             Spacer()
 
             Button(action: {
-                viewModel.useStayAwake = !viewModel.useStayAwake
+                viewModel.stayAwakeDuringInference = !viewModel.stayAwakeDuringInference
             }, label: {
-                Image(systemName: viewModel.useStayAwake ? "bolt.fill" : "bolt.slash")
-                    .foregroundStyle(viewModel.useStayAwake ? Color(.controlTextColor) : .red)
-                    .padding(.leading, 12)
-                    .padding(.trailing, 12)
-                    .frame(height: 48)
+                Image(systemName:
+                        viewModel.currentlyAwakeDuringInference
+                      ? (viewModel.stayAwakeDuringInference ? "bolt.fill" : "bolt.slash")
+                      : (viewModel.stayAwakeDuringInference ? "bolt" : "bolt.slash"))
+                .foregroundStyle(
+                    viewModel.currentlyAwakeDuringInference ? .green :
+                        viewModel.stayAwakeDuringInference ? Color(.controlTextColor) : .red)
+                .padding(.leading, 12)
+                .padding(.trailing, 12)
+                .frame(height: 48)
             })
             .contentShape(Rectangle())
             .help("Keep macOS system awake during an inference request")

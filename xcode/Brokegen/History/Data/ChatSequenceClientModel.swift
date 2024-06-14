@@ -25,7 +25,10 @@ class ChatSequenceClientModel: ObservableObject {
     var responseInEdit: Message? = nil
     var receivingStreamer: AnyCancellable? = nil
     private var stayAwake: StayAwake = StayAwake()
-    var useStayAwake: Bool = true
+    var stayAwakeDuringInference: Bool = true
+    var currentlyAwakeDuringInference: Bool {
+        get { stayAwake.assertionIsActive }
+    }
 
     var serverStatus: String? = nil
 
@@ -150,7 +153,7 @@ class ChatSequenceClientModel: ObservableObject {
         withRetrieval: Bool = false
     ) -> Self {
         print("[INFO] ChatSequenceClientModel.requestContinue(\(continuationModelId), withRetrieval: \(withRetrieval))")
-        if useStayAwake {
+        if stayAwakeDuringInference {
             _ = stayAwake.createAssertion(reason: "brokegen ChatSequenceClientModel.requestContinue() for ChatSequence#\(self.sequence.serverId ?? -1)")
         }
 
@@ -191,7 +194,7 @@ class ChatSequenceClientModel: ObservableObject {
         withRetrieval: Bool = false
     ) {
         print("[INFO] ChatSequenceClientModel.requestExtend(withRetrieval: \(withRetrieval))")
-        if useStayAwake {
+        if stayAwakeDuringInference {
             _ = stayAwake.createAssertion(reason: "brokegen ChatSequenceClientModel.requestExtend() for ChatSequence#\(self.sequence.serverId ?? -1)")
         }
 
