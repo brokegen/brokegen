@@ -54,7 +54,7 @@ class DefaultJobsManagerService: JobsManagerService {
                 "OLLAMA_MAX_LOADED_MODELS": "3",
                 "OLLAMA_KEEP_ALIVE": "4h",
             ],
-            sidebarTitle: "ollama\n(embedded binary)"
+            sidebarTitle: "ollama v0.1.44\n(embedded binary)"
         )
         self.sidebarRenderableJobs.insert(ollama, at: 0)
         self.storedJobs.insert(ollama, at: 0)

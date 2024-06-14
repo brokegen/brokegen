@@ -4,8 +4,9 @@ struct JobsSidebarItem: View {
     @ObservedObject var job: BaseJob
 
     @State var isButtonHovered = false
+    @State var isButtonPressed = false
 
-    static let LEADING_BUTTON_WIDTH: CGFloat = 24
+    static let LEADING_BUTTON_WIDTH: CGFloat = 36
     static let TRAILING_PROGRESS_WIDTH: CGFloat = 80
     static let TRAILING_INDICATOR_WIDTH: CGFloat = 24
 
@@ -13,39 +14,65 @@ struct JobsSidebarItem: View {
         self.job = job
     }
 
+    @ViewBuilder
+    func actionButton(
+        _ normalSymbol: String,
+        hover hoverSymbol: String? = nil,
+        hoverColor: Color = Color(.controlTextColor),
+        action: (@escaping () -> Void) = {}
+    ) -> some View {
+        Image(systemName: self.isButtonHovered
+              ? (hoverSymbol ?? normalSymbol)
+              : normalSymbol)
+            .scaleEffect(self.isButtonPressed ? 0.9 : 1.0)
+            .onTapGesture {
+                self.isButtonPressed = true
+                action()
+                self.isButtonPressed = false
+            }
+            .onLongPressGesture(perform: {
+                action()
+            }, onPressingChanged: { pressing in
+                self.isButtonPressed = pressing
+            })
+            .background(
+                Circle()
+                    .stroke(hoverColor, lineWidth: isButtonHovered ? 2 : 0)
+                    .blur(radius: isButtonHovered ? 8 : 0)
+                    .animation(.easeOut(duration: 0.3))
+                    .frame(width: 12, height: 12)
+            )
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
             Group {
                 switch job.status {
                 case .notStarted:
-                    Image(systemName: self.isButtonHovered ? "play.fill" : "play")
-                        .onTapGesture {
-                            _ = job.launch()
-                        }
-
+                    actionButton("play", hover: "play.fill", action: {
+                        _ = job.launch()
+                    })
+                    
                 case .requestedStart:
-                    Image(systemName: "play.fill")
-                        .disabled(true)
+                    actionButton("play.fill", hoverColor: Color.clear)
                         .foregroundStyle(Color(.disabledControlTextColor))
-
+                        .disabled(true)
+                    
                 case .startedNoOutput, .startedWithOutput:
-                    Image(systemName: self.isButtonHovered ? "stop.fill" : "stop")
-                        .onTapGesture {
-                            _ = job.terminatePatiently()
-                        }
-
+                    actionButton("stop", hover: "stop.fill") {
+                        _ = job.terminatePatiently()
+                    }
+                    
                 case .requestedStop:
-                    Image(systemName: "stop.fill")
-                        .foregroundStyle(self.isButtonHovered ? Color.red : Color(.controlTextColor))
-                        .onTapGesture {
-                            _ = job.terminate()
-                        }
-
+                    actionButton("stop.fill", hoverColor: Color.red) {
+                        _ = job.terminate()
+                    }
+                    .foregroundStyle(isButtonHovered ? Color.red : Color(.controlTextColor))
+                    
                 case .stopped, .error:
-                    Image(systemName: self.isButtonHovered ? "play.fill" : "arrow.clockwise")
-                        .onTapGesture {
-                            _ = job.launch()
-                        }
+                    actionButton("arrow.clockwise", hover: "play.fill") {
+                        _ = job.launch()
+                    }
                 }
             }
             .frame(width: JobsSidebarItem.LEADING_BUTTON_WIDTH)
@@ -56,6 +83,7 @@ struct JobsSidebarItem: View {
             .layoutPriority(0.5)
 
             Text(job.sidebarTitle)
+                .lineSpacing(9)
                 .lineLimit(1...4)
                 .layoutPriority(1.0)
 

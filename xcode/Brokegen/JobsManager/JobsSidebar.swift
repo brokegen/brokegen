@@ -35,8 +35,8 @@ struct MiniJobsSidebar: View {
                 ForEach(jobsService.sidebarRenderableJobs.prefix(navLimit)) { job in
                     NavigationLink(destination: JobOutputView(job: job)) {
                         JobsSidebarItem(job: job)
-                            .padding(.leading, -24)
-                            .padding(.trailing, -24)
+                            .padding(.leading, -JobsSidebarItem.LEADING_BUTTON_WIDTH)
+                            .padding(.trailing, -JobsSidebarItem.TRAILING_INDICATOR_WIDTH)
                     }
                 }
             }
