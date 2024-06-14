@@ -3,13 +3,13 @@ import SwiftUI
 let tabBarHeight: CGFloat = 48
 
 struct ProSequenceView: View {
-    @ObservedObject var viewModel: ChatSequenceClientModel
+    @ObservedObject var viewModel: OneSequenceViewModel
     @Bindable var settings: CombinedCSCSettings
 
     @FocusState private var focusTextInput: Bool
     @State private var splitViewLoaded: Bool = false
 
-    init(_ viewModel: ChatSequenceClientModel) {
+    init(_ viewModel: OneSequenceViewModel) {
         self.viewModel = viewModel
         settings = CombinedCSCSettings(globalSettings: viewModel.globalSequenceSettings, sequenceSettings: viewModel.sequenceSettings)
     }
@@ -506,7 +506,7 @@ struct ProSequenceView: View {
     do {
         let chatService = ChatSyncService()
         let sequence = try ChatSequence(-1, data: try encoder.encode(parameters))
-        let viewModel = ChatSequenceClientModel(sequence, chatService: chatService, inferenceModelSettings: InferenceModelSettings())
+        let viewModel = OneSequenceViewModel(sequence, chatService: chatService, inferenceModelSettings: InferenceModelSettings())
 
         return ProSequenceView(viewModel)
     }
@@ -540,7 +540,7 @@ struct ProSequenceView: View {
     do {
         let chatService = ChatSyncService()
         let sequence = try ChatSequence(-1, data: try encoder.encode(parameters))
-        let viewModel = ChatSequenceClientModel(sequence, chatService: chatService, inferenceModelSettings: InferenceModelSettings())
+        let viewModel = OneSequenceViewModel(sequence, chatService: chatService, inferenceModelSettings: InferenceModelSettings())
         return ProSequenceView(viewModel)
     }
     catch {

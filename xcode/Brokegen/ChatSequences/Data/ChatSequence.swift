@@ -158,7 +158,7 @@ extension ChatSyncService {
             loadedChatSequences.insert(updatedSequence, at: 0)
         }
 
-        let predicate = #Predicate<ChatSequenceClientModel> {
+        let predicate = #Predicate<OneSequenceViewModel> {
             $0.sequence.serverId == updatedSequence.serverId
         }
         do {
@@ -197,7 +197,7 @@ extension ChatSyncService {
                     self.loadedChatSequences.insert(updatedSequence, at: 0)
                 }
 
-                let predicate = #Predicate<ChatSequenceClientModel> {
+                let predicate = #Predicate<OneSequenceViewModel> {
                     $0.sequence.serverId == originalSequenceId
                 }
                 do {

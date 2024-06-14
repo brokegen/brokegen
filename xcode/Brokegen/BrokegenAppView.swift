@@ -47,7 +47,7 @@ struct BrokegenAppView: View {
                 SequencePickerView()
                     .environmentObject(chatService)
             })
-            .navigationDestination(for: ChatSequenceClientModel.self) { clientModel in
+            .navigationDestination(for: OneSequenceViewModel.self) { clientModel in
                 NavigationSplitView(sidebar: {
                     AppSidebar(useSimplifiedSequenceViews: $useSimplifiedSequenceViews, bigReset: bigReset)
                 }, detail: {

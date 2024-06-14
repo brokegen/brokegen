@@ -3,10 +3,10 @@ import Combine
 import Foundation
 import SwiftData
 
-// TODO: Keep active ChatSequenceClientModel around, rather than constructing one.
+// TODO: Keep active OneSequenceViewModel around, rather than constructing one.
 // This probably means it has to live under ChatSyncService.
 @Observable
-class ChatSequenceClientModel: ObservableObject {
+class OneSequenceViewModel: ObservableObject {
     var sequence: ChatSequence
     let chatService: ChatSyncService
     let inferenceModelSettings: InferenceModelSettings
@@ -152,14 +152,14 @@ class ChatSequenceClientModel: ObservableObject {
         model continuationModelId: InferenceModelRecordID? = nil,
         withRetrieval: Bool = false
     ) -> Self {
-        print("[INFO] ChatSequenceClientModel.requestContinue(\(continuationModelId), withRetrieval: \(withRetrieval))")
+        print("[INFO] OneSequenceViewModel.requestContinue(\(continuationModelId), withRetrieval: \(withRetrieval))")
         if stayAwakeDuringInference {
-            _ = stayAwake.createAssertion(reason: "brokegen ChatSequenceClientModel.requestContinue() for ChatSequence#\(self.sequence.serverId ?? -1)")
+            _ = stayAwake.createAssertion(reason: "brokegen OneSequenceViewModel.requestContinue() for ChatSequence#\(self.sequence.serverId ?? -1)")
         }
 
         Task {
             guard submitting == false else {
-                print("[ERROR] ChatSequenceClientModel.requestContinue(withRetrieval: \(withRetrieval)) during another submission")
+                print("[ERROR] OneSequenceViewModel.requestContinue(withRetrieval: \(withRetrieval)) during another submission")
                 return
             }
             DispatchQueue.main.async {
@@ -182,7 +182,7 @@ class ChatSequenceClientModel: ObservableObject {
                     caller: "ChatSyncService.sequenceContinue",
                     endpoint: "/sequences/\(sequence.serverId!)/continue"
                 ), receiveValue: receiveHandler(
-                    caller: "ChatSequenceClientModel.requestContinue(withRetrieval: \(withRetrieval))",
+                    caller: "OneSequenceViewModel.requestContinue(withRetrieval: \(withRetrieval))",
                     endpoint: "/sequences/\(sequence.serverId!)/continue"
                 ))
         }
@@ -193,15 +193,15 @@ class ChatSequenceClientModel: ObservableObject {
     func requestExtend(
         withRetrieval: Bool = false
     ) {
-        print("[INFO] ChatSequenceClientModel.requestExtend(withRetrieval: \(withRetrieval))")
+        print("[INFO] OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval))")
         if stayAwakeDuringInference {
-            _ = stayAwake.createAssertion(reason: "brokegen ChatSequenceClientModel.requestExtend() for ChatSequence#\(self.sequence.serverId ?? -1)")
+            _ = stayAwake.createAssertion(reason: "brokegen OneSequenceViewModel.requestExtend() for ChatSequence#\(self.sequence.serverId ?? -1)")
         }
 
         Task {
             guard !self.promptInEdit.isEmpty else { return }
             guard submitting == false else {
-                print("[ERROR] ChatSequenceClientModel.requestExtend(withRetrieval: \(withRetrieval)) during another submission")
+                print("[ERROR] OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval)) during another submission")
                 return
             }
             DispatchQueue.main.async {
@@ -230,7 +230,7 @@ class ChatSequenceClientModel: ObservableObject {
                 caller: "ChatSyncService.sequenceExtend",
                 endpoint: "/sequences/\(sequence.serverId!)/extend"
             ), receiveValue: receiveHandler(
-                caller: "ChatSequenceClientModel.requestExtend(withRetrieval: \(withRetrieval))",
+                caller: "OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval))",
                 endpoint: "/sequences/\(sequence.serverId!)/extend",
                 maybeNextMessage: nextMessage
             ))
@@ -258,7 +258,7 @@ class ChatSequenceClientModel: ObservableObject {
     }
 
     func replaceSequence(_ newSequenceId: ChatSequenceServerID) async {
-        print("[DEBUG] Attempting to update ChatSequenceClientModel to new_sequence_id: \(newSequenceId)")
+        print("[DEBUG] Attempting to update OneSequenceViewModel to new_sequence_id: \(newSequenceId)")
         await self.chatService.replaceSequenceById(self.sequence.serverId!, with: newSequenceId)
 
         if let newSequence = await chatService.fetchSequence(newSequenceId) {
@@ -269,7 +269,7 @@ class ChatSequenceClientModel: ObservableObject {
     }
 }
 
-extension ChatSequenceClientModel: Hashable {
+extension OneSequenceViewModel: Hashable {
     func hash(into hasher: inout Hasher) {
         hasher.combine(sequence)
         hasher.combine(promptInEdit)
@@ -277,8 +277,8 @@ extension ChatSequenceClientModel: Hashable {
     }
 }
 
-extension ChatSequenceClientModel: Equatable {
-    static func == (lhs: ChatSequenceClientModel, rhs: ChatSequenceClientModel) -> Bool {
+extension OneSequenceViewModel: Equatable {
+    static func == (lhs: OneSequenceViewModel, rhs: OneSequenceViewModel) -> Bool {
         if lhs.sequence != rhs.sequence {
             return false
         }

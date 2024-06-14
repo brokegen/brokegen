@@ -5,7 +5,7 @@ struct BlankOneSequenceView: View {
     @Environment(PathHost.self) private var pathHost
     @Environment(InferenceModelSettings.self) var settings: InferenceModelSettings
 
-    // variables that should be in a ChatSequenceClientModel
+    // variables that should be in a OneSequenceViewModel
     @State var modelSelection: InferenceModel?
     @State var chatSequenceHumanDesc: String = ""
     @State var submitting: Bool = false
