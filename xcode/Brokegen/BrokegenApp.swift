@@ -10,7 +10,11 @@ struct BrokegenApp: App {
 
     private var inferenceSettings = InferenceSettingsService()
     @State private var inferenceSettingsUpdater: AnyCancellable? = nil
-    @StateObject private var chatSettingsService = CSCSettingsService()
+    @ObservedObject private var chatSettingsService = CSCSettingsService()
+
+    // DEBUG: print subscription changes, until we figure out the flows
+    @State private var simplifiedUpdater: AnyCancellable? = nil
+    @State private var continuationUpdater: AnyCancellable? = nil
 
     init() {
         // Do on-startup init, because otherwise we store no data and app is empty
@@ -38,6 +42,10 @@ struct BrokegenApp: App {
                 .environment(inferenceSettings.inferenceModelSettings)
                 .environment(chatSettingsService.sequenceSettings)
                 .environmentObject(chatSettingsService)
+                .onReceive(chatSettingsService.objectWillChange) { entireService in
+                    print("[TRACE] useSimplifiedSequenceView: \(chatSettingsService.useSimplifiedSequenceViews)")
+                    print("[TRACE] defaultUiSettings.allowContinuation: \(chatSettingsService.defaultUiSettings.allowContinuation)")
+                }
         }
         .windowStyle(.hiddenTitleBar)
         .commands {

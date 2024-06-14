@@ -10,6 +10,7 @@ class OneSequenceViewModel: ObservableObject {
     var sequence: ChatSequence
     let chatService: ChatSyncService
     let inferenceModelSettings: InferenceModelSettings
+    var settings: CSCSettingsService.SettingsProxy
     var uiSettings: CombinedCSUISettings
 
     // TODO: This should be initialized some other way
@@ -37,16 +38,8 @@ class OneSequenceViewModel: ObservableObject {
         self.sequence = sequence
         self.chatService = chatService
         self.inferenceModelSettings = inferenceModelSettings
+        self.settings = chatSettingsService.settings(for: sequence)
         self.uiSettings = chatSettingsService.uiSettings(for: sequence)
-
-        self.pinChatSequenceDesc = sequence.humanDesc != nil && sequence.humanDesc!.count < maxPinChatSequenceDesc
-    }
-
-    init(_ sequence: ChatSequence, chatService: ChatSyncService, inferenceModelSettings: InferenceModelSettings) {
-        self.sequence = sequence
-        self.chatService = chatService
-        self.inferenceModelSettings = inferenceModelSettings
-        self.uiSettings = CombinedCSUISettings.fromNothing()
 
         self.pinChatSequenceDesc = sequence.humanDesc != nil && sequence.humanDesc!.count < maxPinChatSequenceDesc
     }

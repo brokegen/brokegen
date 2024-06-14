@@ -1,17 +1,43 @@
 import SwiftUI
 
-enum ChatAutoNaming: String {
-    case serverDefault, disable, summarizeAfterAsync, summarizeBefore
+struct PersistentDefaultCSUISettings {
+    @AppStorage("defaultUiSettings.allowContinuation")
+    var allowContinuation: Bool = true
 }
 
+@Observable
 class CSCSettingsService: Observable, ObservableObject {
     // Legacy, should be removed
-    @Bindable public var sequenceSettings: GlobalChatSequenceClientSettings = GlobalChatSequenceClientSettings()
+    @ObservationIgnored public var sequenceSettings: GlobalChatSequenceClientSettings = GlobalChatSequenceClientSettings()
 
-    @Published var useSimplifiedSequenceViews: Bool = false
+    @AppStorage("useSimplifiedSequenceViews")
+    @ObservationIgnored public var useSimplifiedSequenceViews: Bool = false
 
-    @Published var defaultUiSettings = DefaultCSUISettings()
-    @Published var perSequenceUiSettings: [ChatSequence : OverrideCSUISettings] = [:]
+    @ObservationIgnored let defaults: PersistentDefaultCSUISettings = PersistentDefaultCSUISettings()
+
+    var defaultUiSettings = DefaultCSUISettings()
+    var perSequenceUiSettings: [ChatSequence : OverrideCSUISettings] = [:]
+
+    class SettingsProxy: ObservableObject {
+        var defaults: PersistentDefaultCSUISettings
+        var override: OverrideCSUISettings
+
+        init(defaults: PersistentDefaultCSUISettings, override: OverrideCSUISettings) {
+            self.defaults = defaults
+            self.override = override
+        }
+    }
+
+    public func settings(for sequence: ChatSequence) -> SettingsProxy {
+        if let existingSettings = perSequenceUiSettings[sequence] {
+            return SettingsProxy(defaults: defaults, override: existingSettings)
+        }
+        else {
+            let newSettings = OverrideCSUISettings()
+            perSequenceUiSettings[sequence] = newSettings
+            return SettingsProxy(defaults: defaults, override: newSettings)
+        }
+    }
 
     public func uiSettings(for sequence: ChatSequence) -> CombinedCSUISettings {
         if let existingSettings = perSequenceUiSettings[sequence] {
@@ -23,6 +49,10 @@ class CSCSettingsService: Observable, ObservableObject {
             return CombinedCSUISettings(defaults: defaultUiSettings, override: newSettings)
         }
     }
+}
+
+enum ChatAutoNaming: String {
+    case serverDefault, disable, summarizeAfterAsync, summarizeBefore
 }
 
 /// NB Most of these currently do not work.

@@ -170,14 +170,14 @@ class ChatSyncService: Observable, ObservableObject {
     var chatSequenceClientModels: [OneSequenceViewModel] = []
     @Published var loadedChatSequences: [ChatSequence] = []
 
-    public func clientModel(for sequence: ChatSequence, inferenceModelSettings: InferenceModelSettings) -> OneSequenceViewModel {
+    public func clientModel(for sequence: ChatSequence, inferenceModelSettings: InferenceModelSettings, chatSettingsService: CSCSettingsService) -> OneSequenceViewModel {
         if let existingSeq = chatSequenceClientModels.first(where: {
             $0.sequence == sequence
         }) {
             return existingSeq
         }
         else {
-            let newModel = OneSequenceViewModel(sequence, chatService: self, inferenceModelSettings: inferenceModelSettings)
+            let newModel = OneSequenceViewModel(sequence, chatService: self, inferenceModelSettings: inferenceModelSettings, chatSettingsService: chatSettingsService)
             chatSequenceClientModels.append(newModel)
             return newModel
         }

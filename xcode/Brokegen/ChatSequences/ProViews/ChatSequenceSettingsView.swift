@@ -48,19 +48,21 @@ struct WidePicker: View {
 
 struct ChatSequenceSettingsView: View {
     @ObservedObject var viewModel: OneSequenceViewModel
+    @ObservedObject var settings: CSCSettingsService.SettingsProxy
     @ObservedObject var uiSettings: CombinedCSUISettings
 
     init(
         _ viewModel: OneSequenceViewModel
     ) {
         self.viewModel = viewModel
+        self.settings = viewModel.settings
         self.uiSettings = viewModel.uiSettings
     }
 
     var body: some View {
         GroupBox(content: {
             VStack(spacing: 12) {
-                WideToggle(isOn: $uiSettings.defaults.allowContinuation,
+                WideToggle(isOn: $settings.defaults.allowContinuation,
                            labelText: "Allow direct continuation (no user input)")
                 WideToggle(isOn: $uiSettings.defaults.showSeparateRetrievalButton,
                            labelText: "Show separate retrieval button")

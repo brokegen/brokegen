@@ -414,7 +414,7 @@ struct ProSequenceView: View {
                                     splitViewLoaded = true
                                 }
                             }
-                            .onChange(of: viewModel.sequence.messages) { old, new in
+                            .onChange(of: viewModel.sequence.messages) {
                                 proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
                             }
                             .onChange(of: viewModel.responseInEdit?.content) {
@@ -506,7 +506,7 @@ struct ProSequenceView: View {
     do {
         let chatService = ChatSyncService()
         let sequence = try ChatSequence(-1, data: try encoder.encode(parameters))
-        let viewModel = OneSequenceViewModel(sequence, chatService: chatService, inferenceModelSettings: InferenceModelSettings())
+        let viewModel = OneSequenceViewModel(sequence, chatService: chatService, inferenceModelSettings: InferenceModelSettings(), chatSettingsService: CSCSettingsService())
 
         return ProSequenceView(viewModel)
     }
@@ -540,7 +540,7 @@ struct ProSequenceView: View {
     do {
         let chatService = ChatSyncService()
         let sequence = try ChatSequence(-1, data: try encoder.encode(parameters))
-        let viewModel = OneSequenceViewModel(sequence, chatService: chatService, inferenceModelSettings: InferenceModelSettings())
+        let viewModel = OneSequenceViewModel(sequence, chatService: chatService, inferenceModelSettings: InferenceModelSettings(), chatSettingsService: CSCSettingsService())
         return ProSequenceView(viewModel)
     }
     catch {

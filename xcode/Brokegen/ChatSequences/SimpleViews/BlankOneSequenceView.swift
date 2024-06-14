@@ -4,6 +4,7 @@ struct BlankOneSequenceView: View {
     @Environment(ChatSyncService.self) private var chatService
     @Environment(PathHost.self) private var pathHost
     @Environment(InferenceModelSettings.self) var settings: InferenceModelSettings
+    @EnvironmentObject public var chatSettingsService: CSCSettingsService
 
     // variables that should be in a OneSequenceViewModel
     @State var modelSelection: InferenceModel?
@@ -230,7 +231,7 @@ struct BlankOneSequenceView: View {
             }
 
             pathHost.push(
-                chatService.clientModel(for: nextSequence!, inferenceModelSettings: settings)
+                chatService.clientModel(for: nextSequence!, inferenceModelSettings: settings, chatSettingsService: chatSettingsService)
                     .requestContinue(model: modelSelection?.serverId, withRetrieval: withRetrieval)
                 )
         }

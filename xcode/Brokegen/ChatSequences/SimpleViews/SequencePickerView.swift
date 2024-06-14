@@ -162,6 +162,7 @@ struct MiniSequencePickerSidebar: View {
     @EnvironmentObject private var chatService: ChatSyncService
     @Environment(PathHost.self) private var pathHost
     @Environment(InferenceModelSettings.self) public var inferenceModelSettings
+    @EnvironmentObject public var chatSettingsService: CSCSettingsService
     let navLimit: Int
 
     @State private var timesRefreshClicked = 0
@@ -268,7 +269,7 @@ struct MiniSequencePickerSidebar: View {
                         ForEach(sectionSequences) { sequence in
                             Button(action: {
                                 pathHost.push(
-                                    chatService.clientModel(for: sequence, inferenceModelSettings: inferenceModelSettings)
+                                    chatService.clientModel(for: sequence, inferenceModelSettings: inferenceModelSettings, chatSettingsService: chatSettingsService)
                                 )
                             }, label: {
                                 HStack(alignment: .top, spacing: 0) {
@@ -346,6 +347,7 @@ struct SequencePickerView: View {
     @EnvironmentObject private var chatService: ChatSyncService
     @Environment(PathHost.self) private var pathHost
     @Environment(InferenceModelSettings.self) public var inferenceModelSettings
+    @EnvironmentObject public var chatSettingsService: CSCSettingsService
 
     private var sectionedSequences: [(String, [ChatSequence])] {
         let sectionedSequences = Dictionary(grouping: chatService.loadedChatSequences) {
@@ -415,7 +417,7 @@ struct SequencePickerView: View {
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 pathHost.push(
-                                    chatService.clientModel(for: sequence, inferenceModelSettings: inferenceModelSettings)
+                                    chatService.clientModel(for: sequence, inferenceModelSettings: inferenceModelSettings, chatSettingsService: chatSettingsService)
                                 )
                             }
                     }
