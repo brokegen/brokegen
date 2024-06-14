@@ -6,14 +6,12 @@ struct BlankOneSequenceView: View {
     @Environment(InferenceModelSettings.self) var settings: InferenceModelSettings
     @EnvironmentObject public var chatSettingsService: CSCSettingsService
 
-    // variables that should be in a OneSequenceViewModel
     @State var modelSelection: InferenceModel?
     @State var chatSequenceHumanDesc: String = ""
     @State var submitting: Bool = false
     @State var promptInEdit: String = ""
 
     @State var showModelPicker: Bool
-    @State var allowNewlineSubmit: Bool = false
     @FocusState var focusTextInput: Bool
     @State private var splitViewLoaded: Bool = false
 
@@ -88,7 +86,7 @@ struct BlankOneSequenceView: View {
                     .frame(minHeight: 36)
 
                     HStack(spacing: 0) {
-                        InlineTextInput($promptInEdit, allowNewlineSubmit: $allowNewlineSubmit, isFocused: $focusTextInput) {
+                        InlineTextInput($promptInEdit, allowNewlineSubmit: chatSettingsService.defaults.allowNewlineSubmit, isFocused: $focusTextInput) {
                             submit()
                         }
                         .focused($focusTextInput)

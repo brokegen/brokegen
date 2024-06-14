@@ -105,7 +105,7 @@ struct ChatNameInput: View {
 
 struct InlineTextInput: View {
     @Binding var textInEdit: String
-    @Binding var allowNewlineSubmit: Bool
+    let allowNewlineSubmit: Bool
 
     @State var isHovered: Bool = false
     var isFocused: FocusState<Bool>.Binding
@@ -114,12 +114,12 @@ struct InlineTextInput: View {
 
     init(
         _ textInEdit: Binding<String>,
-        allowNewlineSubmit: Binding<Bool>,
+        allowNewlineSubmit: Bool,
         isFocused: FocusState<Bool>.Binding,
         submitFunc: (@escaping () -> Void)
     ) {
         _textInEdit = textInEdit
-        _allowNewlineSubmit = allowNewlineSubmit
+        self.allowNewlineSubmit = allowNewlineSubmit
         self.isFocused = isFocused
         self.submitFunc = submitFunc
     }
@@ -167,7 +167,7 @@ struct InlineTextInput: View {
                         .frame(maxHeight: .infinity)
                         .frame(maxWidth: .infinity)
 
-                    InlineTextInput($textInEdit, allowNewlineSubmit: $allowNewlineSubmit, isFocused: $isFocused) {}
+                    InlineTextInput($textInEdit, allowNewlineSubmit: allowNewlineSubmit, isFocused: $isFocused) {}
                         .frame(minHeight: 200)
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height)

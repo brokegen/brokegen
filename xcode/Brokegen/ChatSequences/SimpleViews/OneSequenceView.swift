@@ -18,7 +18,7 @@ struct OneSequenceView: View {
         HStack(spacing: 0) {
             InlineTextInput(
                 $viewModel.promptInEdit,
-                allowNewlineSubmit: $settings.allowNewlineSubmit,
+                allowNewlineSubmit: settings.allowNewlineSubmit,
                 isFocused: $focusTextInput
             ) {
                 if viewModel.promptInEdit.isEmpty && settings.allowContinuation {

@@ -18,7 +18,7 @@ struct ProSequenceView: View {
         // Tab.retrieval
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                InlineTextInput($viewModel.promptInEdit, allowNewlineSubmit: $settings.allowNewlineSubmit, isFocused: $focusTextInput) {
+                InlineTextInput($viewModel.promptInEdit, allowNewlineSubmit: settings.allowNewlineSubmit, isFocused: $focusTextInput) {
                     if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
                         if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
                             _ = viewModel.requestContinue(withRetrieval: true)
@@ -184,7 +184,7 @@ struct ProSequenceView: View {
                 Rectangle()
                     .fill(Color.red.opacity(0.2))
 
-                InlineTextInput($settings.overrideSystemPrompt, allowNewlineSubmit: .constant(false), isFocused: $focusSystemPromptOverride) {}
+                InlineTextInput($settings.overrideSystemPrompt, allowNewlineSubmit: false, isFocused: $focusSystemPromptOverride) {}
 
                 Text("Override System Prompt")
                     .foregroundStyle(Color(.disabledControlTextColor))
@@ -202,7 +202,7 @@ struct ProSequenceView: View {
                 Rectangle()
                     .fill(Color.blue.opacity(0.2))
 
-                InlineTextInput($settings.seedAssistantResponse, allowNewlineSubmit: .constant(false), isFocused: $focusAssistantResponseSeed) {}
+                InlineTextInput($settings.seedAssistantResponse, allowNewlineSubmit: false, isFocused: $focusAssistantResponseSeed) {}
 
                 Text("Seed Assistant Response")
                     .foregroundStyle(Color(.disabledControlTextColor))
