@@ -2,13 +2,26 @@ import Combine
 import Foundation
 import SwiftUI
 
-class RestartableProcess: Job {
+/// Represents the equivalent of a service/daemon:
+///
+/// 1. Check if the target process is available via an HTTP "ping"
+/// 2. (optional) If not, start the process as a child of ourselves
+/// 3. (optional) Send a termination request when we're about to exit
+///
+class ManagedService: Job {
     var processes: [Process] = []
     let executableURL: URL
     let arguments: [String]
     let environment: [String : String]
 
-    init(_ launchURL: URL, _ arguments: [String] = [], environment: [String : String] = [:], sidebarTitle: String? = nil) {
+    init(
+        _ launchURL: URL,
+        _ arguments: [String] = [],
+        environment: [String : String] = [:],
+        sidebarTitle: String? = nil,
+        pingEndpoint: String?,
+        pingInterval: TimeInterval
+    ) {
         self.executableURL = launchURL
         self.arguments = arguments
         self.environment = environment

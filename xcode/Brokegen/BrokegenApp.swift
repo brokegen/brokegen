@@ -16,7 +16,7 @@ let configuration: URLSessionConfiguration = { slowTimeouts in
 @main
 struct BrokegenApp: App {
     @State private var chatService: ChatSyncService = DefaultChatSyncService(serverBaseURL, configuration: configuration)
-    @State private var jobsService: JobsManagerService = DefaultJobsManagerService()
+    @State private var jobsService: JobsManagerService = DefaultJobsManagerService(startServicesImmediately: true)
     @State private var providerService: ProviderService = DefaultProviderService(serverBaseURL, configuration: configuration)
 
     private var inferenceSettings = InferenceSettingsService()
