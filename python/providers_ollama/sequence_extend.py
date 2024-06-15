@@ -283,6 +283,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 audit_db,
             ),
             status_holder,
+            allow_non_ollama_fields=True,
         )
 
     @router_ish.post("/sequences/{sequence_id:int}/extend")
@@ -358,4 +359,5 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 audit_db,
             ),
             status_holder,
+            allow_non_ollama_fields=True,
         )

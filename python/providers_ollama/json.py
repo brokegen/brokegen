@@ -166,6 +166,7 @@ async def keepalive_wrapper(
         inference_model_human_id: InferenceModelHumanID,
         real_response_maker: Awaitable[JSONStreamingResponse],
         status_holder: ServerStatusHolder,
+        allow_non_ollama_fields: bool = False,
 ) -> JSONStreamingResponse:
     async def nonblocking_response_maker():
         async for item in (await real_response_maker).body_iterator:
@@ -178,23 +179,26 @@ async def keepalive_wrapper(
         Screen timeout for an iOS device with FaceID is 30 seconds (which maps to network timeout for simple iOS apps),
         so set the keepalive to be a fraction of that.
 
-        TODO: Though, during things like RAG loading, we want updates more frequently than 9.5 seconds.
+        NB during things like RAG loading, we want updates more frequently than 9.5 seconds.
         """
-        async for chunk in emit_keepalive_chunks(primordial, 2.0, None):
+        async for chunk in emit_keepalive_chunks(primordial, 1.0, None):
             if chunk is None:
-                yield orjson.dumps({
+                constructed_chunk = {
                     "model": inference_model_human_id,
                     "created_at": datetime.now(tz=timezone.utc),
                     "message": {
-                        # On testing, we don't even need this field, so empty string is fine
+                        # After testing, it turns out we don't even need this field, so empty string is fine
                         "content": "",
                         "role": "assistant",
                     },
                     "done": False,
-                    # Add random fields, since clients seem robust
-                    "response": "",
-                    "status": status_holder.get(),
-                })
+                }
+                if allow_non_ollama_fields:
+                    # Add random fields if clients seem robust (they're usually not).
+                    constructed_chunk["response"] = ""
+                    constructed_chunk["status"] = status_holder.get()
+
+                yield orjson.dumps(constructed_chunk)
                 continue
 
             yield chunk

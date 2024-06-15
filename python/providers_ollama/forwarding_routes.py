@@ -1,13 +1,15 @@
 import logging
 
+import httpx
 import orjson
+import starlette
+import starlette.responses
 from fastapi import FastAPI, APIRouter, Depends
 from starlette.requests import Request
 
 from _util.json import safe_get, JSONDict, safe_get_arrayed
 from _util.status import ServerStatusHolder
 from audit.http import AuditDB, get_db as get_audit_db
-from retrieval.faiss.retrieval import RetrievalLabel
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceReason
 from providers.registry import ProviderRegistry
@@ -17,6 +19,7 @@ from providers_ollama.forwarding import forward_request_nolog, forward_request
 from providers_ollama.json import keepalive_wrapper, OllamaRequestContentJSON
 from providers_ollama.model_routes import do_api_tags, do_api_show
 from providers_ollama.registry import ExternalOllamaFactory
+from retrieval.faiss.retrieval import RetrievalLabel
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +100,10 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
             request: Request,
             ollama_head_path,
     ):
-        return await forward_request_nolog(ollama_head_path, request)
+        try:
+            return await forward_request_nolog(ollama_head_path, request)
+        except httpx.ConnectError:
+            return starlette.responses.Response(status_code=500)
 
     @ollama_forwarder.get("/ollama-proxy/{ollama_get_path:path}")
     @ollama_forwarder.post("/ollama-proxy/{ollama_post_path:path}")
