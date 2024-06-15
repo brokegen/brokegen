@@ -51,7 +51,20 @@ extension ChatMessage: Decodable {
         if preserveMicroseconds {
             decoder.dateDecodingStrategy = .custom { decoder in
                 let container = try decoder.singleValueContainer()
-                let dateString = try container.decode(String.self) + "Z"
+                var dateString = try container.decode(String.self)
+
+                // TODO: Need to check timezones on these strings, maybe
+                if dateString.last == "Z" {
+                    dateString = String(dateString.dropLast(1))
+                }
+                if let fractionStart = dateString.range(of: ".", options: .backwards) {
+                    // Or, sometimes, Ollama will return fewer digits, apparently because the last few are zero.
+                    let digitsExtant = dateString.suffix(from: fractionStart.upperBound).count
+                    if digitsExtant >= 0 && digitsExtant < 6 {
+                        dateString += String(repeating: "0", count: 6 - digitsExtant)
+                    }
+                }
+                dateString += "Z"
 
                 /// from https://stackoverflow.com/questions/28016578/
                 guard var date = microsecondDateFormatter.date(from: dateString) else { throw ChatMessageError.failedDateDecoding }
@@ -62,11 +75,12 @@ extension ChatMessage: Decodable {
                 if let fractionStart = dateString.range(of: "."),
                    let fractionEnd = dateString.index(fractionStart.lowerBound, offsetBy: 7, limitedBy: dateString.endIndex)
                 {
-                    // fractionString is a string containing six decimal digits.
+                    // fractionString should a string containing six decimal digits.
                     let fractionString = dateString[fractionStart.lowerBound..<fractionEnd].trimmingPrefix(".")
-                    // Directly converting with `Double` introduces errors; `.065005` becomes `.065004`.
+
+                    // Directly converting with `Double` introduces rounding errors; `.065005` becomes `.065004`.
                     if let fraction = Int(fractionString) {
-                        date.addTimeInterval(Double(fraction) / 1E6)
+                        date.addTimeInterval(Double(fraction) / pow(10, Double(fractionString.count)))
                     }
                 }
 

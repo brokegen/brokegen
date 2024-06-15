@@ -185,13 +185,13 @@ async def keepalive_wrapper(
             if chunk is None:
                 constructed_chunk = {
                     "model": inference_model_human_id,
-                    "created_at": datetime.now(tz=timezone.utc),
+                    "created_at": datetime.now(tz=timezone.utc).isoformat() + "Z",
+                    "done": False,
                     "message": {
                         # After testing, it turns out we don't even need this field, so empty string is fine
                         "content": "",
                         "role": "assistant",
                     },
-                    "done": False,
                 }
                 if allow_non_ollama_fields:
                     # Add random fields if clients seem robust (they're usually not).

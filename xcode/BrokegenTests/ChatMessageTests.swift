@@ -68,4 +68,39 @@ final class ChatMessageTests: XCTestCase {
         assert(message.content == tempMessage.content)
         assert(message.createdAt.distance(to: tempMessage.createdAt) < 0.000_001)
     }
+
+
+    func decodeFractionalSeconds(fractionDigitsCount: Int) throws {
+        let repeatingDigits = String(repeating: "7", count: fractionDigitsCount)
+        let jsonData = """
+{
+    "id": 86204401,
+    "role": "assistant",
+    "content": "assistant message 3",
+    "created_at": "2024-06-15T16:38:35.\(repeatingDigits)"
+}
+"""
+        let encodedData = Data(jsonData.utf8)
+
+        let message = try ChatMessage.fromData(encodedData)
+
+        let referenceFraction: Double = Double(repeatingDigits)! / pow(10, Double(repeatingDigits.count))
+        let decodedFraction: Double = message.createdAt.timeIntervalSinceReferenceDate - floor(message.createdAt.timeIntervalSinceReferenceDate)
+        assert(
+            decodedFraction.distance(to: referenceFraction)
+            // Don't expect precision better than microseconds
+            < max(1E-6, pow(0.1, Double(repeatingDigits.count))))
+    }
+
+    func testDecodeFractionalSeconds() throws {
+        try decodeFractionalSeconds(fractionDigitsCount: 1)
+        try decodeFractionalSeconds(fractionDigitsCount: 2)
+        try decodeFractionalSeconds(fractionDigitsCount: 3)
+        try decodeFractionalSeconds(fractionDigitsCount: 4)
+        try decodeFractionalSeconds(fractionDigitsCount: 5)
+        try decodeFractionalSeconds(fractionDigitsCount: 6)
+        try decodeFractionalSeconds(fractionDigitsCount: 7)
+        try decodeFractionalSeconds(fractionDigitsCount: 8)
+        try decodeFractionalSeconds(fractionDigitsCount: 9)
+    }
 }
