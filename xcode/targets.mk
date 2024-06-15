@@ -17,7 +17,7 @@ dist-xcode: build/xcode-macos-export-options.plist
 
 .PHONY: build-xcode
 build: build-xcode
-build-xcode: server ollama-proxy
+build-xcode: server
 build-xcode:
 	xcodebuild archive \
 		-project xcode/Brokegen.xcodeproj \
