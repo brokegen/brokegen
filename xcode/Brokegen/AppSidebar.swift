@@ -222,7 +222,8 @@ struct AppSidebar: View {
 
                 Toggle(isOn: $showDebugSidebarItems, label: {
                     HStack(spacing: 0) {
-                        Text("Show debug sidebar items")
+                        // TODO: We really shouldn't need to restart the app. Probably something to do with explicit View id's
+                        Text("Show debug sidebar items (restart app to propagate changes)")
                             .layoutPriority(0.2)
 
                         Spacer()
