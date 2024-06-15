@@ -2,6 +2,7 @@ import Alamofire
 import Combine
 import Foundation
 import SwiftData
+import SwiftyJSON
 
 typealias ChatSequenceServerID = Int
 
@@ -103,73 +104,72 @@ extension ChatSequence: Hashable {
     }
 }
 
-extension ChatSyncService {
-    public func fetchSequence(_ sequenceId: ChatSequenceServerID) async -> ChatSequence? {
+extension DefaultChatSyncService {
+    func doConstructNewChatSequence(messageId: ChatMessageServerID, humanDesc: String = "") async throws -> ChatSequenceServerID? {
+        struct Parameters: Codable {
+            var humanDesc: String? = nil
+            var userPinned: Bool
+            let currentMessage: ChatMessageServerID
+            var parentSequence: ChatSequenceServerID? = nil
+            var generatedAt: Date?
+            var generationComplete: Bool
+            var inferenceJobId: InferenceEventID? = nil
+            var inferenceError: String? = nil
+        }
+        let params = Parameters(
+            humanDesc: humanDesc.isEmpty ? nil : humanDesc,
+            userPinned: true,
+            currentMessage: messageId,
+            generatedAt: Date.now,
+            generationComplete: true
+        )
+
         do {
-            if let entireSequence = await getData("/sequences/\(sequenceId)") {
-                return try ChatSequence(sequenceId, data: entireSequence)
-            }
+            let encodedParams = try jsonEncoder.encode(params)
+
+            let jsonDict = try await self.postDataAsJson(
+                encodedParams,
+                endpoint: "/sequences")
+            guard jsonDict != nil else { return nil }
+
+            let sequenceID: ChatMessageServerID? = jsonDict!["sequence_id"] as? Int
+            return sequenceID
         }
         catch {
-            print("[ERROR] GET /sequences/\(sequenceId) failed decode, probably")
+            return nil
         }
-
-        return nil
     }
 
-    func fetchPinnedSequences(_ limit: Int? = nil) async {
-        var limitQuery = ""
-        if limit != nil {
-            limitQuery = "?limit=\(limit!)"
-        }
+    func doRefreshPinnedChatSequences(limit: Int) async throws {
+        let limitQuery = "?limit=\(limit)"
 
-        let jsonDict = await getDataAsJson("/sequences/pinned\(limitQuery)")
-        guard jsonDict != nil else { return }
+        let sequenceIds = try await getDataBlocking("/sequences/pinned\(limitQuery)")
+        guard sequenceIds != nil else { throw ChatSyncServiceError.noResponseContentReturned }
 
-        let newSequenceIds: [ChatSequenceServerID] = jsonDict!["sequence_ids"] as? [Int] ?? []
-        for newSequenceId in newSequenceIds {
-            if let entireSequence = await fetchSequence(newSequenceId) {
+        for (_, newSequenceId) in JSON(sequenceIds!)["sequence_ids"] {
+            if newSequenceId.int == nil {
+                print("[ERROR] Got nil sequenceId from /sequences/pinned\(limitQuery)")
+                continue
+            }
+
+            if let entireSequence = try await doFetchChatSequenceDetails(newSequenceId.int!) {
                 DispatchQueue.main.async {
-                    self.updateSequences(with: entireSequence)
+                    self.updateSequence(withSameId: entireSequence)
                 }
             }
         }
     }
 
-    func updateSequences(with updatedSequence: ChatSequence) {
-        // Keep the first ChatSequence's clientId, in case of duplicates
-        var originalClientId: UUID? = nil
-
-        if let removalIndex = loadedChatSequences.firstIndex(where: {
-            $0.serverId == updatedSequence.serverId
-        }) {
-            originalClientId = loadedChatSequences[removalIndex].id
-        }
-
-        // Remove all matching ChatSequences
-        loadedChatSequences.removeAll(where: {
-            $0.serverId == updatedSequence.serverId
-        })
-
-        if let clientId = originalClientId {
-            loadedChatSequences.insert(updatedSequence.replaceId(clientId), at: 0)
+    public func doFetchChatSequenceDetails(_ sequenceId: ChatSequenceServerID) async throws -> ChatSequence? {
+        if let entireSequence = try await getDataBlocking("/sequences/\(sequenceId)") {
+            return try ChatSequence(sequenceId, data: entireSequence)
         }
         else {
-            loadedChatSequences.insert(updatedSequence, at: 0)
+            throw ChatSyncServiceError.noResponseContentReturned
         }
-
-        let predicate = #Predicate<OneSequenceViewModel> {
-            $0.sequence.serverId == updatedSequence.serverId
-        }
-        do {
-            for clientModel in try chatSequenceClientModels.filter(predicate) {
-                clientModel.sequence = updatedSequence
-            }
-        }
-        catch {}
     }
 
-    func replaceSequenceById(_ originalSequenceId: ChatSequenceServerID?, with updatedSequenceId: ChatSequenceServerID) async {
+    func doUpdateSequence(originalSequenceId: ChatSequenceServerID?, updatedSequenceId: ChatSequenceServerID) async {
         var priorSequenceClientId: UUID? = nil
         if originalSequenceId != nil {
             if let removalIndex = self.loadedChatSequences.firstIndex(where: {
@@ -185,7 +185,7 @@ extension ChatSyncService {
             }
         }
 
-        if let updatedSequenceData = await getData("/sequences/\(updatedSequenceId)") {
+        if let updatedSequenceData = try? await getDataBlocking("/sequences/\(updatedSequenceId)") {
             do {
                 let updatedSequence = try ChatSequence(
                     clientId: priorSequenceClientId ?? UUID(),
@@ -211,6 +211,9 @@ extension ChatSyncService {
             catch {
                 print("[ERROR] Failed to ChatSyncService.replaceSequenceById(\(String(describing: originalSequenceId)), with: \(updatedSequenceId))")
             }
+        }
+        else {
+            print("[ERROR] Failed to GET ChatSequence\(updatedSequenceId)")
         }
     }
 }

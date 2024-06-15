@@ -158,80 +158,39 @@ struct BlankOneSequenceView: View {
         }
     }
 
-    private func prettyDate(_ requestedDate: Date? = nil) -> String {
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions.insert(.withFractionalSeconds)
-
-        let date = requestedDate ?? Date.now
-        return dateFormatter.string(from: date)
-    }
-
-    private func constructUserSequence(id messageID: ChatMessageServerID) async -> ChatSequenceServerID? {
-        struct Parameters: Codable {
-            var humanDesc: String? = nil
-            var userPinned: Bool
-            let currentMessage: ChatMessageServerID
-            var parentSequence: ChatSequenceServerID? = nil
-            var generatedAt: String?
-            var generationComplete: Bool
-            var inferenceJobId: InferenceEventID? = nil
-            var inferenceError: String? = nil
-        }
-        let params = Parameters(
-            humanDesc: chatSequenceHumanDesc,
-            userPinned: true,
-            currentMessage: messageID,
-            generatedAt: prettyDate(),
-            generationComplete: true
-        )
-
-        let encoder = JSONEncoder()
-        encoder.keyEncodingStrategy = .convertToSnakeCase
-
-        do {
-            let jsonDict = try await chatService.postDataAsJson(
-                try encoder.encode(params),
-                endpoint: "/sequences")
-            guard jsonDict != nil else { return nil }
-
-            let sequenceID: ChatMessageServerID? = jsonDict!["sequence_id"] as? Int
-            return sequenceID
-        }
-        catch {
-            return nil
-        }
-    }
-
     func submit(withRetrieval: Bool = false) {
         Task.init {
             submitting = true
 
-            let messageId: ChatMessageServerID? = await chatService.constructUserMessage(promptInEdit)
+            let messageId: ChatMessageServerID? = try? await chatService.constructChatMessage(from: TemporaryChatMessage(
+                role: "user",
+                content: promptInEdit,
+                createdAt: Date.now
+            ))
             guard messageId != nil else {
                 submitting = false
-                print("[ERROR] Couldn't submit message: \(promptInEdit)")
+                print("[ERROR] Couldn't construct ChatMessage from text: \(promptInEdit)")
                 return
             }
 
-            let sequenceId: ChatSequenceServerID? =
-                await constructUserSequence(id: messageId!)
+            let sequenceId: ChatSequenceServerID? = try? await chatService.constructNewChatSequence(messageId: messageId!, humanDesc: chatSequenceHumanDesc)
             guard sequenceId != nil else {
                 submitting = false
                 print("[ERROR] Couldn't construct sequence from: ChatMessage#\(messageId!)")
                 return
             }
 
-            let nextSequence = await chatService.fetchSequence(sequenceId!)
+            let nextSequence = try? await chatService.fetchChatSequenceDetails(sequenceId!)
             guard nextSequence != nil else {
                 submitting = false
-                print("[ERROR] Couldn't fetch sequence information for ChatSequence#\(sequenceId!)")
+                print("[ERROR] Couldn't fetch details for ChatSequence#\(sequenceId!)")
                 return
             }
 
             pathHost.push(
                 chatService.clientModel(for: nextSequence!, inferenceModelSettings: settings, chatSettingsService: chatSettingsService)
                     .requestContinue(model: modelSelection?.serverId, withRetrieval: withRetrieval)
-                )
+            )
         }
     }
 

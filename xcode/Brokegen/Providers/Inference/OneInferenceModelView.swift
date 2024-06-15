@@ -60,7 +60,7 @@ struct OneInferenceModelView: View {
                     }
 
                     if model.label != nil {
-                        Text("\(model.label!["type"] ?? "[ProviderType]") -- \(model.label!["id"] ?? "[ProviderLabel]")")
+                        Text("\(model.label!["type"]?.string ?? "[ProviderType]") -- \(model.label!["id"]?.string ?? "[ProviderLabel]")")
                             .font(.system(size: 24))
                             .foregroundStyle(Color(.disabledControlTextColor))
                     }

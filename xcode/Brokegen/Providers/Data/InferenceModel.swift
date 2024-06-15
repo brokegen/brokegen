@@ -33,7 +33,7 @@ extension JSON {
 
     public var isoDateValue: Date {
         get {
-            return self.isoDate ?? Date.init(timeIntervalSinceReferenceDate: 0)
+            return self.isoDate ?? Date.distantPast
         }
         set {
             self.stringValue = JSON.isoDateFormatter.string(from: newValue)
@@ -55,50 +55,37 @@ public struct InferenceModel: Identifiable {
     public let providerIdentifiers: String
     public let modelIdentifiers: [String : Any]?
 
-    public let combinedInferenceParameters: JSONObject?
+    public let combinedInferenceParameters: JSON
 
     /// Additional inference stats, added if available.
     /// Surfaced to client for the sake of sorting models + choosing ones they'd probably want.
     public let stats: [String : Any]?
     /// Redundant with the providerIdentifiers; this should be source of truth.
-    public let label: [String : String]?
+    public let label: [String : JSON]?
 }
 
 extension InferenceModel {
-    init(_ jsonDict: [String: Any?]) {
-        self.init(clientId: UUID(), jsonDict: jsonDict)
+    static func fromData(_ data: Data) -> InferenceModel {
+        let jsonModel = JSON(data)
+        return InferenceModel(jsonModel)
     }
 
-    init(clientId: UUID, jsonDict: [String: Any?]) {
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    init(_ jsonModel: [String: Any?]) {
+        self.init(JSON(jsonModel))
+    }
 
-        var firstSeenAt0: Date? = nil
-        if let firstSeenAt1 = jsonDict["first_seen_at"] as? String {
-            if let firstSeenAt2 = dateFormatter.date(from: firstSeenAt1 + "Z") {
-                firstSeenAt0 = firstSeenAt2
-            }
-        }
-
-        var lastSeen0: Date? = nil
-        if let lastSeen1 = jsonDict["last_seen"] as? String {
-            if let lastSeen2 = dateFormatter.date(from: lastSeen1 + "Z") {
-                lastSeen0 = lastSeen2
-            }
-        }
-
+    init(_ jsonModel: JSON) {
         self.init(
-            id: clientId,
-            serverId: jsonDict["id"] as! Int,
-            humanId: jsonDict["human_id"] as! String,
-            firstSeenAt: firstSeenAt0,
-            lastSeen: lastSeen0,
-            providerIdentifiers: jsonDict["provider_identifiers"] as! String,
-            modelIdentifiers: (jsonDict["model_identifiers"] as! [String : Any]),
-            combinedInferenceParameters: jsonDict["combined_inference_parameters"] as? JSONObject,
-            stats: (jsonDict["stats"] as? [String : Any]),
-            label: (jsonDict["label"] as? [String : String])
-        )
+            id: UUID(),
+            serverId: jsonModel["id"].int!,
+            humanId: jsonModel["human_id"].stringValue,
+            firstSeenAt: jsonModel["first_seen_at"].isoDate,
+            lastSeen: jsonModel["last_seen"].isoDate,
+            providerIdentifiers: jsonModel["provider_identifiers"].string!,
+            modelIdentifiers: jsonModel["model_identifiers"].dictionary,
+            combinedInferenceParameters: jsonModel["combined_inference_parameters"],
+            stats: jsonModel["stats"].dictionary,
+            label: jsonModel["label"].dictionary)
     }
 
     func replaceId(_ newClientId: UUID) -> InferenceModel {

@@ -260,9 +260,9 @@ class OneSequenceViewModel: ObservableObject {
 
     func replaceSequence(_ newSequenceId: ChatSequenceServerID) async {
         print("[DEBUG] Attempting to update OneSequenceViewModel to new_sequence_id: \(newSequenceId)")
-        await self.chatService.replaceSequenceById(self.sequence.serverId!, with: newSequenceId)
+        await self.chatService.updateSequence(self.sequence.serverId!, withNewSequence: newSequenceId)
 
-        if let newSequence = await chatService.fetchSequence(newSequenceId) {
+        if let newSequence = try? await chatService.fetchChatSequenceDetails(newSequenceId) {
             DispatchQueue.main.async {
                 self.sequence = newSequence
             }

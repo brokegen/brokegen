@@ -1,5 +1,5 @@
 import asyncio
-from typing import AsyncGenerator, Iterable, Coroutine, Awaitable, TypeAlias, AsyncIterable
+from typing import AsyncGenerator, Iterable, Awaitable, AsyncIterable
 
 import fastapi
 from fastapi import Depends
@@ -71,12 +71,13 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
     @router_ish.get("/providers/any/any/models")
     async def get_all_provider_models(
             registry: ProviderRegistry = Depends(ProviderRegistry),
-    ):
+    ) -> list[InferenceModelResponse]:
         """
         This returns a set of ordered pairs, to reflect how the models should be ranked to the user.
 
         TODO:  client doesn't check the ordering anymore, and neither should we.
         """
+
         async def generator_to_awaitable(
                 label: ProviderLabel,
                 provider: BaseProvider,
@@ -102,11 +103,10 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             for done_list in asyncio.as_completed(model_listers):
                 yield await done_list
 
-        return enumerate([
-            model
-            async for model_list in list_models_per_provider()
-            for model in model_list
-        ])
+        # Flatten the list of lists that we got
+        return [model
+                async for model_list in list_models_per_provider()
+                for model in model_list]
 
     @router_ish.get("/providers/{provider_type:str}/any/models")
     async def get_all_provider_models(

@@ -1,17 +1,20 @@
 import Alamofire
 import Foundation
+import SwiftyJSON
+
+enum ProviderServiceError: Error {
+    case noResponseContentReturned
+    case invalidResponseContentReturned
+}
 
 class ProviderService: Observable, ObservableObject {
-    var baseURL: String = "http://127.0.0.1:6635"
-    let session: Alamofire.Session = {
-        // Increase the TCP timeoutIntervalForRequest to 24 hours (configurable),
-        // since we expect Ollama models to sometimes take a long time.
-        let configuration = URLSessionConfiguration.default
-        configuration.timeoutIntervalForRequest = 24 * 3600.0
-        configuration.timeoutIntervalForResource = 7 * 24 * 3600.0
+    @Published var allModels: [InferenceModel] = []
 
-        return Alamofire.Session(configuration: configuration)
-    }()
+    func fetchAvailableModels() async throws {}
+
+    public func fetchAllProviders() async throws -> [ProviderClientModel] {
+        return []
+    }
 
     var availableModels: [InferenceModel] {
         get {
@@ -29,70 +32,8 @@ class ProviderService: Observable, ObservableObject {
         }
     }
 
-    @Published var allModels: [InferenceModel] = []
-
-    func getData(_ endpoint: String) async -> Data? {
-        do {
-            return try await withCheckedThrowingContinuation { continuation in
-                session.request(
-                    baseURL + endpoint,
-                    method: .get
-                )
-                .response { r in
-                    switch r.result {
-                    case .success(let data):
-                        continuation.resume(returning: data)
-                    case .failure(let error):
-                        print("GET \(endpoint) failed: " + error.localizedDescription)
-                        continuation.resume(returning: nil)
-                    }
-                }
-            }
-        }
-        catch {
-            print("GET \(endpoint) failed: exception thrown")
-            return nil
-        }
-    }
-
-    private func getDataAsJsonArray(_ endpoint: String) async -> [Any]? {
-        let data = await getData(endpoint)
-        guard data != nil else {
-            print("GET \(endpoint) returned nil data")
-            return nil
-        }
-
-        do {
-            let jsonArray = try JSONSerialization.jsonObject(with: data!, options: []) as! [Any]
-            return jsonArray
-        }
-        catch {
-            let dataDesc = String(data: data!, encoding: .utf8) ?? String(describing: data)
-            print("GET \(endpoint) decoding as array failed: \(dataDesc)")
-            return nil
-        }
-    }
-
-    private func getDataAsJsonDict(_ endpoint: String) async -> [String : Any]? {
-        let data = await getData(endpoint)
-        guard data != nil else {
-            print("GET \(endpoint) returned nil data")
-            return nil
-        }
-
-        do {
-            let jsonDict = try JSONSerialization.jsonObject(with: data!, options: []) as! [String : Any]
-            return jsonDict
-        }
-        catch {
-            let dataDesc = String(data: data!, encoding: .utf8) ?? String(describing: data)
-            print("GET \(endpoint) decoding as dict failed: \(dataDesc)")
-            return nil
-        }
-    }
-
     /// TODO: The sorting order gets all messed up.
-    private func replaceModelById(_ originalModelId: InferenceModelRecordID?, with updatedModel: InferenceModel) {
+    func replaceModelById(_ originalModelId: InferenceModelRecordID?, with updatedModel: InferenceModel) {
         var priorClientId: UUID? = nil
         var priorRemovalIndex: Int? = nil
 
@@ -129,17 +70,57 @@ class ProviderService: Observable, ObservableObject {
         }
     }
 
-    func fetchAvailableModels() async {
-        if let data = await getDataAsJsonDict("/providers/any/any/models") {
-            let sortedData = data.sorted(by: { Int($0.0) ?? -1 < Int($1.0) ?? -1 })
-            for (_, modelInfo) in sortedData {
-                if let modelInfo = modelInfo as? [String : Any?] {
-                    let model = InferenceModel(modelInfo)
-                    DispatchQueue.main.async {
-                        self.replaceModelById(model.serverId, with: model)
+}
+
+class DefaultProviderService: ProviderService {
+    var serverBaseURL: String
+    let session: Alamofire.Session
+
+    init(_ serverBaseURL: String, configuration: URLSessionConfiguration) {
+        self.serverBaseURL = serverBaseURL
+        self.session = Alamofire.Session(configuration: configuration)
+    }
+
+    func getDataBlocking(_ endpoint: String) async -> Data? {
+        do {
+            return try await withCheckedThrowingContinuation { continuation in
+                session.request(
+                    serverBaseURL + endpoint,
+                    method: .get
+                )
+                .response { r in
+                    switch r.result {
+                    case .success(let data):
+                        continuation.resume(returning: data)
+                    case .failure(let error):
+                        print("[ERROR] GET \(endpoint) failed, " + error.localizedDescription)
+                        continuation.resume(returning: nil)
                     }
                 }
             }
         }
+        catch {
+            print("[ERROR] GET \(endpoint) failed, exception thrown")
+            return nil
+        }
+    }
+
+    override func fetchAvailableModels() async throws {
+        print("[TRACE] DefaultProviderService.fetchAvailableModels()")
+
+        let allModelsData = await getDataBlocking("/providers/any/any/models")
+        guard allModelsData != nil else { throw ProviderServiceError.noResponseContentReturned }
+
+        for (_, modelData) in JSON(allModelsData!) {
+            print("[TRACE] Received modelData: \(modelData)")
+            let inferenceModel = InferenceModel(modelData.dictionaryValue)
+            DispatchQueue.main.async {
+                self.replaceModelById(inferenceModel.serverId, with: inferenceModel)
+            }
+        }
+    }
+
+    override func fetchAllProviders() async throws -> [ProviderClientModel] {
+        return try await doFetchAllProviders()
     }
 }

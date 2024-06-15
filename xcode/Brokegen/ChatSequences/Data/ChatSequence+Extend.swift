@@ -30,8 +30,8 @@ struct AFErrorAndData: Error {
 }
 
 /// Finally, something to submit new chat requests
-extension ChatSyncService {
-    public func sequenceContinue(
+extension DefaultChatSyncService {
+    public func doSequenceContinue(
         _ params: ChatSequenceParameters
     ) async -> AnyPublisher<Data, AFErrorAndData> {
         let subject = PassthroughSubject<Data, AFErrorAndData>()
@@ -50,6 +50,7 @@ extension ChatSyncService {
 
         var encodedParams: Data? = nil
         do {
+            // TODO: Replace with jsonEncoder
             encodedParams = try encoder.encode(params)
         }
         catch {
@@ -100,7 +101,7 @@ extension ChatSyncService {
         return subject.eraseToAnyPublisher()
     }
 
-    public func sequenceExtend(
+    public func doSequenceExtend(
         _ params: ChatSequenceParameters
     ) async -> AnyPublisher<Data, AFErrorAndData> {
         let subject = PassthroughSubject<Data, AFErrorAndData>()

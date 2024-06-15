@@ -2,19 +2,26 @@ import Combine
 import Foundation
 import SwiftUI
 
+let serverBaseURL: String = "http://127.0.0.1:6635"
+let configuration: URLSessionConfiguration = { slowTimeouts in
+    // Keep the timeout to 2 seconds, because we virtually require the embedded server to be up.
+    // For slow/loaded systems, or if a debugger is attached, we should bump this number.
+    let configuration = URLSessionConfiguration.default
+    configuration.timeoutIntervalForRequest = slowTimeouts ? 24 * 3600.0 : 5.0
+    configuration.timeoutIntervalForResource = 7 * 24 * 3600.0
+
+    return configuration
+}(true)
+
 @main
 struct BrokegenApp: App {
-    @State private var chatService: ChatSyncService = ChatSyncService()
+    @State private var chatService: ChatSyncService = DefaultChatSyncService(serverBaseURL, configuration: configuration)
     @State private var jobsService: JobsManagerService = DefaultJobsManagerService()
-    @State private var providerService: ProviderService = ProviderService()
+    @State private var providerService: ProviderService = DefaultProviderService(serverBaseURL, configuration: configuration)
 
     private var inferenceSettings = InferenceSettingsService()
     @State private var inferenceSettingsUpdater: AnyCancellable? = nil
     @ObservedObject private var chatSettingsService = CSCSettingsService()
-
-    // DEBUG: print subscription changes, until we figure out the flows
-    @State private var simplifiedUpdater: AnyCancellable? = nil
-    @State private var continuationUpdater: AnyCancellable? = nil
 
     init() {
         // Do on-startup init, because otherwise we store no data and app is empty
@@ -27,8 +34,12 @@ struct BrokegenApp: App {
         }
 
         Task {
-            _ = try? await providerService.fetchAllProviders()
-            await providerService.fetchAvailableModels()
+            do { _ = try await providerService.fetchAllProviders() }
+            catch { print("[ERROR] Failed to providerService.fetchAllProviders()") }
+
+            do { try await providerService.fetchAvailableModels() }
+            catch { print("[ERROR] Failed to providerService.fetchAvailableModels()") }
+
             inferenceSettings.inflateModels(providerService)
         }
     }

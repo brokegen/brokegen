@@ -103,8 +103,14 @@ struct ModelPickerView: View {
             .padding(24)
         }
         .onAppear {
-            Task {
-                await providerService.fetchAvailableModels()
+            if providerService.availableModels.isEmpty {
+                Task {
+                    do { _ = try await providerService.fetchAllProviders() }
+                    catch { print("[ERROR] Failed to providerService.fetchAllProviders()") }
+
+                    do { try await providerService.fetchAvailableModels() }
+                    catch { print("[ERROR] Failed to providerService.fetchAvailableModels()") }
+                }
             }
         }
         .onChange(of: modelSelection.wrappedValue?.serverId) {
@@ -124,7 +130,7 @@ fileprivate func makeFakeModel() -> InferenceModel {
         lastSeen: Date.now,
         providerIdentifiers: "xcode preview",
         modelIdentifiers: [:],
-        combinedInferenceParameters: JSONObject.string("98.6ºC"),
+        combinedInferenceParameters: "98.6ºC",
         stats: [:],
         label: [:]
     )

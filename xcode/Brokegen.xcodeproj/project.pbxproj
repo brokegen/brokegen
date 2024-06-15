@@ -51,6 +51,9 @@
 		CEE99E6B2C1002F9008E1B07 /* AppSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E6A2C1002F8008E1B07 /* AppSidebar.swift */; };
 		CEF73F2B2C1BE32200C46AA5 /* CSCSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF73F2A2C1BE32200C46AA5 /* CSCSettings.swift */; };
 		CEF73F2D2C1CA05D00C46AA5 /* ollama-darwin in Resources */ = {isa = PBXBuildFile; fileRef = CEF73F2C2C1CA05D00C46AA5 /* ollama-darwin */; };
+		CEF73F2F2C1E0FFC00C46AA5 /* LegacyChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF73F2E2C1E0FFC00C46AA5 /* LegacyChatMessage.swift */; };
+		CEF73F312C1E106400C46AA5 /* DateCoders.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF73F302C1E106400C46AA5 /* DateCoders.swift */; };
+		CEF73F332C1E19B500C46AA5 /* Provider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF73F322C1E19B500C46AA5 /* Provider.swift */; };
 		CEFA69452C14AE67007EEF8D /* CSCSettingsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA69442C14AE67007EEF8D /* CSCSettingsService.swift */; };
 		CEFA69472C14B692007EEF8D /* InferenceModelSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA69462C14B692007EEF8D /* InferenceModelSettings.swift */; };
 		CEFA69492C14C525007EEF8D /* VFlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA69482C14C525007EEF8D /* VFlowLayout.swift */; };
@@ -128,6 +131,9 @@
 		CEE99E6A2C1002F8008E1B07 /* AppSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSidebar.swift; sourceTree = "<group>"; };
 		CEF73F2A2C1BE32200C46AA5 /* CSCSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSCSettings.swift; sourceTree = "<group>"; };
 		CEF73F2C2C1CA05D00C46AA5 /* ollama-darwin */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = "ollama-darwin"; path = "../dist/ollama-darwin"; sourceTree = "<group>"; };
+		CEF73F2E2C1E0FFC00C46AA5 /* LegacyChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegacyChatMessage.swift; sourceTree = "<group>"; };
+		CEF73F302C1E106400C46AA5 /* DateCoders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateCoders.swift; sourceTree = "<group>"; };
+		CEF73F322C1E19B500C46AA5 /* Provider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Provider.swift; sourceTree = "<group>"; };
 		CEFA69442C14AE67007EEF8D /* CSCSettingsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSCSettingsService.swift; sourceTree = "<group>"; };
 		CEFA69462C14B692007EEF8D /* InferenceModelSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceModelSettings.swift; sourceTree = "<group>"; };
 		CEFA69482C14C525007EEF8D /* VFlowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VFlowLayout.swift; sourceTree = "<group>"; };
@@ -161,7 +167,7 @@
 			isa = PBXGroup;
 			children = (
 				CEF73F292C1BCBEA00C46AA5 /* Data */,
-				CEE99E612C0E7D13008E1B07 /* InferenceModels */,
+				CEE99E612C0E7D13008E1B07 /* Inference */,
 			);
 			path = Providers;
 			sourceTree = "<group>";
@@ -215,6 +221,7 @@
 		CE4634F02BFBB4560063142E /* ChatSequences */ = {
 			isa = PBXGroup;
 			children = (
+				CEF73F302C1E106400C46AA5 /* DateCoders.swift */,
 				CEAA2B6E2C070AAE002BEB26 /* Data */,
 				CE145DA62C1A0A1E00577314 /* SimpleViews */,
 				CE145DAB2C1A103C00577314 /* ProViews */,
@@ -295,6 +302,7 @@
 		CEAA2B6E2C070AAE002BEB26 /* Data */ = {
 			isa = PBXGroup;
 			children = (
+				CEF73F2E2C1E0FFC00C46AA5 /* LegacyChatMessage.swift */,
 				CE66FAFD2C16818800BD8745 /* ChatMessage.swift */,
 				CEAA2B712C070B2E002BEB26 /* ChatSequence.swift */,
 				CEAA2B6F2C070AE3002BEB26 /* ChatSequence+Extend.swift */,
@@ -319,24 +327,25 @@
 			path = Performance;
 			sourceTree = "<group>";
 		};
-		CEE99E612C0E7D13008E1B07 /* InferenceModels */ = {
+		CEE99E612C0E7D13008E1B07 /* Inference */ = {
 			isa = PBXGroup;
 			children = (
-				CE145DA42C18074100577314 /* InferenceModel.swift */,
+				CEE99E672C0FD9FC008E1B07 /* InferenceSettingsService.swift */,
 				CEE99E622C0E7D9F008E1B07 /* OneInferenceModelView.swift */,
 				CE7FFE152C04482900DB7CFA /* ModelPickerView.swift */,
 				CEFA69462C14B692007EEF8D /* InferenceModelSettings.swift */,
 				CEE99E662C0FD9FC008E1B07 /* InferenceModelSettingsView.swift */,
 			);
-			path = InferenceModels;
+			path = Inference;
 			sourceTree = "<group>";
 		};
 		CEF73F292C1BCBEA00C46AA5 /* Data */ = {
 			isa = PBXGroup;
 			children = (
-				CE145DA22C18071E00577314 /* ProviderPickerView.swift */,
+				CE145DA42C18074100577314 /* InferenceModel.swift */,
 				CE7FFE132C04435D00DB7CFA /* ProviderService.swift */,
-				CEE99E672C0FD9FC008E1B07 /* InferenceSettingsService.swift */,
+				CEF73F322C1E19B500C46AA5 /* Provider.swift */,
+				CE145DA22C18071E00577314 /* ProviderPickerView.swift */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -471,6 +480,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CE4634E72BFA6A050063142E /* JobsSidebarItem.swift in Sources */,
+				CEF73F312C1E106400C46AA5 /* DateCoders.swift in Sources */,
 				CE2988322C09101F00A997A1 /* OneSequenceView.swift in Sources */,
 				CE6D8A7F2BF6DF1800A7934D /* RibbonView.swift in Sources */,
 				CEF73F2B2C1BE32200C46AA5 /* CSCSettings.swift in Sources */,
@@ -487,6 +497,7 @@
 				CE4634F22BFBB4730063142E /* SequencePickerView.swift in Sources */,
 				CE9867632BF41954008D6C41 /* BrokegenAppView.swift in Sources */,
 				CEAA2B702C070AE3002BEB26 /* ChatSequence+Extend.swift in Sources */,
+				CEF73F332C1E19B500C46AA5 /* Provider.swift in Sources */,
 				CE8229AF2BF7306000029DC2 /* JobsManagerService.swift in Sources */,
 				CEFEB4782BFDA6C900334522 /* TimeJob.swift in Sources */,
 				CEE99E652C0E8378008E1B07 /* JobPickerView.swift in Sources */,
@@ -506,6 +517,7 @@
 				CEE99E632C0E7D9F008E1B07 /* OneInferenceModelView.swift in Sources */,
 				CE145DA82C1A0DFD00577314 /* SequenceWidgets.swift in Sources */,
 				CEFA69492C14C525007EEF8D /* VFlowLayout.swift in Sources */,
+				CEF73F2F2C1E0FFC00C46AA5 /* LegacyChatMessage.swift in Sources */,
 				CEAA2B722C070B2E002BEB26 /* ChatSequence.swift in Sources */,
 				CEFA69472C14B692007EEF8D /* InferenceModelSettings.swift in Sources */,
 				CEFA69452C14AE67007EEF8D /* CSCSettingsService.swift in Sources */,
