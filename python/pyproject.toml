@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = 'brokegen'
-version = '0.8'
+version = '0.9'
 license = {text = '0BSD'}
 
 # Virtually all dependencies are optional, because of how disparate our build targets are.
