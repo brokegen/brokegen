@@ -26,6 +26,12 @@ class OneSequenceViewModel: ObservableObject {
         get { stayAwake.assertionIsActive }
     }
 
+    var showTextEntryView: Bool = true
+    var showUiOptions: Bool = false
+    var showInferenceOptions: Bool = false
+    var showRetrievalOptions: Bool = false
+
+    var showAssistantResponseSeed: Bool = false
     var showSystemPromptOverride: Bool = false
 
     init(_ sequence: ChatSequence, chatService: ChatSyncService, inferenceModelSettings: InferenceModelSettings, chatSettingsService: CSCSettingsService) {

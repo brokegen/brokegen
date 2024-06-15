@@ -137,14 +137,8 @@ struct ProSequenceView: View {
         }
     }
 
-    @State private var showTextEntryView: Bool = true
-    @State private var showUiOptions: Bool = false
-    @State private var showInferenceOptions: Bool = false
-    @State private var showRetrievalOptions: Bool = false
-
     @FocusState private var focusSystemPromptOverride: Bool
     @FocusState private var focusModelTemplateOverride: Bool
-    @State private var showAssistantResponseSeed: Bool = false
     @FocusState private var focusAssistantResponseSeed: Bool
 
     var showStatusBar: Bool {
@@ -175,7 +169,7 @@ struct ProSequenceView: View {
     }
 
     var showLowerVStack: Bool {
-        return viewModel.showSystemPromptOverride || showTextEntryView || showAssistantResponseSeed
+        return viewModel.showSystemPromptOverride || viewModel.showTextEntryView || viewModel.showAssistantResponseSeed
     }
 
     @ViewBuilder var lowerVStack: some View {
@@ -202,12 +196,12 @@ struct ProSequenceView: View {
             }
         }
 
-        if showTextEntryView {
+        if viewModel.showTextEntryView {
             textEntryView
                 .background(inputBackgroundStyle)
         }
 
-        if showAssistantResponseSeed {
+        if viewModel.showAssistantResponseSeed {
             ZStack {
                 Rectangle()
                     .fill(Color.blue.opacity(0.2))
@@ -222,19 +216,19 @@ struct ProSequenceView: View {
     }
 
     var showLowerVStackOptions: Bool {
-        return showUiOptions || showInferenceOptions || showRetrievalOptions
+        return viewModel.showUiOptions || viewModel.showInferenceOptions || viewModel.showRetrievalOptions
     }
 
     @ViewBuilder var lowerVStackOptions: some View {
         ScrollView {
             VFlowLayout(spacing: 24) {
-                if showUiOptions {
+                if viewModel.showUiOptions {
                     // Tab.uiOptions
                     CSCSettingsView(viewModel, settings: viewModel.settings)
                 }
 
                 // Tab.modelOptions
-                if showInferenceOptions {
+                if viewModel.showInferenceOptions {
                     GroupBox(content: {
                         TextEditor(text: $settings.inferenceOptions)
                             .frame(width: 360, height: 36)
@@ -244,7 +238,7 @@ struct ProSequenceView: View {
                     })
                 }
 
-                if showRetrievalOptions {
+                if viewModel.showRetrievalOptions {
                     GroupBox(content: {
                         TextEditor(text: $settings.retrieverOptions)
                             .frame(width: 360, height: 36)
@@ -261,7 +255,7 @@ struct ProSequenceView: View {
         // Tab bar
         HStack(spacing: 0) {
             Button(action: {
-                showTextEntryView = !showTextEntryView
+                viewModel.showTextEntryView.toggle()
             }, label: {
                 Image(systemName: viewModel.promptInEdit.isEmpty ? "bubble" : "bubble.fill")
                     .padding(.leading, 12)
@@ -270,10 +264,10 @@ struct ProSequenceView: View {
             })
             .contentShape(Rectangle())
             .buttonStyle(.plain)
-            .background(showTextEntryView ? Color(.selectedControlColor) : Color(.clear))
+            .background(viewModel.showTextEntryView ? Color(.selectedControlColor) : Color(.clear))
 
             Button(action: {
-                showUiOptions = !showUiOptions
+                viewModel.showUiOptions.toggle()
             }, label: {
                 Image(systemName: "gear")
                     .padding(.leading, 12)
@@ -282,7 +276,7 @@ struct ProSequenceView: View {
             })
             .contentShape(Rectangle())
             .buttonStyle(.plain)
-            .background(showUiOptions ? Color(.selectedControlColor) : Color(.clear))
+            .background(viewModel.showUiOptions ? Color(.selectedControlColor) : Color(.clear))
 
             Divider()
                 .padding(.trailing, 12)
@@ -307,10 +301,10 @@ struct ProSequenceView: View {
             .background(viewModel.showSystemPromptOverride ? Color(.selectedControlColor) : Color(.clear))
 
             Button(action: {
-                showAssistantResponseSeed = !showAssistantResponseSeed
+                viewModel.showAssistantResponseSeed.toggle()
             }, label: {
                 Image(systemName: settings.seedAssistantResponse.isEmpty ? "bubble.right" : "bubble.right.fill")
-                    .foregroundStyle(showAssistantResponseSeed ? .blue : Color(.controlTextColor))
+                    .foregroundStyle(viewModel.showAssistantResponseSeed ? .blue : Color(.controlTextColor))
                     .padding(.leading, 12)
                     .padding(.trailing, -12)
 
@@ -323,10 +317,10 @@ struct ProSequenceView: View {
             })
             .contentShape(Rectangle())
             .buttonStyle(.plain)
-            .background(showAssistantResponseSeed ? Color(.selectedControlColor) : Color(.clear))
+            .background(viewModel.showAssistantResponseSeed ? Color(.selectedControlColor) : Color(.clear))
 
             Button(action: {
-                showInferenceOptions = !showInferenceOptions
+                viewModel.showInferenceOptions.toggle()
             }, label: {
                 Text("Inference Options")
                     .lineLimit(1...3)
@@ -337,10 +331,10 @@ struct ProSequenceView: View {
             })
             .contentShape(Rectangle())
             .buttonStyle(.plain)
-            .background(showInferenceOptions ? Color(.selectedControlColor) : Color(.clear))
+            .background(viewModel.showInferenceOptions ? Color(.selectedControlColor) : Color(.clear))
 
             Button(action: {
-                showRetrievalOptions = !showRetrievalOptions
+                viewModel.showRetrievalOptions.toggle()
             }, label: {
                 Text("Retrieval Options")
                     .lineLimit(1...3)
@@ -351,7 +345,7 @@ struct ProSequenceView: View {
             })
             .contentShape(Rectangle())
             .buttonStyle(.plain)
-            .background(showRetrievalOptions ? Color(.selectedControlColor) : Color(.clear))
+            .background(viewModel.showRetrievalOptions ? Color(.selectedControlColor) : Color(.clear))
 
             Spacer()
 
