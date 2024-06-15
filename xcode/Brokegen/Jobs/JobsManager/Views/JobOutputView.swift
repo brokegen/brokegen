@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftTerm
 import AppKit
 
 struct JobOutputView: View {
