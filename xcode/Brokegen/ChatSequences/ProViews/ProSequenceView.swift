@@ -144,6 +144,7 @@ struct ProSequenceView: View {
 
     @State private var showSystemPromptOverride: Bool = false
     @FocusState private var focusSystemPromptOverride: Bool
+    @FocusState private var focusModelTemplateOverride: Bool
     @State private var showAssistantResponseSeed: Bool = false
     @FocusState private var focusAssistantResponseSeed: Bool
 
@@ -180,15 +181,25 @@ struct ProSequenceView: View {
 
     @ViewBuilder var lowerVStack: some View {
         if showSystemPromptOverride {
-            ZStack {
-                Rectangle()
-                    .fill(Color.red.opacity(0.2))
+            HStack {
+                ZStack {
+                    Rectangle()
+                        .fill(Color.red.opacity(0.2))
 
-                InlineTextInput($settings.overrideSystemPrompt, allowNewlineSubmit: false, isFocused: $focusSystemPromptOverride) {}
+                    InlineTextInput($settings.overrideSystemPrompt, allowNewlineSubmit: false, isFocused: $focusSystemPromptOverride) {}
 
-                Text("Override System Prompt")
-                    .foregroundStyle(Color(.disabledControlTextColor))
-                    .opacity(settings.overrideSystemPrompt.isEmpty ? 1.0 : 0.0)
+                    Text("Override System Prompt")
+                        .foregroundStyle(Color(.disabledControlTextColor))
+                        .opacity(settings.overrideSystemPrompt.isEmpty ? 1.0 : 0.0)
+                }
+
+                ZStack {
+                    InlineTextInput($settings.overrideModelTemplate, allowNewlineSubmit: false, isFocused: $focusModelTemplateOverride) {}
+
+                    Text("Override Model Template")
+                        .foregroundStyle(Color(.disabledControlTextColor))
+                        .opacity(settings.overrideModelTemplate.isEmpty ? 1.0 : 0.0)
+                }
             }
         }
 

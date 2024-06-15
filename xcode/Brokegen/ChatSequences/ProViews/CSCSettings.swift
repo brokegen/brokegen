@@ -34,6 +34,7 @@ struct CSInferenceSettings {
 
     var inferenceOptions: String? = nil
     var overrideSystemPrompt: String? = nil
+    var overrideModelTemplate: String? = nil
     var seedAssistantResponse: String? = nil
 
     var retrieverOptions: String? = nil

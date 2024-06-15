@@ -61,6 +61,11 @@ class CSCSettingsService: Observable, ObservableObject {
             set { inference.overrideSystemPrompt = newValue }
         }
 
+        var overrideModelTemplate: String {
+            get { inference.overrideModelTemplate ?? "" }
+            set { inference.overrideModelTemplate = newValue }
+        }
+
         var seedAssistantResponse: String {
             get { inference.seedAssistantResponse ?? "" }
             set { inference.seedAssistantResponse = newValue }
