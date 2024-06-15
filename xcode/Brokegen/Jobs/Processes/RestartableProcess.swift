@@ -116,7 +116,7 @@ class RestartableProcess: Job {
 }
 
 #Preview {
-    JobOutputView(job: SimpleProcess(
+    JobOutputView(job: OneShotProcess(
         "/usr/sbin/ioreg",
         ["-c", "IOPlatformExpertDevice", "-d", "2"])
     )

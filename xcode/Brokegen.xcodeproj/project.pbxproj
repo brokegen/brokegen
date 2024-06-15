@@ -16,7 +16,7 @@
 		CE4634DE2BF937320063142E /* JobsSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634DD2BF937320063142E /* JobsSidebar.swift */; };
 		CE4634E02BF963210063142E /* BaseJob.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634DF2BF963210063142E /* BaseJob.swift */; };
 		CE4634E22BF97A180063142E /* JobOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634E12BF97A180063142E /* JobOutputView.swift */; };
-		CE4634E52BFA5F890063142E /* SimpleProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634E42BFA5F890063142E /* SimpleProcess.swift */; };
+		CE4634E52BFA5F890063142E /* OneShotProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634E42BFA5F890063142E /* OneShotProcess.swift */; };
 		CE4634E72BFA6A050063142E /* JobsSidebarItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634E62BFA6A050063142E /* JobsSidebarItem.swift */; };
 		CE4634EB2BFA71E70063142E /* brokegen-server in Resources */ = {isa = PBXBuildFile; fileRef = CE4634EA2BFA71E70063142E /* brokegen-server */; };
 		CE4634ED2BFAE3020063142E /* RestartableProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4634EC2BFAE3020063142E /* RestartableProcess.swift */; };
@@ -34,12 +34,10 @@
 		CE9867512BF4047C008D6C41 /* BrokegenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867502BF4047C008D6C41 /* BrokegenApp.swift */; };
 		CE9867552BF4047E008D6C41 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE9867542BF4047E008D6C41 /* Assets.xcassets */; };
 		CE9867592BF4047E008D6C41 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE9867582BF4047E008D6C41 /* Preview Assets.xcassets */; };
-		CE9867612BF414B3008D6C41 /* ManagedProcess.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867602BF414B3008D6C41 /* ManagedProcess.swift */; };
 		CE9867632BF41954008D6C41 /* BrokegenAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867622BF41954008D6C41 /* BrokegenAppView.swift */; };
 		CEAA2B702C070AE3002BEB26 /* ChatSequence+Extend.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA2B6F2C070AE3002BEB26 /* ChatSequence+Extend.swift */; };
 		CEAA2B722C070B2E002BEB26 /* ChatSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA2B712C070B2E002BEB26 /* ChatSequence.swift */; };
 		CEB773232C0160530051F41C /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = CEB773222C0160530051F41C /* Alamofire */; };
-		CEBAA28C2C003F4B00D43E22 /* InteractiveJobOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEBAA28B2C003F4B00D43E22 /* InteractiveJobOutputView.swift */; };
 		CECA47A82BF6D5B8007A28F2 /* System.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECA47A72BF6D5B8007A28F2 /* System.swift */; };
 		CECA47AA2BF6D62E007A28F2 /* SystemInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CECA47A92BF6D62E007A28F2 /* SystemInfoView.swift */; };
 		CEDCF2AB2BFFD623006ABBA9 /* OneMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */; };
@@ -60,7 +58,6 @@
 		CEFA694B2C14C7BC007EEF8D /* CSCSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA694A2C14C7BC007EEF8D /* CSCSettingsView.swift */; };
 		CEFEB4762BFDA67400334522 /* SimplePing.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFEB4752BFDA67400334522 /* SimplePing.swift */; };
 		CEFEB4782BFDA6C900334522 /* TimeJob.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFEB4772BFDA6C900334522 /* TimeJob.swift */; };
-		CEFEB47E2BFE399500334522 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = CEFEB47D2BFE399500334522 /* SwiftTerm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -96,7 +93,7 @@
 		CE4634DD2BF937320063142E /* JobsSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsSidebar.swift; sourceTree = "<group>"; };
 		CE4634DF2BF963210063142E /* BaseJob.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseJob.swift; sourceTree = "<group>"; };
 		CE4634E12BF97A180063142E /* JobOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobOutputView.swift; sourceTree = "<group>"; };
-		CE4634E42BFA5F890063142E /* SimpleProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleProcess.swift; sourceTree = "<group>"; };
+		CE4634E42BFA5F890063142E /* OneShotProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneShotProcess.swift; sourceTree = "<group>"; };
 		CE4634E62BFA6A050063142E /* JobsSidebarItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsSidebarItem.swift; sourceTree = "<group>"; };
 		CE4634EA2BFA71E70063142E /* brokegen-server */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = "brokegen-server"; path = "../dist/brokegen-server"; sourceTree = "<group>"; };
 		CE4634EC2BFAE3020063142E /* RestartableProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestartableProcess.swift; sourceTree = "<group>"; };
@@ -115,11 +112,9 @@
 		CE9867502BF4047C008D6C41 /* BrokegenApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrokegenApp.swift; sourceTree = "<group>"; };
 		CE9867542BF4047E008D6C41 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CE9867582BF4047E008D6C41 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		CE9867602BF414B3008D6C41 /* ManagedProcess.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagedProcess.swift; sourceTree = "<group>"; };
 		CE9867622BF41954008D6C41 /* BrokegenAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrokegenAppView.swift; sourceTree = "<group>"; };
 		CEAA2B6F2C070AE3002BEB26 /* ChatSequence+Extend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChatSequence+Extend.swift"; sourceTree = "<group>"; };
 		CEAA2B712C070B2E002BEB26 /* ChatSequence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSequence.swift; sourceTree = "<group>"; };
-		CEBAA28B2C003F4B00D43E22 /* InteractiveJobOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractiveJobOutputView.swift; sourceTree = "<group>"; };
 		CECA47A72BF6D5B8007A28F2 /* System.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = System.swift; sourceTree = "<group>"; };
 		CECA47A92BF6D62E007A28F2 /* SystemInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemInfoView.swift; sourceTree = "<group>"; };
 		CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneMessageView.swift; sourceTree = "<group>"; };
@@ -155,7 +150,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				CEB773232C0160530051F41C /* Alamofire in Frameworks */,
-				CEFEB47E2BFE399500334522 /* SwiftTerm in Frameworks */,
 				CE66FAFC2C1679C700BD8745 /* SwiftyJSON in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -200,6 +194,7 @@
 		CE4634DC2BF937020063142E /* JobsManager */ = {
 			isa = PBXGroup;
 			children = (
+				CEA410FD2C1E3AE600FA3111 /* Views */,
 				CE8229AE2BF7306000029DC2 /* JobsManagerService.swift */,
 				CE4634E62BFA6A050063142E /* JobsSidebarItem.swift */,
 				CE4634DD2BF937320063142E /* JobsSidebar.swift */,
@@ -211,8 +206,7 @@
 		CE4634E32BFA5EE10063142E /* Processes */ = {
 			isa = PBXGroup;
 			children = (
-				CE4634E42BFA5F890063142E /* SimpleProcess.swift */,
-				CE9867602BF414B3008D6C41 /* ManagedProcess.swift */,
+				CE4634E42BFA5F890063142E /* OneShotProcess.swift */,
 				CE4634EC2BFAE3020063142E /* RestartableProcess.swift */,
 			);
 			path = Processes;
@@ -264,8 +258,6 @@
 				CE145DA12C1806F400577314 /* Providers */,
 				CE4634F02BFBB4560063142E /* ChatSequences */,
 				CE98675F2BF4149F008D6C41 /* Jobs */,
-				CE4634DC2BF937020063142E /* JobsManager */,
-				CECA47A62BF6D59A007A28F2 /* Performance */,
 				CE9867502BF4047C008D6C41 /* BrokegenApp.swift */,
 				CEE99E6A2C1002F8008E1B07 /* AppSidebar.swift */,
 				CE9867622BF41954008D6C41 /* BrokegenAppView.swift */,
@@ -288,15 +280,20 @@
 			isa = PBXGroup;
 			children = (
 				CE4634DF2BF963210063142E /* BaseJob.swift */,
-				CE4634E12BF97A180063142E /* JobOutputView.swift */,
-				CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */,
-				CEBAA28B2C003F4B00D43E22 /* InteractiveJobOutputView.swift */,
+				CE4634DC2BF937020063142E /* JobsManager */,
+				CEFEB4742BFDA5FB00334522 /* Utility */,
 				CE4634E32BFA5EE10063142E /* Processes */,
-				CEFEB4742BFDA5FB00334522 /* Monitors */,
-				CE4634EE2BFAFA340063142E /* StayAwakeService.swift */,
-				CEFEB4772BFDA6C900334522 /* TimeJob.swift */,
 			);
 			path = Jobs;
+			sourceTree = "<group>";
+		};
+		CEA410FD2C1E3AE600FA3111 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */,
+				CE4634E12BF97A180063142E /* JobOutputView.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 		CEAA2B6E2C070AAE002BEB26 /* Data */ = {
@@ -350,12 +347,15 @@
 			path = Data;
 			sourceTree = "<group>";
 		};
-		CEFEB4742BFDA5FB00334522 /* Monitors */ = {
+		CEFEB4742BFDA5FB00334522 /* Utility */ = {
 			isa = PBXGroup;
 			children = (
 				CEFEB4752BFDA67400334522 /* SimplePing.swift */,
+				CE4634EE2BFAFA340063142E /* StayAwakeService.swift */,
+				CEFEB4772BFDA6C900334522 /* TimeJob.swift */,
+				CECA47A62BF6D59A007A28F2 /* Performance */,
 			);
-			path = Monitors;
+			path = Utility;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -394,7 +394,6 @@
 			);
 			name = Brokegen;
 			packageProductDependencies = (
-				CEFEB47D2BFE399500334522 /* SwiftTerm */,
 				CEB773222C0160530051F41C /* Alamofire */,
 				CE66FAFB2C1679C700BD8745 /* SwiftyJSON */,
 			);
@@ -432,7 +431,6 @@
 			mainGroup = CE9867442BF4047C008D6C41;
 			packageReferences = (
 				CEFEB4792BFDAABC00334522 /* XCRemoteSwiftPackageReference "Alamofire" */,
-				CEFEB47C2BFE399500334522 /* XCRemoteSwiftPackageReference "SwiftTerm" */,
 				CE66FAFA2C1679C700BD8745 /* XCRemoteSwiftPackageReference "SwiftyJSON" */,
 			);
 			productRefGroup = CE98674E2BF4047C008D6C41 /* Products */;
@@ -510,8 +508,7 @@
 				CE145DA32C18071E00577314 /* ProviderPickerView.swift in Sources */,
 				CECA47A82BF6D5B8007A28F2 /* System.swift in Sources */,
 				CE4634E22BF97A180063142E /* JobOutputView.swift in Sources */,
-				CE9867612BF414B3008D6C41 /* ManagedProcess.swift in Sources */,
-				CE4634E52BFA5F890063142E /* SimpleProcess.swift in Sources */,
+				CE4634E52BFA5F890063142E /* OneShotProcess.swift in Sources */,
 				CEE99E682C0FD9FC008E1B07 /* InferenceModelSettingsView.swift in Sources */,
 				CE4634E02BF963210063142E /* BaseJob.swift in Sources */,
 				CEE99E632C0E7D9F008E1B07 /* OneInferenceModelView.swift in Sources */,
@@ -522,7 +519,6 @@
 				CEFA69472C14B692007EEF8D /* InferenceModelSettings.swift in Sources */,
 				CEFA69452C14AE67007EEF8D /* CSCSettingsService.swift in Sources */,
 				CEE99E692C0FD9FC008E1B07 /* InferenceSettingsService.swift in Sources */,
-				CEBAA28C2C003F4B00D43E22 /* InteractiveJobOutputView.swift in Sources */,
 				CE145DAA2C1A0E9800577314 /* ProSequenceView.swift in Sources */,
 				CE66FAFE2C16818800BD8745 /* ChatMessage.swift in Sources */,
 			);
@@ -814,14 +810,6 @@
 				minimumVersion = 5.9.1;
 			};
 		};
-		CEFEB47C2BFE399500334522 /* XCRemoteSwiftPackageReference "SwiftTerm" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/migueldeicaza/SwiftTerm";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.2.5;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -834,11 +822,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = CEFEB4792BFDAABC00334522 /* XCRemoteSwiftPackageReference "Alamofire" */;
 			productName = Alamofire;
-		};
-		CEFEB47D2BFE399500334522 /* SwiftTerm */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CEFEB47C2BFE399500334522 /* XCRemoteSwiftPackageReference "SwiftTerm" */;
-			productName = SwiftTerm;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

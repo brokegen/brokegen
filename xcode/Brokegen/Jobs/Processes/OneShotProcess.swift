@@ -4,7 +4,7 @@ import SwiftUI
 
 /// This is very simple code for launching an external process, with virtually no testing or validation.
 /// Which means that in error conditions, we're very likely to leave handles and memory leaks everywhere.
-class SimpleProcess: Job {
+class OneShotProcess: Job {
     var task: Process?
 
     convenience init(_ pathAndArguments: [String]) {
@@ -35,7 +35,7 @@ class SimpleProcess: Job {
         }
     }
 
-    override func launch() -> SimpleProcess {
+    override func launch() -> OneShotProcess {
         status = .requestedStart
         guard task != nil else {
             status = .error("task already started once")
@@ -78,7 +78,7 @@ class SimpleProcess: Job {
         return self
     }
 
-    override func terminate() -> SimpleProcess {
+    override func terminate() -> OneShotProcess {
         task?.terminate()
         task = nil
 
@@ -86,7 +86,7 @@ class SimpleProcess: Job {
         return self
     }
 
-    override func terminatePatiently() -> SimpleProcess {
+    override func terminatePatiently() -> OneShotProcess {
         guard task != nil else {
             status = .stopped
             return self
@@ -111,7 +111,7 @@ class SimpleProcess: Job {
 }
 
 #Preview {
-    JobOutputView(job: SimpleProcess(
+    JobOutputView(job: OneShotProcess(
         "/usr/sbin/ioreg",
         ["-c", "IOPlatformExpertDevice", "-d", "2"])
     )
