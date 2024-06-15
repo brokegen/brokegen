@@ -101,6 +101,8 @@ struct AppSidebar: View {
 
     @AppStorage("showDebugSidebarItems")
     private var showDebugSidebarItems: Bool = true
+    @AppStorage("allowExternalTraffic")
+    private var allowExternalTraffic: Bool = false
     @Binding private var useSimplifiedSequenceViews: Bool
     private var bigReset: (() -> Void)
 
@@ -118,17 +120,19 @@ struct AppSidebar: View {
                 VStack(spacing: 0) {
                     MiniSequencePickerSidebar()
 
-                    AppSidebarSection(label: {
-                        HStack {
-                            Image(systemName: "person.3")
-                                .padding(.trailing, 0)
+                    if showDebugSidebarItems {
+                        AppSidebarSection(isExpanded: false, label: {
+                            HStack {
+                                Image(systemName: "person.3")
+                                    .padding(.trailing, 0)
 
-                            Text("Agents")
+                                Text("Agents")
+                            }
+                        }) {
+                            ASRow("IRC Simulator")
+                                .disabled(true)
+                                .foregroundStyle(Color(.disabledControlTextColor))
                         }
-                    }) {
-                        ASRow("IRC Simulator")
-                            .disabled(true)
-                            .foregroundStyle(Color(.disabledControlTextColor))
                     }
 
                     AppSidebarSection(label: {
@@ -137,6 +141,12 @@ struct AppSidebar: View {
 
                         Text("Inspectors")
                     }) {
+                        if showDebugSidebarItems {
+                            NavigationLink(destination: SystemInfoView()) {
+                                ASRow("System Info")
+                            }
+                        }
+
                         NavigationLink(destination: ProviderPickerView(providerService: providerService)) {
                             ASRow("Providers")
                         }
@@ -157,12 +167,10 @@ struct AppSidebar: View {
 
                         ASRow("Vector Stores")
                             .foregroundStyle(Color(.disabledControlTextColor))
-                    }
 
-                    if showDebugSidebarItems {
-                        AppSidebarSection(label: {
-                            Text("[DEBUG] Inspectors")
-                        }) {
+                        if showDebugSidebarItems {
+                            Divider()
+
                             ASRow("InferenceJobs")
                                 .foregroundStyle(Color(.disabledControlTextColor))
 
@@ -171,12 +179,6 @@ struct AppSidebar: View {
 
                             ASRow("ChatMessages")
                                 .foregroundStyle(Color(.disabledControlTextColor))
-
-                            Divider()
-
-                            NavigationLink(destination: SystemInfoView()) {
-                                ASRow("System Info")
-                            }
                         }
                     }
 
@@ -184,7 +186,7 @@ struct AppSidebar: View {
                 }
             }
 
-            AppSidebarSection(isExpanded: false, label: {
+            AppSidebarSection(isExpanded: showDebugSidebarItems, label: {
                 HStack {
                     Image(systemName: "gear")
                         .padding(.trailing, 0)
@@ -205,17 +207,44 @@ struct AppSidebar: View {
                 Divider()
 
                 if showDebugSidebarItems {
-                    Button("Reset Client State", systemImage: "exclamationmark.triangle") {
+                    HStack(spacing: 0) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(Color.yellow)
+                            .padding(.trailing, 8)
+
+                        Text("Reset all client state (long press)")
+                    }
+                    .onLongPressGesture {
                         bigReset()
                     }
-                    .foregroundStyle(Color.yellow)
                     .padding(.leading, -24)
-                    .padding(.trailing, -24)
                 }
+
+                Toggle(isOn: $showDebugSidebarItems, label: {
+                    HStack(spacing: 0) {
+                        Text("Show debug sidebar items")
+                            .layoutPriority(0.2)
+
+                        Spacer()
+                    }
+                })
+                .toggleStyle(.switch)
+                .padding(.trailing, -12)
+
+                Toggle(isOn: $allowExternalTraffic, label: {
+                    HStack(spacing: 0) {
+                        Text("Allow non-localhost traffic")
+                            .layoutPriority(0.2)
+
+                        Spacer()
+                    }
+                })
+                .toggleStyle(.switch)
+                .padding(.trailing, -12)
 
                 Toggle(isOn: $useSimplifiedSequenceViews, label: {
                     HStack(spacing: 0) {
-                        Text("Simplified Chat Interface")
+                        Text("Use simplified chat interface")
                             .layoutPriority(0.2)
                         
                         Spacer()

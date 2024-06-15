@@ -25,7 +25,7 @@ class DefaultJobsManagerService: JobsManagerService {
         return directoryPath.path(percentEncoded: false)
     }
 
-    init(startServicesImmediately: Bool) {
+    init(startServicesImmediately: Bool, allowExternalTraffic: Bool) {
         super.init()
         let dataDir = createDataDir()
 
@@ -36,7 +36,7 @@ class DefaultJobsManagerService: JobsManagerService {
                 dataDir,
                 "--log-level=debug",
                 "--bind-host",
-                "0.0.0.0",
+                allowExternalTraffic ? "0.0.0.0" : "127.0.0.1",
                 "--bind-port",
                 "6635",
             ],
@@ -52,7 +52,7 @@ class DefaultJobsManagerService: JobsManagerService {
             Bundle.main.url(forResource: "ollama-darwin", withExtension: nil)!,
             ["serve"],
             environment: [
-                "OLLAMA_HOST": "0.0.0.0:11434",
+                "OLLAMA_HOST": "127.0.0.1:11434",
                 "OLLAMA_NUM_PARALLEL": "3",
                 "OLLAMA_MAX_LOADED_MODELS": "3",
                 "OLLAMA_KEEP_ALIVE": "4h",
