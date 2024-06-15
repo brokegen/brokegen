@@ -269,5 +269,4 @@ class LlamafileFactory(ProviderFactory):
 
         for file in _generate_filenames():
             label = ProviderLabel(type="llamafile", id=file)
-            if label not in registry.by_label:
-                await registry.make(ProviderLabel(type="llamafile", id=file))
+            await registry.try_make(label)

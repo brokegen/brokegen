@@ -1,21 +1,12 @@
 import asyncio
-import logging
-from collections.abc import AsyncIterable
 from datetime import datetime, timezone
-from typing import Callable, Awaitable, AsyncIterator, TypeVar, Any
-from typing import Iterable
+from typing import Callable, Awaitable, AsyncIterator
 
 import orjson
-import starlette.datastructures
-import starlette.requests
-from starlette.background import BackgroundTask
-from starlette.concurrency import iterate_in_threadpool
-from starlette.responses import StreamingResponse, JSONResponse
 
-from _util.json import safe_get, JSONDict
-from _util.json_streaming import emit_keepalive_chunks
-from _util.typing import InferenceModelHumanID
 from _util.json import safe_get
+from _util.json_streaming import emit_keepalive_chunks, JSONStreamingResponse
+from _util.typing import InferenceModelHumanID
 
 
 async def complex_nothing_chain(

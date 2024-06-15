@@ -181,7 +181,7 @@ async def keepalive_wrapper(
 
         NB during things like RAG loading, we want updates more frequently than 9.5 seconds.
         """
-        async for chunk in emit_keepalive_chunks(primordial, 1.0, None):
+        async for chunk in emit_keepalive_chunks(primordial, 3.0, None):
             if chunk is None:
                 constructed_chunk = {
                     "model": inference_model_human_id,

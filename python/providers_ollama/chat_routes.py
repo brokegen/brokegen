@@ -24,7 +24,7 @@ async def lookup_model_offline(
         model_name: InferenceModelHumanID,
         history_db: HistoryDB,
 ) -> Tuple[InferenceModelRecordOrm, ProviderRecord]:
-    provider = await ProviderRegistry().make(ProviderLabel(type="ollama", id="http://localhost:11434"))
+    provider = await ProviderRegistry().try_make(ProviderLabel(type="ollama", id="http://localhost:11434"))
     if provider is None:
         raise HTTPException(500, "No Provider loaded")
 

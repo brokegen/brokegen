@@ -82,7 +82,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         async def do_keepalive(
                 primordial: AsyncIterator[JSONDict],
         ) -> AsyncGenerator[JSONDict, None]:
-            async for chunk in emit_keepalive_chunks(primordial, 2.0, None):
+            async for chunk in emit_keepalive_chunks(primordial, 0.5, None):
                 if chunk is None:
                     yield orjson.dumps({
                         "created_at": datetime.now(tz=timezone.utc),
