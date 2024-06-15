@@ -142,7 +142,6 @@ struct ProSequenceView: View {
     @State private var showInferenceOptions: Bool = false
     @State private var showRetrievalOptions: Bool = false
 
-    @State private var showSystemPromptOverride: Bool = false
     @FocusState private var focusSystemPromptOverride: Bool
     @FocusState private var focusModelTemplateOverride: Bool
     @State private var showAssistantResponseSeed: Bool = false
@@ -176,11 +175,11 @@ struct ProSequenceView: View {
     }
 
     var showLowerVStack: Bool {
-        return showSystemPromptOverride || showTextEntryView || showAssistantResponseSeed
+        return viewModel.showSystemPromptOverride || showTextEntryView || showAssistantResponseSeed
     }
 
     @ViewBuilder var lowerVStack: some View {
-        if showSystemPromptOverride {
+        if viewModel.showSystemPromptOverride {
             HStack {
                 ZStack {
                     Rectangle()
@@ -289,10 +288,10 @@ struct ProSequenceView: View {
                 .padding(.trailing, 12)
 
             Button(action: {
-                showSystemPromptOverride = !showSystemPromptOverride
+                viewModel.showSystemPromptOverride.toggle()
             }, label: {
                 Image(systemName: "person.badge.shield.checkmark")
-                    .foregroundStyle(showSystemPromptOverride ? .red : Color(.controlTextColor))
+                    .foregroundStyle(viewModel.showSystemPromptOverride ? .red : Color(.controlTextColor))
                     .padding(.leading, 12)
                     .padding(.trailing, -12)
 
@@ -305,7 +304,7 @@ struct ProSequenceView: View {
             })
             .contentShape(Rectangle())
             .buttonStyle(.plain)
-            .background(showSystemPromptOverride ? Color(.selectedControlColor) : Color(.clear))
+            .background(viewModel.showSystemPromptOverride ? Color(.selectedControlColor) : Color(.clear))
 
             Button(action: {
                 showAssistantResponseSeed = !showAssistantResponseSeed

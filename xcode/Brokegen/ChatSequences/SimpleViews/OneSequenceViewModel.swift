@@ -19,13 +19,14 @@ class OneSequenceViewModel: ObservableObject {
     /// `nil` before first data, and then reset to `nil` once we're done receiving.
     var responseInEdit: Message? = nil
     var receivingStreamer: AnyCancellable? = nil
+    var serverStatus: String? = nil
 
     private var stayAwake: StayAwake = StayAwake()
     var currentlyAwakeDuringInference: Bool {
         get { stayAwake.assertionIsActive }
     }
 
-    var serverStatus: String? = nil
+    var showSystemPromptOverride: Bool = false
 
     init(_ sequence: ChatSequence, chatService: ChatSyncService, inferenceModelSettings: InferenceModelSettings, chatSettingsService: CSCSettingsService) {
         self.sequence = sequence
