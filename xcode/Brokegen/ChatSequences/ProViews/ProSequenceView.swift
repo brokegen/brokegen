@@ -220,34 +220,30 @@ struct ProSequenceView: View {
     }
 
     @ViewBuilder var lowerVStackOptions: some View {
-        ScrollView {
-            VFlowLayout(spacing: 24) {
-                if viewModel.showUiOptions {
-                    // Tab.uiOptions
-                    CSCSettingsView(viewModel, settings: viewModel.settings)
-                }
+        if viewModel.showUiOptions {
+            // Tab.uiOptions
+            CSCSettingsView(viewModel, settings: viewModel.settings)
+        }
 
-                // Tab.modelOptions
-                if viewModel.showInferenceOptions {
-                    GroupBox(content: {
-                        TextEditor(text: $settings.inferenceOptions)
-                            .frame(width: 360, height: 36)
-                            .lineLimit(4...12)
-                    }, label: {
-                        Text("inferenceOptions")
-                    })
-                }
+        // Tab.modelOptions
+        if viewModel.showInferenceOptions {
+            GroupBox(content: {
+                TextEditor(text: $settings.inferenceOptions)
+                    .frame(width: 360, height: 36)
+                    .lineLimit(4...12)
+            }, label: {
+                Text("inferenceOptions")
+            })
+        }
 
-                if viewModel.showRetrievalOptions {
-                    GroupBox(content: {
-                        TextEditor(text: $settings.retrieverOptions)
-                            .frame(width: 360, height: 36)
-                            .lineLimit(4...12)
-                    }, label: {
-                        Text("retrieverOptions")
-                    })
-                }
-            }
+        if viewModel.showRetrievalOptions {
+            GroupBox(content: {
+                TextEditor(text: $settings.retrieverOptions)
+                    .frame(width: 360, height: 36)
+                    .lineLimit(4...12)
+            }, label: {
+                Text("retrieverOptions")
+            })
         }
     }
 
@@ -438,7 +434,7 @@ struct ProSequenceView: View {
                         }
                     }()
 
-                    if showStatusBar || showLowerVStack || showLowerVStackOptions {
+                    if showStatusBar || showLowerVStack {
                         VStack(spacing: 0) {
                             if showStatusBar {
                                 statusBar
@@ -471,14 +467,20 @@ struct ProSequenceView: View {
                                 statusBarHeight + max(72, lowerVStackHeight),
                                 maxInputHeight - statusBarHeight - lowerVStackHeight
                             ))
+                    }
 
-                        if showLowerVStackOptions {
-                            lowerVStackOptions
+                    if showLowerVStackOptions {
+                        GeometryReader { optionsGeometry in
+                            ScrollView {
+                                VFlowLayout(spacing: 24) {
+                                    lowerVStackOptions
+                                }
+                            }
+                            .frame(width: optionsGeometry.size.width)
                         }
                     }
 
                     lowerTabBar
-                        .frame(maxWidth: .infinity)
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
