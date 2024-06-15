@@ -1,3 +1,4 @@
+import Alamofire
 import Combine
 import Foundation
 import SwiftUI
@@ -14,17 +15,24 @@ class ManagedService: Job {
     let arguments: [String]
     let environment: [String : String]
 
+    let pingEndpoint: String?
+    let pingInterval: TimeInterval
+
+    var timer: Timer? = nil
+
     init(
         _ launchURL: URL,
         _ arguments: [String] = [],
         environment: [String : String] = [:],
         sidebarTitle: String? = nil,
         pingEndpoint: String?,
-        pingInterval: TimeInterval
+        pingInterval: TimeInterval = 2
     ) {
         self.executableURL = launchURL
         self.arguments = arguments
         self.environment = environment
+        self.pingEndpoint = pingEndpoint
+        self.pingInterval = pingInterval
 
         super.init()
 
@@ -36,15 +44,13 @@ class ManagedService: Job {
         if environment.count > 0 {
             ribbonText += "\n\(environment)"
         }
+
+        if pingEndpoint != nil {
+            self.displayedOutput += "Configuration: ping \(pingEndpoint!) every \(pingInterval) seconds, launch service if not reachable\n"
+        }
     }
 
-    override func launch() -> Self {
-        guard processes.isEmpty else {
-            return self
-        }
-
-        status = .requestedStart
-
+    func doLaunch() {
         let currentProcess = Process()
         currentProcess.executableURL = executableURL
         currentProcess.arguments = arguments
@@ -71,8 +77,9 @@ class ManagedService: Job {
             guard dataAsString!.count > 0 else { return }
 
             DispatchQueue.main.async {
-                if self.displayedOutput.count > 256_000 {
-                    self.displayedOutput = String(self.displayedOutput.suffix(128_000))
+                // Truncate the output to 64k characters, because we rarely care about history.
+                if self.displayedOutput.count > 64_000 {
+                    self.displayedOutput = String(self.displayedOutput.suffix(32_000))
                 }
 
                 self.displayedOutput += dataAsString!
@@ -86,8 +93,52 @@ class ManagedService: Job {
             status = .startedNoOutput
         }
         catch {
-            status = .error("failed to launch process")
+            status = .error("ManagedService failed to launch process")
         }
+    }
+
+    @Sendable
+    func heartbeat(timer: Timer) -> Void {
+        if self.pingEndpoint != nil {
+            AF.request(
+                self.pingEndpoint!,
+                method: .head
+            )
+            .response { r in
+                switch r.result {
+                case .success(let data):
+                    self.displayedOutput += "\(Date.now): HEAD \(self.pingEndpoint!) success (ManagedService already running)"
+                    if data != nil {
+                        if let dataAsString = String(data: data!, encoding: .utf8) {
+                            self.displayedOutput += ", \(dataAsString)"
+                        }
+                    }
+                    self.displayedOutput += "\n"
+                    self.status = .startedWithOutput
+                    return
+
+                case .failure(_):
+                    // Try to launch the service.
+                    self.doLaunch()
+                }
+            }
+        }
+    }
+
+    override func launch() -> Self {
+        guard processes.isEmpty else {
+            self.displayedOutput += "\(Date.now): requested ManagedService.launch(), but was already running\n"
+            return self
+        }
+
+        status = .requestedStart
+        displayedOutput += "\n"
+
+        if timer == nil {
+            timer = Timer.scheduledTimer(withTimeInterval: pingInterval, repeats: true, block: self.heartbeat)
+        }
+
+        timer!.fire()
 
         return self
     }
@@ -103,6 +154,9 @@ class ManagedService: Job {
     }
 
     override func terminatePatiently()  -> Self {
+        timer?.invalidate()
+        timer = nil
+
         guard !processes.isEmpty else {
             status = .stopped
             return self
@@ -110,6 +164,7 @@ class ManagedService: Job {
 
         status = .requestedStop
 
+        // TODO: This doesn't look right, document what it's doing here
         Task {
             await withCheckedContinuation { continuation in
                 for process in processes {

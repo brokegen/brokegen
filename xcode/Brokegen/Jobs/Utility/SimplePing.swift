@@ -4,17 +4,17 @@ import SwiftUI
 
 class SimplePing: Job {
     let pingEndpoint: String
-    let timeInterval: TimeInterval
+    let pingInterval: TimeInterval
 
     var timer: Timer? = nil
 
     init(
             _ label: String,
             _ pingEndpoint: String,
-            timeInterval: TimeInterval = 5
+            timeInterval pingInterval: TimeInterval = 5
     ) {
         self.pingEndpoint = pingEndpoint
-        self.timeInterval = timeInterval
+        self.pingInterval = pingInterval
 
         super.init()
 
@@ -26,13 +26,13 @@ class SimplePing: Job {
 
     override func launch() -> SimplePing {
         guard timer == nil else {
-            self.displayedOutput += "\(Date.now): requested SimplePing.launch(), but was already running"
+            self.displayedOutput += "\(Date.now): requested SimplePing.launch(), but was already running\n"
             return self
         }
         status = .requestedStart
         displayedOutput += "\n"
 
-        timer = Timer.scheduledTimer(withTimeInterval: timeInterval, repeats: true) { timer in
+        timer = Timer.scheduledTimer(withTimeInterval: pingInterval, repeats: true) { timer in
             if self.status == .requestedStop {
                 _ = self.terminate(because: "finally detected stop request")
             }
