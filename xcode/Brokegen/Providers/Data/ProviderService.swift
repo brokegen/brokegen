@@ -32,7 +32,7 @@ class ProviderService: Observable, ObservableObject {
         }
     }
 
-    /// TODO: The sorting order gets all messed up.
+    @MainActor
     func replaceModelById(_ originalModelId: InferenceModelRecordID?, with updatedModel: InferenceModel) {
         var priorClientId: UUID? = nil
         var priorRemovalIndex: Int? = nil
@@ -114,9 +114,7 @@ class DefaultProviderService: ProviderService {
         for (_, modelData) in JSON(allModelsData!) {
             print("[TRACE] Received modelData: \(modelData["human_id"])")
             let inferenceModel = InferenceModel(modelData.dictionaryValue)
-            DispatchQueue.main.async {
-                self.replaceModelById(inferenceModel.serverId, with: inferenceModel)
-            }
+            await self.replaceModelById(inferenceModel.serverId, with: inferenceModel)
         }
     }
 
