@@ -39,12 +39,12 @@ struct BlankOneSequenceView: View {
                             .layoutPriority(0.2)
                             .id("selected model")
                     }
-                    else if appSettings.defaultInferenceModel != nil {
-                        OneInferenceModelView(model: appSettings.defaultInferenceModel!, modelAvailable: true, modelSelection: $modelSelection, enableModelSelection: false)
-                            .frame(maxWidth: 800)
-                            .layoutPriority(0.2)
-                            .id("selected model")
-                    }
+//                    else if appSettings.defaultInferenceModel != nil {
+//                        OneInferenceModelView(model: appSettings.defaultInferenceModel!, modelAvailable: true, modelSelection: $modelSelection, enableModelSelection: false)
+//                            .frame(maxWidth: 800)
+//                            .layoutPriority(0.2)
+//                            .id("selected model")
+//                    }
                     else {
                         let finalDesc: String = {
                             if let humanDesc: String = appSettings.fallbackInferenceModel?.humanId {

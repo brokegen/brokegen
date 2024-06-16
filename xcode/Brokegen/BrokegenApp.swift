@@ -66,9 +66,7 @@ struct BrokegenApp: App {
                 .keyboardShortcut("n", modifiers: [.command, .shift])
             }
             CommandGroup(after: .newItem) {
-                NavigationLink(destination: BlankOneSequenceView(
-                    appSettings.defaultInferenceModel
-                )) {
+                NavigationLink(destination: BlankOneSequenceView()) {
                     Text("New Chat")
                 }
                 .keyboardShortcut("n", modifiers: [.command])

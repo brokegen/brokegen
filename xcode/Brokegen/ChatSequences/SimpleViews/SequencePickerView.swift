@@ -223,9 +223,7 @@ struct MiniSequencePickerSidebar: View {
                 Text("Chats")
             }
         }) {
-            NavigationLink(destination: {
-                BlankOneSequenceView(appSettings.defaultInferenceModel)
-            }) {
+            NavigationLink(destination: { BlankOneSequenceView() }) {
                 HStack {
                     Image(systemName: "plus")
                         .padding(.trailing, 0)
@@ -402,9 +400,7 @@ struct SequencePickerView: View {
 
             Spacer()
 
-            NavigationLink(destination: BlankOneSequenceView(
-                appSettings.defaultInferenceModel
-            )) {
+            NavigationLink(destination: BlankOneSequenceView()) {
                 Label("New Chat...", systemImage: "plus")
                     .buttonStyle(.accessoryBar)
                     .padding(12)
