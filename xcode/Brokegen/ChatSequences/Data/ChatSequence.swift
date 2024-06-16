@@ -159,7 +159,9 @@ extension DefaultChatSyncService {
             }
 
             if let entireSequence = try await doFetchChatSequenceDetails(newSequenceId.int!) {
-                self.updateSequence(withSameId: entireSequence)
+                DispatchQueue.main.async {
+                    self.updateSequence(withSameId: entireSequence)
+                }
             }
         }
     }
