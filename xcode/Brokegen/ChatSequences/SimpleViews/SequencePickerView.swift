@@ -64,10 +64,15 @@ extension ChatSequence {
 
 struct SequenceRow: View {
     @Environment(ProviderService.self) private var providerService
-    let sequence: ChatSequence
 
-    init(_ sequence: ChatSequence) {
+    let sequence: ChatSequence
+    let action: (() -> Void)
+
+    @State private var isLoading: Bool = false
+
+    init(_ sequence: ChatSequence, action: @escaping () -> Void) {
         self.sequence = sequence
+        self.action = action
     }
 
     func displayDate() -> String? {
@@ -91,37 +96,55 @@ struct SequenceRow: View {
     }
 
     var body: some View {
-        HStack {
-            Image(systemName: "bubble")
-                .font(.title)
+        Button(action: {
+            isLoading = true
+            action()
+        }, label: {
+            HStack(spacing: 0) {
+                HStack(alignment: .top, spacing: 16) {
+                    Image(systemName: "bubble")
+                        .font(.title)
+                    
+                    Text(sequence.displayHumanDesc())
+                        .font(.title)
+                        .lineLimit(1...4)
+                        .foregroundStyle(Color(.controlTextColor))
+                }
+                .foregroundStyle(Color(.controlTextColor))
+                .padding(12)
+                .background(
+                    Rectangle()
+                        .fill(Color(.controlBackgroundColor).opacity(0.7)))
+                .background(
+                    Rectangle()
+                        .fill(Color(.controlBackgroundColor))
+                        .blur(radius: 12)
+                             )
                 .padding(.leading, -8)
-                .padding(.trailing, 16)
 
-            Text(sequence.displayHumanDesc())
-                .font(.title)
-                .padding(.bottom, 8)
-                .lineLimit(1...4)
+                Spacer()
 
-            Spacer()
+                VStack(alignment: .trailing) {
+                    if let displayDate = displayDate() {
+                        Text(displayDate)
+                            .monospaced()
+                    }
 
-            VStack(alignment: .trailing) {
-                if let displayDate = displayDate() {
-                    Text(displayDate)
-                        .monospaced()
+                    Text("\(sequence.messages.count) messages")
+
+                    if let modelName = displayInferenceModel() {
+                        Spacer()
+
+                        Text(modelName)
+                            .monospaced()
+                            .foregroundStyle(Color(.controlAccentColor).opacity(0.6))
+                    }
                 }
-
-                Text("\(sequence.messages.count) messages")
-
-                if let modelName = displayInferenceModel() {
-                    Spacer()
-
-                    Text(modelName)
-                        .monospaced()
-                        // TODO: What we need is to dim the other rows, not brighten this one
-                        .foregroundStyle(Color(.controlAccentColor))
-                }
+                .padding(12)
+                .contentShape(Rectangle())
             }
-        }
+        })
+        .buttonStyle(.borderless)
     }
 }
 
@@ -412,14 +435,11 @@ struct SequencePickerView: View {
                     .padding(.top, 36)
                 ) {
                     ForEach(sectionSequences) { sequence in
-                        SequenceRow(sequence)
-                            .padding(12)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                pathHost.push(
-                                    chatService.clientModel(for: sequence, inferenceModelSettings: inferenceModelSettings, chatSettingsService: chatSettingsService)
-                                )
-                            }
+                        SequenceRow(sequence) {
+                            pathHost.push(
+                                chatService.clientModel(for: sequence, inferenceModelSettings: inferenceModelSettings, chatSettingsService: chatSettingsService)
+                            )
+                        }
                     }
                 }
                 .padding(8)
@@ -430,5 +450,7 @@ struct SequencePickerView: View {
                 .frame(height: 400)
                 .frame(maxWidth: .infinity)
         }
+        .scrollContentBackground(.hidden)
+        .background(BackgroundEffectView().ignoresSafeArea())
     }
 }
