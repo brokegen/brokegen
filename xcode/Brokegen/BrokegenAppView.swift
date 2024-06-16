@@ -30,9 +30,6 @@ struct BrokegenAppView: View {
     @State private var sidebarVisibility = NavigationSplitViewVisibility.automatic
     @State private var sidebarVisibilityTimesChanged: Int = 0
 
-    @AppStorage("showDebugSidebarItems")
-    private var showDebugSidebarItems: Bool = true
-
     func bigReset() {
         DispatchQueue.main.async {
             UserDefaults.resetStandardUserDefaults()
@@ -49,7 +46,7 @@ struct BrokegenAppView: View {
         // How do I get these to share state and not "jump" during navigation?
         let sharedSidebar = AppSidebar(
             useSimplifiedSequenceViews: $chatSettingsService.useSimplifiedSequenceViews,
-            showDebugSidebarItems: $showDebugSidebarItems,
+            showDebugSidebarItems: $appSettings.showDebugSidebarItems,
             bigReset: bigReset
         )
 

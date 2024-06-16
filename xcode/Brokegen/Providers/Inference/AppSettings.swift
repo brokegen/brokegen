@@ -70,4 +70,21 @@ class AppSettings: ObservableObject {
             preferredEmbeddingModelId = newValue?.serverId ?? INVALID_MODEL_ID
         }
     }
+
+    // MARK: - misc properties
+    @AppStorage("allowExternalTraffic")
+    @ObservationIgnored var _allowExternalTraffic: Bool = false
+
+    var allowExternalTraffic: Bool {
+        get { _allowExternalTraffic }
+        set { _allowExternalTraffic = newValue }
+    }
+
+    @AppStorage("showDebugSidebarItems")
+    @ObservationIgnored var _showDebugSidebarItems: Bool = true
+
+    var showDebugSidebarItems: Bool {
+        get { _showDebugSidebarItems }
+        set { _showDebugSidebarItems = newValue }
+    }
 }

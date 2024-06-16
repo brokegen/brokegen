@@ -99,8 +99,6 @@ struct AppSidebar: View {
     @Environment(ProviderService.self) private var providerService
     @EnvironmentObject public var appSettings: AppSettings
 
-    @AppStorage("allowExternalTraffic")
-    private var allowExternalTraffic: Bool = false
     private let useSimplifiedSequenceViews: Binding<Bool>
     private let showDebugSidebarItems: Binding<Bool>
     private var bigReset: (() -> Void)
@@ -136,9 +134,9 @@ struct AppSidebar: View {
 
             Divider()
 
-            Toggle(isOn: $allowExternalTraffic, label: {
+            Toggle(isOn: $appSettings.allowExternalTraffic, label: {
                 HStack(spacing: 0) {
-                    Text("Allow non-localhost traffic")
+                    Text("Allow non-localhost traffic (applies at next service launch)")
                         .layoutPriority(0.2)
 
                     Spacer()
