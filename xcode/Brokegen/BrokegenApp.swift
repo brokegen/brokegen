@@ -23,6 +23,8 @@ struct BrokegenApp: App {
     @State private var inferenceSettingsUpdater: AnyCancellable? = nil
     @ObservedObject private var chatSettingsService = CSCSettingsService()
 
+    @Environment(\.openWindow) var openWindow
+
     init() {
         _jobsService = State(initialValue: DefaultJobsManagerService(startServicesImmediately: true, allowExternalTraffic: UserDefaults.standard.bool(forKey: "allowExternalTraffic")))
         // Do on-startup init, because otherwise we store no data and app is empty
@@ -46,7 +48,7 @@ struct BrokegenApp: App {
     }
 
     var body: some Scene {
-        WindowGroup(for: UUID.self) { _ in
+        WindowGroup(id: "8280", for: UUID.self) { _ in
             BrokegenAppView()
                 .environment(chatService)
                 .environment(jobsService)
@@ -59,27 +61,36 @@ struct BrokegenApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .commands {
-            CommandGroup(after: .newItem) {
-                NavigationLink(destination: EmptyView(), label: {
-                    Text("New Chat")
+            CommandGroup(replacing: .newItem) {
+                Button(action: {
+                    openWindow(id: "8280")
+                }, label: {
+                    Text("New Window")
                 })
                 .keyboardShortcut("n", modifiers: [.command, .shift])
+            }
+            CommandGroup(after: .newItem) {
+                NavigationLink(destination: BlankOneSequenceView(
+                    inferenceSettings.inferenceModelSettings.defaultInferenceModel
+                )) {
+                    Text("New Chat")
+                }
+                .keyboardShortcut("n", modifiers: [.command])
+                // Disabled, because can't figure out what View hierarchy would pass the @Environments
                 .disabled(true)
             }
 
-            CommandGroup(after: .sidebar) {
-                Button(action: {
-                }, label: {
-                    Text("Toggle Sidebar")
-                })
-                .disabled(true)
+            CommandGroup(after: .appSettings) {
+                Toggle(isOn: $chatSettingsService.useSimplifiedSequenceViews) {
+                    Text("Use simplified chat interface")
+                }
             }
 
             CommandMenu("Generation", content: {
                 HStack {
                     Image(systemName: "gear")
                     Text("gear")
-                        .font(.system(size: 32))
+                        .font(.system(size: 64))
                 }
                 VStack {
                     Text("yeah")

@@ -2,6 +2,7 @@ define nosign_export_options
 endef
 
 build/xcode-macos-export-options.plist:
+	[ -d build/ ] || mkdir build/
 	plutil -create xml1 "$@"
 	plutil -insert "method" -string "mac-application" "$@"
 
