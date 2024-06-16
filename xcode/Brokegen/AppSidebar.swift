@@ -136,32 +136,6 @@ struct AppSidebar: View {
 
             Divider()
 
-            if showDebugSidebarItems.wrappedValue {
-                HStack(spacing: 0) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(Color.yellow)
-                        .padding(.trailing, 8)
-
-                    Text("Reset all client state (long press)")
-                }
-                .onLongPressGesture {
-                    bigReset()
-                }
-                .padding(.leading, -24)
-            }
-
-            Toggle(isOn: showDebugSidebarItems, label: {
-                HStack(spacing: 0) {
-                    // TODO: We really shouldn't need to restart the app. Probably something to do with explicit View id's
-                    Text("Show debug sidebar items (restart app to propagate changes)")
-                        .layoutPriority(0.2)
-
-                    Spacer()
-                }
-            })
-            .toggleStyle(.switch)
-            .padding(.trailing, -12)
-
             Toggle(isOn: $allowExternalTraffic, label: {
                 HStack(spacing: 0) {
                     Text("Allow non-localhost traffic")
