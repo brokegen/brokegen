@@ -112,11 +112,6 @@ struct SequenceRow: View {
                 }
                 .foregroundStyle(Color(.controlTextColor))
                 .padding(12)
-                .background(
-                    Rectangle()
-                        .fill(Color(.controlBackgroundColor).opacity(0.3))
-                        .blur(radius: 12)
-                             )
                 .padding(.leading, -8)
 
                 Spacer()
@@ -447,6 +442,5 @@ struct SequencePickerView: View {
                 .frame(maxWidth: .infinity)
         }
         .scrollContentBackground(.hidden)
-        .background(BackgroundEffectView().ignoresSafeArea())
     }
 }
