@@ -30,6 +30,9 @@ struct BrokegenAppView: View {
     @State private var sidebarVisibility = NavigationSplitViewVisibility.automatic
     @State private var sidebarVisibilityTimesChanged: Int = 0
 
+    @AppStorage("showDebugSidebarItems")
+    private var showDebugSidebarItems: Bool = true
+
     func bigReset() {
         DispatchQueue.main.async {
             UserDefaults.resetStandardUserDefaults()
@@ -44,7 +47,11 @@ struct BrokegenAppView: View {
     var body: some View {
         // TODO: Should this be done a different way, somehow?
         // How do I get these to share state and not "jump" during navigation?
-        let sharedSidebar = AppSidebar(useSimplifiedSequenceViews: $chatSettingsService.useSimplifiedSequenceViews, bigReset: bigReset)
+        let sharedSidebar = AppSidebar(
+            useSimplifiedSequenceViews: $chatSettingsService.useSimplifiedSequenceViews,
+            showDebugSidebarItems: $showDebugSidebarItems,
+            bigReset: bigReset
+        )
 
         NavigationStack(path: $pathHost.path) {
             NavigationSplitView(columnVisibility: $sidebarVisibility, sidebar: {
@@ -93,7 +100,7 @@ struct BrokegenAppView: View {
         jobs.storedJobs.append(job)
     }
 
-    return AppSidebar(useSimplifiedSequenceViews: Binding.constant(true), bigReset: {})
+    return AppSidebar(useSimplifiedSequenceViews: Binding.constant(true), showDebugSidebarItems: .constant(true), bigReset: {})
         .environment(jobs)
 }
 

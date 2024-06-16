@@ -99,18 +99,19 @@ struct AppSidebar: View {
     @Environment(ProviderService.self) private var providerService
     @Environment(InferenceModelSettings.self) private var inferenceModelSettings
 
-    @AppStorage("showDebugSidebarItems")
-    private var showDebugSidebarItems: Bool = true
     @AppStorage("allowExternalTraffic")
     private var allowExternalTraffic: Bool = false
     @Binding private var useSimplifiedSequenceViews: Bool
+    @Binding private var showDebugSidebarItems: Bool
     private var bigReset: (() -> Void)
 
     init(
         useSimplifiedSequenceViews: Binding<Bool>,
+        showDebugSidebarItems: Binding<Bool>,
         bigReset: (@escaping () -> Void)
     ) {
         self._useSimplifiedSequenceViews = useSimplifiedSequenceViews
+        self._showDebugSidebarItems = showDebugSidebarItems
         self.bigReset = bigReset
     }
 
