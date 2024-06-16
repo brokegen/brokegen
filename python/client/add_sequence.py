@@ -1,10 +1,10 @@
 import logging
-from datetime import datetime
-from typing import Optional
+from datetime import datetime, timedelta, timezone
+from typing import Optional, Annotated
 
 import fastapi.routing
 import fastapi.routing
-from fastapi import Depends
+from fastapi import Depends, Query
 from pydantic import BaseModel
 from sqlalchemy import select
 
@@ -67,14 +67,20 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
     @router_ish.get("/sequences/pinned")
     def get_pinned_recent_sequences(
-            limit: int = 20,
+            lookback: Annotated[float | None, Query(description="Maximum age in seconds for returned items")] = None,
+            limit: Annotated[int | None, Query(description="Maximum number of items to return")] = None,
             history_db: HistoryDB = Depends(get_history_db),
     ):
-        pinned = history_db.execute(
+        query = (
             select(ChatSequence.id)
             .filter_by(user_pinned=True)
             .order_by(ChatSequence.generated_at.desc())
-            .limit(limit)
-        ).scalars()
+        )
+        if lookback is not None:
+            reference_time = datetime.now(tz=timezone.utc) - timedelta(seconds=lookback)
+            query = query.where(ChatSequence.generated_at > reference_time)
+        if query is not None:
+            query = query.limit(limit)
 
+        pinned = history_db.execute(query).scalars()
         return {"sequence_ids": list(pinned)}

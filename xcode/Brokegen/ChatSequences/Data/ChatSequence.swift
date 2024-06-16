@@ -140,15 +140,21 @@ extension DefaultChatSyncService {
         }
     }
 
-    func doRefreshPinnedChatSequences(limit: Int) async throws {
-        let limitQuery = "?limit=\(limit)"
+    func doRefreshPinnedChatSequences(lookback: TimeInterval?, limit: Int?) async throws {
+        var endpointMaker = "/sequences/pinned?"
+        if lookback != nil {
+            endpointMaker += "&lookback=\(lookback!)"
+        }
+        if limit != nil {
+            endpointMaker += "&limit=\(limit!)"
+        }
 
-        let sequenceIds = try await getDataBlocking("/sequences/pinned\(limitQuery)")
+        let sequenceIds = try await getDataBlocking(endpointMaker)
         guard sequenceIds != nil else { throw ChatSyncServiceError.noResponseContentReturned }
 
         for (_, newSequenceId) in JSON(sequenceIds!)["sequence_ids"] {
             if newSequenceId.int == nil {
-                print("[ERROR] Got nil sequenceId from /sequences/pinned\(limitQuery)")
+                print("[ERROR] Got nil sequenceId from \(endpointMaker)")
                 continue
             }
 

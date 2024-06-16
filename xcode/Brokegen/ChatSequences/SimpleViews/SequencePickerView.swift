@@ -104,20 +104,17 @@ struct SequenceRow: View {
                 HStack(alignment: .top, spacing: 16) {
                     Image(systemName: "bubble")
                         .font(.title)
-                    
+
                     Text(sequence.displayHumanDesc())
                         .font(.title)
                         .lineLimit(1...4)
-                        .foregroundStyle(Color(.controlTextColor))
+                        .foregroundStyle(Color(.controlTextColor).opacity(0.8))
                 }
                 .foregroundStyle(Color(.controlTextColor))
                 .padding(12)
                 .background(
                     Rectangle()
-                        .fill(Color(.controlBackgroundColor).opacity(0.7)))
-                .background(
-                    Rectangle()
-                        .fill(Color(.controlBackgroundColor))
+                        .fill(Color(.controlBackgroundColor).opacity(0.3))
                         .blur(radius: 12)
                              )
                 .padding(.leading, -8)
@@ -387,23 +384,22 @@ struct SequencePickerView: View {
 
     var body: some View {
         HStack(spacing: 24) {
-            Button("Refresh", systemImage: "arrow.clockwise") {
+            Button("Refresh \(maxSidebarItems)", systemImage: "arrow.clockwise") {
                 Task { try? await chatService.refreshPinnedChatSequences(limit: maxSidebarItems) }
             }
             .buttonStyle(.accessoryBar)
             .padding(12)
             .layoutPriority(0.2)
 
-            Button("Refresh 500", systemImage: "arrow.clockwise") {
-                Task { try? await chatService.refreshPinnedChatSequences(limit: 500) }
+            Button("Refresh -- 2d", systemImage: "arrow.clockwise") {
+                Task { try? await chatService.refreshPinnedChatSequences(lookback: 172_800) }
             }
             .buttonStyle(.accessoryBar)
             .padding(12)
             .layoutPriority(0.2)
 
-            // This ridiculously slow button is only here until we implement time-based cutoffs.
-            Button("Refresh 5000", systemImage: "arrow.clockwise") {
-                Task { try? await chatService.refreshPinnedChatSequences(limit: 5000) }
+            Button("Refresh -- 14d", systemImage: "arrow.clockwise") {
+                Task { try? await chatService.refreshPinnedChatSequences(lookback: 1_209_600) }
             }
             .buttonStyle(.accessoryBar)
             .padding(12)

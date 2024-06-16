@@ -59,7 +59,7 @@ class ChatSyncService: Observable, ObservableObject {
     }
 
     // MARK: - ChatSequence change members
-    public func refreshPinnedChatSequences(limit: Int) async throws {
+    public func refreshPinnedChatSequences(lookback: TimeInterval? = nil, limit: Int? = nil) async throws {
     }
 
     func updateSequence(withSameId updatedSequence: ChatSequence) {
@@ -140,8 +140,8 @@ class DefaultChatSyncService: ChatSyncService {
     }
 
     // MARK: - ChatSequence change members
-    override public func refreshPinnedChatSequences(limit: Int) async throws {
-        return try await doRefreshPinnedChatSequences(limit: limit)
+    override public func refreshPinnedChatSequences(lookback: TimeInterval?, limit: Int?) async throws {
+        return try await doRefreshPinnedChatSequences(lookback: lookback, limit: limit)
     }
 
     override func updateSequence(_ originalSequenceId: ChatSequenceServerID?, withNewSequence updatedSequenceId: ChatSequenceServerID) async {
