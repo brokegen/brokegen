@@ -101,8 +101,8 @@ struct AppSidebar: View {
 
     @AppStorage("allowExternalTraffic")
     private var allowExternalTraffic: Bool = false
-    @Binding private var useSimplifiedSequenceViews: Bool
-    @Binding private var showDebugSidebarItems: Bool
+    private let useSimplifiedSequenceViews: Binding<Bool>
+    private let showDebugSidebarItems: Binding<Bool>
     private var bigReset: (() -> Void)
 
     init(
@@ -110,9 +110,81 @@ struct AppSidebar: View {
         showDebugSidebarItems: Binding<Bool>,
         bigReset: (@escaping () -> Void)
     ) {
-        self._useSimplifiedSequenceViews = useSimplifiedSequenceViews
-        self._showDebugSidebarItems = showDebugSidebarItems
+        self.useSimplifiedSequenceViews = useSimplifiedSequenceViews
+        self.showDebugSidebarItems = showDebugSidebarItems
         self.bigReset = bigReset
+    }
+
+    var settingsSection: some View {
+        AppSidebarSection(isExpanded: showDebugSidebarItems.wrappedValue, label: {
+            HStack {
+                Image(systemName: "gear")
+                    .padding(.trailing, 0)
+
+                Text("Settings")
+            }
+        }) {
+            ASRow("Providers", showChevron: true)
+                .foregroundStyle(Color(.disabledControlTextColor))
+
+            NavigationLink(value: inferenceModelSettings) {
+                ASRow("Inference Models", showChevron: true)
+            }
+
+            ASRow("Retrieval and Vector Stores", showChevron: true)
+                .foregroundStyle(Color(.disabledControlTextColor))
+
+            Divider()
+
+            if showDebugSidebarItems.wrappedValue {
+                HStack(spacing: 0) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(Color.yellow)
+                        .padding(.trailing, 8)
+
+                    Text("Reset all client state (long press)")
+                }
+                .onLongPressGesture {
+                    bigReset()
+                }
+                .padding(.leading, -24)
+            }
+
+            Toggle(isOn: showDebugSidebarItems, label: {
+                HStack(spacing: 0) {
+                    // TODO: We really shouldn't need to restart the app. Probably something to do with explicit View id's
+                    Text("Show debug sidebar items (restart app to propagate changes)")
+                        .layoutPriority(0.2)
+
+                    Spacer()
+                }
+            })
+            .toggleStyle(.switch)
+            .padding(.trailing, -12)
+
+            Toggle(isOn: $allowExternalTraffic, label: {
+                HStack(spacing: 0) {
+                    Text("Allow non-localhost traffic")
+                        .layoutPriority(0.2)
+
+                    Spacer()
+                }
+            })
+            .toggleStyle(.switch)
+            .padding(.trailing, -12)
+
+            Toggle(isOn: useSimplifiedSequenceViews, label: {
+                HStack(spacing: 0) {
+                    Text("Use simplified chat interface")
+                        .layoutPriority(0.2)
+
+                    Spacer()
+                }
+            })
+            .toggleStyle(.switch)
+            .padding(.trailing, -12)
+            .padding(.bottom, 24)
+        }
     }
 
     var body: some View {
@@ -121,7 +193,7 @@ struct AppSidebar: View {
                 VStack(spacing: 0) {
                     MiniSequencePickerSidebar()
 
-                    if showDebugSidebarItems {
+                    if showDebugSidebarItems.wrappedValue {
                         AppSidebarSection(isExpanded: false, label: {
                             HStack {
                                 Image(systemName: "person.3")
@@ -142,7 +214,7 @@ struct AppSidebar: View {
 
                         Text("Inspectors")
                     }) {
-                        if showDebugSidebarItems {
+                        if showDebugSidebarItems.wrappedValue {
                             NavigationLink(destination: SystemInfoView()) {
                                 ASRow("System Info")
                             }
@@ -169,7 +241,7 @@ struct AppSidebar: View {
                         ASRow("Vector Stores")
                             .foregroundStyle(Color(.disabledControlTextColor))
 
-                        if showDebugSidebarItems {
+                        if showDebugSidebarItems.wrappedValue {
                             Divider()
 
                             ASRow("InferenceJobs")
@@ -187,75 +259,7 @@ struct AppSidebar: View {
                 }
             }
 
-            AppSidebarSection(isExpanded: showDebugSidebarItems, label: {
-                HStack {
-                    Image(systemName: "gear")
-                        .padding(.trailing, 0)
-
-                    Text("Settings")
-                }
-            }) {
-                ASRow("Providers", showChevron: true)
-                    .foregroundStyle(Color(.disabledControlTextColor))
-
-                NavigationLink(value: inferenceModelSettings) {
-                    ASRow("Inference Models", showChevron: true)
-                }
-
-                ASRow("Retrieval and Vector Stores", showChevron: true)
-                    .foregroundStyle(Color(.disabledControlTextColor))
-
-                Divider()
-
-                if showDebugSidebarItems {
-                    HStack(spacing: 0) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(Color.yellow)
-                            .padding(.trailing, 8)
-
-                        Text("Reset all client state (long press)")
-                    }
-                    .onLongPressGesture {
-                        bigReset()
-                    }
-                    .padding(.leading, -24)
-                }
-
-                Toggle(isOn: $showDebugSidebarItems, label: {
-                    HStack(spacing: 0) {
-                        // TODO: We really shouldn't need to restart the app. Probably something to do with explicit View id's
-                        Text("Show debug sidebar items (restart app to propagate changes)")
-                            .layoutPriority(0.2)
-
-                        Spacer()
-                    }
-                })
-                .toggleStyle(.switch)
-                .padding(.trailing, -12)
-
-                Toggle(isOn: $allowExternalTraffic, label: {
-                    HStack(spacing: 0) {
-                        Text("Allow non-localhost traffic")
-                            .layoutPriority(0.2)
-
-                        Spacer()
-                    }
-                })
-                .toggleStyle(.switch)
-                .padding(.trailing, -12)
-
-                Toggle(isOn: $useSimplifiedSequenceViews, label: {
-                    HStack(spacing: 0) {
-                        Text("Use simplified chat interface")
-                            .layoutPriority(0.2)
-                        
-                        Spacer()
-                    }
-                })
-                .toggleStyle(.switch)
-                .padding(.trailing, -12)
-                .padding(.bottom, 24)
-            }
+            settingsSection
         }
         .listStyle(.sidebar)
         .toolbar(.hidden)
