@@ -112,7 +112,7 @@ class DefaultProviderService: ProviderService {
         guard allModelsData != nil else { throw ProviderServiceError.noResponseContentReturned }
 
         for (_, modelData) in JSON(allModelsData!) {
-            print("[TRACE] Received modelData: \(modelData)")
+            print("[TRACE] Received modelData: \(modelData["human_id"])")
             let inferenceModel = InferenceModel(modelData.dictionaryValue)
             DispatchQueue.main.async {
                 self.replaceModelById(inferenceModel.serverId, with: inferenceModel)
