@@ -46,7 +46,7 @@
 		CEE99E632C0E7D9F008E1B07 /* OneInferenceModelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E622C0E7D9F008E1B07 /* OneInferenceModelView.swift */; };
 		CEE99E652C0E8378008E1B07 /* JobPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E642C0E8378008E1B07 /* JobPickerView.swift */; };
 		CEE99E682C0FD9FC008E1B07 /* InferenceModelSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E662C0FD9FC008E1B07 /* InferenceModelSettingsView.swift */; };
-		CEE99E692C0FD9FC008E1B07 /* InferenceSettingsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E672C0FD9FC008E1B07 /* InferenceSettingsService.swift */; };
+		CEE99E692C0FD9FC008E1B07 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E672C0FD9FC008E1B07 /* AppSettings.swift */; };
 		CEE99E6B2C1002F9008E1B07 /* AppSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E6A2C1002F8008E1B07 /* AppSidebar.swift */; };
 		CEF73F2B2C1BE32200C46AA5 /* CSCSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF73F2A2C1BE32200C46AA5 /* CSCSettings.swift */; };
 		CEF73F2D2C1CA05D00C46AA5 /* ollama-darwin in Resources */ = {isa = PBXBuildFile; fileRef = CEF73F2C2C1CA05D00C46AA5 /* ollama-darwin */; };
@@ -54,7 +54,6 @@
 		CEF73F312C1E106400C46AA5 /* DateCoders.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF73F302C1E106400C46AA5 /* DateCoders.swift */; };
 		CEF73F332C1E19B500C46AA5 /* Provider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF73F322C1E19B500C46AA5 /* Provider.swift */; };
 		CEFA69452C14AE67007EEF8D /* CSCSettingsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA69442C14AE67007EEF8D /* CSCSettingsService.swift */; };
-		CEFA69472C14B692007EEF8D /* InferenceModelSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA69462C14B692007EEF8D /* InferenceModelSettings.swift */; };
 		CEFA69492C14C525007EEF8D /* VFlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA69482C14C525007EEF8D /* VFlowLayout.swift */; };
 		CEFA694B2C14C7BC007EEF8D /* CSCSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFA694A2C14C7BC007EEF8D /* CSCSettingsView.swift */; };
 		CEFEB4762BFDA67400334522 /* SimplePing.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEFEB4752BFDA67400334522 /* SimplePing.swift */; };
@@ -124,7 +123,7 @@
 		CEE99E622C0E7D9F008E1B07 /* OneInferenceModelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneInferenceModelView.swift; sourceTree = "<group>"; };
 		CEE99E642C0E8378008E1B07 /* JobPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobPickerView.swift; sourceTree = "<group>"; };
 		CEE99E662C0FD9FC008E1B07 /* InferenceModelSettingsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InferenceModelSettingsView.swift; sourceTree = "<group>"; };
-		CEE99E672C0FD9FC008E1B07 /* InferenceSettingsService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InferenceSettingsService.swift; sourceTree = "<group>"; };
+		CEE99E672C0FD9FC008E1B07 /* AppSettings.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		CEE99E6A2C1002F8008E1B07 /* AppSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSidebar.swift; sourceTree = "<group>"; };
 		CEF73F2A2C1BE32200C46AA5 /* CSCSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSCSettings.swift; sourceTree = "<group>"; };
 		CEF73F2C2C1CA05D00C46AA5 /* ollama-darwin */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; name = "ollama-darwin"; path = "../dist/ollama-darwin"; sourceTree = "<group>"; };
@@ -132,7 +131,6 @@
 		CEF73F302C1E106400C46AA5 /* DateCoders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateCoders.swift; sourceTree = "<group>"; };
 		CEF73F322C1E19B500C46AA5 /* Provider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Provider.swift; sourceTree = "<group>"; };
 		CEFA69442C14AE67007EEF8D /* CSCSettingsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSCSettingsService.swift; sourceTree = "<group>"; };
-		CEFA69462C14B692007EEF8D /* InferenceModelSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceModelSettings.swift; sourceTree = "<group>"; };
 		CEFA69482C14C525007EEF8D /* VFlowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VFlowLayout.swift; sourceTree = "<group>"; };
 		CEFA694A2C14C7BC007EEF8D /* CSCSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSCSettingsView.swift; sourceTree = "<group>"; };
 		CEFEB4752BFDA67400334522 /* SimplePing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimplePing.swift; sourceTree = "<group>"; };
@@ -330,10 +328,9 @@
 		CEE99E612C0E7D13008E1B07 /* Inference */ = {
 			isa = PBXGroup;
 			children = (
-				CEE99E672C0FD9FC008E1B07 /* InferenceSettingsService.swift */,
+				CEE99E672C0FD9FC008E1B07 /* AppSettings.swift */,
 				CEE99E622C0E7D9F008E1B07 /* OneInferenceModelView.swift */,
 				CE7FFE152C04482900DB7CFA /* ModelPickerView.swift */,
-				CEFA69462C14B692007EEF8D /* InferenceModelSettings.swift */,
 				CEE99E662C0FD9FC008E1B07 /* InferenceModelSettingsView.swift */,
 			);
 			path = Inference;
@@ -520,9 +517,8 @@
 				CEFA69492C14C525007EEF8D /* VFlowLayout.swift in Sources */,
 				CEF73F2F2C1E0FFC00C46AA5 /* LegacyChatMessage.swift in Sources */,
 				CEAA2B722C070B2E002BEB26 /* ChatSequence.swift in Sources */,
-				CEFA69472C14B692007EEF8D /* InferenceModelSettings.swift in Sources */,
 				CEFA69452C14AE67007EEF8D /* CSCSettingsService.swift in Sources */,
-				CEE99E692C0FD9FC008E1B07 /* InferenceSettingsService.swift in Sources */,
+				CEE99E692C0FD9FC008E1B07 /* AppSettings.swift in Sources */,
 				CE145DAA2C1A0E9800577314 /* ProSequenceView.swift in Sources */,
 				CE66FAFE2C16818800BD8745 /* ChatMessage.swift in Sources */,
 			);

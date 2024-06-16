@@ -19,7 +19,7 @@ struct BrokegenApp: App {
     @State private var jobsService: JobsManagerService
     @State private var providerService: ProviderService = DefaultProviderService(serverBaseURL, configuration: configuration)
 
-    private var inferenceSettings = InferenceSettingsService()
+    private var appSettings = AppSettings()
     @State private var inferenceSettingsUpdater: AnyCancellable? = nil
     @ObservedObject private var chatSettingsService = CSCSettingsService()
 
@@ -32,10 +32,6 @@ struct BrokegenApp: App {
     }
 
     func callInitializers() {
-        inferenceSettingsUpdater = providerService.$allModels.sink { _ in
-            inferenceSettings.inflateModels(providerService)
-        }
-
         Task {
             do { _ = try await providerService.fetchAllProviders() }
             catch { print("[ERROR] Failed to providerService.fetchAllProviders()") }
@@ -43,7 +39,7 @@ struct BrokegenApp: App {
             do { try await providerService.fetchAvailableModels() }
             catch { print("[ERROR] Failed to providerService.fetchAvailableModels()") }
 
-            inferenceSettings.inflateModels(providerService)
+            appSettings.link(to: providerService)
         }
     }
 
@@ -53,7 +49,7 @@ struct BrokegenApp: App {
                 .environment(chatService)
                 .environment(jobsService)
                 .environment(providerService)
-                .environment(inferenceSettings.inferenceModelSettings)
+                .environmentObject(appSettings)
                 .environmentObject(chatSettingsService)
                 .onReceive(chatSettingsService.objectWillChange) { entireService in
                     print("[TRACE] useSimplifiedSequenceView: \(chatSettingsService.useSimplifiedSequenceViews)")
@@ -71,7 +67,7 @@ struct BrokegenApp: App {
             }
             CommandGroup(after: .newItem) {
                 NavigationLink(destination: BlankOneSequenceView(
-                    inferenceSettings.inferenceModelSettings.defaultInferenceModel
+                    appSettings.defaultInferenceModel
                 )) {
                     Text("New Chat")
                 }

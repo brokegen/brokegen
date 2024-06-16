@@ -290,7 +290,7 @@ struct OneSequenceView: View {
     do {
         let chatService = ChatSyncService()
         let sequence = try ChatSequence(-1, data: try encoder.encode(parameters))
-        let viewModel = OneSequenceViewModel(sequence, chatService: chatService, inferenceModelSettings: InferenceModelSettings(), chatSettingsService: CSCSettingsService())
+        let viewModel = OneSequenceViewModel(sequence, chatService: chatService, appSettings: AppSettings(), chatSettingsService: CSCSettingsService())
         return OneSequenceView(viewModel)
     }
     catch {

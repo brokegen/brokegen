@@ -176,8 +176,8 @@ extension ChatSequence: Comparable {
 struct MiniSequencePickerSidebar: View {
     @EnvironmentObject private var chatService: ChatSyncService
     @Environment(PathHost.self) private var pathHost
-    @Environment(InferenceModelSettings.self) public var inferenceModelSettings
     @EnvironmentObject public var chatSettingsService: CSCSettingsService
+    @EnvironmentObject public var appSettings: AppSettings
     let navLimit: Int
 
     @State private var timesRefreshClicked = 0
@@ -223,8 +223,7 @@ struct MiniSequencePickerSidebar: View {
             }
         }) {
             NavigationLink(destination: {
-                // TODO: Figure out how to re-pop up the model chooser if we click this link again
-                BlankOneSequenceView(inferenceModelSettings.defaultInferenceModel)
+                BlankOneSequenceView(appSettings.defaultInferenceModel)
             }) {
                 HStack {
                     Image(systemName: "plus")
@@ -284,7 +283,7 @@ struct MiniSequencePickerSidebar: View {
                         ForEach(sectionSequences) { sequence in
                             Button(action: {
                                 pathHost.push(
-                                    chatService.clientModel(for: sequence, inferenceModelSettings: inferenceModelSettings, chatSettingsService: chatSettingsService)
+                                    chatService.clientModel(for: sequence, appSettings: appSettings, chatSettingsService: chatSettingsService)
                                 )
                             }, label: {
                                 HStack(alignment: .top, spacing: 0) {
@@ -361,7 +360,7 @@ struct MiniSequencePickerSidebar: View {
 struct SequencePickerView: View {
     @EnvironmentObject private var chatService: ChatSyncService
     @Environment(PathHost.self) private var pathHost
-    @Environment(InferenceModelSettings.self) public var inferenceModelSettings
+    @EnvironmentObject public var appSettings: AppSettings
     @EnvironmentObject public var chatSettingsService: CSCSettingsService
 
     private var sectionedSequences: [(String, [ChatSequence])] {
@@ -403,7 +402,7 @@ struct SequencePickerView: View {
             Spacer()
 
             NavigationLink(destination: BlankOneSequenceView(
-                inferenceModelSettings.defaultInferenceModel
+                appSettings.defaultInferenceModel
             )) {
                 Label("New Chat...", systemImage: "plus")
                     .buttonStyle(.accessoryBar)
@@ -428,7 +427,7 @@ struct SequencePickerView: View {
                     ForEach(sectionSequences) { sequence in
                         SequenceRow(sequence) {
                             pathHost.push(
-                                chatService.clientModel(for: sequence, inferenceModelSettings: inferenceModelSettings, chatSettingsService: chatSettingsService)
+                                chatService.clientModel(for: sequence, appSettings: appSettings, chatSettingsService: chatSettingsService)
                             )
                         }
                     }

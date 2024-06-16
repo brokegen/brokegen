@@ -97,7 +97,7 @@ struct ASRow: View {
 
 struct AppSidebar: View {
     @Environment(ProviderService.self) private var providerService
-    @Environment(InferenceModelSettings.self) private var inferenceModelSettings
+    @EnvironmentObject public var appSettings: AppSettings
 
     @AppStorage("allowExternalTraffic")
     private var allowExternalTraffic: Bool = false
@@ -127,7 +127,7 @@ struct AppSidebar: View {
             ASRow("Providers", showChevron: true)
                 .foregroundStyle(Color(.disabledControlTextColor))
 
-            NavigationLink(value: inferenceModelSettings) {
+            NavigationLink(destination: InferenceModelSettingsView(appSettings)) {
                 ASRow("Inference Models", showChevron: true)
             }
 
@@ -237,9 +237,6 @@ struct AppSidebar: View {
         }
         .listStyle(.sidebar)
         .toolbar(.hidden)
-        .navigationDestination(for: InferenceModelSettings.self) { settings in
-            InferenceModelSettingsView(settings)
-        }
     }
 }
 

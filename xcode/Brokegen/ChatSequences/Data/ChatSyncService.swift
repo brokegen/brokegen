@@ -30,14 +30,14 @@ class ChatSyncService: Observable, ObservableObject {
     // MARK: - Client side models
     var chatSequenceClientModels: [OneSequenceViewModel] = []
 
-    public func clientModel(for sequence: ChatSequence, inferenceModelSettings: InferenceModelSettings, chatSettingsService: CSCSettingsService) -> OneSequenceViewModel {
+    public func clientModel(for sequence: ChatSequence, appSettings: AppSettings, chatSettingsService: CSCSettingsService) -> OneSequenceViewModel {
         if let existingSeq = chatSequenceClientModels.first(where: {
             $0.sequence == sequence
         }) {
             return existingSeq
         }
         else {
-            let newModel = OneSequenceViewModel(sequence, chatService: self, inferenceModelSettings: inferenceModelSettings, chatSettingsService: chatSettingsService)
+            let newModel = OneSequenceViewModel(sequence, chatService: self, appSettings: appSettings, chatSettingsService: chatSettingsService)
             chatSequenceClientModels.append(newModel)
             return newModel
         }

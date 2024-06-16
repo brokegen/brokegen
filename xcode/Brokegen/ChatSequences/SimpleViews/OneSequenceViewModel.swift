@@ -9,8 +9,8 @@ let maxPinChatSequenceDesc = 140
 class OneSequenceViewModel: ObservableObject {
     var sequence: ChatSequence
     let chatService: ChatSyncService
-    let inferenceModelSettings: InferenceModelSettings
-    var settings: CSCSettingsService.SettingsProxy
+    let settings: CSCSettingsService.SettingsProxy
+    let appSettings: AppSettings
 
     var promptInEdit: String = ""
     var submitting: Bool = false
@@ -34,10 +34,10 @@ class OneSequenceViewModel: ObservableObject {
     var showAssistantResponseSeed: Bool = false
     var showSystemPromptOverride: Bool = false
 
-    init(_ sequence: ChatSequence, chatService: ChatSyncService, inferenceModelSettings: InferenceModelSettings, chatSettingsService: CSCSettingsService) {
+    init(_ sequence: ChatSequence, chatService: ChatSyncService, appSettings: AppSettings, chatSettingsService: CSCSettingsService) {
         self.sequence = sequence
         self.chatService = chatService
-        self.inferenceModelSettings = inferenceModelSettings
+        self.appSettings = appSettings
         self.settings = chatSettingsService.settings(for: sequence)
     }
 
@@ -172,10 +172,10 @@ class OneSequenceViewModel: ObservableObject {
                 ChatSequenceParameters(
                     nextMessage: nil,
                     continuationModelId: continuationModelId,
-                    fallbackModelId: inferenceModelSettings.fallbackInferenceModel?.serverId,
+                    fallbackModelId: appSettings.fallbackInferenceModel?.serverId,
                     retrievalPolicy: withRetrieval ? "simple" : nil,
                     retrievalSearchArgs: withRetrieval ? "{\"k\": 18}" : nil,
-                    preferredEmbeddingModel: withRetrieval ? inferenceModelSettings.preferredEmbeddingModel?.serverId : nil,
+                    preferredEmbeddingModel: withRetrieval ? appSettings.preferredEmbeddingModel?.serverId : nil,
                     sequenceId: sequence.serverId!
                 )
             )
@@ -220,10 +220,10 @@ class OneSequenceViewModel: ObservableObject {
                 ChatSequenceParameters(
                     nextMessage: nextMessage,
                     continuationModelId: nil,
-                    fallbackModelId: inferenceModelSettings.fallbackInferenceModel?.serverId,
+                    fallbackModelId: appSettings.fallbackInferenceModel?.serverId,
                     retrievalPolicy: withRetrieval ? "simple" : nil,
                     retrievalSearchArgs: withRetrieval ? "{\"k\": 18}" : nil,
-                    preferredEmbeddingModel: withRetrieval ? inferenceModelSettings.preferredEmbeddingModel?.serverId : nil,
+                    preferredEmbeddingModel: withRetrieval ? appSettings.preferredEmbeddingModel?.serverId : nil,
                     sequenceId: sequence.serverId!
                 )
             )

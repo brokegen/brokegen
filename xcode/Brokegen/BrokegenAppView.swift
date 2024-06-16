@@ -24,8 +24,8 @@ struct BrokegenAppView: View {
     @Environment(ProviderService.self) private var providerService
     // This is the only one that really belongs here, because multiple windows
     @State private var pathHost: PathHost = PathHost()
-    @Environment(InferenceModelSettings.self) public var inferenceModelSettings
     @EnvironmentObject public var chatSettingsService: CSCSettingsService
+    @EnvironmentObject public var appSettings: AppSettings
 
     @State private var sidebarVisibility = NavigationSplitViewVisibility.automatic
     @State private var sidebarVisibilityTimesChanged: Int = 0

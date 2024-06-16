@@ -3,8 +3,8 @@ import SwiftUI
 struct BlankOneSequenceView: View {
     @Environment(ChatSyncService.self) private var chatService
     @Environment(PathHost.self) private var pathHost
-    @Environment(InferenceModelSettings.self) var settings: InferenceModelSettings
     @EnvironmentObject public var chatSettingsService: CSCSettingsService
+    @EnvironmentObject public var appSettings: AppSettings
 
     @State var modelSelection: InferenceModel?
     @State var chatSequenceHumanDesc: String = ""
@@ -39,15 +39,15 @@ struct BlankOneSequenceView: View {
                             .layoutPriority(0.2)
                             .id("selected model")
                     }
-                    else if settings.defaultInferenceModel != nil {
-                        OneInferenceModelView(model: settings.defaultInferenceModel!, modelAvailable: true, modelSelection: $modelSelection, enableModelSelection: false)
+                    else if appSettings.defaultInferenceModel != nil {
+                        OneInferenceModelView(model: appSettings.defaultInferenceModel!, modelAvailable: true, modelSelection: $modelSelection, enableModelSelection: false)
                             .frame(maxWidth: 800)
                             .layoutPriority(0.2)
                             .id("selected model")
                     }
                     else {
                         let finalDesc: String = {
-                            if let humanDesc: String = settings.fallbackInferenceModel?.humanId {
+                            if let humanDesc: String = appSettings.fallbackInferenceModel?.humanId {
                                 return "No model selected, will fallback to \(humanDesc)"
                             }
                             else {
@@ -188,7 +188,7 @@ struct BlankOneSequenceView: View {
             }
 
             pathHost.push(
-                chatService.clientModel(for: nextSequence!, inferenceModelSettings: settings, chatSettingsService: chatSettingsService)
+                chatService.clientModel(for: nextSequence!, appSettings: appSettings, chatSettingsService: chatSettingsService)
                     .requestContinue(model: modelSelection?.serverId, withRetrieval: withRetrieval)
             )
         }

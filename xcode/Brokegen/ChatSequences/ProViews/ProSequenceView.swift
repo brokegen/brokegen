@@ -513,7 +513,7 @@ struct ProSequenceView: View {
     do {
         let chatService = ChatSyncService()
         let sequence = try ChatSequence(-1, data: try encoder.encode(parameters))
-        let viewModel = OneSequenceViewModel(sequence, chatService: chatService, inferenceModelSettings: InferenceModelSettings(), chatSettingsService: CSCSettingsService())
+        let viewModel = OneSequenceViewModel(sequence, chatService: chatService, appSettings: AppSettings(), chatSettingsService: CSCSettingsService())
 
         return ProSequenceView(viewModel)
     }
@@ -547,7 +547,7 @@ struct ProSequenceView: View {
     do {
         let chatService = ChatSyncService()
         let sequence = try ChatSequence(-1, data: try encoder.encode(parameters))
-        let viewModel = OneSequenceViewModel(sequence, chatService: chatService, inferenceModelSettings: InferenceModelSettings(), chatSettingsService: CSCSettingsService())
+        let viewModel = OneSequenceViewModel(sequence, chatService: chatService, appSettings: AppSettings(), chatSettingsService: CSCSettingsService())
         return ProSequenceView(viewModel)
     }
     catch {

@@ -1,15 +1,15 @@
 import SwiftUI
 
 struct InferenceModelSettingsView: View {
-    @Bindable var settings: InferenceModelSettings
+    @ObservedObject var appSettings: AppSettings
 
     @State private var showDefaultInferenceModelPicker = false
     @State private var showFallbackInferenceModelPicker = false
     @State private var showChatSummaryModelPicker = false
     @State private var showPreferredEmbeddingModelPicker = false
 
-    init(_ settings: InferenceModelSettings) {
-        self.settings = settings
+    init(_ appSettings: AppSettings) {
+        self.appSettings = appSettings
     }
 
     func boxMaker(
@@ -84,33 +84,33 @@ struct InferenceModelSettingsView: View {
         GeometryReader { geometry in
             ScrollView {
                 VStack(spacing: 24) {
-                    if settings.stillPopulating {
+                    if appSettings.stillPopulating {
                         ProgressView()
                             .progressViewStyle(.linear)
                     }
 
                     boxMaker("defaultInferenceModel",
-                             selectedModelBinding: $settings.defaultInferenceModel,
+                             selectedModelBinding: $appSettings.defaultInferenceModel,
                              showModelPicker: $showDefaultInferenceModelPicker,
                              geometry: geometry
                     )
 
                     boxMaker("fallbackInferenceModel",
-                             selectedModelBinding: $settings.fallbackInferenceModel,
+                             selectedModelBinding: $appSettings.fallbackInferenceModel,
                              showModelPicker: $showFallbackInferenceModelPicker,
                              geometry: geometry
                     )
 
 
                     boxMaker("chatSummaryModel",
-                             selectedModelBinding: $settings.chatSummaryModel,
+                             selectedModelBinding: $appSettings.chatSummaryModel,
                              showModelPicker: $showChatSummaryModelPicker,
                              geometry: geometry
                     )
 
 
                     boxMaker("preferredEmbeddingModel",
-                             selectedModelBinding: $settings.preferredEmbeddingModel,
+                             selectedModelBinding: $appSettings.preferredEmbeddingModel,
                              showModelPicker: $showPreferredEmbeddingModelPicker,
                              geometry: geometry
                     )
