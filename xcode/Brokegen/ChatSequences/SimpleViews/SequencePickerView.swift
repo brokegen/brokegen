@@ -109,6 +109,7 @@ struct SequenceRow: View {
                         .font(.title)
                         .lineLimit(1...4)
                         .foregroundStyle(Color(.controlTextColor).opacity(0.8))
+                        .multilineTextAlignment(.leading)
                 }
                 .foregroundStyle(Color(.controlTextColor))
                 .padding(12)
