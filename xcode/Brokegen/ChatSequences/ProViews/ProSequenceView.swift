@@ -435,7 +435,22 @@ struct ProSequenceView: View {
                         }
                     }()
 
-                    if showStatusBar || showLowerVStack {
+                    // This is a separate branch, because otherwise the statusBar is resizeable, which we don't really want.
+                    if showStatusBar && !showLowerVStack {
+                        statusBar
+                        // Read and store the "preferred" height of the status bar
+                            .background(
+                                GeometryReader { statusBarGeometry in
+                                    Color.clear
+                                        .onAppear {
+                                            statusBarHeight = statusBarGeometry.size.height
+                                        }
+                                }
+                            )
+                            .frame(minHeight: statusBarHeight)
+                            .frame(maxHeight: statusBarHeight)
+                    }
+                    else if showStatusBar || showLowerVStack {
                         VStack(spacing: 0) {
                             if showStatusBar {
                                 statusBar
