@@ -181,9 +181,10 @@ struct OIMPicker: View {
         }
         .sheet(isPresented: $showModelPicker) {
             ModelPickerView(modelSelection: $selectedModelBinding)
+            // Frame is very wide because the way we're positioning incorrectly ignores the sidebar
                 .frame(
-                    width: max(840 + 2 * 24, geometry.size.width * 0.8),
-                    height: max(840 + 2 * 24, geometry.size.height * 0.8),
+                    width: geometry.size.width,
+                    height: geometry.size.height * 0.8,
                     alignment: .top)
                 .animation(.linear(duration: 0.2))
         }

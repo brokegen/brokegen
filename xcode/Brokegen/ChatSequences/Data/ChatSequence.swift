@@ -13,6 +13,11 @@ class ChatSequence: Identifiable, Codable {
     let humanDesc: String?
     let userPinned: Bool
 
+    /// This list is not synced with anything on the server; this is intentional.
+    /// Only messages that are first uploaded to the server, and recorded with ChatSequence nodes, will get processed.
+    ///
+    /// Put a different way, this list is entirely a client-side construction/interpretation of messages returned to us.
+    ///
     var messages: [Message] = []
     let inferenceModelId: InferenceModelRecordID?
 
