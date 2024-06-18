@@ -23,6 +23,7 @@ from audit.http import get_db as get_audit_db
 from client.database import ChatMessageOrm, ChatSequence, lookup_chat_message, ChatMessage
 from client.sequence_get import do_get_sequence
 from inference.continuation import ContinueRequest, ExtendRequest, select_continuation_model
+from providers.registry import ProviderRegistry, BaseProvider
 from retrieval.faiss.retrieval import RetrievalLabel
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecordOrm
@@ -38,14 +39,14 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             parameters: Annotated[ContinueRequest, Body],
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
+            registry: ProviderRegistry = Depends(ProviderRegistry),
     ) -> JSONStreamingResponse:
         function_id = request.url_for('sequence_continue', sequence_id=sequence_id)
         status_holder = ServerStatusHolder(f"{function_id}: setting up")
 
         async def real_response_maker():
             # DEBUG: Check that everyone is responsive during long waits
-            await asyncio.sleep(0)
-            sleep(10)
+            await asyncio.sleep(10)
 
             original_sequence = history_db.execute(
                 select(ChatSequence)
@@ -58,6 +59,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             # Decide how to continue inference for this sequence
             inference_model: InferenceModelRecordOrm = \
                 select_continuation_model(sequence_id, parameters.continuation_model_id, parameters.fallback_model_id, history_db)
+            provider: BaseProvider | None = registry.provider_from(inference_model)
 
             nonlocal status_holder
             status_holder.push(f"{function_id}: processing on {inference_model.human_id}")
@@ -97,44 +99,3 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             content=do_keepalive(nonblocking_response_maker()),
             status_code=218,
         )
-
-    @router_ish.post("/v2/sequences/{sequence_id:int}/add/{message_id:int}")
-    async def sequence_add(
-            sequence_id: ChatSequenceID,
-            message_id: ChatMessageID,
-            history_db: HistoryDB = Depends(get_history_db),
-    ):
-        """
-        This just stacks a new user message onto the end of our chain.
-
-        Rely on /continue to run any inference.
-        """
-        # First, store the message that was painstakingly generated for us.
-        original_sequence = history_db.execute(
-            select(ChatSequence)
-            .filter_by(id=sequence_id)
-        ).scalar_one()
-
-        user_sequence = ChatSequence(
-            human_desc=original_sequence.human_desc,
-            parent_sequence=original_sequence.id,
-            generated_at=datetime.now(tz=timezone.utc),
-            generation_complete=False,
-        )
-
-        maybe_message = lookup_chat_message(message_id, history_db)
-        if maybe_message is None:
-            raise HTTPException(400, f"Can't find ChatMessage#{message_id}")
-
-        user_sequence.current_message = maybe_message.id
-        user_sequence.generation_complete = True
-
-        # Mark this user response as the current up-to-date
-        user_sequence.user_pinned = original_sequence.user_pinned
-        original_sequence.user_pinned = False
-
-        history_db.add(original_sequence)
-        history_db.add(user_sequence)
-        history_db.commit()
-
-        return {"sequence_id": user_sequence.id}

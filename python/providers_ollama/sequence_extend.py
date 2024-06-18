@@ -7,6 +7,7 @@ import starlette.datastructures
 import starlette.requests
 from fastapi import Depends
 from sqlalchemy import select
+from starlette.responses import RedirectResponse
 
 from _util.json import safe_get
 from _util.json_streaming import JSONStreamingResponse
@@ -15,11 +16,13 @@ from _util.typing import ChatSequenceID, PromptText
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
 from client.database import ChatMessageOrm, ChatSequence, lookup_chat_message, ChatMessage
-from client.sequence_get import do_get_sequence
+from client.sequence_get import do_get_sequence, do_extend_sequence
 from inference.continuation import ContinueRequest, ExtendRequest, select_continuation_model
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, InferenceReason
+from providers.orm import ProviderLabel
+from providers.registry import ProviderRegistry
 from providers_ollama.api_chat.inject_rag import do_proxy_chat_rag
 from providers_ollama.chat_rag_util import finalize_inference_job, do_generate_raw_templated
 from providers_ollama.json import consolidate_stream_sync, keepalive_wrapper
@@ -240,14 +243,18 @@ async def do_continuation(
 
 
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
-    @router_ish.post("/sequences/{sequence_id:int}/continue")
+    @router_ish.post(
+        "/sequences/{sequence_id:int}/continue",
+        response_model=None,
+    )
     async def sequence_continue(
             empty_request: starlette.requests.Request,
             sequence_id: ChatSequenceID,
             params: ContinueRequest,
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
-    ) -> JSONStreamingResponse:
+            registry: ProviderRegistry = Depends(ProviderRegistry),
+    ) -> JSONStreamingResponse | RedirectResponse:
         original_sequence = history_db.execute(
             select(ChatSequence)
             .filter_by(id=sequence_id)
@@ -259,6 +266,12 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         # Decide how to continue inference for this sequence
         inference_model: InferenceModelRecordOrm = \
             select_continuation_model(sequence_id, params.continuation_model_id, params.fallback_model_id, history_db)
+        provider_label: ProviderLabel | None = registry.provider_label_from(inference_model)
+        if provider_label is not None and provider_label.type != "ollama":
+            return RedirectResponse(
+                empty_request.url_for('sequence_continue', sequence_id=original_sequence.id)
+                .include_query_params(parameters=params)
+            )
 
         status_holder = ServerStatusHolder(
             f"/sequences/{sequence_id}/continue: processing on {inference_model.human_id}")
@@ -286,14 +299,18 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             allow_non_ollama_fields=True,
         )
 
-    @router_ish.post("/sequences/{sequence_id:int}/extend")
+    @router_ish.post(
+        "/sequences/{sequence_id:int}/extend",
+        response_model=None,
+    )
     async def sequence_extend(
             empty_request: starlette.requests.Request,
             sequence_id: ChatSequenceID,
             params: ExtendRequest,
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
-    ) -> JSONStreamingResponse:
+            registry: ProviderRegistry = Depends(ProviderRegistry),
+    ) -> JSONStreamingResponse | RedirectResponse:
         # Manually fetch the message + model config history from our requests
         messages_list: list[ChatMessage] = \
             do_get_sequence(sequence_id, history_db, include_model_info_diffs=False)
@@ -335,6 +352,13 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         # Decide how to continue inference for this sequence
         inference_model: InferenceModelRecordOrm = \
             select_continuation_model(sequence_id, params.continuation_model_id, params.fallback_model_id, history_db)
+        provider_label: ProviderLabel | None = registry.provider_label_from(inference_model)
+        if provider_label is not None and provider_label.type != "ollama":
+            new_sequence: ChatSequence = do_extend_sequence(sequence_id, user_sequence.current_message, history_db)
+            return RedirectResponse(
+                empty_request.url_for('sequence_continue', sequence_id=new_sequence.id)
+                .include_query_params(parameters=params)
+            )
 
         status_holder = ServerStatusHolder(
             f"/sequences/{sequence_id}/extend: processing on {inference_model.human_id}")

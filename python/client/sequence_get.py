@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime, timezone
 from http.client import HTTPException
 
 import fastapi.routing
@@ -7,8 +8,8 @@ from fastapi import Depends
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from _util.typing import ChatSequenceID, RoleName, PromptText
-from client.database import ChatMessageOrm, lookup_sequence_parents, ChatMessage
+from _util.typing import ChatSequenceID, RoleName, PromptText, ChatMessageID
+from client.database import ChatMessageOrm, lookup_sequence_parents, ChatMessage, lookup_chat_message
 from client.database import ChatSequence
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecordOrm, lookup_inference_model_for_event_id
@@ -100,6 +101,47 @@ def do_get_sequence(
     return messages_list[::-1]
 
 
+def do_extend_sequence(
+        sequence_id: ChatSequenceID,
+        message_id: ChatMessageID,
+        history_db: HistoryDB,
+) -> ChatSequence:
+    """
+    This just stacks a new user message onto the end of our chain.
+
+    Rely on /continue to run any inference.
+    """
+    # First, store the message that was painstakingly generated for us.
+    original_sequence = history_db.execute(
+        select(ChatSequence)
+        .filter_by(id=sequence_id)
+    ).scalar_one()
+
+    user_sequence = ChatSequence(
+        human_desc=original_sequence.human_desc,
+        parent_sequence=original_sequence.id,
+        generated_at=datetime.now(tz=timezone.utc),
+        generation_complete=False,
+    )
+
+    maybe_message = lookup_chat_message(message_id, history_db)
+    if maybe_message is None:
+        raise HTTPException(400, f"Can't find ChatMessage#{message_id}")
+
+    user_sequence.current_message = maybe_message.id
+    user_sequence.generation_complete = True
+
+    # Mark this user response as the current up-to-date
+    user_sequence.user_pinned = original_sequence.user_pinned
+    original_sequence.user_pinned = False
+
+    history_db.add(original_sequence)
+    history_db.add(user_sequence)
+    history_db.commit()
+
+    return user_sequence
+
+
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
     @router_ish.get("/sequences/{sequence_id:int}")
     def get_sequence(
@@ -125,3 +167,13 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 break
 
         return match_object
+
+    @router_ish.post("/sequences/{sequence_id:int}/add/{message_id:int}")
+    def extend_sequence(
+            sequence_id: ChatSequenceID,
+            message_id: ChatMessageID,
+            history_db: HistoryDB = Depends(get_history_db),
+    ):
+        return {
+            "sequence_id": do_extend_sequence(sequence_id, message_id, history_db).id,
+        }

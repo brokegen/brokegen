@@ -98,3 +98,28 @@ class ProviderRegistry(_Borg):
                 logger.error(f"Could not load {label}: {e}")
 
         return None
+
+    def provider_from(
+            self,
+            inference_model: InferenceModelRecord | InferenceModelResponse,
+    ) -> ProviderLabel | None:
+        matching_provider: BaseProvider | None = None
+        for provider_record, provider in self.by_record.items():
+            if inference_model.provider_identifiers == provider_record.identifiers:
+                matching_provider = provider
+
+        return matching_provider
+
+    def provider_label_from(
+            self,
+            inference_model: InferenceModelRecord | InferenceModelResponse,
+    ) -> ProviderLabel | None:
+        matching_provider: BaseProvider | None = self.provider_from(inference_model)
+        if matching_provider is None:
+            return None
+
+        for label, provider in self.by_label.items():
+            if matching_provider == provider:
+                return label
+
+        return None
