@@ -62,7 +62,7 @@ class EchoProvider(BaseProvider):
             self,
             sequence_id: ChatSequenceID,
             history_db: HistoryDB,
-            max_length: int = 140,
+            max_length: int = 120 * 4,
     ) -> AsyncIterable[str]:
         messages_list: list[ChatMessage] = do_get_sequence(sequence_id, history_db)
         message = messages_list[-1]
@@ -70,6 +70,9 @@ class EchoProvider(BaseProvider):
         character: str
         for character in message.content[:max_length]:
             yield character
+
+        if len(message.content) > max_length:
+            yield f"… [truncated, {len(message.content) - max_length} chars remaining]"
 
     async def chat(
             self,
@@ -80,11 +83,13 @@ class EchoProvider(BaseProvider):
             history_db: HistoryDB,
             audit_db: AuditDB,
     ) -> AsyncIterator[JSONDict]:
+        # DEBUG: Check that everyone is responsive during long waits
+        await asyncio.sleep(3)
+
         async for item in self._chat(sequence_id, history_db):
             # NB Without sleeps, packets seem to get eaten somewhere.
             # Probably client-side, but TBD.
             await asyncio.sleep(0.05)
-
             yield {
                 "message": {
                     "role": "assistant",
@@ -94,6 +99,7 @@ class EchoProvider(BaseProvider):
                 "done": False,
             }
 
+        await asyncio.sleep(1.0)
         yield {
             "status": status_holder.get(),
             "done": True,

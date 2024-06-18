@@ -40,9 +40,6 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         status_holder = ServerStatusHolder(f"{function_id}: setting up")
 
         async def real_response_maker() -> Awaitable[AsyncIterator[JSONDict]]:
-            # DEBUG: Check that everyone is responsive during long waits
-            await asyncio.sleep(3)
-
             # Decide how to continue inference for this sequence
             inference_model: InferenceModelRecordOrm = \
                 select_continuation_model(sequence_id, parameters.continuation_model_id, parameters.fallback_model_id,
