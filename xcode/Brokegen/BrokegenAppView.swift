@@ -27,9 +27,6 @@ struct BrokegenAppView: View {
     @EnvironmentObject public var chatSettingsService: CSCSettingsService
     @EnvironmentObject public var appSettings: AppSettings
 
-    @State private var sidebarVisibility = NavigationSplitViewVisibility.automatic
-    @State private var sidebarVisibilityTimesChanged: Int = 0
-
     func bigReset() {
         DispatchQueue.main.async {
             UserDefaults.resetStandardUserDefaults()
@@ -51,7 +48,7 @@ struct BrokegenAppView: View {
         )
 
         NavigationStack(path: $pathHost.path) {
-            NavigationSplitView(columnVisibility: $sidebarVisibility, sidebar: {
+            NavigationSplitView(sidebar: {
                 sharedSidebar
             }, detail: {
                 SequencePickerView()
@@ -68,18 +65,6 @@ struct BrokegenAppView: View {
                         ProSequenceView(clientModel)
                     }
                 })
-            }
-            // Show the sidebar on initial re-load
-            // TODO: Once we have keyboard shortcuts or context menus, use those to re-show the sidebar.
-            .onChange(of: sidebarVisibility, initial: true) { oldValue, newValue in
-                if sidebarVisibilityTimesChanged < 1 {
-                    if newValue == .detailOnly {
-                        sidebarVisibilityTimesChanged += 1
-                        DispatchQueue.main.async {
-                            sidebarVisibility = .all
-                        }
-                    }
-                }
             }
         }
         .environment(pathHost)

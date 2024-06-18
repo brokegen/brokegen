@@ -80,6 +80,18 @@ struct BrokegenApp: App {
                 }
             }
 
+            CommandGroup(after: .toolbar) {
+                // Basically the same as SidebarCommands(), but with different shortcut
+                Button(action: {
+                    NSApp.keyWindow?.contentViewController?.tryToPerform(
+                        #selector(NSSplitViewController.toggleSidebar(_:)),
+                        with: nil)
+                }, label: {
+                    Text("Toggle Sidebar")
+                })
+                .keyboardShortcut("\\", modifiers: [.command])
+            }
+
             CommandMenu("Generation", content: {
                 HStack {
                     Image(systemName: "gear")
