@@ -87,6 +87,14 @@ class DefaultJobsManagerService: JobsManagerService {
             RestartableProcess(URL(fileURLWithPath: "/bin/date")).launch(),
             OneShotProcess("/usr/bin/man", ["man"]),
             TimeJob("infinitimer", maxTimesFired: -1).launch(),
+            RestartableProcess(
+                Bundle.main.url(forResource: "ollama-darwin", withExtension: nil)!,
+                ["ps"],
+                environment: [
+                    "OLLAMA_DEBUG": "1",
+                ],
+                sidebarTitle: "ollama ps"
+            ),
         ]
     }
 }
