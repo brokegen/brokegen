@@ -68,6 +68,7 @@ struct BrokegenAppView: View {
             }
         }
         .environment(pathHost)
+        .frame(idealWidth: 1280, idealHeight: 1080)
     }
 }
 
