@@ -26,7 +26,7 @@ struct BrokegenApp: App {
     @Environment(\.openWindow) var openWindow
 
     init() {
-        _jobsService = State(initialValue: DefaultJobsManagerService(startServicesImmediately: false, allowExternalTraffic: UserDefaults.standard.bool(forKey: "allowExternalTraffic")))
+        _jobsService = State(initialValue: DefaultJobsManagerService(startServicesImmediately: true, allowExternalTraffic: UserDefaults.standard.bool(forKey: "allowExternalTraffic")))
         // Do on-startup init, because otherwise we store no data and app is empty
         callInitializers()
     }
