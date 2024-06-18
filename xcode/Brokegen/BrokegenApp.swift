@@ -16,7 +16,7 @@ let configuration: URLSessionConfiguration = { slowTimeouts in
 @main
 struct BrokegenApp: App {
     @State private var chatService: ChatSyncService = DefaultChatSyncService(serverBaseURL, configuration: configuration)
-    @State private var jobsService: JobsManagerService
+    @State private var jobsService: JobsManagerService = DefaultJobsManagerService(startServicesImmediately: true, allowExternalTraffic: UserDefaults.standard.bool(forKey: "allowExternalTraffic"))
     @State private var providerService: ProviderService = DefaultProviderService(serverBaseURL, configuration: configuration)
 
     private var appSettings = AppSettings()
@@ -26,9 +26,13 @@ struct BrokegenApp: App {
     @Environment(\.openWindow) var openWindow
 
     init() {
-        _jobsService = State(initialValue: DefaultJobsManagerService(startServicesImmediately: true, allowExternalTraffic: UserDefaults.standard.bool(forKey: "allowExternalTraffic")))
         // Do on-startup init, because otherwise we store no data and app is empty
         callInitializers()
+
+        NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { [self] _ in
+            // Terminate Jobs on exit
+            jobsService.terminateAll()
+        }
     }
 
     func callInitializers() {

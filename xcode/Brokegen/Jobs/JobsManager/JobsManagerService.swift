@@ -7,7 +7,15 @@ class JobsManagerService: Observable, ObservableObject {
     @Published var sidebarRenderableJobs: [Job] = []
     @Published var storedJobs: [Job] = []
 
-    init() {}
+    func terminateAll() -> Void {
+        for job in storedJobs {
+            _ = job.terminatePatiently()
+        }
+
+        for job in storedJobs {
+            _ = job.terminate()
+        }
+    }
 }
 
 class DefaultJobsManagerService: JobsManagerService {
