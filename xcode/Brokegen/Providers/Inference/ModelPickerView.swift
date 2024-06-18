@@ -1,10 +1,12 @@
 import SwiftUI
 
+fileprivate let INVALID_MODEL_ID: InferenceModelRecordID = -4
+
 struct ModelPickerView: View {
     @Environment(ProviderService.self) private var providerService
     @Environment(\.dismiss) var dismiss
 
-    private var modelSelection: Binding<InferenceModel?>
+    @Binding private var modelSelection: InferenceModel?
     private var enableModelSelection: Bool
     private var hideDismissButton: Bool
     @State private var isDismissButtonHovered: Bool = false
@@ -13,12 +15,12 @@ struct ModelPickerView: View {
         modelSelection: Binding<InferenceModel?>? = nil
     ) {
         if modelSelection != nil {
-            self.modelSelection = modelSelection!
+            self._modelSelection = modelSelection!
             self.enableModelSelection = true
             self.hideDismissButton = false
         }
         else {
-            self.modelSelection = Binding(
+            self._modelSelection = Binding(
                 get: { return nil },
                 set: { newModel in
                 }
@@ -57,7 +59,7 @@ struct ModelPickerView: View {
                                 modelAvailable: providerService.availableModels.contains {
                                     $0.serverId == model.serverId
                                 },
-                                modelSelection: modelSelection,
+                                modelSelection: $modelSelection,
                                 enableModelSelection: enableModelSelection
                             )
                         }
@@ -72,7 +74,7 @@ struct ModelPickerView: View {
                             modelAvailable: providerService.availableModels.contains {
                                 $0.serverId == model.serverId
                             },
-                            modelSelection: modelSelection,
+                            modelSelection: $modelSelection,
                             enableModelSelection: enableModelSelection
                         )
                         .expandContent(true)
@@ -113,10 +115,8 @@ struct ModelPickerView: View {
                 }
             }
         }
-        .onChange(of: modelSelection.wrappedValue?.serverId) {
-            if modelSelection.wrappedValue != nil {
-                dismiss.callAsFunction()
-            }
+        .onChange(of: modelSelection) {
+            dismiss.callAsFunction()
         }
     }
 }

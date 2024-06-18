@@ -125,7 +125,7 @@ struct AppSidebar: View {
             ASRow("Providers", showChevron: true)
                 .foregroundStyle(Color(.disabledControlTextColor))
 
-            NavigationLink(destination: InferenceModelSettingsView(appSettings)) {
+            NavigationLink(destination: InferenceModelSettingsView(appSettings: appSettings)) {
                 ASRow("Inference Models", showChevron: true)
             }
 

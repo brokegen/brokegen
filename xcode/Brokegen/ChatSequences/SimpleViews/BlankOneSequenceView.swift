@@ -15,14 +15,8 @@ struct BlankOneSequenceView: View {
     @FocusState var focusTextInput: Bool
     @State private var splitViewLoaded: Bool = false
 
-    init(_ initialModel: InferenceModel? = nil) {
-        if initialModel == nil {
-            _showModelPicker = State(initialValue: true)
-        }
-        else {
-            _showModelPicker = State(initialValue: false)
-            self.modelSelection = initialModel
-        }
+    init(alwaysShowModelPicker: Bool = false) {
+        _showModelPicker = State(initialValue: alwaysShowModelPicker)
     }
 
     var body: some View {
@@ -32,33 +26,18 @@ struct BlankOneSequenceView: View {
                     ChatNameInput($chatSequenceHumanDesc)
                         .padding(.bottom, 24)
 
-                    // Display the model info, because otherwise there's nothing to see
-                    if modelSelection != nil {
-                        OneInferenceModelView(model: modelSelection!, modelAvailable: true, modelSelection: $modelSelection, enableModelSelection: false)
-                            .frame(maxWidth: 800)
-                            .layoutPriority(0.2)
-                            .id("selected model")
-                    }
-//                    else if appSettings.defaultInferenceModel != nil {
-//                        OneInferenceModelView(model: appSettings.defaultInferenceModel!, modelAvailable: true, modelSelection: $modelSelection, enableModelSelection: false)
-//                            .frame(maxWidth: 800)
-//                            .layoutPriority(0.2)
-//                            .id("selected model")
-//                    }
-                    else {
-                        let finalDesc: String = {
-                            if let humanDesc: String = appSettings.fallbackInferenceModel?.humanId {
-                                return "No model selected, will fallback to \(humanDesc)"
-                            }
-                            else {
-                                return "No model selected"
-                            }
-                        }()
-                        Text(finalDesc)
-                            .id("selected model")
-                            .padding(24)
-                            .padding(.top, 120)
-                    }
+                    OIMPicker(
+                        boxLabel: modelSelection == nil && appSettings.defaultInferenceModel != nil
+                        ? "Default Inference Model"
+                        : "Inference Model",
+                        selectedModelBinding: Binding(
+                            get: { modelSelection ?? appSettings.defaultInferenceModel },
+                            set: { modelSelection = $0 }),
+                        showModelPicker: $showModelPicker,
+                        geometry: geometry,
+                        allowClear: modelSelection != nil)
+                    .frame(maxWidth: 800)
+                    .layoutPriority(0.2)
 
                     Spacer()
                         .frame(minHeight: 0)
