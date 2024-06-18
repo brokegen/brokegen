@@ -69,7 +69,6 @@ class ProviderService: Observable, ObservableObject {
             }
         }
     }
-
 }
 
 class DefaultProviderService: ProviderService {

@@ -98,7 +98,7 @@ struct OneInferenceModelView: View {
                             .padding(4)
                     }
 
-                    Text(formatJson(model.modelIdentifiers!))
+                    Text(formatJson(model.modelIdentifiers ?? [:]))
                         .lineLimit(1...)
                         .monospaced()
                         .padding(4)
