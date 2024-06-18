@@ -59,6 +59,7 @@ class DefaultJobsManagerService: JobsManagerService {
                 "OLLAMA_NUM_PARALLEL": "3",
                 "OLLAMA_MAX_LOADED_MODELS": "3",
                 "OLLAMA_KEEP_ALIVE": "4h",
+                "OLLAMA_DEBUG": "1",
             ],
             sidebarTitle: "ollama v0.1.44\n(embedded binary)",
             pingEndpoint: "http://localhost:11434",

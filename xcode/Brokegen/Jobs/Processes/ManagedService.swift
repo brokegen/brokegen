@@ -60,6 +60,10 @@ class ManagedService: Job {
         currentProcess.executableURL = executableURL
         currentProcess.arguments = arguments
 
+        var mergedEnvironment = ProcessInfo().environment
+        mergedEnvironment.merge(environment) { $1 }
+        currentProcess.environment = mergedEnvironment
+
         currentProcess.terminationHandler = { _ in
             DispatchQueue.main.async {
                 if let index = self.processes.firstIndex(of: currentProcess) {
