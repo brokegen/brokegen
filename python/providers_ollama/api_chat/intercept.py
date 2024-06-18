@@ -56,13 +56,17 @@ def do_capture_chat_messages(
         ).scalar_one_or_none()
         if sequence_in is not None:
             # This check will _only_ match against prior sequences if the histories match exactly.
-            # In particular, the root message and root sequence must not be parented!!
-            if sequence_in.parent_sequence == prior_sequence:
+            # Each sequence encompasses all parent sequences, so we really just have to check the latest one.
+            if (
+                    (prior_sequence is None and sequence_in.parent_sequence is None)
+                    or (prior_sequence is not None and sequence_in.parent_sequence == prior_sequence.id)
+            ):
+                logger.debug(f"Reusing prior {sequence_in=} due to matching histories")
                 prior_sequence = sequence_in
                 continue
 
-        logger.info(f"Constructing new ChatSequence from ChatMessage#{message_in_orm.id}"
-                    f" because {sequence_in=} and {prior_sequence=}")
+        logger.debug(f"Constructing new ChatSequence from ChatMessage#{message_in_orm.id}"
+                     f" because {sequence_in=} and {prior_sequence=}")
 
         sequence_in = ChatSequence(
             user_pinned=index == len(chat_messages) - 1,

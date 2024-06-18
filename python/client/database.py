@@ -12,7 +12,7 @@ from providers.inference_models.database import Base, HistoryDB
 class ChatMessage(BaseModel):
     role: RoleName
     content: PromptText
-    created_at: Optional[datetime]
+    created_at: Optional[datetime] = None
     "This is a required field for all future events"
 
     model_config = ConfigDict(
@@ -88,6 +88,9 @@ class ChatSequence(Base):
     inference_error = Column(String)
 
     def __str__(self) -> str:
+        return f"<ChatSequence#{self.id}>"
+
+    def __repr__(self) -> str:
         return f"<ChatSequence#{self.id} current_message={self.current_message} parent_sequence={self.parent_sequence}>"
 
 
