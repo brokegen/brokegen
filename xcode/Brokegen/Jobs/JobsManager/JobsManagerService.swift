@@ -39,10 +39,13 @@ class DefaultJobsManagerService: JobsManagerService {
                 allowExternalTraffic ? "0.0.0.0" : "127.0.0.1",
                 "--bind-port",
                 "6635",
+                "--install-terminate-endpoint",
+                "true",
             ],
             sidebarTitle: "brokegen-server\n(embedded x86 binary)",
             pingEndpoint: "http://localhost:6635",
-            pingInterval: 23
+            pingInterval: 23,
+            terminateEndpoint: "http://localhost:6635/terminate"
         )
         if startServicesImmediately {
             _ = server.launch()

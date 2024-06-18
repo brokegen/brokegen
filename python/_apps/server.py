@@ -1,11 +1,15 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
 from datetime import timezone, datetime
+from typing import Annotated
+
+from starlette.routing import Router
 
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
     # https://pyinstaller.org/en/latest/common-issues-and-pitfalls.html
     import multiprocessing
+
     multiprocessing.freeze_support()
 
 import logging
@@ -15,7 +19,7 @@ from contextlib import asynccontextmanager
 
 import click
 import starlette.responses
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter, Query
 from starlette.background import BackgroundTask
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
@@ -100,8 +104,9 @@ async def lifespan_logging(app: FastAPI):
 @click.option('--force-ollama-rag', default=False, show_default=True,
               help='Load FAISS files from --data-dir, and apply them to any ollama-proxy /api/chat calls',
               type=click.BOOL)
-@click.option('--exit-on-exceptions', default=False, show_default=True,
-              help='Exit Python/FastAPI when an HTTP exception is thrown',
+@click.option('--install-terminate-endpoint', default=False, show_default=True,
+              help='Add /terminate endpoint that will halt the server. '
+                   '(Sometimes needed due to how PyInstaller or Swift handle processes.)',
               type=click.BOOL)
 def run_proxy(
         data_dir,
@@ -112,7 +117,7 @@ def run_proxy(
         trace_sqlalchemy: bool,
         trace_fastapi_http: bool,
         force_ollama_rag: bool,
-        exit_on_exceptions: bool,
+        install_terminate_endpoint: bool,
 ):
     numeric_log_level = getattr(logging, str(log_level).upper(), None)
     logging.getLogger().setLevel(level=numeric_log_level)
@@ -162,36 +167,46 @@ def run_proxy(
 
     expecting_eventloop_stop = False
 
-    async def exit_app():
+    async def exit_app(delay: float) -> None:
         nonlocal expecting_eventloop_stop
+        await asyncio.sleep(delay)
         expecting_eventloop_stop = True
         loop = asyncio.get_running_loop()
         loop.stop()
 
-    if exit_on_exceptions:
-        @app.exception_handler(HTTPException)
-        async def http_exception_handler(
-                request: starlette.requests.Request,
-                exc,
-        ):
-            """
-            NB Installing this causes the app to exit on any HTTP exceptions!
-            """
-            return starlette.responses.PlainTextResponse(
-                str(exc.detail),
-                status_code=exc.status_code,
-                background=BackgroundTask(exit_app),
-            )
-
-    @app.put("/terminate")
-    async def terminate_app():
-        return starlette.responses.JSONResponse(
-            {
-                "status": "handling exit",
-                "timestamp": datetime.now(tz=timezone.utc)
-            },
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(
+            request: starlette.requests.Request,
+            exc,
+    ):
+        """
+        NB Installing this causes the app to exit on any HTTP exceptions!
+        """
+        return starlette.responses.PlainTextResponse(
+            str(exc.detail),
+            status_code=exc.status_code,
             background=BackgroundTask(exit_app),
         )
+
+    if install_terminate_endpoint:
+        terminate_router = APIRouter()
+
+        @terminate_router.put("/terminate")
+        async def terminate_app(
+                delay: Annotated[float, Query()] = 2.0,
+        ):
+            async def exit_task() -> None:
+                return await exit_app(delay)
+
+            return starlette.responses.JSONResponse(
+                {
+                    "status": f"exiting in {delay} seconds",
+                    "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+                },
+                background=BackgroundTask(exit_task),
+            )
+
+        app.include_router(terminate_router)
 
     (
         ProviderRegistry()

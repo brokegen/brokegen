@@ -17,6 +17,8 @@ class ManagedService: Job {
 
     let pingEndpoint: String?
     let pingInterval: TimeInterval
+    /// Specific to our server: call /terminate when we want it to exit
+    let terminateEndpoint: String?
 
     var timer: Timer? = nil
 
@@ -26,13 +28,15 @@ class ManagedService: Job {
         environment: [String : String] = [:],
         sidebarTitle: String? = nil,
         pingEndpoint: String?,
-        pingInterval: TimeInterval = 2
+        pingInterval: TimeInterval = 2,
+        terminateEndpoint: String? = nil
     ) {
         self.executableURL = launchURL
         self.arguments = arguments
         self.environment = environment
         self.pingEndpoint = pingEndpoint
         self.pingInterval = pingInterval
+        self.terminateEndpoint = terminateEndpoint
 
         super.init()
 
@@ -99,14 +103,32 @@ class ManagedService: Job {
 
     @Sendable
     func heartbeat(timer: Timer) -> Void {
-        if self.pingEndpoint != nil {
-            AF.request(
-                self.pingEndpoint!,
-                method: .head
-            )
-            .response { r in
-                switch r.result {
-                case .success(let data):
+        guard self.pingEndpoint != nil else { return }
+        switch(status) {
+        case .requestedStop, .stopped, .error(_):
+            // Stop heartbeating if we're trying to stop
+            return
+        default:
+            break
+        }
+
+        var responseStatusCode: Int? = nil
+
+        AF.request(
+            self.pingEndpoint!,
+            method: .head
+        )
+        .onHTTPResponse { response in
+            responseStatusCode = response.statusCode
+        }
+        .response { r in
+            switch r.result {
+            case .success(let data):
+                if responseStatusCode != nil && !(200..<400).contains(responseStatusCode!) {
+                    self.displayedOutput += "\(Date.now): HEAD \(self.pingEndpoint!) returned \(responseStatusCode!), assuming failure\n"
+                    self.status = .error("HTTP \(responseStatusCode!)")
+                }
+                else {
                     self.displayedOutput += "\(Date.now): HEAD \(self.pingEndpoint!) success (ManagedService already running)"
                     if data != nil {
                         if let dataAsString = String(data: data!, encoding: .utf8) {
@@ -115,12 +137,11 @@ class ManagedService: Job {
                     }
                     self.displayedOutput += "\n"
                     self.status = .startedWithOutput
-                    return
-
-                case .failure(_):
-                    // Try to launch the service.
-                    self.doLaunch()
                 }
+
+            case .failure(_):
+                // Try to launch the service.
+                self.doLaunch()
             }
         }
     }
@@ -157,16 +178,43 @@ class ManagedService: Job {
         timer?.invalidate()
         timer = nil
 
-        guard !processes.isEmpty else {
-            status = .stopped
-            return self
-        }
-
         status = .requestedStop
 
-        // TODO: This doesn't look right, document what it's doing here
-        Task {
-            await withCheckedContinuation { continuation in
+        if self.terminateEndpoint != nil {
+            var responseStatusCode: Int? = nil
+
+            AF.request(
+                self.terminateEndpoint!,
+                method: .put
+            )
+            .onHTTPResponse { response in
+                responseStatusCode = response.statusCode
+            }
+            .response { r in
+                switch r.result {
+                case .success(let data):
+                    if responseStatusCode != nil && !(200..<400).contains(responseStatusCode!) {
+                        self.displayedOutput += "\(Date.now): PUT \(self.terminateEndpoint!) returned \(responseStatusCode!), assuming couldn't terminate\n"
+                    }
+                    else {
+                        self.displayedOutput += "\(Date.now): PUT \(self.terminateEndpoint!) success (expecting exit)"
+                        if data != nil {
+                            if let dataAsString = String(data: data!, encoding: .utf8) {
+                                self.displayedOutput += ", \(dataAsString)"
+                            }
+                        }
+                        self.displayedOutput += "\n"
+                        self.status = .stopped
+                    }
+
+                case .failure(_):
+                    self.displayedOutput += "\(Date.now): PUT \(self.terminateEndpoint!) failed, assuming terminated\n"
+                    self.status = .stopped
+                }
+            }
+        }
+        else {
+            Task {
                 for process in processes {
                     process.waitUntilExit()
                 }
@@ -175,7 +223,6 @@ class ManagedService: Job {
                 DispatchQueue.main.async {
                     self.status = .stopped
                 }
-                continuation.resume()
             }
         }
 
