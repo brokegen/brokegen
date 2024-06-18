@@ -9,7 +9,7 @@ Current known providers generally have two things to look for: Type, and ID.
 """
 import logging
 from abc import abstractmethod
-from typing import AsyncGenerator, AsyncIterable, Self
+from typing import AsyncGenerator, AsyncIterable, Self, AsyncIterator
 
 from _util.json import JSONDict
 from _util.status import ServerStatusHolder
@@ -50,7 +50,7 @@ class BaseProvider:
             status_holder: ServerStatusHolder,
             history_db: HistoryDB,
             audit_db: AuditDB,
-    ) -> AsyncIterable[JSONDict]:
+    ) -> AsyncIterator[JSONDict]:
         raise NotImplementedError()
 
 

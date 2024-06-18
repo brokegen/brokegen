@@ -67,7 +67,7 @@ def translate_model_info_diff(
 def do_get_sequence(
         id: ChatSequenceID,
         history_db: HistoryDB,
-        include_model_info_diffs: bool,
+        include_model_info_diffs: bool = False,
 ) -> list[ChatMessage | InfoMessageOut]:
     messages_list: list[ChatMessage | InfoMessageOut] = []
     last_seen_model: InferenceModelRecordOrm | None = None

@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import AsyncIterator, AsyncGenerator, Annotated, AsyncIterable
+from typing import AsyncIterator, AsyncGenerator, Annotated, Awaitable
 
 import fastapi.routing
 import orjson
@@ -39,9 +39,9 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         function_id = request.url_for('sequence_continue', sequence_id=sequence_id)
         status_holder = ServerStatusHolder(f"{function_id}: setting up")
 
-        async def real_response_maker() -> AsyncIterable[JSONDict]:
+        async def real_response_maker() -> Awaitable[AsyncIterator[JSONDict]]:
             # DEBUG: Check that everyone is responsive during long waits
-            await asyncio.sleep(6)
+            await asyncio.sleep(3)
 
             # Decide how to continue inference for this sequence
             inference_model: InferenceModelRecordOrm = \
@@ -60,18 +60,17 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             )
 
             return provider.chat(sequence_id, inference_model, retrieval_label, status_holder, history_db,
-                                       audit_db)
+                                 audit_db)
 
-        async def nonblocking_response_maker() -> AsyncIterator[JSONDict]:
-            async for item in await real_response_maker():
-                yield {
-                    "content": item,
-                    "status": status_holder.get(),
-                }
+        async def nonblocking_response_maker(
+                real_response_maker: Awaitable[AsyncIterator[JSONDict]],
+        ) -> AsyncIterator[JSONDict]:
+            async for item in (await real_response_maker):
+                yield item
 
         async def do_keepalive(
                 primordial: AsyncIterator[JSONDict],
-        ) -> AsyncGenerator[JSONDict, None]:
+        ) -> AsyncGenerator[bytes, None]:
             async for chunk in emit_keepalive_chunks(primordial, 0.5, None):
                 if chunk is None:
                     yield orjson.dumps({
@@ -79,11 +78,12 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                         "done": False,
                         "status": status_holder.get(),
                     }) + b'\n'
+
                     continue
 
                 yield orjson.dumps(chunk) + b'\n'
 
         return JSONStreamingResponse(
-            content=do_keepalive(nonblocking_response_maker()),
+            content=do_keepalive(nonblocking_response_maker(real_response_maker())),
             status_code=218,
         )

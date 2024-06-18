@@ -1,6 +1,8 @@
+import asyncio
 from datetime import datetime, timezone
-from typing import AsyncIterable, AsyncGenerator
+from typing import AsyncIterable, AsyncGenerator, AsyncIterator
 
+from _util.json import JSONDict
 from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID
 from audit.http import AuditDB
@@ -56,6 +58,19 @@ class EchoProvider(BaseProvider):
 
             yield InferenceModelRecord.from_orm(new_model)
 
+    async def _chat(
+            self,
+            sequence_id: ChatSequenceID,
+            history_db: HistoryDB,
+            max_length: int = 140,
+    ) -> AsyncIterable[str]:
+        messages_list: list[ChatMessage] = do_get_sequence(sequence_id, history_db)
+        message = messages_list[-1]
+
+        character: str
+        for character in message.content[:max_length]:
+            yield character
+
     async def chat(
             self,
             sequence_id: ChatSequenceID,
@@ -64,15 +79,26 @@ class EchoProvider(BaseProvider):
             status_holder: ServerStatusHolder,
             history_db: HistoryDB,
             audit_db: AuditDB,
-    ):  # -> AsyncIterable[JSONDict]:
-        messages_list: list[ChatMessage] = \
-            do_get_sequence(sequence_id, history_db, include_model_info_diffs=False)
+    ) -> AsyncIterator[JSONDict]:
+        async for item in self._chat(sequence_id, history_db):
+            # NB Without sleeps, packets seem to get eaten somewhere.
+            # Probably client-side, but TBD.
+            await asyncio.sleep(0.05)
 
-        message = messages_list[-1]
+            yield {
+                "message": {
+                    "role": "assistant",
+                    "content": item,
+                },
+                "status": status_holder.get(),
+                "done": False,
+            }
 
-        character: str
-        for character in message.content:
-            yield character
+        yield {
+            "status": status_holder.get(),
+            "done": True,
+            # "new_sequence_id": -5,
+        }
 
 
 class EchoProviderFactory(ProviderFactory):
