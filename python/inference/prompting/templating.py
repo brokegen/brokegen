@@ -85,3 +85,18 @@ async def apply_llm_template(
             template3 += assistant_response
 
     return template3
+
+
+def with_tokenizer(prompt):
+    # pip install transformers
+    from transformers import AutoTokenizer
+
+    # TODO: Package these files
+    tokenizer = AutoTokenizer.from_pretrained('stabilityai/stablelm-2-12b-chat')
+    inputs = tokenizer.apply_chat_template(
+        prompt,
+        add_generation_prompt=True,
+        return_tensors="pt",
+    )
+
+    raise NotImplementedError()

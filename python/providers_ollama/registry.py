@@ -83,9 +83,6 @@ class ExternalOllamaProvider(BaseProvider):
         async for model in do_list_available_models(self, history_db, audit_db):
             yield model
 
-    async def stream_get(self, url):
-        return self.client.build_request()
-
 
 class ExternalOllamaFactory(ProviderFactory):
     async def try_make(self, label: ProviderLabel) -> ExternalOllamaProvider | None:

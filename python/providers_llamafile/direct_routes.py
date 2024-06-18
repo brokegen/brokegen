@@ -54,6 +54,8 @@ def install_test_points(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter)
 
         headers = httpx.Headers()
         headers['content-type'] = 'application/json'
+        # https://github.com/encode/httpx/discussions/2959
+        # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
         headers['connection'] = 'close'
 
         # TODO: Add HttpEvent logger

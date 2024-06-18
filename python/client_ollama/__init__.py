@@ -84,7 +84,7 @@ def install_forwards(router_ish: FastAPI):
         provider = registry.by_label[label]
 
         if ollama_get_path == "api/tags":
-            return {"models": [m async for m in emulate_api_tags(provider)]}
+            return {"models": [m async for m in emulate_api_tags(label, provider)]}
 
         if ollama_post_path == "api/show":
             request_content_json: dict = orjson.loads(await original_request.body())
