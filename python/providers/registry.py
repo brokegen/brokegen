@@ -11,8 +11,14 @@ import logging
 from abc import abstractmethod
 from typing import AsyncGenerator, AsyncIterable, Self
 
-from providers.inference_models.orm import InferenceModelRecord, InferenceModelResponse
+from _util.json import JSONDict
+from _util.status import ServerStatusHolder
+from _util.typing import ChatSequenceID
+from audit.http import AuditDB
+from providers.inference_models.database import HistoryDB
+from providers.inference_models.orm import InferenceModelRecord, InferenceModelResponse, InferenceModelRecordOrm
 from providers.orm import ProviderLabel, ProviderRecord, ProviderType
+from retrieval.faiss.retrieval import RetrievalLabel
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +39,18 @@ class BaseProvider:
         """
         Method not marked async because it returns AsyncGenerator
         """
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def chat(
+            self,
+            sequence_id: ChatSequenceID,
+            inference_model: InferenceModelRecordOrm,
+            retrieval_label: RetrievalLabel,
+            status_holder: ServerStatusHolder,
+            history_db: HistoryDB,
+            audit_db: AuditDB,
+    ) -> AsyncIterable[JSONDict]:
         raise NotImplementedError()
 
 

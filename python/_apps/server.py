@@ -1,21 +1,21 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
-from datetime import timezone, datetime
-from typing import Annotated
+import asyncio
 
-from starlette.routing import Router
+from providers import registry
 
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
     # https://pyinstaller.org/en/latest/common-issues-and-pitfalls.html
     import multiprocessing
-
     multiprocessing.freeze_support()
 
 import logging
 import os
 import sqlite3
 from contextlib import asynccontextmanager
+from datetime import timezone, datetime
+from typing import Annotated, Awaitable
 
 import click
 import starlette.responses
@@ -34,6 +34,7 @@ import providers_llamafile
 import providers_ollama.direct_routes
 import providers_ollama.forwarding_routes
 import providers_ollama.sequence_extend
+import providers_registry
 from audit.http import get_db as get_audit_db
 from audit.http_raw import SqlLoggingMiddleware
 from providers.registry import ProviderRegistry
@@ -84,6 +85,21 @@ async def lifespan_logging(app: FastAPI):
     root_logger.handlers = []
 
 
+@asynccontextmanager
+async def init_app(app: FastAPI):
+    # DEBUG: Keep providers loaded at startup
+    registry = ProviderRegistry()
+    discoverers: list[Awaitable[None]] = [
+        factory.discover(provider_type=None, registry=registry)
+        for factory in registry.factories
+    ]
+    for done in asyncio.as_completed(discoverers):
+        _ = await done
+
+    async with lifespan_logging(app):
+        yield
+
+
 @click.command()
 @click.option('--data-dir', default='data/', show_default=True,
               help='Filesystem directory to store/read data from',
@@ -129,7 +145,7 @@ def run_proxy(
     import uvicorn
 
     app: FastAPI = FastAPI(
-        lifespan=lifespan_logging,
+        lifespan=init_app,
     )
 
     if trace_sqlalchemy:
@@ -213,7 +229,7 @@ def run_proxy(
         .register_factory(providers_ollama.registry.ExternalOllamaFactory())
         .register_factory(providers.openai.lm_studio.LMStudioFactory())
         .register_factory(providers_llamafile.registry.LlamafileFactory(['dist']))
-        .register_factory(providers.echo.EchoProviderFactory())
+        .register_factory(providers_registry.echo.EchoProviderFactory())
     )
 
     # Ollama proxy & emulation

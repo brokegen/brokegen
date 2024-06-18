@@ -124,11 +124,7 @@ def do_extend_sequence(
         generation_complete=False,
     )
 
-    maybe_message = lookup_chat_message(message_id, history_db)
-    if maybe_message is None:
-        raise HTTPException(400, f"Can't find ChatMessage#{message_id}")
-
-    user_sequence.current_message = maybe_message.id
+    user_sequence.current_message = message_id
     user_sequence.generation_complete = True
 
     # Mark this user response as the current up-to-date

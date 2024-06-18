@@ -1,11 +1,17 @@
 from datetime import datetime, timezone
 from typing import AsyncIterable, AsyncGenerator
 
+from _util.status import ServerStatusHolder
+from _util.typing import ChatSequenceID
+from audit.http import AuditDB
+from client.database import ChatMessage
+from client.sequence_get import do_get_sequence
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecord, InferenceModelResponse, InferenceModelAddRequest, \
     lookup_inference_model_detailed, InferenceModelRecordOrm
 from providers.orm import ProviderType, ProviderLabel, ProviderRecord
 from providers.registry import BaseProvider, ProviderRegistry, ProviderFactory
+from retrieval.faiss.retrieval import RetrievalLabel
 
 
 class EchoProvider(BaseProvider):
@@ -49,6 +55,24 @@ class EchoProvider(BaseProvider):
             history_db.commit()
 
             yield InferenceModelRecord.from_orm(new_model)
+
+    async def chat(
+            self,
+            sequence_id: ChatSequenceID,
+            inference_model: InferenceModelRecordOrm,
+            retrieval_label: RetrievalLabel,
+            status_holder: ServerStatusHolder,
+            history_db: HistoryDB,
+            audit_db: AuditDB,
+    ):  # -> AsyncIterable[JSONDict]:
+        messages_list: list[ChatMessage] = \
+            do_get_sequence(sequence_id, history_db, include_model_info_diffs=False)
+
+        message = messages_list[-1]
+
+        character: str
+        for character in message.content:
+            yield character
 
 
 class EchoProviderFactory(ProviderFactory):
