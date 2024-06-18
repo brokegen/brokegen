@@ -6,25 +6,23 @@ struct JobOutputView: View {
 
     var splitOutput: [String] {
         get {
-//            return [job.displayedOutput]
             return job.displayedOutput.split(separator: "\n").map { String($0) }
         }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            RibbonView(job.ribbonText)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
-                .padding(.top, -20)
-                .frame(height: 196)
+        VSplitView {
+            VStack(alignment: .leading, spacing: 0) {
+                RibbonView(job.ribbonText)
 
-            Text(job.displayedStatus)
-                .monospaced()
-                .font(.title2)
-
-            Divider()
-                .padding(24)
+                Text(job.displayedStatus)
+                    .monospaced()
+                    .font(.title2)
+            }
+            .frame(maxWidth: .infinity)
+            .lineLimit(1...)
+            .padding([.leading, .trailing], 16)
+            .padding(.bottom, 24)
 
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
@@ -34,9 +32,10 @@ struct JobOutputView: View {
                             .font(.title2)
                     }
                 }
-                .padding(24)
+                .padding([.leading, .trailing], 24)
             }
         }
+        .padding(.top, -20)
     }
 }
 

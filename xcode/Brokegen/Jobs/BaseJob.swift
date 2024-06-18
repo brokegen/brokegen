@@ -14,15 +14,15 @@ enum JobStatus: Equatable {
 class BaseJob: ObservableObject, Identifiable {
     let id: UUID = UUID()
 
-    @Published var status: JobStatus
-    @Published var sidebarTitle: String
+    @Published public var status: JobStatus
+    @Published public var sidebarTitle: String
 
-    @Published var ribbonText: String
+    @Published public var ribbonText: String
 
     /// Additional text describing Job status, intended to be the header area of a View.
     /// Should describe broad context, like whether the job is running, when it was last updated, etc.
-    @Published var displayedStatus: String
-    @Published var displayedOutput: String
+    @Published public var displayedStatus: String
+    @Published public var displayedOutput: String
 
     init() {
         status = .notStarted

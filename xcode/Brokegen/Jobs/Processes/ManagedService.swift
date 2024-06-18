@@ -51,6 +51,7 @@ class ManagedService: Job {
 
         if pingEndpoint != nil {
             self.displayedOutput += "Configuration: ping \(pingEndpoint!) every \(pingInterval) seconds, launch service if not reachable\n"
+            self.displayedOutput += "---\n"
         }
     }
 

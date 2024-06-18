@@ -84,7 +84,7 @@ class DefaultJobsManagerService: JobsManagerService {
             TimeJob("quick timer", timeInterval: 0.2, maxTimesFired: 48),
             OneShotProcess("/usr/bin/pmset", ["-g", "rawlog"]).launch(),
             OneShotProcess("/sbin/ifconfig"),
-            OneShotProcess("/bin/date"),
+            RestartableProcess(URL(fileURLWithPath: "/bin/date")).launch(),
             OneShotProcess("/usr/bin/man", ["man"]),
             TimeJob("infinitimer", maxTimesFired: -1).launch(),
         ]
