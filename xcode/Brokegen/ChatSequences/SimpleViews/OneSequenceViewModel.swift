@@ -128,8 +128,10 @@ class OneSequenceViewModel: ObservableObject {
                 if let message = jsonDict["message"] as? [String : Any] {
                     if let fragment = message["content"] as? String {
                         if !fragment.isEmpty {
-                            responseInEdit = responseInEdit!.appendContent(fragment)
-                            objectWillChange.send()
+                            DispatchQueue.main.async {
+                                self.responseInEdit = self.responseInEdit!.appendContent(fragment)
+                                self.objectWillChange.send()
+                            }
                         }
                     }
                 }
