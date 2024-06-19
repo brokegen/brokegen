@@ -50,6 +50,7 @@ struct BlankOneSequenceView: View {
                         Text(submitting ? "Submitting ChatMessage + Sequence" : "Ready")
                             .foregroundStyle(Color(.disabledControlTextColor))
                             .layoutPriority(0.2)
+                            .lineLimit(1, reservesSpace: true)
 
                         Spacer()
 
@@ -63,6 +64,7 @@ struct BlankOneSequenceView: View {
                     .padding(.leading, 24)
                     .padding(.trailing, 24)
                     .frame(minHeight: 36)
+                    .frame(maxHeight: 36)
 
                     HStack(spacing: 0) {
                         InlineTextInput($promptInEdit, allowNewlineSubmit: chatSettingsService.defaults.allowNewlineSubmit, isFocused: $focusTextInput) {

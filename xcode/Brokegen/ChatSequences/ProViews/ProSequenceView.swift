@@ -426,8 +426,9 @@ struct ProSequenceView: View {
                                     .onHover { isHovered in
                                         modelPickerHovered = isHovered
                                     }
-//                                    .opacity(modelPickerHovered ? 1.0 : 0.0)
-                                    .disabled(modelPickerHovered)
+                                    // DEBUG: Hovering isn't working, which just makes this ugly.
+                                    .opacity(0.0)
+                                    .disabled(true)
                                 }
                             }
                             .defaultScrollAnchor(.bottom)
