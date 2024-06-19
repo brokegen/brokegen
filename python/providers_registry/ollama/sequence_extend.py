@@ -104,7 +104,15 @@ async def do_continuation(
         inference_event: InferenceEventOrm = \
             await inference_event_logger(response_content_json, inference_model, history_db)
         response_sequence: ChatSequence | None = \
-            await construct_new_sequence_from(original_sequence, response_content_json, inference_event, history_db)
+            await construct_new_sequence_from(original_sequence, inference_options.seed_assistant_response, response_content_json, inference_event, history_db)
+
+        if response_sequence is None:
+            status_holder.set("Failed to construct a new ChatSequence")
+            yield {
+                "error": "Failed to construct a new ChatSequence",
+                "done": True,
+            }
+            return
 
         if response_sequence is not None and not response_sequence.human_desc:
             with StatusContext("summarizing prompt as tab name", status_holder):

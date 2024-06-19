@@ -5,6 +5,7 @@ from typing import TypeAlias, Union
 import sqlalchemy
 
 from _util.json import JSONDict, safe_get
+from _util.typing import PromptText
 from client.chat_message import ChatMessageOrm
 from client.chat_sequence import ChatSequence
 from client.database import HistoryDB
@@ -75,6 +76,7 @@ async def inference_event_logger(
 
 async def construct_new_sequence_from(
         original_sequence: ChatSequence,
+        assistant_response_seed: PromptText | None,
         consolidated_response: OllamaResponseContentJSON,
         inference_event: InferenceEventOrm,
         history_db: HistoryDB,
@@ -87,8 +89,10 @@ async def construct_new_sequence_from(
 
     assistant_response = ChatMessageOrm(
         role="assistant",
-        content=safe_get(consolidated_response, "response")
-                or safe_get(consolidated_response, "message", "content"),
+        content=(assistant_response_seed or "") + (
+                safe_get(consolidated_response, "response")
+                or safe_get(consolidated_response, "message", "content")
+        ),
         created_at=inference_event.response_created_at,
     )
     if not assistant_response.content:

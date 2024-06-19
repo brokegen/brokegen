@@ -18,7 +18,8 @@ class OneSequenceViewModel: ObservableObject {
     /// This field does double duty to indicate whether we are currently receiving data.
     /// `nil` before first data, and then reset to `nil` once we're done receiving.
     var responseInEdit: Message? = nil
-    var receivingStreamer: AnyCancellable? = nil
+    @ObservationIgnored var submittedAssistantResponseSeed: String? = nil
+    @ObservationIgnored private var receivingStreamer: AnyCancellable? = nil
     var serverStatus: String? = nil
 
     private var stayAwake: StayAwake = StayAwake()
@@ -115,9 +116,11 @@ class OneSequenceViewModel: ObservableObject {
 
                 responseInEdit = Message(
                     role: "assistant",
-                    content: "",
+                    content: submittedAssistantResponseSeed ?? "",
                     createdAt: Date.now
                 )
+
+                submittedAssistantResponseSeed = nil
             }
 
             serverStatus = "\(endpoint) response: (\(responseInEdit!.content.count) characters so far)"
@@ -171,6 +174,8 @@ class OneSequenceViewModel: ObservableObject {
                 self.submitting = true
                 self.serverStatus = "/sequences/\(self.sequence.serverId!)/continue: submitting request"
             }
+
+            submittedAssistantResponseSeed = settings.seedAssistantResponse
 
             receivingStreamer = await chatService.sequenceContinue(
                 ChatSequenceParameters(
@@ -226,6 +231,8 @@ class OneSequenceViewModel: ObservableObject {
                 content: promptInEdit,
                 createdAt: Date.now
             )
+
+            submittedAssistantResponseSeed = settings.seedAssistantResponse
 
             receivingStreamer = await chatService.sequenceExtend(
                 ChatSequenceParameters(

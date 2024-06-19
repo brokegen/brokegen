@@ -207,7 +207,7 @@ def run_proxy(
 
         @terminate_router.put("/terminate")
         async def terminate_app(
-                delay: Annotated[float, Query()] = 2.0,
+                delay: Annotated[float, Query()] = 1.0,
         ):
             async def exit_task() -> None:
                 return await exit_app(delay)
