@@ -416,7 +416,7 @@ struct ProSequenceView: View {
                                     .frame(maxWidth: 800)
                                     .foregroundStyle(Color(.disabledControlTextColor))
                                     // TODO: We can eventually make this something like pull-to-refresh, putting it relatively far below the fold.
-                                    .padding(.top, 120)
+                                    .padding([.top, .bottom], 120)
                                 }
                             }
                             .defaultScrollAnchor(.bottom)

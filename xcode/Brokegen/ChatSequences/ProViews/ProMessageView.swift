@@ -56,6 +56,7 @@ struct ProMessageView: View {
     let stillExpectingUpdate: Bool
 
     @State var expandContent: Bool
+    @State var isHovered: Bool = false
 
     init(
         _ message: Message,
@@ -92,48 +93,72 @@ struct ProMessageView: View {
         self._expandContent = State(initialValue: message.role != "model config")
     }
 
+    var headerSection: some View {
+        HStack(spacing: 0) {
+            Button(action: {
+                withAnimation(.snappy) {
+                    expandContent.toggle()
+                }
+            }, label: {
+                HStack(alignment: .bottom, spacing: 0) {
+                    Image(systemName: expandContent ? "chevron.down" : "chevron.right")
+                        .contentTransition(.symbolEffect)
+                        .font(.system(size: 18))
+                        .frame(width: 20, height: 18)
+                        .modifier(ForegroundAccentColor(enabled: !expandContent))
+                        .padding(.trailing, 12)
+
+                    Text(message.role)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color(.controlTextColor))
+                        .padding(.trailing, 12)
+                }
+                .contentShape(Rectangle())
+            })
+            .buttonStyle(.borderless)
+
+            if stillExpectingUpdate && (!message.content.isEmpty || !expandContent) {
+                ProgressView()
+                    .controlSize(.mini)
+                    .id("progress view")
+            }
+
+            Text(message.createdAtString)
+                .foregroundStyle(Color(.disabledControlTextColor))
+                .padding(.leading, 18)
+                .padding(.trailing, 18)
+                .opacity(isHovered ? 1.0 : 0.0)
+
+            Spacer()
+
+            HStack(spacing: 24) {
+                Button(action: {}, label: {
+                    Image(systemName: "clipboard")
+                })
+
+                Button(action: {}, label: {
+                    Image(systemName: "arrow.triangle.branch")
+                })
+
+                Button(action: {}, label: {
+                    Image(systemName: "info.circle")
+                })
+            }
+            .font(.system(size: 24))
+            .buttonStyle(.borderless)
+            .opacity(isHovered ? 1.0 : 0.0)
+            .disabled(!isHovered)
+            .padding(.trailing, 18)
+        }
+        .frame(height: 42)
+        .font(.system(size: 18))
+        .padding(16)
+
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // "Header" for the message
-            HStack(spacing: 0) {
-                Button(action: {
-                    withAnimation(.snappy) {
-                        expandContent = !expandContent
-                    }
-                }, label: {
-                    HStack(alignment: .bottom, spacing: 0) {
-                        Image(systemName: expandContent ? "chevron.down" : "chevron.right")
-                            .contentTransition(.symbolEffect)
-                            .font(.system(size: 18))
-                            .frame(width: 20, height: 18)
-                            .modifier(ForegroundAccentColor(enabled: !expandContent))
-                            .padding(.trailing, 12)
-
-                        Text(message.role)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(Color(.controlTextColor))
-                            .padding(.trailing, 12)
-                    }
-                    .contentShape(Rectangle())
-                })
-                .buttonStyle(.borderless)
-
-                if stillExpectingUpdate && (!message.content.isEmpty || !expandContent) {
-                    ProgressView()
-                        .controlSize(.mini)
-                        .id("progress view")
-                }
-
-                Spacer()
-
-                Text(message.createdAtString)
-                    .foregroundStyle(Color(.disabledControlTextColor))
-                    .padding(.trailing, 18)
-            }
-            .frame(height: 42)
-            .font(.system(size: 18))
-            .padding(.top, 16)
-            .padding([.leading, .trailing], 16)
+            headerSection
 
             if stillExpectingUpdate && (message.content.isEmpty && expandContent) {
                 ProgressView()
@@ -150,10 +175,16 @@ struct ProMessageView: View {
                     .textSelection(.enabled)
                     .padding(16)
                     .background(
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .fill(Color(.controlBackgroundColor))
                     )
-                    .padding(.bottom, 8)
+            }
+        }
+        // TODO: Checking this gets really slow
+        .onHover { isHovered in
+            // TODO: Animating this gets really slow
+            withAnimation(.snappy) {
+                self.isHovered = isHovered
             }
         }
     }
