@@ -15,11 +15,12 @@ from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import ChatSequenceID, PromptText
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
-from client.database import ChatMessageOrm, ChatSequence, lookup_chat_message, ChatMessage
+from client.chat_message import ChatMessageOrm, lookup_chat_message, ChatMessage
+from client.chat_sequence import ChatSequence
 from client.sequence_get import do_get_sequence, do_extend_sequence
 from inference.continuation import ContinueRequest, ExtendRequest, select_continuation_model
 from inference.prompting.templating import apply_llm_template
-from providers.inference_models.database import HistoryDB, get_db as get_history_db
+from client.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, InferenceReason
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry

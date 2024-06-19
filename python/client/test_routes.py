@@ -6,9 +6,9 @@ import pytest
 from starlette.testclient import TestClient
 
 import client.add_message
-import providers.inference_models.database
+import client.database
 import providers_registry
-from providers.inference_models.database import HistoryDB
+from client.database import HistoryDB
 
 
 @pytest.fixture(scope='session')
@@ -27,9 +27,9 @@ def test_client(chat_test_app):
 
 @pytest.fixture(scope="function", autouse=True)
 def history_db() -> HistoryDB:
-    providers.inference_models.database.load_db_models_pytest()
-    yield providers.inference_models.database.get_db()
-    providers.inference_models.database.SessionLocal = None
+    client.database.load_db_models_pytest()
+    yield client.database.get_db()
+    client.database.SessionLocal = None
 
 
 def test_early_read(test_client):

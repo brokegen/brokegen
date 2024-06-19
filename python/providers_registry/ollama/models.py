@@ -8,7 +8,7 @@ from sqlalchemy import select, or_, func
 
 from _util.json import safe_get
 from _util.typing import InferenceModelHumanID
-from providers.inference_models.database import HistoryDB
+from client.database import HistoryDB
 from providers.inference_models.orm import InferenceModelRecordOrm, InferenceModelRecord, InferenceModelAddRequest, \
     lookup_inference_model_detailed
 from providers.orm import ProviderRecordOrm, ProviderRecord

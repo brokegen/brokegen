@@ -5,7 +5,7 @@ from pydantic import PositiveInt, BaseModel, ConfigDict
 from sqlalchemy import Column, Integer, String, DateTime, JSON, Double, select, UniqueConstraint, func, or_
 
 from _util.typing import ChatSequenceID, TemplatedPromptText, InferenceModelRecordID, InferenceModelHumanID
-from providers.inference_models.database import Base, HistoryDB
+from client.database import Base, HistoryDB
 from providers.orm import ProviderLabel
 
 InferenceEventID: TypeAlias = PositiveInt

@@ -10,7 +10,7 @@ from starlette.requests import Request
 from _util.json import safe_get, JSONDict, safe_get_arrayed
 from _util.status import ServerStatusHolder
 from audit.http import AuditDB, get_db as get_audit_db
-from providers.inference_models.database import HistoryDB, get_db as get_history_db
+from client.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceReason
 from providers.registry import ProviderRegistry
 from providers_registry.ollama.api_chat.inject_rag import do_proxy_chat_rag

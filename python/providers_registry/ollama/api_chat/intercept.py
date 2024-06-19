@@ -5,8 +5,9 @@ from sqlalchemy import select
 
 from _util.json import safe_get, JSONArray, safe_get_arrayed
 from _util.typing import PromptText
-from client.database import ChatSequence, ChatMessage, lookup_chat_message, ChatMessageOrm
-from providers.inference_models.database import HistoryDB
+from client.chat_message import ChatMessage, lookup_chat_message, ChatMessageOrm
+from client.chat_sequence import ChatSequence
+from client.database import HistoryDB
 
 logger = logging.getLogger(__name__)
 

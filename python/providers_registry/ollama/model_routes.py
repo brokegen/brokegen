@@ -13,7 +13,7 @@ import providers
 from _util.json import safe_get
 from _util.typing import InferenceModelHumanID
 from audit.http import AuditDB
-from providers.inference_models.database import HistoryDB
+from client.database import HistoryDB
 from providers.inference_models.orm import InferenceModelRecord, InferenceModelRecordOrm, inject_inference_stats, \
     InferenceModelResponse
 from providers.orm import ProviderLabel

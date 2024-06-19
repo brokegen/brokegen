@@ -6,8 +6,9 @@ from sqlalchemy import select
 
 from _util.json import JSONDict
 from _util.typing import InferenceModelRecordID, ChatSequenceID, PromptText
-from client.database import ChatMessage, lookup_sequence_parents
-from providers.inference_models.database import HistoryDB
+from client.chat_message import ChatMessage
+from client.chat_sequence import lookup_sequence_parents
+from client.database import HistoryDB
 from providers.inference_models.orm import InferenceEventOrm, InferenceModelRecordOrm
 from retrieval.faiss.retrieval import RetrievalLabel
 

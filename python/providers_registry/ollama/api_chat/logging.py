@@ -1,7 +1,7 @@
 import logging
 
 from _util.json import JSONDict, safe_get
-from providers.inference_models.database import HistoryDB
+from client.database import HistoryDB
 from providers_registry.ollama.json import OllamaResponseContentJSON
 
 logger = logging.getLogger(__name__)

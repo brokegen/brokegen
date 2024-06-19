@@ -16,7 +16,7 @@ from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, PromptText
 from audit.http import AuditDB
 from inference.continuation import InferenceOptions
-from providers.inference_models.database import HistoryDB
+from client.database import HistoryDB
 from providers.inference_models.orm import InferenceModelRecord, InferenceModelResponse, InferenceModelRecordOrm
 from providers.orm import ProviderLabel, ProviderRecord, ProviderType
 

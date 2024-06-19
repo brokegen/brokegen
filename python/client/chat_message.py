@@ -1,18 +1,18 @@
 from datetime import datetime
-from typing import Optional, Iterator
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import Column, String, DateTime, Integer, Boolean, select
+from sqlalchemy import Column, String, DateTime, Integer, select
 
 from _util.json import JSONDict
-from _util.typing import ChatMessageID, ChatSequenceID, PromptText, RoleName
+from _util.typing import ChatMessageID, PromptText, RoleName
 from client.database import Base, HistoryDB
 
 
-class Embedding(BaseModel):
+class ChatMessage(BaseModel):
     role: RoleName
     content: PromptText
-    created_at: Optional[datetime]
+    created_at: Optional[datetime] = None
     "This is a required field for all future events"
 
     model_config = ConfigDict(
@@ -20,14 +20,6 @@ class Embedding(BaseModel):
         from_attributes=True,
         frozen=True,
     )
-
-
-class EmbeddingSource(BaseModel):
-    pass
-
-
-class DocumentOrm(Base):
-    pass
 
 
 class ChatMessageOrm(Base):
@@ -71,44 +63,3 @@ def lookup_chat_message(
         .limit(1)
         .order_by(ChatMessageOrm.created_at.desc())
     ).scalar_one_or_none()
-
-
-class ChatSequence(Base):
-    """
-    Represents a linked list node for Message sequences.
-    """
-    __tablename__ = 'ChatSequences'
-
-    id: ChatSequenceID = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-    human_desc = Column(String)
-    user_pinned = Column(Boolean)
-    """
-    Marks the messages we want to show in the main view.
-    Double duty as top-of-thread and also regular-branching-point.
-    """
-
-    current_message: ChatMessageID = Column(Integer, nullable=False)
-    parent_sequence: ChatSequenceID = Column(Integer)
-
-    generated_at = Column(DateTime)
-    generation_complete = Column(Boolean)
-    inference_job_id = Column(Integer)  # InferenceEventOrm.id
-    inference_error = Column(String)
-
-    def __str__(self) -> str:
-        return f"<ChatSequence#{self.id} current_message={self.current_message} parent_sequence={self.parent_sequence}>"
-
-
-def lookup_sequence_parents(
-        current_id: ChatSequenceID | None,
-        history_db: HistoryDB,
-) -> Iterator[ChatSequence]:
-    # TODO: We should take advantage of the ORM relationship, rather than doing this
-    while current_id is not None:
-        sequence = history_db.execute(
-            select(ChatSequence)
-            .where(ChatSequence.id == current_id)
-        ).scalar_one()
-
-        yield sequence
-        current_id = sequence.parent_sequence

@@ -12,10 +12,11 @@ from _util.json_streaming import JSONStreamingResponse, consolidate_stream_to_js
 from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import PromptText
 from audit.http import AuditDB
-from client.database import ChatMessageOrm, ChatSequence
+from client.chat_message import ChatMessageOrm
+from client.chat_sequence import ChatSequence
 from inference.iterators import tee_to_console_output, stream_bytes_to_json, consolidate_and_call, dump_to_bytes
 from inference.prompting.templating import apply_llm_template
-from providers.inference_models.database import HistoryDB
+from client.database import HistoryDB
 from providers.inference_models.orm import InferenceEventOrm, InferenceReason
 from providers_registry.ollama.api_chat.converter import convert_chat_to_generate
 from providers_registry.ollama.api_chat.intercept import do_capture_chat_messages

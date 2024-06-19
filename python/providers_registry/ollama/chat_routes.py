@@ -10,7 +10,7 @@ from audit.http import AuditDB
 from providers_registry.ollama.json import OllamaEventBuilder
 from providers_registry.ollama.model_routes import do_api_show, _real_ollama_client
 from inference.prompting.templating import apply_llm_template
-from providers.inference_models.database import HistoryDB
+from client.database import HistoryDB
 from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, lookup_inference_model, \
     InferenceReason
 from _util.typing import InferenceModelHumanID

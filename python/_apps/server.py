@@ -4,6 +4,7 @@ if __name__ == '__main__':
     # https://github.com/encode/uvicorn/issues/939
     # https://pyinstaller.org/en/latest/common-issues-and-pitfalls.html
     import multiprocessing
+
     multiprocessing.freeze_support()
 
 import asyncio
@@ -23,9 +24,11 @@ from starlette.requests import Request
 
 import audit
 import client
+import client.database
 import client_ollama
 import inference.continuation_routes
-import providers.inference_models.database
+import providers.inference_models
+import providers.routes
 import providers_registry
 import providers_registry.ollama.forwarding_routes
 import providers_registry.ollama.sequence_extend
@@ -148,7 +151,7 @@ def run_proxy(
 
     try:
         audit.http.init_db(f"{data_dir}/audit.db")
-        providers.inference_models.database.load_db_models(f"{data_dir}/requests-history.db")
+        client.database.load_db_models(f"{data_dir}/requests-history.db")
 
     except sqlite3.OperationalError:
         if not os.path.exists(data_dir):
@@ -221,14 +224,14 @@ def run_proxy(
 
     (
         ProviderRegistry()
-        .register_factory(providers_registry.echo.echo.EchoProviderFactory())
+        .register_factory(providers_registry.echo.registry.EchoProviderFactory())
         .register_factory(providers_registry.openai.lm_studio.LMStudioFactory())
         .register_factory(providers_registry.llamafile.registry.LlamafileFactory(['dist']))
         .register_factory(providers_registry.ollama.registry.ExternalOllamaFactory())
     )
 
     # Ollama proxy & emulation
-    providers_registry.providers_ollama.forwarding_routes.install_forwards(app, force_ollama_rag)
+    providers_registry.ollama.forwarding_routes.install_forwards(app, force_ollama_rag)
     client_ollama.install_forwards(app)
 
     # Direct test points, only used in Swagger test UI
@@ -241,7 +244,7 @@ def run_proxy(
     inference.continuation_routes.install_routes(app)
     client.install_routes(app)
 
-    providers_registry.providers_ollama.sequence_extend.install_routes(app)
+    providers_registry.ollama.sequence_extend.install_routes(app)
 
     get_knowledge().load_shards_from(None)
     get_knowledge().queue_data_dir(data_dir)

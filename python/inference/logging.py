@@ -1,5 +1,5 @@
 from _util.json import JSONDict
-from providers.inference_models.database import HistoryDB
+from client.database import HistoryDB
 
 
 async def inference_event_logger(

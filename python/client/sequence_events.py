@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from _util.json import safe_get
 from _util.typing import InferenceModelRecordID, ChatSequenceID
-from providers.inference_models.database import HistoryDB, get_db as get_history_db
+from client.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceEventOrm, InferenceReason, InferenceEventID
 
 

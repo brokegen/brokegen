@@ -5,7 +5,7 @@ import orjson
 from pydantic import BaseModel, ConfigDict, create_model
 from sqlalchemy import Column, String, DateTime, JSON, UniqueConstraint
 
-from providers.inference_models.database import Base
+from client.database import Base
 
 ProviderType: TypeAlias = str
 ProviderID: TypeAlias = str

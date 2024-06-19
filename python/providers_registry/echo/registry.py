@@ -7,12 +7,11 @@ from _util.json import JSONDict, safe_get
 from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, PromptText
 from audit.http import AuditDB
-from client.database import ChatMessage
+from client.chat_message import ChatMessage
+from client.database import HistoryDB, get_db as get_history_db
 from client.sequence_get import do_get_sequence
 from inference.continuation import InferenceOptions
-from inference.iterators import tee_to_console_output, consolidate_and_call, inference_event_logger, \
-    construct_new_sequence_from
-from providers.inference_models.database import HistoryDB, get_db as get_history_db
+from inference.iterators import tee_to_console_output, consolidate_and_call
 from providers.inference_models.orm import InferenceModelRecord, InferenceModelResponse, InferenceModelAddRequest, \
     lookup_inference_model_detailed, InferenceModelRecordOrm
 from providers.orm import ProviderType, ProviderLabel, ProviderRecord
