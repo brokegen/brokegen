@@ -96,60 +96,6 @@ async def emit_keepalive_chunks(
             maybe_next.cancel()
 
 
-async def complex_nothing_chain(
-        inference_model_human_id: InferenceModelHumanID,
-        is_disconnected: Callable[[], Awaitable[bool]],
-):
-    async def fake_timeout(
-            bigsleep_sec: float = 30.1,
-            bigsleep_times: int = 3,
-    ) -> AsyncIterator[str]:
-        for _ in range(bigsleep_times):
-            await asyncio.sleep(bigsleep_sec)
-            yield orjson.dumps({
-                "model": inference_model_human_id,
-                "created_at": datetime.now(tz=timezone.utc),
-                "message": {
-                    "content": f"!",
-                    "role": "assistant",
-                },
-                "done": False,
-            })
-
-        yield orjson.dumps({
-            "model": inference_model_human_id,
-            "created_at": datetime.now(tz=timezone.utc),
-            "message": {
-                "content": f"\nInference timeout after {bigsleep_sec} seconds: {inference_model_human_id}",
-                "role": "assistant",
-            },
-            "done": True,
-        })
-
-    # Final chunk for what we're returning
-    async for chunk in emit_keepalive_chunks(fake_timeout(), 0.5, None):
-        if await is_disconnected():
-            logger.debug(f"Somehow detected a client disconnect! (Expected client to just stop iteration)")
-
-        if chunk is None:
-            yield orjson.dumps({
-                "model": inference_model_human_id,
-                "created_at": datetime.now(tz=timezone.utc),
-                "message": {
-                    # On testing, we don't even need this field, so empty string is fine
-                    "content": "",
-                    "role": "assistant",
-                },
-                "done": False,
-                # Add random fields, since clients seem robust
-                "response": "",
-                "status": "Waiting for Ollama response",
-            })
-            continue
-
-        yield chunk
-
-
 # TODO: Make sure this doesn't block execution, or whatever.
 # TODO: Figure out how to trigger two AsyncIterators at once, but we've already burned a day on it.
 async def tee_stream_to_log_and_callback(
