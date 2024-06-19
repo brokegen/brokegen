@@ -389,7 +389,7 @@ struct ProSequenceView: View {
 
                         ScrollViewReader { proxy in
                             ScrollView(.vertical) {
-                                VStack(spacing: 0) {
+                                LazyVStack(spacing: 0) {
                                     if !settings.pinChatSequenceDesc {
                                         ChatNameReadOnly(
                                             Binding(
