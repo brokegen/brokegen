@@ -63,12 +63,12 @@ struct ModelPickerView: View {
                                 enableModelSelection: enableModelSelection
                             )
                         }
-
-                        Text("End of loaded InferenceModels")
-                            .foregroundStyle(Color(.disabledControlTextColor))
-                            .frame(height: 400)
-                            .frame(maxWidth: .infinity)
                     }
+
+                    Text("End of loaded InferenceModels")
+                        .foregroundStyle(Color(.disabledControlTextColor))
+                        .frame(height: 400)
+                        .frame(maxWidth: .infinity)
                 }
                 .padding(24)
 
@@ -86,12 +86,12 @@ struct ModelPickerView: View {
                         .padding(24)
                         .padding(.bottom, 0)
                     }
-
-                    Text("End of loaded InferenceModels")
-                        .foregroundStyle(Color(.disabledControlTextColor))
-                        .frame(height: 400)
-                        .frame(maxWidth: .infinity)
                 }
+
+                Text("End of loaded InferenceModels")
+                    .foregroundStyle(Color(.disabledControlTextColor))
+                    .frame(height: 400)
+                    .frame(maxWidth: .infinity)
             }
 
             if !hideDismissButton {
