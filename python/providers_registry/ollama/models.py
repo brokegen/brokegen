@@ -12,7 +12,7 @@ from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceModelRecordOrm, InferenceModelRecord, InferenceModelAddRequest, \
     lookup_inference_model_detailed
 from providers.orm import ProviderRecordOrm, ProviderRecord
-from providers_ollama.json import OllamaResponseContentJSON
+from providers_registry.ollama.json import OllamaResponseContentJSON
 
 logger = logging.getLogger(__name__)
 

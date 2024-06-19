@@ -6,13 +6,13 @@ import orjson
 from fastapi import FastAPI, Depends, HTTPException
 from starlette.requests import Request
 
-from _util.json import JSONArray, JSONDict, safe_get
+from _util.json import JSONDict
 from audit.http import AuditDB, get_db as get_audit_db
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.orm import ProviderID, ProviderType, ProviderLabel
 from providers.registry import ProviderRegistry, BaseProvider
-from providers_ollama.forwarding import forward_request
-from providers_ollama.model_routes import do_api_tags, do_api_show
+from providers_registry.ollama.forwarding import forward_request
+from providers_registry.ollama.model_routes import do_api_show
 
 logger = logging.getLogger(__name__)
 

@@ -16,11 +16,11 @@ from client.database import ChatMessageOrm, ChatSequence
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceEventOrm, InferenceReason
-from providers_ollama.api_chat.converter import convert_chat_to_generate
-from providers_ollama.api_chat.intercept import do_capture_chat_messages
-from providers_ollama.chat_rag_util import finalize_inference_job, do_generate_raw_templated
-from providers_ollama.chat_routes import lookup_model_offline
-from providers_ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, \
+from providers_registry.ollama.api_chat.converter import convert_chat_to_generate
+from providers_registry.ollama.api_chat.intercept import do_capture_chat_messages
+from providers_registry.ollama.chat_rag_util import finalize_inference_job, do_generate_raw_templated
+from providers_registry.ollama.chat_routes import lookup_model_offline
+from providers_registry.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, \
     consolidate_stream
 from retrieval.faiss.knowledge import get_knowledge
 from retrieval.faiss.retrieval import RetrievalPolicy, RetrievalLabel, SimpleRetrievalPolicy, \

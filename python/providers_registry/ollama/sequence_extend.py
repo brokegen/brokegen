@@ -23,9 +23,9 @@ from providers.inference_models.database import HistoryDB, get_db as get_history
 from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, InferenceReason
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry
-from providers_ollama.api_chat.inject_rag import do_proxy_chat_rag
-from providers_ollama.chat_rag_util import finalize_inference_job, do_generate_raw_templated
-from providers_ollama.json import consolidate_stream_sync, keepalive_wrapper
+from providers_registry.ollama.api_chat.inject_rag import do_proxy_chat_rag
+from providers_registry.ollama.chat_rag_util import finalize_inference_job, do_generate_raw_templated
+from providers_registry.ollama.json import consolidate_stream_sync, keepalive_wrapper
 from retrieval.faiss.retrieval import RetrievalLabel
 
 logger = logging.getLogger(__name__)

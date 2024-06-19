@@ -9,7 +9,7 @@ from fastapi import Query, Depends, HTTPException
 from starlette.background import BackgroundTask
 from starlette.responses import JSONResponse
 
-import providers_llamafile.registry
+import providers_registry.llamafile.registry
 from _util.json import JSONDict
 from _util.typing import TemplatedPromptText
 from audit.http import AuditDB, get_db as get_audit_db
@@ -61,7 +61,7 @@ def install_test_points(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter)
         # TODO: Add HttpEvent logger
         # TODO: Add InferenceEventOrm
 
-        httpx_client = cast(providers_llamafile.registry.LlamafileProvider, provider) \
+        httpx_client = cast(providers_registry.providers_llamafile.registry.LlamafileProvider, provider) \
             .server_comms
 
         upstream_request = httpx_client.build_request(

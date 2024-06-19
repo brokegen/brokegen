@@ -12,9 +12,9 @@ from _util.typing import PromptText, TemplatedPromptText
 from audit.http import AuditDB
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB
-from providers_ollama.chat_rag_util import do_generate_raw_templated
-from providers_ollama.chat_routes import lookup_model
-from providers_ollama.json import OllamaRequestContentJSON
+from providers_registry.ollama.chat_rag_util import do_generate_raw_templated
+from providers_registry.ollama.chat_routes import lookup_model
+from providers_registry.ollama.json import OllamaRequestContentJSON
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,7 @@ from starlette.testclient import TestClient
 
 import client.add_message
 import providers.inference_models.database
-import providers_ollama.sequence_extend
+import providers_registry
 from providers.inference_models.database import HistoryDB
 
 
@@ -15,7 +15,7 @@ from providers.inference_models.database import HistoryDB
 def chat_test_app():
     test_app = fastapi.FastAPI()
     client.install_routes(test_app)
-    providers_ollama.sequence_extend.install_routes(test_app)
+    providers_registry.ollama.sequence_extend.install_routes(test_app)
 
     yield test_app
 

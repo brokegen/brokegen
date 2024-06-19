@@ -11,9 +11,9 @@ from _util.typing import TemplatedPromptText
 from audit.http import AuditDB, get_db as get_audit_db
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
-from providers_ollama.chat_rag_util import OllamaModelName, do_generate_raw_templated
-from providers_ollama.chat_routes import lookup_model_offline
-from providers_ollama.json import chunk_and_log_output, OllamaResponseContentJSON, consolidate_stream
+from providers_registry.ollama.chat_rag_util import OllamaModelName, do_generate_raw_templated
+from providers_registry.ollama.chat_routes import lookup_model_offline
+from providers_registry.ollama.json import chunk_and_log_output, OllamaResponseContentJSON, consolidate_stream
 
 logger = logging.getLogger(__name__)
 

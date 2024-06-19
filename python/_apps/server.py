@@ -1,8 +1,4 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
-import asyncio
-
-from providers import registry
-
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
@@ -10,6 +6,7 @@ if __name__ == '__main__':
     import multiprocessing
     multiprocessing.freeze_support()
 
+import asyncio
 import logging
 import os
 import sqlite3
@@ -29,12 +26,10 @@ import client
 import client_ollama
 import inference.continuation_routes
 import providers.inference_models.database
-import providers.openai.lm_studio
-import providers_llamafile
-import providers_ollama.direct_routes
-import providers_ollama.forwarding_routes
-import providers_ollama.sequence_extend
 import providers_registry
+import providers_registry.ollama.forwarding_routes
+import providers_registry.ollama.sequence_extend
+import providers_registry.openai.lm_studio
 from audit.http import get_db as get_audit_db
 from audit.http_raw import SqlLoggingMiddleware
 from providers.registry import ProviderRegistry
@@ -227,18 +222,18 @@ def run_proxy(
     (
         ProviderRegistry()
         .register_factory(providers_registry.echo.EchoProviderFactory())
-        .register_factory(providers.openai.lm_studio.LMStudioFactory())
-        .register_factory(providers_llamafile.registry.LlamafileFactory(['dist']))
-        .register_factory(providers_ollama.registry.ExternalOllamaFactory())
+        .register_factory(providers_registry.openai.lm_studio.LMStudioFactory())
+        .register_factory(providers_registry.llamafile.registry.LlamafileFactory(['dist']))
+        .register_factory(providers_registry.ollama.registry.ExternalOllamaFactory())
     )
 
     # Ollama proxy & emulation
-    providers_ollama.forwarding_routes.install_forwards(app, force_ollama_rag)
+    providers_registry.providers_ollama.forwarding_routes.install_forwards(app, force_ollama_rag)
     client_ollama.install_forwards(app)
 
     # Direct test points, only used in Swagger test UI
-    providers_ollama.direct_routes.install_test_points(app)
-    providers_llamafile.direct_routes.install_test_points(app)
+    providers_registry.ollama.direct_routes.install_test_points(app)
+    providers_registry.llamafile.direct_routes.install_test_points(app)
 
     # brokegen-specific endpoints
     providers.routes.install_routes(app)
@@ -246,7 +241,7 @@ def run_proxy(
     inference.continuation_routes.install_routes(app)
     client.install_routes(app)
 
-    providers_ollama.sequence_extend.install_routes(app)
+    providers_registry.providers_ollama.sequence_extend.install_routes(app)
 
     get_knowledge().load_shards_from(None)
     get_knowledge().queue_data_dir(data_dir)
