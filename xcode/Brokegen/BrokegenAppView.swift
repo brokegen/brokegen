@@ -27,24 +27,12 @@ struct BrokegenAppView: View {
     @EnvironmentObject public var chatSettingsService: CSCSettingsService
     @EnvironmentObject public var appSettings: AppSettings
 
-    func bigReset() {
-        DispatchQueue.main.async {
-            UserDefaults.resetStandardUserDefaults()
-
-            chatService.chatSequenceClientModels = []
-            chatService.loadedChatSequences = []
-
-            providerService.allModels = []
-        }
-    }
-
     var body: some View {
         // TODO: Should this be done a different way, somehow?
         // How do I get these to share state and not "jump" during navigation?
         let sharedSidebar = AppSidebar(
             useSimplifiedSequenceViews: $chatSettingsService.useSimplifiedSequenceViews,
-            showDebugSidebarItems: $appSettings.showDebugSidebarItems,
-            bigReset: bigReset
+            showDebugSidebarItems: $appSettings.showDebugSidebarItems
         )
 
         NavigationStack(path: $pathHost.path) {
@@ -83,7 +71,7 @@ struct BrokegenAppView: View {
         jobs.storedJobs.append(job)
     }
 
-    return AppSidebar(useSimplifiedSequenceViews: Binding.constant(true), showDebugSidebarItems: .constant(true), bigReset: {})
+    return AppSidebar(useSimplifiedSequenceViews: Binding.constant(true), showDebugSidebarItems: .constant(true))
         .environment(jobs)
 }
 

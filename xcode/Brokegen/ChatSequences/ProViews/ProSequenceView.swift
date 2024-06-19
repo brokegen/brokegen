@@ -9,6 +9,11 @@ struct ProSequenceView: View {
     @FocusState private var focusTextInput: Bool
     @State private var showContinuationModelPicker: Bool = false
     @State private var splitViewLoaded: Bool = false
+    @State private var modelPickerHovered: Bool = false
+
+    @FocusState private var focusSystemPromptOverride: Bool
+    @FocusState private var focusModelTemplateOverride: Bool
+    @FocusState private var focusAssistantResponseSeed: Bool
 
     init(_ viewModel: OneSequenceViewModel) {
         self.viewModel = viewModel
@@ -137,10 +142,6 @@ struct ProSequenceView: View {
             .padding(.trailing, 12)
         }
     }
-
-    @FocusState private var focusSystemPromptOverride: Bool
-    @FocusState private var focusModelTemplateOverride: Bool
-    @FocusState private var focusAssistantResponseSeed: Bool
 
     var showStatusBar: Bool {
         return viewModel.displayServerStatus != nil || viewModel.submitting || viewModel.responseInEdit != nil
@@ -402,7 +403,7 @@ struct ProSequenceView: View {
                                     ForEach(viewModel.sequence.messages) { message in
                                         ProMessageView(message)
                                     }
-                                    
+
                                     if viewModel.responseInEdit != nil {
                                         ProMessageView(viewModel.responseInEdit!, stillUpdating: true)
                                     }
@@ -416,7 +417,17 @@ struct ProSequenceView: View {
                                     .frame(maxWidth: 800)
                                     .foregroundStyle(Color(.disabledControlTextColor))
                                     // TODO: We can eventually make this something like pull-to-refresh, putting it relatively far below the fold.
-                                    .padding([.top, .bottom], 120)
+                                    .padding(.bottom, 120)
+                                    .padding(.top, max(
+                                        120,
+                                        geometry.size.height * 0.2
+                                    ))
+                                    .contentShape(Rectangle())
+                                    .onHover { isHovered in
+                                        modelPickerHovered = isHovered
+                                    }
+//                                    .opacity(modelPickerHovered ? 1.0 : 0.0)
+                                    .disabled(modelPickerHovered)
                                 }
                             }
                             .defaultScrollAnchor(.bottom)

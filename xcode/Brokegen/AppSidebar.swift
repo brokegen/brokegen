@@ -101,16 +101,13 @@ struct AppSidebar: View {
 
     private let useSimplifiedSequenceViews: Binding<Bool>
     private let showDebugSidebarItems: Binding<Bool>
-    private var bigReset: (() -> Void)
 
     init(
         useSimplifiedSequenceViews: Binding<Bool>,
-        showDebugSidebarItems: Binding<Bool>,
-        bigReset: (@escaping () -> Void)
+        showDebugSidebarItems: Binding<Bool>
     ) {
         self.useSimplifiedSequenceViews = useSimplifiedSequenceViews
         self.showDebugSidebarItems = showDebugSidebarItems
-        self.bigReset = bigReset
     }
 
     var settingsSection: some View {
@@ -122,8 +119,9 @@ struct AppSidebar: View {
                 Text("Settings")
             }
         }) {
-            ASRow("Providers", showChevron: true)
-                .foregroundStyle(Color(.disabledControlTextColor))
+            NavigationLink(destination: ProvidersSidebar(providerService: providerService)) {
+                ASRow("Providers", showChevron: true)
+            }
 
             NavigationLink(destination: InferenceModelSettingsView(appSettings: appSettings)) {
                 ASRow("Inference Models", showChevron: true)
@@ -190,10 +188,6 @@ struct AppSidebar: View {
                             NavigationLink(destination: SystemInfoView()) {
                                 ASRow("System Info")
                             }
-                        }
-
-                        NavigationLink(destination: ProviderPickerView(providerService: providerService)) {
-                            ASRow("Providers")
                         }
 
                         NavigationLink(destination: {

@@ -19,7 +19,7 @@ struct BrokegenApp: App {
     @State private var jobsService: JobsManagerService = DefaultJobsManagerService(startServicesImmediately: true, allowExternalTraffic: UserDefaults.standard.bool(forKey: "allowExternalTraffic"))
     @State private var providerService: ProviderService = DefaultProviderService(serverBaseURL, configuration: configuration)
 
-    private var appSettings = AppSettings()
+    @ObservedObject private var appSettings = AppSettings()
     @State private var inferenceSettingsUpdater: AnyCancellable? = nil
     @ObservedObject private var chatSettingsService = CSCSettingsService()
 
@@ -44,6 +44,17 @@ struct BrokegenApp: App {
             catch { print("[ERROR] Failed to providerService.fetchAvailableModels()") }
 
             appSettings.link(to: providerService)
+        }
+    }
+
+    func resetAllUserSettings() {
+        DispatchQueue.main.async {
+            UserDefaults.resetStandardUserDefaults()
+
+            chatService.chatSequenceClientModels = []
+            chatService.loadedChatSequences = []
+
+            providerService.allModels = []
         }
     }
 
@@ -78,12 +89,6 @@ struct BrokegenApp: App {
                 .disabled(true)
             }
 
-            CommandGroup(after: .appSettings) {
-                Toggle(isOn: $chatSettingsService.useSimplifiedSequenceViews) {
-                    Text("Use simplified chat interface")
-                }
-            }
-
             CommandGroup(after: .toolbar) {
                 // Basically the same as SidebarCommands(), but with different shortcut
                 Button(action: {
@@ -96,15 +101,23 @@ struct BrokegenApp: App {
                 .keyboardShortcut("\\", modifiers: [.command])
             }
 
-            CommandMenu("Generation", content: {
-                HStack {
-                    Image(systemName: "gear")
-                    Text("gear")
-                        .font(.system(size: 64))
+            CommandMenu("Settings", content: {
+                Toggle(isOn: $appSettings.showDebugSidebarItems) {
+                    Text("Show debug sidebar items")
                 }
-                VStack {
-                    Text("yeah")
-                    Divider()
+
+                Button(action: resetAllUserSettings, label: {
+                    Label("Reset all user settings", systemImage: "exclamationmark.fill")
+                })
+
+                Divider()
+
+                Toggle(isOn: $appSettings.allowExternalTraffic, label: {
+                    Text("Allow non-localhost traffic\n(applies at next service launch)")
+                })
+
+                Toggle(isOn: $chatSettingsService.useSimplifiedSequenceViews) {
+                    Text("Use simplified chat interface")
                 }
             })
         }
