@@ -165,4 +165,3 @@ class LMStudioFactory(ProviderFactory):
 
         label = ProviderLabel(type="lm_studio", id="http://localhost:1234")
         await registry.try_make(label)
-.

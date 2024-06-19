@@ -7,6 +7,7 @@ struct ProSequenceView: View {
     @ObservedObject var settings: CSCSettingsService.SettingsProxy
 
     @FocusState private var focusTextInput: Bool
+    @State private var showContinuationModelPicker: Bool = false
     @State private var splitViewLoaded: Bool = false
 
     init(_ viewModel: OneSequenceViewModel) {
@@ -21,18 +22,18 @@ struct ProSequenceView: View {
                 InlineTextInput($viewModel.promptInEdit, allowNewlineSubmit: settings.allowNewlineSubmit, isFocused: $focusTextInput) {
                     if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
                         if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
-                            _ = viewModel.requestContinue(withRetrieval: true)
+                            _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
                         }
                         else {
-                            _ = viewModel.requestContinue()
+                            _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId)
                         }
                     }
                     else {
                         if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
-                            viewModel.requestExtend(withRetrieval: true)
+                            viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
                         }
                         else {
-                            viewModel.requestExtend()
+                            viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId)
                         }
                     }
                 }
@@ -55,10 +56,10 @@ struct ProSequenceView: View {
 
                     Button(action: {
                         if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
-                            _ = viewModel.requestContinue(withRetrieval: true)
+                            _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
                         }
                         else {
-                            viewModel.requestExtend(withRetrieval: true)
+                            viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
                         }
                     }) {
                         Image(systemName: "arrow.up.doc")
@@ -100,23 +101,23 @@ struct ProSequenceView: View {
                         if settings.showSeparateRetrievalButton {
                             if viewModel.promptInEdit.isEmpty {
                                 if settings.allowContinuation {
-                                    _ = viewModel.requestContinue()
+                                    _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId)
                                 }
                                 else {}
                             }
                             else {
-                                viewModel.requestExtend()
+                                viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId)
                             }
                         }
                         else {
                             if viewModel.promptInEdit.isEmpty {
                                 if settings.allowContinuation {
-                                    _ = viewModel.requestContinue(withRetrieval: settings.forceRetrieval)
+                                    _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: settings.forceRetrieval)
                                 }
                                 else {}
                             }
                             else {
-                                viewModel.requestExtend(withRetrieval: settings.forceRetrieval)
+                                viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: settings.forceRetrieval)
                             }
                         }
                     }
@@ -397,7 +398,7 @@ struct ProSequenceView: View {
                                             pinChatName: $settings.pinChatSequenceDesc)
                                         .id("sequence title")
                                     }
-                                    
+
                                     ForEach(viewModel.sequence.messages) { message in
                                         ProMessageView(message)
                                     }
@@ -405,6 +406,15 @@ struct ProSequenceView: View {
                                     if viewModel.responseInEdit != nil {
                                         ProMessageView(viewModel.responseInEdit!, stillUpdating: true)
                                     }
+
+                                    OIMPicker(
+                                        boxLabel: "Select a different inference model for next message:",
+                                        selectedModelBinding: $viewModel.continuationInferenceModel,
+                                        showModelPicker: $showContinuationModelPicker,
+                                        geometry: geometry,
+                                        allowClear: true)
+                                    .frame(maxWidth: 800)
+                                    .foregroundStyle(Color(.disabledControlTextColor))
                                 }
                             }
                             .defaultScrollAnchor(.bottom)

@@ -63,6 +63,11 @@ struct ModelPickerView: View {
                                 enableModelSelection: enableModelSelection
                             )
                         }
+
+                        Text("End of loaded InferenceModels")
+                            .foregroundStyle(Color(.disabledControlTextColor))
+                            .frame(height: 400)
+                            .frame(maxWidth: .infinity)
                     }
                 }
                 .padding(24)
@@ -89,20 +94,22 @@ struct ModelPickerView: View {
                 }
             }
 
-            Button(action: dismiss.callAsFunction) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 32))
-                    .padding(12)
-                    .background(
-                        Rectangle()
-                            .fill(isDismissButtonHovered ? Color(.selectedControlColor) : Color.clear)
-                    )
+            if !hideDismissButton {
+                Button(action: dismiss.callAsFunction) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 32))
+                        .padding(12)
+                        .background(
+                            Rectangle()
+                                .fill(isDismissButtonHovered ? Color(.selectedControlColor) : Color.clear)
+                        )
+                }
+                .onHover { isHovered in
+                    isDismissButtonHovered = isHovered
+                }
+                .buttonStyle(.plain)
+                .padding(24)
             }
-            .onHover { isHovered in
-                isDismissButtonHovered = isHovered
-            }
-            .buttonStyle(.plain)
-            .padding(24)
         }
         .onAppear {
             if providerService.availableModels.isEmpty {

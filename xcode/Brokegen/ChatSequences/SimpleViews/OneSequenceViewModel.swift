@@ -31,6 +31,7 @@ class OneSequenceViewModel: ObservableObject {
     var showInferenceOptions: Bool = false
     var showRetrievalOptions: Bool = false
 
+    var continuationInferenceModel: InferenceModel? = nil
     var showAssistantResponseSeed: Bool = false
     var showSystemPromptOverride: Bool = false
 
@@ -194,6 +195,7 @@ class OneSequenceViewModel: ObservableObject {
     }
 
     func requestExtend(
+        model continuationModelId: InferenceModelRecordID? = nil,
         withRetrieval: Bool = false
     ) {
         print("[INFO] OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval))")
@@ -221,7 +223,7 @@ class OneSequenceViewModel: ObservableObject {
             receivingStreamer = await chatService.sequenceExtend(
                 ChatSequenceParameters(
                     nextMessage: nextMessage,
-                    continuationModelId: nil,
+                    continuationModelId: continuationModelId,
                     fallbackModelId: appSettings.fallbackInferenceModel?.serverId,
                     retrievalPolicy: withRetrieval ? "simple" : nil,
                     retrievalSearchArgs: withRetrieval ? "{\"k\": 18}" : nil,
