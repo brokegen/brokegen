@@ -255,7 +255,7 @@ struct OneSequenceView: View {
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
-            .background(BackgroundEffectView().ignoresSafeArea())
+//            .background(BackgroundEffectView().ignoresSafeArea())
             .navigationTitle(viewModel.displayHumanDesc)
             .navigationSubtitle(
                 viewModel.sequence.serverId != nil

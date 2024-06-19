@@ -2,15 +2,24 @@ import Alamofire
 import Combine
 import Foundation
 import SwiftData
+import SwiftyJSON
 
 struct ChatSequenceParameters: Codable, Hashable {
     let nextMessage: Message?
     let continuationModelId: InferenceModelRecordID?
     let fallbackModelId: InferenceModelRecordID?
 
+    /// TODO: options could probably be a JSON
+    var inferenceOptions: String? = nil
+    var overrideSystemPrompt: String? = nil
+    var seedAssistantResponse: String? = nil
+
     var retrievalPolicy: String? = nil
     var retrievalSearchArgs: String? = nil
     var preferredEmbeddingModel: InferenceModelRecordID? = nil
+
+    var autonamingPolicy: String? = nil
+    var preferredAutonamingModel: InferenceModelRecordID? = nil
 
     // These parameters shouldn't be passed to the server,
     // but the information is needed to complete the request.
