@@ -15,6 +15,7 @@ from retrieval.faiss.retrieval import RetrievalLabel
 
 class InferenceOptions(BaseModel):
     inference_options: Optional[JSONDict] = None
+    override_model_template: Optional[str] = None
     override_system_prompt: Optional[PromptText] = None
     seed_assistant_response: Optional[PromptText] = None
 

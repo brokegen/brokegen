@@ -14,10 +14,11 @@ from _util.typing import PromptText
 from audit.http import AuditDB
 from client.chat_message import ChatMessageOrm
 from client.chat_sequence import ChatSequence
+from inference.continuation import InferenceOptions, AutonamingOptions
 from inference.iterators import tee_to_console_output, stream_bytes_to_json, consolidate_and_call, dump_to_bytes
 from inference.prompting.templating import apply_llm_template
 from client.database import HistoryDB
-from providers.inference_models.orm import InferenceEventOrm, InferenceReason
+from providers.inference_models.orm import InferenceEventOrm, InferenceReason, InferenceModelRecordOrm
 from providers_registry.ollama.api_chat.converter import convert_chat_to_generate
 from providers_registry.ollama.api_chat.intercept import do_capture_chat_messages
 from providers_registry.ollama.api_chat.logging import ollama_log_indexer, ollama_response_consolidator, \
@@ -35,6 +36,9 @@ logger = logging.getLogger(__name__)
 async def do_proxy_chat_rag(
         original_request: starlette.requests.Request,
         request_content_json: OllamaRequestContentJSON,
+        inference_model: InferenceModelRecordOrm,
+        inference_options: InferenceOptions,
+        autonaming_options: AutonamingOptions,
         retrieval_label: RetrievalLabel,
         history_db: HistoryDB,
         audit_db: AuditDB,
@@ -60,21 +64,21 @@ async def do_proxy_chat_rag(
             user_prompt: PromptText | None,
             assistant_response: PromptText | None = None,
     ) -> PromptText:
-        model, executor_record = await lookup_model_offline(
-            request_content_json['model'],
-            history_db,
-        )
-
+        """
+        TODO: Don't mix parameters, because these will be for the summary + RAG LLM selections
+        """
         model_template = (
-                safe_get(request_content_json, 'options', 'template')
-                or safe_get(model.combined_inference_parameters, 'template')
+                inference_options.override_model_template
+                or safe_get(request_content_json, 'options', 'template')
+                or safe_get(inference_model.combined_inference_parameters, 'template')
                 or ''
         )
 
         final_system_message = (
                 system_message
+                or inference_options.override_system_prompt
                 or safe_get(request_content_json, 'options', 'system')
-                or safe_get(model.combined_inference_parameters, 'system')
+                or safe_get(inference_options.combined_inference_parameters, 'system')
                 or None
         )
 
@@ -137,6 +141,8 @@ async def do_proxy_chat_rag(
         ollama_response = await convert_chat_to_generate(
             original_request=original_request,
             chat_request_content=request_content_json,
+            inference_model=inference_model,
+            inference_options=inference_options,
             requested_system_message=requested_system_message,
             prompt_override=prompt_override,
             history_db=history_db,
@@ -149,11 +155,6 @@ async def do_proxy_chat_rag(
     ) -> None:
         if not capture_chat_response:
             return
-
-        inference_model, _ = await lookup_model_offline(
-            consolidated_response['model'],
-            history_db,
-        )
 
         _: InferenceEventOrm = \
             await inference_event_logger(consolidated_response, inference_model, history_db)

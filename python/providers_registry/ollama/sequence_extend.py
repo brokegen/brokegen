@@ -20,7 +20,8 @@ from client.chat_message import ChatMessageOrm, lookup_chat_message, ChatMessage
 from client.chat_sequence import ChatSequence
 from client.database import HistoryDB, get_db as get_history_db
 from client.sequence_get import do_get_sequence, do_extend_sequence
-from inference.continuation import ContinueRequest, ExtendRequest, select_continuation_model
+from inference.continuation import ContinueRequest, ExtendRequest, select_continuation_model, InferenceOptions, \
+    AutonamingOptions
 from inference.iterators import stream_str_to_json, decode_from_bytes, consolidate_and_yield
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, InferenceReason
@@ -86,6 +87,8 @@ async def do_continuation(
         messages_list: list[ChatMessage],
         original_sequence: ChatSequence,
         inference_model: InferenceModelRecordOrm,
+        inference_options: InferenceOptions,
+        autonaming_options: AutonamingOptions,
         retrieval_label: RetrievalLabel,
         status_holder: ServerStatusHolder,
         empty_request: starlette.requests.Request,
@@ -170,16 +173,22 @@ async def do_continuation(
     proxied_response: JSONStreamingResponse = await do_proxy_chat_rag(
         empty_request,
         constructed_ollama_request_content_json,
-        retrieval_label,
-        history_db,
-        audit_db,
+        inference_model=inference_model,
+        inference_options=inference_options,
+        autonaming_options=autonaming_options,
+        retrieval_label=retrieval_label,
+        history_db=history_db,
+        audit_db=audit_db,
         capture_chat_messages=False,
         status_holder=status_holder,
     )
 
+    # Convert to JSON chunks
     iter0: AsyncIterator[bytes] = proxied_response._content_iterable
     iter1: AsyncIterator[str] = decode_from_bytes(iter0)
     iter2: AsyncIterator[JSONDict] = stream_str_to_json(iter1)
+
+    # All for the sake of consolidate + add "new_sequence_id" chunk
     iter3: AsyncIterator[JSONDict] = hide_done(iter2)
     iter4: AsyncIterator[JSONDict] = consolidate_and_yield(
         iter3, ollama_response_consolidator, {},
@@ -234,14 +243,16 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         return await keepalive_wrapper(
             inference_model.human_id,
             do_continuation(
-                messages_list,
-                original_sequence,
-                inference_model,
-                retrieval_label,
-                status_holder,
-                empty_request,
-                history_db,
-                audit_db,
+                messages_list=messages_list,
+                original_sequence=original_sequence,
+                inference_model=inference_model,
+                inference_options=params,
+                autonaming_options=params,
+                retrieval_label=retrieval_label,
+                status_holder=status_holder,
+                empty_request=empty_request,
+                history_db=history_db,
+                audit_db=audit_db,
             ),
             status_holder,
             allow_non_ollama_fields=True,
@@ -321,14 +332,16 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         return await keepalive_wrapper(
             inference_model.human_id,
             do_continuation(
-                messages_list,
-                original_sequence if user_sequence.id is None else user_sequence,
-                inference_model,
-                retrieval_label,
-                status_holder,
-                empty_request,
-                history_db,
-                audit_db,
+                messages_list=messages_list,
+                original_sequence=original_sequence if user_sequence.id is None else user_sequence,
+                inference_model=inference_model,
+                inference_options=params,
+                autonaming_options=params,
+                retrieval_label=retrieval_label,
+                status_holder=status_holder,
+                empty_request=empty_request,
+                history_db=history_db,
+                audit_db=audit_db,
             ),
             status_holder,
             allow_non_ollama_fields=True,

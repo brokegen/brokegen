@@ -10,8 +10,10 @@ from _util.json import safe_get
 from _util.json_streaming import JSONStreamingResponse
 from _util.typing import PromptText, TemplatedPromptText
 from audit.http import AuditDB
+from inference.continuation import InferenceOptions
 from inference.prompting.templating import apply_llm_template
 from client.database import HistoryDB
+from providers.inference_models.orm import InferenceModelRecordOrm
 from providers_registry.ollama.chat_rag_util import do_generate_raw_templated
 from providers_registry.ollama.chat_routes import lookup_model
 from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON
@@ -22,6 +24,8 @@ logger = logging.getLogger(__name__)
 async def convert_chat_to_generate(
         original_request: starlette.requests.Request,
         chat_request_content: OllamaRequestContentJSON,
+        inference_model: InferenceModelRecordOrm,
+        inference_options: InferenceOptions,
         requested_system_message: PromptText | None,
         prompt_override: PromptText | None,
         history_db: HistoryDB,

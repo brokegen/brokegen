@@ -11,10 +11,11 @@ from _util.json import safe_get, JSONDict, safe_get_arrayed
 from _util.status import ServerStatusHolder
 from audit.http import AuditDB, get_db as get_audit_db
 from client.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import InferenceReason
+from inference.continuation import select_continuation_model, InferenceOptions, AutonamingOptions
+from providers.inference_models.orm import InferenceReason, InferenceModelRecordOrm
 from providers.registry import ProviderRegistry
 from providers_registry.ollama.api_chat.inject_rag import do_proxy_chat_rag
-from providers_registry.ollama.chat_routes import do_proxy_generate
+from providers_registry.ollama.chat_routes import do_proxy_generate, lookup_model_offline
 from providers_registry.ollama.forwarding import forward_request_nolog, forward_request
 from providers_registry.ollama.json import keepalive_wrapper
 from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON
@@ -51,21 +52,22 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
             audit_db: AuditDB = Depends(get_audit_db),
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ):
-        inference_model_human_id = safe_get(orjson.loads(await request.body()), "model")
-        status_holder = ServerStatusHolder(f"Received /api/chat request for {inference_model_human_id}, processing")
-
-        # Check for Ollama providers
+        # Trigger Ollama providers, if needed
         # TODO: Refactor this into shared code
         ollama_providers = [provider for (label, provider) in registry.by_label.items() if label.type == "ollama"]
         if not ollama_providers:
             await ExternalOllamaFactory().discover(None, registry)
 
-        retrieval_label = RetrievalLabel(
-            retrieval_policy="simple" if force_ollama_rag else "skip",
-        )
-
         request_content_bytes: bytes = await request.body()
         request_content_json: OllamaRequestContentJSON = orjson.loads(request_content_bytes)
+
+        inference_model_human_id = safe_get(request_content_json, "model")
+        status_holder = ServerStatusHolder(f"Received /api/chat request for {inference_model_human_id}, processing")
+
+        inference_model, _ = await lookup_model_offline(
+            inference_model_human_id,
+            history_db,
+        )
 
         if safe_get(request_content_json, 'options', 'temperature') is not None:
             logger.debug(
@@ -86,10 +88,15 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
             do_proxy_chat_rag(
                 request,
                 request_content_json,
-                retrieval_label,
-                history_db,
-                audit_db,
-                capture_chat_response=True,
+                inference_model=inference_model,
+                inference_options=InferenceOptions(),
+                autonaming_options=AutonamingOptions(),
+                retrieval_label=RetrievalLabel(
+                    retrieval_policy="simple" if force_ollama_rag else "skip",
+                ),
+                history_db=history_db,
+                audit_db=audit_db,
+                capture_chat_messages=True,
                 status_holder=status_holder,
             ),
             status_holder,
