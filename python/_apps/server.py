@@ -221,7 +221,7 @@ def run_proxy(
 
     (
         ProviderRegistry()
-        .register_factory(providers_registry.echo.EchoProviderFactory())
+        .register_factory(providers_registry.echo.echo.EchoProviderFactory())
         .register_factory(providers_registry.openai.lm_studio.LMStudioFactory())
         .register_factory(providers_registry.llamafile.registry.LlamafileFactory(['dist']))
         .register_factory(providers_registry.ollama.registry.ExternalOllamaFactory())

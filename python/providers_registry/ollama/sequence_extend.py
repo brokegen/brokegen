@@ -269,7 +269,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         provider_label: ProviderLabel | None = registry.provider_label_from(inference_model)
         if provider_label is not None and provider_label.type != "ollama":
             return RedirectResponse(
-                empty_request.url_for('sequence_continue', sequence_id=original_sequence.id)
+                empty_request.url_for('sequence_continue_v2', sequence_id=original_sequence.id)
                 .include_query_params(parameters=params)
             )
 
@@ -356,7 +356,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         if provider_label is not None and provider_label.type != "ollama":
             new_sequence: ChatSequence = do_extend_sequence(sequence_id, user_sequence.current_message, history_db)
             return RedirectResponse(
-                empty_request.url_for('sequence_continue', sequence_id=new_sequence.id)
+                empty_request.url_for('sequence_continue_v2', sequence_id=new_sequence.id)
                 .include_query_params(parameters=params)
             )
 

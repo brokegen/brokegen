@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import AsyncIterator, AsyncGenerator, Annotated, Awaitable
@@ -13,22 +12,57 @@ from fastapi import Depends, Body
 
 from _util.json import JSONDict
 from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks
-from _util.status import ServerStatusHolder
-from _util.typing import ChatSequenceID
+from _util.status import ServerStatusHolder, StatusContext
+from _util.typing import ChatSequenceID, PromptText
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
 from inference.continuation import ContinueRequest, select_continuation_model
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecordOrm
 from providers.registry import ProviderRegistry, BaseProvider
-from retrieval.faiss.retrieval import RetrievalLabel
+from retrieval.faiss.knowledge import get_knowledge, KnowledgeSingleton
+from retrieval.faiss.retrieval import RetrievalLabel, RetrievalPolicy, SimpleRetrievalPolicy, SummarizingRetrievalPolicy
 
 logger = logging.getLogger(__name__)
 
 
+async def with_retrieval(
+        retrieval_label: RetrievalLabel,
+        status_holder: ServerStatusHolder | None = None,
+        knowledge: KnowledgeSingleton = get_knowledge(),
+) -> PromptText | None:
+    with StatusContext(f"Retrieving documents with {retrieval_label=}", status_holder):
+        real_retrieval_policy: RetrievalPolicy | None = None
+
+        if retrieval_label.retrieval_policy == "skip":
+            real_retrieval_policy = None
+        elif retrieval_label.retrieval_policy == "simple":
+            real_retrieval_policy = SimpleRetrievalPolicy(knowledge)
+        elif retrieval_label.retrieval_policy == "summarizing":
+            init_kwargs = {
+                "knowledge": knowledge,
+            }
+            if retrieval_label.retrieval_search_args is not None:
+                init_kwargs["search_args_json"] = retrieval_label.retrieval_search_args
+
+            real_retrieval_policy = SummarizingRetrievalPolicy(**init_kwargs)
+
+        if real_retrieval_policy is not None:
+            if retrieval_label.preferred_embedding_model is not None:
+                logger.warning(f"Ignoring requested embedding model, since we don't support overrides")
+
+            logger.error(f"RAG not implemented yet")
+            return None
+            # return await real_retrieval_policy.parse_chat_history(
+            #     chat_messages, generate_helper_fn, status_holder,
+            # )
+
+        return None
+
+
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
-    @router_ish.post("/v2/sequences/{sequence_id:int}/continue")
-    async def sequence_continue(
+    @router_ish.post("/sequences/{sequence_id:int}/continue-v2")
+    async def sequence_continue_v2(
             request: starlette.requests.Request,
             sequence_id: ChatSequenceID,
             parameters: Annotated[ContinueRequest, Body],
@@ -36,7 +70,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             audit_db: AuditDB = Depends(get_audit_db),
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ) -> JSONStreamingResponse:
-        function_id = request.url_for('sequence_continue', sequence_id=sequence_id)
+        function_id = request.url_for('sequence_continue_v2', sequence_id=sequence_id)
         status_holder = ServerStatusHolder(f"{function_id}: setting up")
 
         async def real_response_maker() -> Awaitable[AsyncIterator[JSONDict]]:
@@ -56,8 +90,15 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 preferred_embedding_model=parameters.preferred_embedding_model,
             )
 
-            return provider.chat(sequence_id, inference_model, retrieval_label, status_holder, history_db,
-                                 audit_db)
+            return provider.chat(
+                sequence_id=sequence_id,
+                inference_model=inference_model,
+                inference_options=parameters,
+                retrieval_context=with_retrieval(retrieval_label, status_holder),
+                status_holder=status_holder,
+                history_db=history_db,
+                audit_db=audit_db,
+            )
 
         async def nonblocking_response_maker(
                 real_response_maker: Awaitable[AsyncIterator[JSONDict]],
@@ -78,7 +119,8 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
                     continue
 
-                yield orjson.dumps(chunk) + b'\n'
+                else:
+                    yield orjson.dumps(chunk) + b'\n'
 
         return JSONStreamingResponse(
             content=do_keepalive(nonblocking_response_maker(real_response_maker())),

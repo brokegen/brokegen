@@ -7,26 +7,26 @@ from sqlalchemy import select
 from _util.json import JSONDict
 from _util.typing import InferenceModelRecordID, ChatSequenceID, PromptText
 from client.database import ChatMessage, lookup_sequence_parents
-from retrieval.faiss.retrieval import RetrievalPolicyID
 from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceEventOrm, InferenceModelRecordOrm
+from retrieval.faiss.retrieval import RetrievalLabel
 
 
-class ContinueRequest(BaseModel):
-    continuation_model_id: Optional[InferenceModelRecordID] = None
-    fallback_model_id: Optional[InferenceModelRecordID] = None
-    """Used in case the continuation_model_id is None, and also nothing recorded in ChatSequence history"""
-
+class InferenceOptions(BaseModel):
     inference_options: Optional[JSONDict] = None
     override_system_prompt: Optional[PromptText] = None
     seed_assistant_response: Optional[PromptText] = None
 
-    retrieval_policy: Optional[RetrievalPolicyID] = None
-    retrieval_search_args: Optional[str] = None
-    preferred_embedding_model: Optional[InferenceModelRecordID] = None
 
+class AutonamingOptions(BaseModel):
     autonaming_policy: Optional[str] = None
     preferred_autonaming_model: Optional[InferenceModelRecordID] = None
+
+
+class ContinueRequest(InferenceOptions, RetrievalLabel, AutonamingOptions):
+    continuation_model_id: Optional[InferenceModelRecordID] = None
+    fallback_model_id: Optional[InferenceModelRecordID] = None
+    """Used in case the continuation_model_id is None, and also nothing recorded in ChatSequence history"""
 
 
 class ExtendRequest(ContinueRequest):

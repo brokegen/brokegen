@@ -1,19 +1,35 @@
 import asyncio
 from datetime import datetime, timezone
-from typing import AsyncIterable, AsyncGenerator, AsyncIterator
+from typing import AsyncIterable, AsyncGenerator, AsyncIterator, Awaitable
 
 from _util.json import JSONDict
 from _util.status import ServerStatusHolder
-from _util.typing import ChatSequenceID
+from _util.typing import ChatSequenceID, PromptText
 from audit.http import AuditDB
 from client.database import ChatMessage
 from client.sequence_get import do_get_sequence
+from inference.continuation import InferenceOptions
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecord, InferenceModelResponse, InferenceModelAddRequest, \
     lookup_inference_model_detailed, InferenceModelRecordOrm
 from providers.orm import ProviderType, ProviderLabel, ProviderRecord
 from providers.registry import BaseProvider, ProviderRegistry, ProviderFactory
-from retrieval.faiss.retrieval import RetrievalLabel
+
+
+async def _chat(
+        sequence_id: ChatSequenceID,
+        history_db: HistoryDB,
+        max_length: int = 120 * 4,
+) -> AsyncIterable[str]:
+    messages_list: list[ChatMessage] = do_get_sequence(sequence_id, history_db)
+    message = messages_list[-1]
+
+    character: str
+    for character in message.content[:max_length]:
+        yield character
+
+    if len(message.content) > max_length:
+        yield f"… [truncated, {len(message.content) - max_length} chars remaining]"
 
 
 class EchoProvider(BaseProvider):
@@ -58,27 +74,12 @@ class EchoProvider(BaseProvider):
 
             yield InferenceModelRecord.from_orm(new_model)
 
-    async def _chat(
-            self,
-            sequence_id: ChatSequenceID,
-            history_db: HistoryDB,
-            max_length: int = 120 * 4,
-    ) -> AsyncIterable[str]:
-        messages_list: list[ChatMessage] = do_get_sequence(sequence_id, history_db)
-        message = messages_list[-1]
-
-        character: str
-        for character in message.content[:max_length]:
-            yield character
-
-        if len(message.content) > max_length:
-            yield f"… [truncated, {len(message.content) - max_length} chars remaining]"
-
     async def chat(
             self,
             sequence_id: ChatSequenceID,
             inference_model: InferenceModelRecordOrm,
-            retrieval_label: RetrievalLabel,
+            inference_options: InferenceOptions,
+            retrieval_context: Awaitable[PromptText | None],
             status_holder: ServerStatusHolder,
             history_db: HistoryDB,
             audit_db: AuditDB,
@@ -86,7 +87,10 @@ class EchoProvider(BaseProvider):
         # DEBUG: Check that everyone is responsive during long waits
         await asyncio.sleep(3)
 
-        async for item in self._chat(sequence_id, history_db):
+        iter0 = _chat(sequence_id, history_db)
+        # iter1 = tee_stream_to_log_and_callback
+
+        async for item in iter0:
             # NB Without sleeps, packets seem to get eaten somewhere.
             # Probably client-side, but TBD.
             await asyncio.sleep(0.05)

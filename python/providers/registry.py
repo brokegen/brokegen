@@ -9,16 +9,16 @@ Current known providers generally have two things to look for: Type, and ID.
 """
 import logging
 from abc import abstractmethod
-from typing import AsyncGenerator, AsyncIterable, Self, AsyncIterator
+from typing import AsyncGenerator, AsyncIterable, Self, AsyncIterator, Awaitable
 
 from _util.json import JSONDict
 from _util.status import ServerStatusHolder
-from _util.typing import ChatSequenceID
+from _util.typing import ChatSequenceID, PromptText
 from audit.http import AuditDB
+from inference.continuation import InferenceOptions
 from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceModelRecord, InferenceModelResponse, InferenceModelRecordOrm
 from providers.orm import ProviderLabel, ProviderRecord, ProviderType
-from retrieval.faiss.retrieval import RetrievalLabel
 
 logger = logging.getLogger(__name__)
 
@@ -46,11 +46,24 @@ class BaseProvider:
             self,
             sequence_id: ChatSequenceID,
             inference_model: InferenceModelRecordOrm,
-            retrieval_label: RetrievalLabel,
+            inference_options: InferenceOptions,
+            retrieval_context: Awaitable[PromptText | None],
             status_holder: ServerStatusHolder,
             history_db: HistoryDB,
             audit_db: AuditDB,
     ) -> AsyncIterator[JSONDict]:
+        """
+        Dump a sequence of JSON blobs, roughly equivalent to the Ollama output format.
+
+        Key differences:
+
+        - a `status` field is supported, to surface what the server is doing
+        - an `autoname`/`human_desc` field may also be included, when we have auto-named the ChatSequence
+        - the final packet can include a `new_sequence_id`, so the client doesn't have to auto-fetch new info
+
+        Any InferenceEvent logging will be done per-provider, since only the provider knows what was generated.
+        However, autonaming and context retrieval can happen separately.
+        """
         raise NotImplementedError()
 
 
