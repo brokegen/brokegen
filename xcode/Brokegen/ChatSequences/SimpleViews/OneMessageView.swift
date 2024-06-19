@@ -1,21 +1,5 @@
 import SwiftUI
 
-struct OpaqueGroupBox: GroupBoxStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        VStack(spacing: 0) {
-            configuration.label
-
-            configuration.content
-                .background(Color(.controlBackgroundColor))
-        }
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(Color.clear)
-//            .fill(.blue)  Set your color here!!
-            )
-    }
-}
-
 struct OneMessageView: View {
     let message: Message
     let sequence: ChatSequence?
@@ -66,7 +50,7 @@ struct OneMessageView: View {
             }
 
             let dateStr = {
-                if isHovered && message.createdAt != nil {
+                if message.createdAt != nil {
                     String(describing: message.createdAt!)
                 }
                 else {
@@ -77,6 +61,7 @@ struct OneMessageView: View {
                 .foregroundStyle(Color(.disabledControlTextColor))
                 .padding(.leading, 18)
                 .padding(.trailing, 18)
+                .opacity(isHovered ? 1.0 : 0.0)
 
             Spacer()
         }
@@ -88,33 +73,26 @@ struct OneMessageView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if expandContent {
-                GroupBox(content: {
-                    VStack(spacing: 0) {
-                        if stillExpectingUpdate && message.content.isEmpty {
-                            ProgressView()
-                                .progressViewStyle(.circular)
-                                .padding(16)
-                                .padding(.bottom, 8)
-                                .id("progress view")
-                        }
+            headerSection
 
-                        if !message.content.isEmpty {
-                            Text(message.content)
-                                .font(.system(size: 18))
-                                .lineSpacing(6)
-                                .textSelection(.enabled)
-                                .padding(16)
-                        }
-                    }
-                }, label: {
-                    headerSection
-                        .padding(.leading, -10)
-                })
-//                .groupBoxStyle(OpaqueGroupBox())
+            if stillExpectingUpdate && (message.content.isEmpty && expandContent) {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .padding(16)
+                    .padding(.bottom, 8)
+                    .id("progress view")
             }
-            else {
-                headerSection
+
+            if !message.content.isEmpty && expandContent {
+                Text(message.content)
+                    .font(.system(size: 18))
+                    .lineSpacing(6)
+                    .textSelection(.enabled)
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color(.controlBackgroundColor))
+                        )
             }
         }
         .onHover { isHovered in
