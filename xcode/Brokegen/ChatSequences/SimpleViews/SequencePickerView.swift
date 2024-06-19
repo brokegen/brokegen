@@ -279,7 +279,7 @@ struct MiniSequencePickerSidebar: View {
                     let (sectionName, sectionSequences) = pair
 
                     Section(content: {
-                        ForEach(sectionSequences) { sequence in
+                        ForEach(sectionSequences, id: \.serverId) { sequence in
                             Button(action: {
                                 pathHost.push(
                                     chatService.clientModel(for: sequence, appSettings: appSettings, chatSettingsService: chatSettingsService)
@@ -421,7 +421,7 @@ struct SequencePickerView: View {
                     .foregroundColor(.accentColor)
                     .padding(.top, 36)
                 ) {
-                    ForEach(sectionSequences) { sequence in
+                    ForEach(sectionSequences, id: \.serverId) { sequence in
                         SequenceRow(sequence) {
                             pathHost.push(
                                 chatService.clientModel(for: sequence, appSettings: appSettings, chatSettingsService: chatSettingsService)
