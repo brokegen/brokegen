@@ -1,14 +1,17 @@
 import logging
 from datetime import datetime
+from typing import TypeAlias
 
 from _util.json import JSONDict, safe_get
 from client.chat_message import ChatMessageOrm
 from client.chat_sequence import ChatSequence
 from client.database import HistoryDB
 from providers.inference_models.orm import InferenceEventOrm, InferenceModelRecordOrm
-from providers_registry.ollama.json import OllamaResponseContentJSON
 
 logger = logging.getLogger(__name__)
+
+OllamaRequestContentJSON: TypeAlias = JSONDict
+OllamaResponseContentJSON: TypeAlias = JSONDict
 
 
 def finalize_inference_job(
@@ -112,7 +115,11 @@ async def construct_new_sequence_from(
 def ollama_log_indexer(
         chunk_json: JSONDict,
 ) -> str:
-    return safe_get(chunk_json, 'message', 'content') or ""
+    # /api/generate returns in the first form
+    # /api/chat returns the second form, with 'role': 'user'
+    return safe_get(chunk_json, 'response') \
+        or safe_get(chunk_json, 'message', 'content') \
+        or ""
 
 
 def ollama_response_consolidator(

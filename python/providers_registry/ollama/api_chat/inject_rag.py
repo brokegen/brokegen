@@ -21,10 +21,9 @@ from providers.inference_models.orm import InferenceEventOrm, InferenceReason
 from providers_registry.ollama.api_chat.converter import convert_chat_to_generate
 from providers_registry.ollama.api_chat.intercept import do_capture_chat_messages
 from providers_registry.ollama.api_chat.logging import ollama_log_indexer, ollama_response_consolidator, \
-    finalize_inference_job
+    finalize_inference_job, OllamaRequestContentJSON, OllamaResponseContentJSON
 from providers_registry.ollama.chat_rag_util import do_generate_raw_templated
 from providers_registry.ollama.chat_routes import lookup_model_offline
-from providers_registry.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON
 from retrieval.faiss.knowledge import get_knowledge
 from retrieval.faiss.retrieval import RetrievalPolicy, RetrievalLabel, SimpleRetrievalPolicy, \
     SummarizingRetrievalPolicy

@@ -16,7 +16,8 @@ from providers.registry import ProviderRegistry
 from providers_registry.ollama.api_chat.inject_rag import do_proxy_chat_rag
 from providers_registry.ollama.chat_routes import do_proxy_generate
 from providers_registry.ollama.forwarding import forward_request_nolog, forward_request
-from providers_registry.ollama.json import keepalive_wrapper, OllamaRequestContentJSON
+from providers_registry.ollama.json import keepalive_wrapper
+from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON
 from providers_registry.ollama.model_routes import do_api_tags, do_api_show
 from providers_registry.ollama.registry import ExternalOllamaFactory
 from retrieval.faiss.retrieval import RetrievalLabel

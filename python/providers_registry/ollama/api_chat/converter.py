@@ -14,7 +14,7 @@ from inference.prompting.templating import apply_llm_template
 from client.database import HistoryDB
 from providers_registry.ollama.chat_rag_util import do_generate_raw_templated
 from providers_registry.ollama.chat_routes import lookup_model
-from providers_registry.ollama.json import OllamaRequestContentJSON
+from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON
 
 logger = logging.getLogger(__name__)
 

@@ -1,19 +1,20 @@
 import logging
-from typing import Annotated, AsyncIterable
+from typing import Annotated, AsyncIterator
 
 import orjson
 import starlette.datastructures
 from fastapi import FastAPI, APIRouter, Query, Depends
 from starlette.responses import JSONResponse
 
-from _util.json import safe_get
+from _util.json import safe_get, JSONDict
 from _util.typing import TemplatedPromptText
 from audit.http import AuditDB, get_db as get_audit_db
-from inference.prompting.templating import apply_llm_template
 from client.database import HistoryDB, get_db as get_history_db
+from inference.iterators import tee_to_console_output
+from inference.prompting.templating import apply_llm_template
+from providers_registry.ollama.api_chat.logging import OllamaResponseContentJSON, ollama_response_consolidator
 from providers_registry.ollama.chat_rag_util import OllamaModelName, do_generate_raw_templated
 from providers_registry.ollama.chat_routes import lookup_model_offline
-from providers_registry.ollama.json import chunk_and_log_output, OllamaResponseContentJSON, consolidate_stream
 
 logger = logging.getLogger(__name__)
 
@@ -67,20 +68,19 @@ Note that these will override anything set in the model templates!
         )
 
         if allow_streaming:
-            logging_aiter = chunk_and_log_output(
-                streaming_response.body_iterator,
-                lambda s: logger.debug("/generate.raw-templated: " + s),
-            )
-            streaming_response.body_iterator = logging_aiter
+            iter0: AsyncIterator[str] = streaming_response.body_iterator
+            iter1: AsyncIterator[str] = tee_to_console_output(iter0, lambda s: s)
+            streaming_response.body_iterator = iter1
             return streaming_response
 
         else:
             async def content_to_json_adapter() -> OllamaResponseContentJSON:
-                async def jsonner() -> AsyncIterable[OllamaResponseContentJSON]:
-                    async for chunk in streaming_response.body_iterator:
-                        yield orjson.loads(chunk)
+                consolidated_response: OllamaResponseContentJSON = {}
+                async for chunk in streaming_response.body_iterator:
+                    chunk_json: JSONDict = orjson.loads(chunk)
+                    consolidated_response = ollama_response_consolidator(chunk_json, consolidated_response)
 
-                return await consolidate_stream(jsonner())
+                return consolidated_response
 
             return JSONResponse(
                 content=await content_to_json_adapter(),

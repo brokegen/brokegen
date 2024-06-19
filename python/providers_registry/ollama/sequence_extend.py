@@ -28,9 +28,9 @@ from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry
 from providers_registry.ollama.api_chat.inject_rag import do_proxy_chat_rag
 from providers_registry.ollama.api_chat.logging import ollama_response_consolidator, inference_event_logger, \
-    construct_new_sequence_from
+    construct_new_sequence_from, OllamaResponseContentJSON
 from providers_registry.ollama.chat_rag_util import do_generate_raw_templated
-from providers_registry.ollama.json import keepalive_wrapper, OllamaResponseContentJSON
+from providers_registry.ollama.json import keepalive_wrapper
 from retrieval.faiss.retrieval import RetrievalLabel
 
 logger = logging.getLogger(__name__)

@@ -1,7 +1,6 @@
-import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import TypeAlias, AsyncIterable, AsyncIterator, Any, Callable, Awaitable, Iterable, AsyncGenerator
+from typing import AsyncIterable, AsyncIterator, Any, Callable, Awaitable, AsyncGenerator
 
 import httpx
 import orjson
@@ -15,9 +14,8 @@ from _util.status import ServerStatusHolder
 from _util.typing import InferenceModelHumanID
 from audit.content_scrubber import scrub_json
 from audit.http import AuditDB, get_db, HttpEvent
-
-OllamaRequestContentJSON: TypeAlias = JSONDict
-OllamaResponseContentJSON: TypeAlias = JSONDict
+from inference.iterators import stream_bytes_to_json, tee_to_console_output, dump_to_bytes, consolidate_and_call
+from .api_chat.logging import ollama_log_indexer, ollama_response_consolidator, OllamaResponseContentJSON
 
 logger = logging.getLogger(__name__)
 
@@ -92,74 +90,6 @@ async def consolidate_stream(
         del consolidated_response['context']
 
     return consolidated_response
-
-
-async def sync_to_async(chunks: Iterable[bytes | str]):
-    """Turns a synchronous Iterable into async, because that's easier than rewriting consolidate_stream."""
-    done_marker = object()
-    it = iter(chunks)
-
-    current_consolidation = []
-
-    while (value := await asyncio.to_thread(next, it, done_marker)) is not done_marker:
-        try:
-            if current_consolidation:
-                current_consolidation.append(value)
-                yield orjson.loads(b''.join(current_consolidation))
-
-                current_consolidation = []
-            else:
-                yield orjson.loads(value)
-
-        except orjson.JSONDecodeError:
-            # On some failures, try to… consolidate chunks, and hope the consolidation goes better
-            current_consolidation.append(value)
-
-
-async def consolidate_stream_sync(
-        all_chunks: Iterable[bytes | str],
-        override_warn_fn=logger.warning,
-) -> OllamaResponseContentJSON:
-    return await consolidate_stream(sync_to_async(all_chunks), override_warn_fn)
-
-
-async def chunk_and_log_output(
-        primordial: AsyncIterable[bytes | str],
-        log_fn: Callable[[str], Any],
-        min_chunk_length: int = 120,
-) -> AsyncIterable[bytes | str]:
-    buffered_chunks = ''
-
-    async for chunk0 in primordial:
-        yield chunk0
-
-        # NB This is very wasteful re-decoding, but don't prematurely optimize.
-        try:
-            chunk0_json = orjson.loads(chunk0)
-
-            # /api/generate returns in the first form
-            # /api/chat returns the second form, with 'role': 'user'
-            message_only = safe_get(chunk0_json, 'response') \
-                           or safe_get(chunk0_json, 'message', 'content')
-            if not message_only:
-                continue
-
-            if buffered_chunks is None:
-                buffered_chunks = message_only
-            elif len(buffered_chunks) >= min_chunk_length:
-                log_fn(buffered_chunks)
-                buffered_chunks = message_only
-            else:
-                buffered_chunks += message_only
-
-        # Eat all exceptions, since this wrapper should be silent and unintrusive.
-        except Exception as e:
-            log_fn(f"[ERROR] during `chunk_and_log_output`: {e}")
-            # Disable the log function, so we don't see more suffering
-            log_fn = lambda *args: args
-
-    if buffered_chunks:
-        log_fn(buffered_chunks)
 
 
 async def keepalive_wrapper(
@@ -316,44 +246,27 @@ class OllamaEventBuilder:
     async def wrap_entire_streaming_response(
             self,
             upstream_response: httpx.Response,
+            enable_logging: bool = False,
             *on_done_fns: Callable[[OllamaResponseContentJSON], Awaitable[Any]],
     ) -> starlette.responses.StreamingResponse:
-        async def _wrapper(
-                primordial: AsyncIterator[bytes | str],
-                enable_logging: bool = False,
-        ) -> AsyncIterator[bytes | str]:
-            primordial1 = primordial
-            if enable_logging:
-                primordial1 = chunk_and_log_output(primordial, print)
-
-            all_chunks = []
-            async for chunk0 in primordial1:
-                yield chunk0
-                all_chunks.append(chunk0)
-
-            logger.debug(
-                f"Done with upstream JSONStreamingResponse, deciding whether to consolidate {len(all_chunks)} chunks")
+        async def response_recorder(
+                consolidated_response: OllamaResponseContentJSON,
+        ) -> None:
             if upstream_response.is_success and self.response_content_json:
-                try:
-                    self.response_content_json = await consolidate_stream_sync(all_chunks)
-                    logger.debug(f"Done consolidating, final JSON is {len(self.response_content_json)=}")
-                    self.wrapped_event.response_content = self.response_content_json
-                    self._try_commit()
-                except Exception as e:
-                    logger.error(
-                        f"Failed to parse streaming response content, forwarding response to client anyway: {e}")
+                self.wrapped_event.response_content = self.response_content_json
             else:
                 self.wrapped_event.response_content = {
                     "status_code": upstream_response.status_code,
                     "reason_phrase": upstream_response.reason_phrase,
-                    # NB This is explicitly decoded into UTF-8 strings, and not JSON objects, because scanning strings is easier.
-                    "content": [chunk0.decode() for chunk0 in all_chunks],
+                    # NB This is explicitly kept as strings and not JSON objects
+                    # because scanning strings is easier.
+                    "content": orjson.dumps(consolidated_response).decode(),
                     "headers": dict(upstream_response.headers),
                     "http_version": upstream_response.http_version,
                 }
-                self._try_commit()
-                # NB This is a lot of extra compute, but we don't really care.
-                self.response_content_json = await consolidate_stream_sync(all_chunks)
+
+            self._try_commit()
+            self.response_content_json = consolidated_response
 
         async def post_forward_cleanup():
             await upstream_response.aclose()
@@ -364,8 +277,21 @@ class OllamaEventBuilder:
                     logger.debug(f"Calling {on_done_fn=}")
                     await on_done_fn(self.response_content_json or {})
 
+        iter0: AsyncIterator[bytes] = upstream_response.aiter_bytes()
+        iter1: AsyncIterator[JSONDict] = stream_bytes_to_json(iter0)
+        if enable_logging:
+            iter2: AsyncIterator[JSONDict] = tee_to_console_output(iter1, ollama_log_indexer)
+        else:
+            iter2 = iter1
+
+        iter3: AsyncIterator[JSONDict] = consolidate_and_call(
+            iter2, ollama_response_consolidator, {},
+            response_recorder,
+        )
+        iter4: AsyncIterator[bytes] = dump_to_bytes(iter3)
+
         return starlette.responses.StreamingResponse(
-            content=_wrapper(upstream_response.aiter_bytes()),
+            content=iter4,
             status_code=upstream_response.status_code,
             headers=upstream_response.headers,
             background=BackgroundTask(post_forward_cleanup),
