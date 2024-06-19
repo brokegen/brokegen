@@ -29,7 +29,7 @@ async def dump_to_bytes(primordial_t: AsyncIterator[T]) -> AsyncIterator[bytes]:
         yield orjson.dumps(chunk_t)
 
 
-async def stream_str_to_json(
+def stream_str_to_json(
         primordial: AsyncIterator[str],
 ) -> AsyncIterator[JSONDict]:
     """
@@ -114,3 +114,23 @@ async def consolidate_and_call(
 
     for on_done_fn in on_done_fns:
         await on_done_fn(consolidated_response)
+
+
+async def consolidate_and_yield(
+        primordial_t: AsyncIterator[T],
+        consolidator: Callable[[T, U], U],
+        initializer: U,
+        *on_done_fns: Callable[[U], AsyncIterator[T]],
+) -> AsyncIterator[T]:
+    """
+    This is basically an async functools.reduce()
+    """
+    consolidated_response: U = initializer
+
+    async for chunk_t in primordial_t:
+        yield chunk_t
+        consolidated_response = consolidator(chunk_t, consolidated_response)
+
+    for on_done_fn in on_done_fns:
+        async for post_chunk in on_done_fn(consolidated_response):
+            yield post_chunk

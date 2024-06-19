@@ -5,41 +5,16 @@ import httpx
 import orjson
 import starlette.datastructures
 
-from _util.json import safe_get
 from audit.http import AuditDB
 from audit.http_raw import HttpxLogger
 from client.database import HistoryDB
 from providers.inference_models.orm import InferenceEventOrm, InferenceReason
+from providers_registry.ollama.api_chat.logging import finalize_inference_job
 from providers_registry.ollama.chat_routes import lookup_model_offline
 from providers_registry.ollama.json import OllamaResponseContentJSON, OllamaRequestContentJSON, OllamaEventBuilder
 from providers_registry.ollama.model_routes import _real_ollama_client
 
 OllamaModelName: TypeAlias = str
-
-
-def finalize_inference_job(
-        inference_job: InferenceEventOrm,
-        response_content_json: OllamaResponseContentJSON,
-):
-    if safe_get(response_content_json, 'prompt_eval_count'):
-        inference_job.prompt_tokens = safe_get(response_content_json, 'prompt_eval_count')
-    if safe_get(response_content_json, 'prompt_eval_duration'):
-        inference_job.prompt_eval_time = safe_get(response_content_json, 'prompt_eval_duration') / 1e9
-
-    if safe_get(response_content_json, 'created_at'):
-        inference_job.response_created_at = datetime.fromisoformat(safe_get(response_content_json, 'created_at'))
-    if safe_get(response_content_json, 'eval_count'):
-        inference_job.response_tokens = safe_get(response_content_json, 'eval_count')
-    if safe_get(response_content_json, 'eval_duration'):
-        inference_job.response_eval_time = safe_get(response_content_json, 'eval_duration') / 1e9
-
-    # TODO: I'm not sure this is even the actual field to check
-    if safe_get(response_content_json, 'error'):
-        inference_job.response_error = safe_get(response_content_json, 'error')
-    else:
-        inference_job.response_error = None
-
-    inference_job.response_info = dict(response_content_json)
 
 
 async def do_generate_raw_templated(

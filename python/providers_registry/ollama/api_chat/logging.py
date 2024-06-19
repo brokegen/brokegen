@@ -1,24 +1,112 @@
 import logging
+from datetime import datetime
 
 from _util.json import JSONDict, safe_get
+from client.chat_message import ChatMessageOrm
+from client.chat_sequence import ChatSequence
 from client.database import HistoryDB
+from providers.inference_models.orm import InferenceEventOrm, InferenceModelRecordOrm
 from providers_registry.ollama.json import OllamaResponseContentJSON
 
 logger = logging.getLogger(__name__)
 
 
-async def inference_event_logger(
-        consolidated_response: JSONDict,
-        history_db: HistoryDB,
+def finalize_inference_job(
+        inference_job: InferenceEventOrm,
+        response_content_json: OllamaResponseContentJSON,
 ) -> None:
-    pass
+    if safe_get(response_content_json, 'prompt_eval_count'):
+        inference_job.prompt_tokens = safe_get(response_content_json, 'prompt_eval_count')
+    if safe_get(response_content_json, 'prompt_eval_duration'):
+        inference_job.prompt_eval_time = safe_get(response_content_json, 'prompt_eval_duration') / 1e9
+
+    if safe_get(response_content_json, 'created_at'):
+        inference_job.response_created_at = datetime.fromisoformat(safe_get(response_content_json, 'created_at'))
+    if safe_get(response_content_json, 'eval_count'):
+        inference_job.response_tokens = safe_get(response_content_json, 'eval_count')
+    if safe_get(response_content_json, 'eval_duration'):
+        inference_job.response_eval_time = safe_get(response_content_json, 'eval_duration') / 1e9
+
+    # TODO: I'm not sure this is even the actual field to check
+    if safe_get(response_content_json, 'error'):
+        inference_job.response_error = safe_get(response_content_json, 'error')
+    else:
+        inference_job.response_error = None
+
+    inference_job.response_info = dict(response_content_json)
+
+
+async def inference_event_logger(
+        consolidated_response: OllamaResponseContentJSON,
+        inference_model: InferenceModelRecordOrm,
+        history_db: HistoryDB,
+) -> InferenceEventOrm:
+    inference_event = InferenceEventOrm(
+        model_record_id=inference_model.id,
+        reason="chat sequence",
+        response_error="[haven't received/finalized response info yet]",
+    )
+
+    finalize_inference_job(inference_event, consolidated_response)
+    history_db.add(inference_event)
+    history_db.commit()
+
+    return inference_event
 
 
 async def construct_new_sequence_from(
-        consolidated_response: JSONDict,
+        original_sequence: ChatSequence,
+        consolidated_response: OllamaResponseContentJSON,
+        inference_event: InferenceEventOrm,
         history_db: HistoryDB,
-) -> None:
-    pass
+) -> ChatSequence:
+    # Wrap the output in a… something that appends new ChatSequence information
+    response_sequence = ChatSequence(
+        human_desc=original_sequence.human_desc,
+        parent_sequence=original_sequence.id,
+    )
+
+    assistant_response = ChatMessageOrm(
+        role="assistant",
+        content=safe_get(consolidated_response, "message", "content"),
+        created_at=inference_event.response_created_at,
+    )
+    history_db.add(assistant_response)
+    history_db.commit()
+
+    # Add what we need for response_sequence
+    original_sequence.user_pinned = False
+    response_sequence.user_pinned = True
+
+    history_db.add(original_sequence)
+    history_db.add(response_sequence)
+
+    response_sequence.current_message = assistant_response.id
+
+    response_sequence.generated_at = inference_event.response_created_at
+    response_sequence.generation_complete = consolidated_response["done"]
+    response_sequence.inference_job_id = inference_event.id
+    if inference_event.response_error:
+        response_sequence.inference_error = inference_event.response_error
+
+    history_db.add(response_sequence)
+    history_db.commit()
+
+    # And complete the circular reference that really should be handled in the SQLAlchemy ORM
+    inference_job = history_db.merge(inference_event)
+    inference_job.parent_sequence = response_sequence.id
+
+    # TODO: This is disabled while we figure out why the duplicate InferenceEvent never commits its response content
+    if False and not inference_job.response_error:
+        inference_job.response_error = (
+            "this is a duplicate InferenceEvent, because do_generate_raw_templated will dump its own raws in. "
+            "we're keeping this one because it's tied into the actual ChatSequence."
+        )
+
+    history_db.add(inference_job)
+    history_db.commit()
+
+    return response_sequence
 
 
 def ollama_log_indexer(
