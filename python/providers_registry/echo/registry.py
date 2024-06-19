@@ -10,7 +10,7 @@ from audit.http import AuditDB
 from client.database import ChatMessage
 from client.sequence_get import do_get_sequence
 from inference.continuation import InferenceOptions
-from inference.logging import tee_to_console_output, consolidate_and_call, inference_event_logger, \
+from inference.iterators import tee_to_console_output, consolidate_and_call, inference_event_logger, \
     construct_new_sequence_from
 from providers.inference_models.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceModelRecord, InferenceModelResponse, InferenceModelAddRequest, \

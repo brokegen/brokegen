@@ -1,27 +1,28 @@
 import logging
-from collections.abc import AsyncIterable
 from datetime import datetime, timezone
+from typing import AsyncIterator
 
 import sqlalchemy
 import sqlalchemy.exc
 import starlette.datastructures
 import starlette.requests
 
-from _util.json import safe_get, JSONArray
-from _util.json_streaming import JSONStreamingResponse, tee_stream_to_log_and_callback, consolidate_stream_to_json
+from _util.json import safe_get, JSONArray, JSONDict
+from _util.json_streaming import JSONStreamingResponse, consolidate_stream_to_json
 from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import PromptText
 from audit.http import AuditDB
 from client.database import ChatMessageOrm, ChatSequence
+from inference.iterators import tee_to_console_output, stream_bytes_to_json, consolidate_and_call, dump_to_bytes
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.database import HistoryDB
 from providers.inference_models.orm import InferenceEventOrm, InferenceReason
 from providers_registry.ollama.api_chat.converter import convert_chat_to_generate
 from providers_registry.ollama.api_chat.intercept import do_capture_chat_messages
+from providers_registry.ollama.api_chat.logging import ollama_log_indexer, ollama_response_consolidator
 from providers_registry.ollama.chat_rag_util import finalize_inference_job, do_generate_raw_templated
 from providers_registry.ollama.chat_routes import lookup_model_offline
-from providers_registry.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON, \
-    consolidate_stream
+from providers_registry.ollama.json import OllamaRequestContentJSON, OllamaResponseContentJSON
 from retrieval.faiss.knowledge import get_knowledge
 from retrieval.faiss.retrieval import RetrievalPolicy, RetrievalLabel, SimpleRetrievalPolicy, \
     SummarizingRetrievalPolicy
@@ -140,84 +141,77 @@ async def do_proxy_chat_rag(
             audit_db=audit_db,
         )
 
-    async def wrap_response(
-            upstream_response: JSONStreamingResponse,
-            log_output: bool = True,
-    ) -> JSONStreamingResponse:
-        if not log_output:
-            return upstream_response
+    # TODO: Split into inference_event_logger and construct_new_sequence_from
+    async def consolidate_wrapper(
+            consolidated_response: OllamaResponseContentJSON,
+    ) -> None:
+        if capture_chat_response:
+            model, executor_record = await lookup_model_offline(
+                consolidated_response['model'],
+                history_db,
+            )
 
-        async def consolidate_wrapper(
-                primordial: AsyncIterable[OllamaResponseContentJSON],
-        ) -> OllamaResponseContentJSON:
-            consolidated_response = await consolidate_stream(primordial)
+            # Construct InferenceEvent
+            new_ie = InferenceEventOrm(
+                model_record_id=model.id,
+                reason="chat sequence",
+            )
+            finalize_inference_job(new_ie, consolidated_response)
 
-            if capture_chat_response:
-                model, executor_record = await lookup_model_offline(
-                    consolidated_response['model'],
-                    history_db,
+            try:
+                history_db.add(new_ie)
+                history_db.commit()
+            except sqlalchemy.exc.SQLAlchemyError:
+                logger.exception(f"Failed to commit intercepted inference event for {new_ie}")
+                history_db.rollback()
+
+            # And a ChatMessage
+            response_in = ChatMessageOrm(
+                role="assistant",
+                content=safe_get(consolidated_response, "response")
+                        or safe_get(consolidated_response, "message", "content"),
+                created_at=datetime.fromisoformat(safe_get(consolidated_response, "created_at"))
+                           or datetime.now(tz=timezone.utc),
+            )
+            if response_in.content:
+                history_db.add(response_in)
+                history_db.commit()
+
+            # Update ChatSequences
+            if response_in.content and captured_sequence is not None:
+                parent_sequence = history_db.merge(captured_sequence)
+
+                new_sequence = ChatSequence(
+                    human_desc=parent_sequence.human_desc,
+                    user_pinned=parent_sequence.user_pinned,
+                    current_message=response_in.id,
+                    parent_sequence=parent_sequence.id,
+                    generated_at=datetime.now(tz=timezone.utc),
+                    generation_complete=safe_get(consolidated_response, 'done'),
+                    inference_job_id=new_ie.id,
                 )
 
-                # Construct InferenceEvent
-                new_ie = InferenceEventOrm(
-                    model_record_id=model.id,
-                    reason="chat sequence",
-                )
-                finalize_inference_job(new_ie, consolidated_response)
+                parent_sequence.user_pinned = False
 
                 try:
-                    history_db.add(new_ie)
+                    history_db.add(parent_sequence)
+                    history_db.add(new_sequence)
                     history_db.commit()
                 except sqlalchemy.exc.SQLAlchemyError:
-                    logger.exception(f"Failed to commit intercepted inference event for {new_ie}")
+                    logger.exception(f"Failed to create add-on ChatSequence {new_sequence}")
                     history_db.rollback()
-
-                # And a ChatMessage
-                response_in = ChatMessageOrm(
-                    role="assistant",
-                    content=safe_get(consolidated_response, "response")
-                            or safe_get(consolidated_response, "message", "content"),
-                    created_at=datetime.fromisoformat(safe_get(consolidated_response, "created_at"))
-                               or datetime.now(tz=timezone.utc),
-                )
-                if response_in.content:
-                    history_db.add(response_in)
-                    history_db.commit()
-
-                # Update ChatSequences
-                if response_in.content and captured_sequence is not None:
-                    parent_sequence = history_db.merge(captured_sequence)
-
-                    new_sequence = ChatSequence(
-                        human_desc=parent_sequence.human_desc,
-                        user_pinned=parent_sequence.user_pinned,
-                        current_message=response_in.id,
-                        parent_sequence=parent_sequence.id,
-                        generated_at=datetime.now(tz=timezone.utc),
-                        generation_complete=safe_get(consolidated_response, 'done'),
-                        inference_job_id=new_ie.id,
-                    )
-
-                    parent_sequence.user_pinned = False
-
-                    try:
-                        history_db.add(parent_sequence)
-                        history_db.add(new_sequence)
-                        history_db.commit()
-                    except sqlalchemy.exc.SQLAlchemyError:
-                        logger.exception(f"Failed to create add-on ChatSequence {new_sequence}")
-                        history_db.rollback()
-
-            return consolidated_response
-
-        if log_output:
-            upstream_response._content_iterable = tee_stream_to_log_and_callback(
-                upstream_response._content_iterable,
-                consolidate_wrapper,
-            )
-            return upstream_response
 
     if status_holder is not None:
         status_holder.set(f"Running Ollama response")
 
-    return await wrap_response(ollama_response)
+    iter0: AsyncIterator[bytes] = ollama_response._content_iterable
+    iter1: AsyncIterator[JSONDict] = stream_bytes_to_json(iter0)
+    iter2: AsyncIterator[JSONDict] = tee_to_console_output(iter1, ollama_log_indexer)
+    iter3: AsyncIterator[JSONDict] = consolidate_and_call(
+        iter2, ollama_response_consolidator, {},
+        consolidate_wrapper,
+    )
+    iter4: AsyncIterator[bytes] = dump_to_bytes(iter3)
+
+    ollama_response._content_iterable = iter4
+    return ollama_response

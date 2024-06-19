@@ -96,46 +96,6 @@ async def emit_keepalive_chunks(
             maybe_next.cancel()
 
 
-# TODO: Make sure this doesn't block execution, or whatever.
-# TODO: Figure out how to trigger two AsyncIterators at once, but we've already burned a day on it.
-async def tee_stream_to_log_and_callback(
-        primordial: AsyncIterator[bytes],
-        on_done_fn: Callable[[AsyncIterable[JSONDict]], Awaitable[Any]],
-) -> AsyncIterator[bytes]:
-    """
-    TODO: This doesn't work, it only mostly/partly works.
-
-    Also, the indexing into .message.content is API-specific.
-    """
-    stored_chunks = []
-    buffered_text = ''
-
-    async for chunk0 in primordial:
-        yield chunk0
-        stored_chunks.append(chunk0)
-
-        chunk0_json = orjson.loads(chunk0)
-        if len(buffered_text) >= 120:
-            print(buffered_text)
-            buffered_text = safe_get(chunk0_json, 'message', 'content') or ""
-        else:
-            buffered_text += safe_get(chunk0_json, 'message', 'content') or ""
-
-    if buffered_text:
-        print(buffered_text)
-        del buffered_text
-
-    async def replay_chunks():
-        for chunk in stored_chunks:
-            yield chunk
-
-    async def to_json(primordial2: AsyncIterable) -> AsyncIterable[JSONDict]:
-        async for chunk in primordial2:
-            yield orjson.loads(chunk)
-
-    await on_done_fn(to_json(replay_chunks()))
-
-
 async def consolidate_stream_to_json(primordial: AsyncIterable[str | bytes]) -> JSONDict:
     content_chunks = []
     async for chunk in primordial:
