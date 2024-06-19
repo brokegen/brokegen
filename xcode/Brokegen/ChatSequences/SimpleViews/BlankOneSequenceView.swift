@@ -161,12 +161,12 @@ struct BlankOneSequenceView: View {
 
             DispatchQueue.main.async {
                 chatService.updateSequence(withSameId: nextSequence!)
+                
+                pathHost.push(
+                    chatService.clientModel(for: nextSequence!, appSettings: appSettings, chatSettingsService: chatSettingsService)
+                        .requestContinue(model: modelSelection?.serverId, withRetrieval: withRetrieval)
+                )
             }
-
-            pathHost.push(
-                chatService.clientModel(for: nextSequence!, appSettings: appSettings, chatSettingsService: chatSettingsService)
-                    .requestContinue(model: modelSelection?.serverId, withRetrieval: withRetrieval)
-            )
         }
     }
 

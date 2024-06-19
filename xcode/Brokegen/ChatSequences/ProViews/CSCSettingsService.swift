@@ -21,6 +21,7 @@ class CSCSettingsService: Observable, ObservableObject {
             self.inference = inference
         }
 
+        // MARK: - OverrideCSUISettings
         var allowContinuation: Bool {
             get { override.allowContinuation ?? defaults.allowContinuation }
             set { override.allowContinuation = newValue }
@@ -51,14 +52,10 @@ class CSCSettingsService: Observable, ObservableObject {
             set { override.stayAwakeDuringInference = newValue }
         }
 
+        // MARK: - CSInferenceSettings
         var inferenceOptions: String {
             get { inference.inferenceOptions ?? "" }
             set { inference.inferenceOptions = newValue }
-        }
-
-        var overrideSystemPrompt: String {
-            get { inference.overrideSystemPrompt ?? "" }
-            set { inference.overrideSystemPrompt = newValue }
         }
 
         var overrideModelTemplate: String {
@@ -66,19 +63,29 @@ class CSCSettingsService: Observable, ObservableObject {
             set { inference.overrideModelTemplate = newValue }
         }
 
+        var overrideSystemPrompt: String {
+            get { inference.overrideSystemPrompt ?? "" }
+            set { inference.overrideSystemPrompt = newValue }
+        }
+
         var seedAssistantResponse: String {
             get { inference.seedAssistantResponse ?? "" }
             set { inference.seedAssistantResponse = newValue }
         }
 
-        var retrieverOptions: String {
-            get { inference.retrieverOptions ?? "" }
-            set { inference.retrieverOptions = newValue }
+        var retrievalPolicy: String {
+            get { inference.retrievalPolicy ?? "" }
+            set { inference.retrievalPolicy = newValue }
         }
 
-        var chatAutoNaming: CSInferenceSettings.ChatAutoNaming {
-            get { inference.chatAutoNaming }
-            set { inference.chatAutoNaming = newValue }
+        var retrievalSearchArgs: String {
+            get { inference.retrievalSearchArgs ?? "" }
+            set { inference.retrievalSearchArgs = newValue }
+        }
+
+        var autonamingPolicy: CSInferenceSettings.ChatAutoNaming {
+            get { inference.autonamingPolicy }
+            set { inference.autonamingPolicy = newValue }
         }
     }
 

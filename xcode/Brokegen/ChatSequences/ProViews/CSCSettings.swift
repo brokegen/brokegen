@@ -33,10 +33,12 @@ struct CSInferenceSettings {
     }
 
     var inferenceOptions: String? = nil
-    var overrideSystemPrompt: String? = nil
     var overrideModelTemplate: String? = nil
+    var overrideSystemPrompt: String? = nil
     var seedAssistantResponse: String? = nil
 
-    var retrieverOptions: String? = nil
-    var chatAutoNaming: ChatAutoNaming = .serverDefault
+    var retrievalPolicy: String? = "simple"
+    var retrievalSearchArgs: String? = "{\"k\": 18}"
+
+    var autonamingPolicy: ChatAutoNaming = .serverDefault
 }

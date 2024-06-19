@@ -145,7 +145,7 @@ class DefaultChatSyncService: ChatSyncService {
     }
 
     override func updateSequence(_ originalSequenceId: ChatSequenceServerID?, withNewSequence updatedSequenceId: ChatSequenceServerID) async {
-        return await doUpdateSequence(originalSequenceId: originalSequenceId, updatedSequenceId: updatedSequenceId)
+        _ = await doUpdateSequence(originalSequenceId: originalSequenceId, updatedSequenceId: updatedSequenceId)
     }
 
     // MARK: - ChatSequence extend/continue

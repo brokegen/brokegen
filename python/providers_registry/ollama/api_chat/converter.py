@@ -10,13 +10,13 @@ from _util.json import safe_get
 from _util.json_streaming import JSONStreamingResponse
 from _util.typing import PromptText, TemplatedPromptText
 from audit.http import AuditDB
+from client.database import HistoryDB
 from inference.continuation import InferenceOptions
 from inference.prompting.templating import apply_llm_template
-from client.database import HistoryDB
 from providers.inference_models.orm import InferenceModelRecordOrm
+from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON
 from providers_registry.ollama.chat_rag_util import do_generate_raw_templated
 from providers_registry.ollama.chat_routes import lookup_model
-from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,8 @@ async def convert_chat_to_generate(
     )
 
     model_template = (
-            safe_get(chat_request_content, 'options', 'template')
+            inference_options.override_model_template
+            or safe_get(chat_request_content, 'options', 'template')
             or safe_get(model.combined_inference_parameters, 'template')
             or ''
     )
@@ -47,7 +48,10 @@ async def convert_chat_to_generate(
         raise HTTPException(500, "No model template available, confirm that InferenceModelRecords are complete")
 
     system_message = (
+        # This first one is from intercepting an Ollama /api/chat request, which should take precedence.
             requested_system_message
+            # Or, actually, they should simply never overlap. Only one or the other should exist.
+            or inference_options.override_system_prompt
             or safe_get(chat_request_content, 'options', 'system')
             or safe_get(model.combined_inference_parameters, 'system')
             or ''

@@ -180,7 +180,7 @@ extension DefaultChatSyncService {
         }
     }
 
-    func doUpdateSequence(originalSequenceId: ChatSequenceServerID?, updatedSequenceId: ChatSequenceServerID) async {
+    func doUpdateSequence(originalSequenceId: ChatSequenceServerID?, updatedSequenceId: ChatSequenceServerID) async -> ChatSequence? {
         var priorSequenceClientId: UUID? = nil
         if originalSequenceId != nil {
             if let removalIndex = self.loadedChatSequences.firstIndex(where: {
@@ -218,6 +218,8 @@ extension DefaultChatSyncService {
                         }
                     }
                 }
+
+                return updatedSequence
             }
             catch {
                 print("[ERROR] Failed to ChatSyncService.replaceSequenceById(\(String(describing: originalSequenceId)), with: \(updatedSequenceId))")
@@ -226,5 +228,7 @@ extension DefaultChatSyncService {
         else {
             print("[ERROR] Failed to GET ChatSequence\(updatedSequenceId)")
         }
+
+        return nil
     }
 }

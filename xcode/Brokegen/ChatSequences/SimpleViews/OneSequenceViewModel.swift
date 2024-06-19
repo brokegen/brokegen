@@ -26,6 +26,7 @@ class OneSequenceViewModel: ObservableObject {
         get { stayAwake.assertionIsActive }
     }
 
+    // MARK: - Options and Configurations
     var showTextEntryView: Bool = true
     var showUiOptions: Bool = false
     var showInferenceOptions: Bool = false
@@ -38,8 +39,8 @@ class OneSequenceViewModel: ObservableObject {
     init(_ sequence: ChatSequence, chatService: ChatSyncService, appSettings: AppSettings, chatSettingsService: CSCSettingsService) {
         self.sequence = sequence
         self.chatService = chatService
-        self.appSettings = appSettings
         self.settings = chatSettingsService.settings(for: sequence)
+        self.appSettings = appSettings
     }
 
     var displayHumanDesc: String {
@@ -176,9 +177,15 @@ class OneSequenceViewModel: ObservableObject {
                     nextMessage: nil,
                     continuationModelId: continuationModelId,
                     fallbackModelId: appSettings.fallbackInferenceModel?.serverId,
-                    retrievalPolicy: withRetrieval ? "simple" : nil,
-                    retrievalSearchArgs: withRetrieval ? "{\"k\": 18}" : nil,
+                    inferenceOptions: settings.inferenceOptions,
+                    overrideModelTemplate: settings.overrideModelTemplate,
+                    overrideSystemPrompt: settings.overrideSystemPrompt,
+                    seedAssistantResponse: settings.seedAssistantResponse,
+                    retrievalPolicy: withRetrieval ? settings.retrievalPolicy : nil,
+                    retrievalSearchArgs: withRetrieval ? settings.retrievalSearchArgs : nil,
                     preferredEmbeddingModel: withRetrieval ? appSettings.preferredEmbeddingModel?.serverId : nil,
+                    autonamingPolicy: settings.autonamingPolicy.rawValue,
+                    preferredAutonamingModel: appSettings.chatSummaryModel?.serverId,
                     sequenceId: sequence.serverId!
                 )
             )
@@ -225,9 +232,15 @@ class OneSequenceViewModel: ObservableObject {
                     nextMessage: nextMessage,
                     continuationModelId: continuationModelId,
                     fallbackModelId: appSettings.fallbackInferenceModel?.serverId,
-                    retrievalPolicy: withRetrieval ? "simple" : nil,
-                    retrievalSearchArgs: withRetrieval ? "{\"k\": 18}" : nil,
+                    inferenceOptions: settings.inferenceOptions,
+                    overrideModelTemplate: settings.overrideModelTemplate,
+                    overrideSystemPrompt: settings.overrideSystemPrompt,
+                    seedAssistantResponse: settings.seedAssistantResponse,
+                    retrievalPolicy: withRetrieval ? settings.retrievalPolicy : nil,
+                    retrievalSearchArgs: withRetrieval ? settings.retrievalSearchArgs : nil,
                     preferredEmbeddingModel: withRetrieval ? appSettings.preferredEmbeddingModel?.serverId : nil,
+                    autonamingPolicy: settings.autonamingPolicy.rawValue,
+                    preferredAutonamingModel: appSettings.chatSummaryModel?.serverId,
                     sequenceId: sequence.serverId!
                 )
             )
@@ -265,12 +278,8 @@ class OneSequenceViewModel: ObservableObject {
     func replaceSequence(_ newSequenceId: ChatSequenceServerID) async {
         print("[DEBUG] Attempting to update OneSequenceViewModel to new_sequence_id: \(newSequenceId)")
         await self.chatService.updateSequence(self.sequence.serverId!, withNewSequence: newSequenceId)
-
-        if let newSequence = try? await chatService.fetchChatSequenceDetails(newSequenceId) {
-            DispatchQueue.main.async {
-                self.sequence = newSequence
-            }
-        }
+        // NB This call will update all ViewModels held by ChatService, which should include us, in the future.
+        // (Previously, there was a second update here, which probably caused a race condition.)
     }
 }
 

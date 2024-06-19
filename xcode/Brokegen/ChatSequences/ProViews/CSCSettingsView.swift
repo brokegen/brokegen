@@ -137,7 +137,7 @@ struct CSCSettingsView: View {
 
         GroupBox(content: {
             Text("ChatSequence auto-naming policy")
-            Picker("", selection: $settings.chatAutoNaming) {
+            Picker("", selection: $settings.autonamingPolicy) {
                 Text("server default")
                     .tag(CSInferenceSettings.ChatAutoNaming.serverDefault)
 

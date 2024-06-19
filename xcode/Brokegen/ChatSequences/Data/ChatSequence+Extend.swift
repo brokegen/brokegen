@@ -5,12 +5,12 @@ import SwiftData
 import SwiftyJSON
 
 struct ChatSequenceParameters: Codable, Hashable {
-    let nextMessage: Message?
-    let continuationModelId: InferenceModelRecordID?
-    let fallbackModelId: InferenceModelRecordID?
+    var nextMessage: Message? = nil
+    var continuationModelId: InferenceModelRecordID? = nil
+    var fallbackModelId: InferenceModelRecordID? = nil
 
-    /// TODO: options could probably be a JSON
     var inferenceOptions: String? = nil
+    var overrideModelTemplate: String? = nil
     var overrideSystemPrompt: String? = nil
     var seedAssistantResponse: String? = nil
 
@@ -26,7 +26,7 @@ struct ChatSequenceParameters: Codable, Hashable {
     //
     // Since I don't want to make four separate structs, they're passed to the server anyway.
     //
-    let sequenceId: ChatSequenceServerID
+    var sequenceId: ChatSequenceServerID? = nil
 }
 
 struct AFErrorAndData: Error {
@@ -43,6 +43,12 @@ extension DefaultChatSyncService {
     public func doSequenceContinue(
         _ params: ChatSequenceParameters
     ) async -> AnyPublisher<Data, AFErrorAndData> {
+        guard params.sequenceId != nil else {
+            let error: AFError = AFError.invalidURL(url: "/sequences/\(params.sequenceId)/continue")
+            return Fail(error: AFErrorAndData(error: error, data: nil))
+                .eraseToAnyPublisher()
+        }
+
         let subject = PassthroughSubject<Data, AFErrorAndData>()
 
         let encoder = JSONEncoder()
@@ -63,15 +69,15 @@ extension DefaultChatSyncService {
             encodedParams = try encoder.encode(params)
         }
         catch {
-            print("[ERROR] /sequences/\(params.sequenceId)/continue failed, probably encoding error: \(String(describing: params))")
+            print("[ERROR] /sequences/\(params.sequenceId!)/continue failed, probably encoding error: \(String(describing: params))")
             return subject.eraseToAnyPublisher()
         }
 
-        print("[DEBUG] POST /sequences/\(params.sequenceId)/continue <= \(String(data: encodedParams!, encoding: .utf8)!)")
+        print("[DEBUG] POST /sequences/\(params.sequenceId!)/continue <= \(String(data: encodedParams!, encoding: .utf8)!)")
         var responseStatusCode: Int? = nil
 
         _ = session.streamRequest(
-            serverBaseURL + "/sequences/\(params.sequenceId)/continue"
+            serverBaseURL + "/sequences/\(params.sequenceId!)/continue"
         ) { urlRequest in
             urlRequest.method = .post
             urlRequest.headers = [
@@ -113,6 +119,12 @@ extension DefaultChatSyncService {
     public func doSequenceExtend(
         _ params: ChatSequenceParameters
     ) async -> AnyPublisher<Data, AFErrorAndData> {
+        guard params.sequenceId != nil else {
+            let error: AFError = AFError.invalidURL(url: "/sequences/\(params.sequenceId)/extend")
+            return Fail(error: AFErrorAndData(error: error, data: nil))
+                .eraseToAnyPublisher()
+        }
+
         let subject = PassthroughSubject<Data, AFErrorAndData>()
 
         let encoder = JSONEncoder()
@@ -132,15 +144,15 @@ extension DefaultChatSyncService {
             encodedParams = try encoder.encode(params)
         }
         catch {
-            print("[ERROR] /sequences/\(params.sequenceId)/extend failed, probably encoding error: \(String(describing: params))")
+            print("[ERROR] /sequences/\(params.sequenceId!)/extend failed, probably encoding error: \(String(describing: params))")
             return subject.eraseToAnyPublisher()
         }
 
-        print("[DEBUG] POST /sequences/\(params.sequenceId)/extend <= \(String(data: encodedParams!, encoding: .utf8)!)")
+        print("[DEBUG] POST /sequences/\(params.sequenceId!)/extend <= \(String(data: encodedParams!, encoding: .utf8)!)")
         var responseStatusCode: Int? = nil
 
         _ = session.streamRequest(
-            serverBaseURL + "/sequences/\(params.sequenceId)/extend"
+            serverBaseURL + "/sequences/\(params.sequenceId!)/extend"
         ) { urlRequest in
             urlRequest.method = .post
             urlRequest.headers = [

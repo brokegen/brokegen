@@ -240,11 +240,16 @@ struct ProSequenceView: View {
 
         if viewModel.showRetrievalOptions {
             GroupBox(content: {
-                TextEditor(text: $settings.retrieverOptions)
+                TextEditor(text: $settings.retrievalPolicy)
                     .frame(width: 360, height: 36)
                     .lineLimit(4...12)
+
+                TextEditor(text: $settings.retrievalSearchArgs)
+                    .frame(width: 360, height: 36)
+                    .lineLimit(4...12)
+
             }, label: {
-                Text("retrieverOptions")
+                Text("retrievalOptions")
             })
         }
     }
