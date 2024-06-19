@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from typing import AsyncIterable, AsyncIterator, Any, Callable, Awaitable, AsyncGenerator
+from typing import AsyncIterator, Any, Callable, Awaitable, AsyncGenerator
 
 import httpx
 import orjson
@@ -8,7 +8,7 @@ import sqlalchemy.exc
 import starlette.responses
 from starlette.background import BackgroundTask
 
-from _util.json import JSONDict, safe_get
+from _util.json import JSONDict
 from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks
 from _util.status import ServerStatusHolder
 from _util.typing import InferenceModelHumanID
@@ -18,78 +18,6 @@ from inference.iterators import stream_bytes_to_json, tee_to_console_output, dum
 from .api_chat.logging import ollama_log_indexer, ollama_response_consolidator, OllamaResponseContentJSON
 
 logger = logging.getLogger(__name__)
-
-
-async def consolidate_stream(
-        primordial: AsyncIterable[OllamaResponseContentJSON],
-        override_warn_fn=logger.warning,
-) -> OllamaResponseContentJSON:
-    """
-    Code is mostly specific to streaming Ollama responses,
-    but useful enough we can use it in several places.
-    """
-    consolidated_response: OllamaResponseContentJSON | None = None
-
-    async for decoded_line in primordial:
-        if consolidated_response is None:
-            # We have to do a dict copy because the old dict can uhh disappear, for some reason.
-            # (Usually it's an SQLAlchemy JSON column, which does under-the-hood optimizations.)
-            consolidated_response = dict(decoded_line)
-            continue
-
-        for k, v in decoded_line.items():
-            if k not in consolidated_response:
-                consolidated_response[k] = v
-                continue
-
-            if k == 'created_at':
-                consolidated_response['terminal_created_at'] = v
-                continue
-
-            elif k == 'done':
-                if consolidated_response[k]:
-                    override_warn_fn(f"Received additional JSON after streaming indicated we were {k}={v}")
-
-            elif k == 'model':
-                if consolidated_response[k] != v:
-                    raise ValueError(
-                        f"Received new model name \"{v}\" during streaming response, expected {consolidated_response[k]}")
-
-            # This tends to be the output from /api/generate
-            elif k == 'response':
-                consolidated_response[k] += v
-                continue
-
-            # And this is /api/chat, which we don't care too much about.
-            # Except as a stopgap, for now.
-            elif k == 'message':
-                if set(v.keys()) != {'content', 'role'}:
-                    override_warn_fn(f"Received unexpected message content with keys: {v.keys()}")
-                if v['role'] != 'assistant':
-                    override_warn_fn(f"Received content for unexpected role \"{v['role']}\", continuing anyway")
-
-                consolidated_response[k]['content'] += v['content']
-                continue
-
-            else:
-                raise ValueError(
-                    f"Received unidentified JSON pair {k}={v}, abandoning consolidation of JSON blobs.\n"
-                    f"Current consolidated response has key set: {consolidated_response.keys()}")
-
-            # In the non-exceptional case, just update with the new value.
-            consolidated_response[k] = v
-
-    done = safe_get(consolidated_response, 'done')
-    if not done:
-        if done is None:
-            logger.debug(f"Ollama response is {done=}, are you sure this was a streaming request?")
-        else:
-            logger.warning(f"Ollama response is {done=}, but we already ran out of bytes to process")
-
-    if 'context' in consolidated_response:
-        del consolidated_response['context']
-
-    return consolidated_response
 
 
 async def keepalive_wrapper(
@@ -246,8 +174,8 @@ class OllamaEventBuilder:
     async def wrap_entire_streaming_response(
             self,
             upstream_response: httpx.Response,
-            enable_logging: bool = False,
             *on_done_fns: Callable[[OllamaResponseContentJSON], Awaitable[Any]],
+            enable_logging: bool = False,
     ) -> starlette.responses.StreamingResponse:
         async def response_recorder(
                 consolidated_response: OllamaResponseContentJSON,

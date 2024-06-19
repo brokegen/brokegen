@@ -51,7 +51,7 @@ def make_provider_record(
 
     new_provider = ProviderRecordOrm(
         identifiers=provider_identifiers,
-        created_at=provider_in.created_at or datetime.now(tz=timezone.utc),
+        created_at=provider_in.created_at or datetime.now(tz=timezone.utc).isoformat(),
         **optional_kwargs,
     )
     history_db.add(new_provider)

@@ -21,7 +21,8 @@ from providers.inference_models.orm import InferenceEventOrm, InferenceReason
 from providers_registry.ollama.api_chat.converter import convert_chat_to_generate
 from providers_registry.ollama.api_chat.intercept import do_capture_chat_messages
 from providers_registry.ollama.api_chat.logging import ollama_log_indexer, ollama_response_consolidator, \
-    finalize_inference_job, OllamaRequestContentJSON, OllamaResponseContentJSON
+    finalize_inference_job, OllamaRequestContentJSON, OllamaResponseContentJSON, inference_event_logger, \
+    construct_new_sequence_from
 from providers_registry.ollama.chat_rag_util import do_generate_raw_templated
 from providers_registry.ollama.chat_routes import lookup_model_offline
 from retrieval.faiss.knowledge import get_knowledge
@@ -146,61 +147,16 @@ async def do_proxy_chat_rag(
     async def consolidate_wrapper(
             consolidated_response: OllamaResponseContentJSON,
     ) -> None:
-        if capture_chat_response:
-            model, executor_record = await lookup_model_offline(
-                consolidated_response['model'],
-                history_db,
-            )
+        if not capture_chat_response:
+            return
 
-            # Construct InferenceEvent
-            new_ie = InferenceEventOrm(
-                model_record_id=model.id,
-                reason="chat sequence",
-            )
-            finalize_inference_job(new_ie, consolidated_response)
+        inference_model, _ = await lookup_model_offline(
+            consolidated_response['model'],
+            history_db,
+        )
 
-            try:
-                history_db.add(new_ie)
-                history_db.commit()
-            except sqlalchemy.exc.SQLAlchemyError:
-                logger.exception(f"Failed to commit intercepted inference event for {new_ie}")
-                history_db.rollback()
-
-            # And a ChatMessage
-            response_in = ChatMessageOrm(
-                role="assistant",
-                content=safe_get(consolidated_response, "response")
-                        or safe_get(consolidated_response, "message", "content"),
-                created_at=datetime.fromisoformat(safe_get(consolidated_response, "created_at"))
-                           or datetime.now(tz=timezone.utc),
-            )
-            if response_in.content:
-                history_db.add(response_in)
-                history_db.commit()
-
-            # Update ChatSequences
-            if response_in.content and captured_sequence is not None:
-                parent_sequence = history_db.merge(captured_sequence)
-
-                new_sequence = ChatSequence(
-                    human_desc=parent_sequence.human_desc,
-                    user_pinned=parent_sequence.user_pinned,
-                    current_message=response_in.id,
-                    parent_sequence=parent_sequence.id,
-                    generated_at=datetime.now(tz=timezone.utc),
-                    generation_complete=safe_get(consolidated_response, 'done'),
-                    inference_job_id=new_ie.id,
-                )
-
-                parent_sequence.user_pinned = False
-
-                try:
-                    history_db.add(parent_sequence)
-                    history_db.add(new_sequence)
-                    history_db.commit()
-                except sqlalchemy.exc.SQLAlchemyError:
-                    logger.exception(f"Failed to create add-on ChatSequence {new_sequence}")
-                    history_db.rollback()
+        _: InferenceEventOrm = \
+            await inference_event_logger(consolidated_response, inference_model, history_db)
 
     if status_holder is not None:
         status_holder.set(f"Running Ollama response")

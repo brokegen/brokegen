@@ -1,6 +1,8 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TypeAlias
+
+import sqlalchemy
 
 from _util.json import JSONDict, safe_get
 from client.chat_message import ChatMessageOrm
@@ -24,7 +26,9 @@ def finalize_inference_job(
         inference_job.prompt_eval_time = safe_get(response_content_json, 'prompt_eval_duration') / 1e9
 
     if safe_get(response_content_json, 'created_at'):
-        inference_job.response_created_at = datetime.fromisoformat(safe_get(response_content_json, 'created_at'))
+        inference_job.response_created_at = \
+            datetime.fromisoformat(safe_get(response_content_json, 'created_at')) \
+            or datetime.now(tz=timezone.utc)
     if safe_get(response_content_json, 'eval_count'):
         inference_job.response_tokens = safe_get(response_content_json, 'eval_count')
     if safe_get(response_content_json, 'eval_duration'):
@@ -47,12 +51,17 @@ async def inference_event_logger(
     inference_event = InferenceEventOrm(
         model_record_id=inference_model.id,
         reason="chat sequence",
+        response_created_at=datetime.now(tz=timezone.utc),
         response_error="[haven't received/finalized response info yet]",
     )
-
     finalize_inference_job(inference_event, consolidated_response)
-    history_db.add(inference_event)
-    history_db.commit()
+
+    try:
+        history_db.add(inference_event)
+        history_db.commit()
+    except sqlalchemy.exc.SQLAlchemyError:
+        logger.exception(f"Failed to commit intercepted inference event for {inference_event}")
+        history_db.rollback()
 
     return inference_event
 
@@ -62,7 +71,7 @@ async def construct_new_sequence_from(
         consolidated_response: OllamaResponseContentJSON,
         inference_event: InferenceEventOrm,
         history_db: HistoryDB,
-) -> ChatSequence:
+) -> ChatSequence | None:
     # Wrap the output in a… something that appends new ChatSequence information
     response_sequence = ChatSequence(
         human_desc=original_sequence.human_desc,
@@ -71,15 +80,19 @@ async def construct_new_sequence_from(
 
     assistant_response = ChatMessageOrm(
         role="assistant",
-        content=safe_get(consolidated_response, "message", "content"),
+        content=safe_get(consolidated_response, "response")
+                or safe_get(consolidated_response, "message", "content"),
         created_at=inference_event.response_created_at,
     )
+    if not assistant_response.content:
+        return None
+
     history_db.add(assistant_response)
     history_db.commit()
 
     # Add what we need for response_sequence
+    response_sequence.user_pinned = original_sequence.user_pinned
     original_sequence.user_pinned = False
-    response_sequence.user_pinned = True
 
     history_db.add(original_sequence)
     history_db.add(response_sequence)
@@ -87,7 +100,7 @@ async def construct_new_sequence_from(
     response_sequence.current_message = assistant_response.id
 
     response_sequence.generated_at = inference_event.response_created_at
-    response_sequence.generation_complete = consolidated_response["done"]
+    response_sequence.generation_complete = safe_get(consolidated_response, 'done')
     response_sequence.inference_job_id = inference_event.id
     if inference_event.response_error:
         response_sequence.inference_error = inference_event.response_error
@@ -107,7 +120,12 @@ async def construct_new_sequence_from(
         )
 
     history_db.add(inference_job)
-    history_db.commit()
+
+    try:
+        history_db.commit()
+    except sqlalchemy.exc.SQLAlchemyError:
+        logger.exception(f"Failed to create add-on ChatSequence {response_sequence}")
+        history_db.rollback()
 
     return response_sequence
 

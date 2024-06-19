@@ -12,6 +12,7 @@ from client.database import HistoryDB, get_db as get_history_db
 from client.sequence_get import do_get_sequence
 from inference.continuation import InferenceOptions
 from inference.iterators import tee_to_console_output, consolidate_and_call
+from inference.logging import inference_event_logger, construct_new_sequence_from
 from providers.inference_models.orm import InferenceModelRecord, InferenceModelResponse, InferenceModelAddRequest, \
     lookup_inference_model_detailed, InferenceModelRecordOrm
 from providers.orm import ProviderType, ProviderLabel, ProviderRecord
@@ -115,7 +116,7 @@ class EchoProvider(BaseProvider):
 
             yield InferenceModelRecord.from_orm(new_model)
 
-    async def chat(
+    def chat(
             self,
             sequence_id: ChatSequenceID,
             inference_model: InferenceModelRecordOrm,

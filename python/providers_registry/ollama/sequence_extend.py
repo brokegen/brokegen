@@ -100,10 +100,10 @@ async def do_continuation(
 
         inference_event: InferenceEventOrm = \
             await inference_event_logger(response_content_json, inference_model, history_db)
-        response_sequence: ChatSequence = \
+        response_sequence: ChatSequence | None = \
             await construct_new_sequence_from(original_sequence, response_content_json, inference_event, history_db)
 
-        if not response_sequence.human_desc:
+        if response_sequence is not None and not response_sequence.human_desc:
             with StatusContext("summarizing prompt as tab name", status_holder):
                 machine_desc: str = await ollama_generate_helper_fn(
                     inference_model,
