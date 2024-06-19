@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from typing import TypeAlias
+from typing import TypeAlias, Union
 
 import sqlalchemy
 
@@ -15,10 +15,17 @@ logger = logging.getLogger(__name__)
 OllamaRequestContentJSON: TypeAlias = JSONDict
 OllamaResponseContentJSON: TypeAlias = JSONDict
 
+OllamaChatResponse: TypeAlias = JSONDict
+"""Result of /api/chat, expected to store its message content in $0.response"""
+OllamaGenerateResponse: TypeAlias = JSONDict
+"""Result of /api/generate, content will be in $0.message.content"""
+
+OllamaResponseChunk: TypeAlias = Union[OllamaChatResponse, OllamaGenerateResponse]
+
 
 def finalize_inference_job(
         inference_job: InferenceEventOrm,
-        response_content_json: OllamaResponseContentJSON,
+        response_content_json: OllamaResponseChunk,
 ) -> None:
     if safe_get(response_content_json, 'prompt_eval_count'):
         inference_job.prompt_tokens = safe_get(response_content_json, 'prompt_eval_count')
@@ -131,7 +138,7 @@ async def construct_new_sequence_from(
 
 
 def ollama_log_indexer(
-        chunk_json: JSONDict,
+        chunk_json: OllamaResponseChunk,
 ) -> str:
     # /api/generate returns in the first form
     # /api/chat returns the second form, with 'role': 'user'
@@ -141,7 +148,7 @@ def ollama_log_indexer(
 
 
 def ollama_response_consolidator(
-        chunk: JSONDict,
+        chunk: OllamaResponseChunk,
         consolidated_response: OllamaResponseContentJSON,
 ) -> OllamaResponseContentJSON:
     if not consolidated_response:
