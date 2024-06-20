@@ -6,7 +6,7 @@ import SwiftyJSON
 
 typealias ChatSequenceServerID = Int
 
-class ChatSequence: Identifiable, Codable {
+class ChatSequence: Identifiable {
     let id: UUID
     var serverId: ChatSequenceServerID?
 
@@ -31,6 +31,31 @@ class ChatSequence: Identifiable, Codable {
                 Message(role: "placeholder", content: "", createdAt: nil),
             ],
             inferenceModelId: nil)
+    }
+
+    static func fromData(serverId: ChatSequenceServerID? = nil, data: Data) throws -> ChatSequence {
+        let sequenceJson = JSON(data)
+
+        var messageBuilder: [Message] = []
+        for messageJson in sequenceJson["messages"].arrayValue {
+            let message = Message(
+                role: messageJson["role"].stringValue,
+                content: messageJson["content"].stringValue,
+                createdAt: messageJson["created_at"].isoDateValue
+            )
+            message.serverId = messageJson["id"].int
+
+            messageBuilder.append(message)
+        }
+
+        return ChatSequence(
+            clientId: UUID(),
+            serverId: serverId,
+            humanDesc: sequenceJson["human_desc"].string,
+            userPinned: sequenceJson["user_pinned"].bool ?? false,
+            messages: messageBuilder,
+            inferenceModelId: sequenceJson["inference_model_id"].int
+        )
     }
 
     convenience init(_ serverId: ChatSequenceServerID? = nil, data: Data) throws {

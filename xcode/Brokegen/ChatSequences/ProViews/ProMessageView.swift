@@ -1,55 +1,5 @@
 import SwiftUI
 
-enum MessageLike {
-    case legacy(Message)
-    case stored(ChatMessage)
-    case temporary(TemporaryChatMessage)
-
-    var role: String {
-        get {
-            switch(self) {
-            case .legacy(let m):
-                m.role
-            case .stored(let m):
-                m.role
-            case .temporary(let m):
-                m.role
-            }
-        }
-    }
-
-    var content: String {
-        get {
-            switch(self) {
-            case .legacy(let m):
-                m.content
-            case .stored(let m):
-                m.content
-            case .temporary(let m):
-                m.content ?? ""
-            }
-        }
-    }
-
-    var createdAtString: String {
-        get {
-            switch(self) {
-            case .legacy(let m):
-                if m.createdAt != nil {
-                    String(describing: m.createdAt!)
-                }
-                else {
-                    "[unknown date]"
-                }
-            case .stored(let m):
-                String(describing: m.createdAt)
-            case .temporary(let m):
-                String(describing: m.createdAt)
-            }
-        }
-    }
-}
-
 struct ProMessageView: View {
     let message: MessageLike
     let sequence: ChatSequence?

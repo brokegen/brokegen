@@ -1,46 +1,6 @@
 import Foundation
 import SwiftyJSON
 
-public enum JSONObject: Codable {
-    case string(String)
-    case number(Float)
-    case object([String:JSONObject])
-    case array([JSONObject])
-    case bool(Bool)
-    case null
-}
-
-/// TODO: Replace use of Codable with SwiftyJSON
-/// This makes more sense for very-variable JSON blobs, particularly those that don't have explicit typing
-/// (i.e. those not under our control, like whatever fields come down for provider/modelIdentifiers).
-extension JSON {
-    private static let isoDateFormatter: ISO8601DateFormatter = {
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return dateFormatter
-    }()
-
-    public var isoDate: Date? {
-        get {
-            if let objectString = self.string {
-                return JSON.isoDateFormatter.date(from: objectString + "Z")
-            }
-            else {
-                return nil
-            }
-        }
-    }
-
-    public var isoDateValue: Date {
-        get {
-            return self.isoDate ?? Date.distantPast
-        }
-        set {
-            self.stringValue = JSON.isoDateFormatter.string(from: newValue)
-        }
-    }
-}
-
 typealias FoundationModelRecordID = Int
 typealias InferenceEventID = Int
 

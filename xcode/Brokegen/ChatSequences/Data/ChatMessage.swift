@@ -28,7 +28,7 @@ extension ChatMessage: Decodable {
     }
 }
 
-struct TemporaryChatMessage {
+struct TemporaryChatMessage: Equatable, Hashable {
     public var role: String
     public var content: String?
     public var createdAt: Date
@@ -43,6 +43,71 @@ struct TemporaryChatMessage {
 extension TemporaryChatMessage: Encodable {
     func asJsonData() throws -> Data {
         return try jsonEncoder.encode(self)
+    }
+}
+
+enum MessageLike: Equatable, Hashable {
+    case legacy(Message)
+    case stored(ChatMessage)
+    case temporary(TemporaryChatMessage)
+
+    var role: String {
+        get {
+            switch(self) {
+            case .legacy(let m):
+                m.role
+            case .stored(let m):
+                m.role
+            case .temporary(let m):
+                m.role
+            }
+        }
+    }
+
+    var content: String {
+        get {
+            switch(self) {
+            case .legacy(let m):
+                m.content
+            case .stored(let m):
+                m.content
+            case .temporary(let m):
+                m.content ?? ""
+            }
+        }
+    }
+
+    var createdAt: Date? {
+        get {
+            switch(self) {
+            case .legacy(let m):
+                m.createdAt
+
+            case .stored(let m):
+                m.createdAt
+
+            case .temporary(let m):
+                m.createdAt
+            }
+        }
+    }
+
+    var createdAtString: String {
+        get {
+            switch(self) {
+            case .legacy(let m):
+                if m.createdAt != nil {
+                    String(describing: m.createdAt!)
+                }
+                else {
+                    "[unknown date]"
+                }
+            case .stored(let m):
+                String(describing: m.createdAt)
+            case .temporary(let m):
+                String(describing: m.createdAt)
+            }
+        }
     }
 }
 
