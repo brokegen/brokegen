@@ -27,7 +27,7 @@ from starlette.concurrency import iterate_in_threadpool
 from starlette.responses import StreamingResponse, JSONResponse
 
 from _util.json import safe_get, JSONDict
-from _util.typing import InferenceModelHumanID
+from _util.typing import FoundationModelHumanID
 
 logger = logging.getLogger(__name__)
 

@@ -7,15 +7,15 @@ from fastapi import Depends
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 
-from _util.typing import InferenceModelRecordID
+from _util.typing import FoundationModelRecordID
 from client.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import InferenceModelRecordOrm, lookup_inference_model, \
-    lookup_inference_model_detailed, InferenceModelAddRequest
+from providers.inference_models.orm import FoundationeModelRecordOrm, lookup_inference_model, \
+    lookup_foundation_model_detailed, FoundationModelAddRequest
 from providers.orm import ProviderRecordOrm, ProviderRecord, ProviderAddRequest
 
 
-class InferenceModelAddResponse(BaseModel):
-    model_id: InferenceModelRecordID
+class FoundationModelAddResponse(BaseModel):
+    model_id: FoundationModelRecordID
     just_created: bool
 
     model_config = ConfigDict(
@@ -63,14 +63,14 @@ def make_provider_record(
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
     @router_ish.post(
         "/models",
-        response_model=InferenceModelAddResponse,
+        response_model=FoundationModelAddResponse,
     )
     async def create_model(
             response: fastapi.Response,
-            model_in: InferenceModelAddRequest,
+            model_in: FoundationModelAddRequest,
             provider_in: ProviderAddRequest,
             history_db: HistoryDB = Depends(get_history_db),
-    ) -> InferenceModelAddResponse:
+    ) -> FoundationModelAddResponse:
         provider_record: ProviderRecord = make_provider_record(provider_in, "POST /models", history_db)
         # Replace the model_in's provider_identifiers with a sorted one
         model_in.provider_identifiers = provider_record.identifiers
@@ -78,25 +78,25 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         maybe_model = lookup_inference_model(model_in.human_id, provider_record.identifiers, history_db)
         if maybe_model is not None:
             # Check in-depth to see if we have anything actually-identical
-            maybe_model1 = lookup_inference_model_detailed(model_in, history_db)
+            maybe_model1 = lookup_foundation_model_detailed(model_in, history_db)
             if maybe_model1 is not None:
                 maybe_model1.merge_in_updates(model_in)
                 history_db.add(maybe_model)
                 history_db.commit()
 
-                return InferenceModelAddResponse(
+                return FoundationModelAddResponse(
                     model_id=maybe_model1.id,
                     just_created=False,
                 )
 
-        new_model = InferenceModelRecordOrm(
+        new_model = FoundationeModelRecordOrm(
             **model_in.model_dump(),
         )
         history_db.add(new_model)
         history_db.commit()
 
         response.status_code = fastapi.status.HTTP_201_CREATED
-        return InferenceModelAddResponse(
+        return FoundationModelAddResponse(
             model_id=new_model.id,
             just_created=True
         )
@@ -107,7 +107,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             history_db: HistoryDB = Depends(get_history_db),
     ):
         match_object = history_db.execute(
-            select(InferenceModelRecordOrm)
+            select(FoundationeModelRecordOrm)
             .filter_by(id=id)
         ).scalar_one_or_none()
         if match_object is None:

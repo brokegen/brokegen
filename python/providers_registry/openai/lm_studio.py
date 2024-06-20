@@ -11,9 +11,9 @@ from sqlalchemy import select
 from _util.json import JSONDict, safe_get
 from providers._util import local_provider_identifiers, local_fetch_machine_info
 from client.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import InferenceModelRecord
-from providers.inference_models.orm import lookup_inference_model_detailed, \
-    InferenceModelAddRequest, InferenceModelRecordOrm
+from providers.inference_models.orm import FoundationModelRecord
+from providers.inference_models.orm import lookup_foundation_model_detailed, \
+    FoundationModelAddRequest, FoundationeModelRecordOrm
 from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord, ProviderType
 from providers.registry import ProviderRegistry, BaseProvider, ProviderFactory
 
@@ -94,7 +94,7 @@ class LMStudioProvider(BaseProvider):
 
         return ProviderRecord.from_orm(new_provider)
 
-    async def list_models(self) -> AsyncIterable[InferenceModelRecord]:
+    async def list_models(self) -> AsyncIterable[FoundationModelRecord]:
         request = self.server_comms.build_request(
             method='GET',
             url='/v1/models',
@@ -117,7 +117,7 @@ class LMStudioProvider(BaseProvider):
 
         access_time = datetime.now(tz=timezone.utc)
         for model_identifiers in response_content["data"]:
-            model_in = InferenceModelAddRequest(
+            model_in = FoundationModelAddRequest(
                 human_id=os.path.basename(safe_get(model_identifiers, 'id')),
                 first_seen_at=access_time,
                 last_seen=access_time,
@@ -128,22 +128,22 @@ class LMStudioProvider(BaseProvider):
 
             history_db: HistoryDB = next(get_history_db())
 
-            maybe_model = lookup_inference_model_detailed(model_in, history_db)
+            maybe_model = lookup_foundation_model_detailed(model_in, history_db)
             if maybe_model is not None:
                 maybe_model.merge_in_updates(model_in)
                 history_db.add(maybe_model)
                 history_db.commit()
 
-                yield InferenceModelRecord.from_orm(maybe_model)
+                yield FoundationModelRecord.from_orm(maybe_model)
                 continue
 
             else:
-                logger.info(f"GET /v1/models returned a new InferenceModelRecord: {safe_get(model_identifiers, 'id')}")
-                new_model = InferenceModelRecordOrm(**model_in.model_dump())
+                logger.info(f"GET /v1/models returned a new FoundationModelRecord: {safe_get(model_identifiers, 'id')}")
+                new_model = FoundationeModelRecordOrm(**model_in.model_dump())
                 history_db.add(new_model)
                 history_db.commit()
 
-                yield InferenceModelRecord.from_orm(new_model)
+                yield FoundationModelRecord.from_orm(new_model)
                 continue
 
 

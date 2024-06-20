@@ -24,7 +24,7 @@ from inference.continuation import ContinueRequest, ExtendRequest, select_contin
     AutonamingOptions
 from inference.iterators import stream_str_to_json, decode_from_bytes, consolidate_and_yield
 from inference.prompting.templating import apply_llm_template
-from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, InferenceReason
+from providers.inference_models.orm import FoundationeModelRecordOrm, InferenceEventOrm, InferenceReason
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry
 from providers_registry.ollama.api_chat.inject_rag import do_proxy_chat_rag
@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 
 async def ollama_generate_helper_fn(
-        inference_model: InferenceModelRecordOrm,
+        inference_model: FoundationeModelRecordOrm,
         history_db: HistoryDB,
         audit_db: AuditDB,
         inference_reason: InferenceReason,
@@ -86,7 +86,7 @@ async def ollama_generate_helper_fn(
 async def do_continuation(
         messages_list: list[ChatMessage],
         original_sequence: ChatSequence,
-        inference_model: InferenceModelRecordOrm,
+        inference_model: FoundationeModelRecordOrm,
         inference_options: InferenceOptions,
         autonaming_options: AutonamingOptions,
         retrieval_label: RetrievalLabel,
@@ -229,7 +229,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             do_get_sequence(sequence_id, history_db, include_model_info_diffs=False)
 
         # Decide how to continue inference for this sequence
-        inference_model: InferenceModelRecordOrm = \
+        inference_model: FoundationeModelRecordOrm = \
             select_continuation_model(sequence_id, params.continuation_model_id, params.fallback_model_id, history_db)
         provider_label: ProviderLabel | None = registry.provider_label_from(inference_model)
         if provider_label is not None and provider_label.type != "ollama":
@@ -317,7 +317,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         history_db.commit()
 
         # Decide how to continue inference for this sequence
-        inference_model: InferenceModelRecordOrm = \
+        inference_model: FoundationeModelRecordOrm = \
             select_continuation_model(sequence_id, params.continuation_model_id, params.fallback_model_id, history_db)
         provider_label: ProviderLabel | None = registry.provider_label_from(inference_model)
         if provider_label is not None and provider_label.type != "ollama":

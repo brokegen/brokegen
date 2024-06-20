@@ -18,7 +18,7 @@ from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
 from inference.continuation import ContinueRequest, select_continuation_model
 from client.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import InferenceModelRecordOrm
+from providers.inference_models.orm import FoundationeModelRecordOrm
 from providers.registry import ProviderRegistry, BaseProvider
 from retrieval.faiss.knowledge import get_knowledge, KnowledgeSingleton
 from retrieval.faiss.retrieval import RetrievalLabel, RetrievalPolicy, SimpleRetrievalPolicy, SummarizingRetrievalPolicy
@@ -75,7 +75,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
         async def real_response_maker() -> Awaitable[AsyncIterator[JSONDict]]:
             # Decide how to continue inference for this sequence
-            inference_model: InferenceModelRecordOrm = \
+            inference_model: FoundationeModelRecordOrm = \
                 select_continuation_model(sequence_id, parameters.continuation_model_id, parameters.fallback_model_id,
                                           history_db)
             provider: BaseProvider | None = registry.provider_from(inference_model)

@@ -9,7 +9,7 @@ from langchain_core.messages import ChatMessage
 from pydantic import BaseModel
 
 from _util.status import ServerStatusHolder, StatusContext
-from _util.typing import PromptText, InferenceModelRecordID
+from _util.typing import PromptText, FoundationModelRecordID
 from retrieval.faiss.knowledge import KnowledgeSingleton, get_knowledge
 from providers.inference_models.orm import InferenceReason
 
@@ -22,7 +22,7 @@ RetrievalPolicyID: TypeAlias = str
 class RetrievalLabel(BaseModel):
     retrieval_policy: Optional[RetrievalPolicyID] = None
     retrieval_search_args: Optional[str] = None
-    preferred_embedding_model: Optional[InferenceModelRecordID] = None
+    preferred_embedding_model: Optional[FoundationModelRecordID] = None
 
 
 class RetrievalPolicy:

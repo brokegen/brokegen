@@ -13,7 +13,7 @@ from audit.http import AuditDB
 from client.database import HistoryDB
 from inference.continuation import InferenceOptions
 from inference.prompting.templating import apply_llm_template
-from providers.inference_models.orm import InferenceModelRecordOrm
+from providers.inference_models.orm import FoundationeModelRecordOrm
 from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON
 from providers_registry.ollama.chat_rag_util import do_generate_raw_templated
 from providers_registry.ollama.chat_routes import lookup_model
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 async def convert_chat_to_generate(
         original_request: starlette.requests.Request,
         chat_request_content: OllamaRequestContentJSON,
-        inference_model: InferenceModelRecordOrm,
+        inference_model: FoundationeModelRecordOrm,
         inference_options: InferenceOptions,
         requested_system_message: PromptText | None,
         prompt_override: PromptText | None,
@@ -45,7 +45,7 @@ async def convert_chat_to_generate(
     )
     if not model_template:
         logger.error(f"No Ollama template info for {model.human_id}, fill it in with an /api/show proxy call")
-        raise HTTPException(500, "No model template available, confirm that InferenceModelRecords are complete")
+        raise HTTPException(500, "No model template available, confirm that FoundationModelRecords are complete")
 
     system_message = (
         # This first one is from intercepting an Ollama /api/chat request, which should take precedence.

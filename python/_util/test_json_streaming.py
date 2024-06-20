@@ -6,11 +6,11 @@ import orjson
 
 from _util.json import safe_get
 from _util.json_streaming import emit_keepalive_chunks, JSONStreamingResponse
-from _util.typing import InferenceModelHumanID
+from _util.typing import FoundationModelHumanID
 
 
 async def complex_nothing_chain(
-        inference_model_human_id: InferenceModelHumanID,
+        inference_model_human_id: FoundationModelHumanID,
         is_disconnected: Callable[[], Awaitable[bool]],
 ):
     async def fake_timeout(

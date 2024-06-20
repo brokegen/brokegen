@@ -7,10 +7,10 @@ import orjson
 from sqlalchemy import select, or_, func
 
 from _util.json import safe_get
-from _util.typing import InferenceModelHumanID
+from _util.typing import FoundationModelHumanID
 from client.database import HistoryDB
-from providers.inference_models.orm import InferenceModelRecordOrm, InferenceModelRecord, InferenceModelAddRequest, \
-    lookup_inference_model_detailed
+from providers.inference_models.orm import FoundationeModelRecordOrm, FoundationModelRecord, FoundationModelAddRequest, \
+    lookup_foundation_model_detailed
 from providers.orm import ProviderRecordOrm, ProviderRecord
 from providers_registry.ollama.api_chat.logging import OllamaResponseContentJSON
 
@@ -21,14 +21,14 @@ def fetch_model_record(
         executor_record: ProviderRecordOrm,
         model_name: str,
         history_db: HistoryDB,
-) -> InferenceModelRecordOrm | None:
+) -> FoundationeModelRecordOrm | None:
     sorted_executor_info = dict(sorted(executor_record.identifiers.items()))
 
     return history_db.execute(
-        select(InferenceModelRecordOrm)
-        .where(InferenceModelRecordOrm.provider_identifiers == sorted_executor_info,
-               InferenceModelRecordOrm.human_id == model_name)
-        .order_by(InferenceModelRecordOrm.last_seen)
+        select(FoundationeModelRecordOrm)
+        .where(FoundationeModelRecordOrm.provider_identifiers == sorted_executor_info,
+               FoundationeModelRecordOrm.human_id == model_name)
+        .order_by(FoundationeModelRecordOrm.last_seen)
         .limit(1)
     ).scalar_one_or_none()
 
@@ -38,7 +38,7 @@ def build_models_from_api_tags(
         accessed_at: datetime,
         response_json,
         history_db: HistoryDB,
-) -> Generator[InferenceModelRecord, None, None]:
+) -> Generator[FoundationModelRecord, None, None]:
     """
     /api/tags fills in the `model_identifiers`, but `combined_inference_parameters` must be from /api/show
     """
@@ -48,7 +48,7 @@ def build_models_from_api_tags(
         )
 
         # Construct most of a new model, for the sake of checking
-        model_in = InferenceModelAddRequest(
+        model_in = FoundationModelAddRequest(
             human_id=safe_get(sorted_model_json, 'name'),
             first_seen_at=accessed_at,
             last_seen=accessed_at,
@@ -57,31 +57,31 @@ def build_models_from_api_tags(
             combined_inference_parameters=None,
         )
 
-        maybe_model = lookup_inference_model_detailed(model_in, history_db)
+        maybe_model = lookup_foundation_model_detailed(model_in, history_db)
         if maybe_model is not None:
             maybe_model.merge_in_updates(model_in)
             history_db.add(maybe_model)
             history_db.commit()
 
-            yield InferenceModelRecord.from_orm(maybe_model)
+            yield FoundationModelRecord.from_orm(maybe_model)
             continue
 
         else:
-            logger.info(f"GET /api/tags returned a new InferenceModelRecord: {safe_get(sorted_model_json, 'name')}")
-            new_model = InferenceModelRecordOrm(**model_in.model_dump())
+            logger.info(f"GET /api/tags returned a new FoundationModelRecord: {safe_get(sorted_model_json, 'name')}")
+            new_model = FoundationeModelRecordOrm(**model_in.model_dump())
             history_db.add(new_model)
             history_db.commit()
 
-            yield InferenceModelRecord.from_orm(new_model)
+            yield FoundationModelRecord.from_orm(new_model)
             continue
 
 
 def build_model_from_api_show(
-        human_id: InferenceModelHumanID,
+        human_id: FoundationModelHumanID,
         provider_identifiers: str,
         response_json: OllamaResponseContentJSON,
         history_db: HistoryDB,
-) -> InferenceModelRecordOrm:
+) -> FoundationeModelRecordOrm:
     sorted_response_json = orjson.loads(
         orjson.dumps(response_json, option=orjson.OPT_SORT_KEYS)
     )
@@ -121,7 +121,7 @@ def build_model_from_api_show(
         updated_inference_parameters[k] = v
 
     # Construct most of a new model, for the sake of checking
-    model_in = InferenceModelAddRequest(
+    model_in = FoundationModelAddRequest(
         human_id=human_id,
         last_seen=datetime.now(tz=timezone.utc),
         provider_identifiers=provider_identifiers,
@@ -140,15 +140,15 @@ def build_model_from_api_show(
     """In particular, sqlalchemy.func.json_extract() returns a _string_, while orjson is bytes."""
 
     # Check for an exact match first, which should be the most common case
-    exact_match: InferenceModelRecordOrm | None = history_db.execute(
-        select(InferenceModelRecordOrm)
+    exact_match: FoundationeModelRecordOrm | None = history_db.execute(
+        select(FoundationeModelRecordOrm)
         .where(
-            InferenceModelRecordOrm.human_id == human_id,
-            InferenceModelRecordOrm.provider_identifiers == provider_identifiers,
-            func.json_extract(InferenceModelRecordOrm.model_identifiers, "$.details") == reference_model_details,
-            InferenceModelRecordOrm.combined_inference_parameters == updated_inference_parameters,
+            FoundationeModelRecordOrm.human_id == human_id,
+            FoundationeModelRecordOrm.provider_identifiers == provider_identifiers,
+            func.json_extract(FoundationeModelRecordOrm.model_identifiers, "$.details") == reference_model_details,
+            FoundationeModelRecordOrm.combined_inference_parameters == updated_inference_parameters,
         )
-        .order_by(InferenceModelRecordOrm.last_seen.desc())
+        .order_by(FoundationeModelRecordOrm.last_seen.desc())
         .limit(1)
     ).scalar_one_or_none()
     if exact_match is not None:
@@ -161,18 +161,18 @@ def build_model_from_api_show(
     # Scan for /api/tags-created entries one-at-a-time and figure out how to merge in data.
     # This merge is only feasible when /api/tags response and /api/show's 'details' sections are identical,
     # which seems to be true testing a few models with `ollama --version` `0.1.33+e9ae607e`.
-    api_tags_match: InferenceModelRecordOrm | None = history_db.execute(
-        select(InferenceModelRecordOrm)
+    api_tags_match: FoundationeModelRecordOrm | None = history_db.execute(
+        select(FoundationeModelRecordOrm)
         .where(
-            InferenceModelRecordOrm.human_id == human_id,
-            InferenceModelRecordOrm.provider_identifiers == provider_identifiers,
-            func.json_extract(InferenceModelRecordOrm.model_identifiers, "$.details") == reference_model_details,
+            FoundationeModelRecordOrm.human_id == human_id,
+            FoundationeModelRecordOrm.provider_identifiers == provider_identifiers,
+            func.json_extract(FoundationeModelRecordOrm.model_identifiers, "$.details") == reference_model_details,
             or_(
-                InferenceModelRecordOrm.combined_inference_parameters.is_(None),
-                InferenceModelRecordOrm.combined_inference_parameters.is_("null"),
+                FoundationeModelRecordOrm.combined_inference_parameters.is_(None),
+                FoundationeModelRecordOrm.combined_inference_parameters.is_("null"),
             ),
         )
-        .order_by(InferenceModelRecordOrm.last_seen.desc())
+        .order_by(FoundationeModelRecordOrm.last_seen.desc())
         .limit(1)
     ).scalar_one_or_none()
     if api_tags_match is not None:

@@ -5,7 +5,7 @@ import fastapi
 from fastapi import Depends
 from starlette.responses import RedirectResponse
 
-from providers.inference_models.orm import InferenceModelResponse, InferenceModelRecord
+from providers.inference_models.orm import FoundationModelResponse, FoundationModelRecord
 from providers.orm import ProviderType, ProviderID, ProviderLabel, ProviderRecord
 from providers.registry import ProviderRegistry, BaseProvider
 
@@ -71,7 +71,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
     @router_ish.get("/providers/any/any/models")
     async def get_all_provider_models(
             registry: ProviderRegistry = Depends(ProviderRegistry),
-    ) -> list[InferenceModelResponse]:
+    ) -> list[FoundationModelResponse]:
         """
         This returns a set of ordered pairs, to reflect how the models should be ranked to the user.
 
@@ -81,12 +81,12 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         async def generator_to_awaitable(
                 label: ProviderLabel,
                 provider: BaseProvider,
-        ) -> list[InferenceModelResponse]:
-            def to_response(model: InferenceModelRecord | InferenceModelResponse):
-                if isinstance(model, InferenceModelResponse):
+        ) -> list[FoundationModelResponse]:
+            def to_response(model: FoundationModelRecord | FoundationModelResponse):
+                if isinstance(model, FoundationModelResponse):
                     return model
                 else:
-                    new_imr = InferenceModelResponse(**model.model_dump())
+                    new_imr = FoundationModelResponse(**model.model_dump())
                     if new_imr.label is None:
                         new_imr.label = label
 
@@ -94,8 +94,8 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
             return [to_response(model) async for model in provider.list_models()]
 
-        async def list_models_per_provider() -> AsyncIterable[list[InferenceModelResponse]]:
-            model_listers: list[Awaitable[list[InferenceModelResponse]]] = [
+        async def list_models_per_provider() -> AsyncIterable[list[FoundationModelResponse]]:
+            model_listers: list[Awaitable[list[FoundationModelResponse]]] = [
                 generator_to_awaitable(label, provider)
                 for label, provider in registry.by_label.items()
             ]
@@ -113,13 +113,13 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             provider_type: ProviderType,
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ):
-        async def list_models() -> AsyncGenerator[InferenceModelResponse, None]:
+        async def list_models() -> AsyncGenerator[FoundationModelResponse, None]:
             for label, provider in registry.by_label.items():
                 if label.type != provider_type:
                     continue
 
                 async for model in provider.list_models():
-                    new_imr = InferenceModelResponse(**model.model_dump())
+                    new_imr = FoundationModelResponse(**model.model_dump())
                     if new_imr.label is None:
                         new_imr.label = label
 
@@ -133,12 +133,12 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             provider_id: ProviderID,
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ):
-        async def list_models() -> AsyncGenerator[InferenceModelResponse, None]:
+        async def list_models() -> AsyncGenerator[FoundationModelResponse, None]:
             label = ProviderLabel(type=provider_type, id=provider_id)
             provider = registry.by_label[label]
 
             async for model in provider.list_models():
-                new_imr = InferenceModelResponse(**model.model_dump())
+                new_imr = FoundationModelResponse(**model.model_dump())
                 if new_imr.label is None:
                     new_imr.label = label
 

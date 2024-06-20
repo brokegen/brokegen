@@ -4,7 +4,7 @@ from typing import TypeAlias, Optional, Self, Iterable, Any
 from pydantic import PositiveInt, BaseModel, ConfigDict
 from sqlalchemy import Column, Integer, String, DateTime, JSON, Double, select, UniqueConstraint, func, or_
 
-from _util.typing import ChatSequenceID, TemplatedPromptText, InferenceModelRecordID, InferenceModelHumanID
+from _util.typing import ChatSequenceID, TemplatedPromptText, FoundationModelRecordID, FoundationModelHumanID
 from client.database import Base, HistoryDB
 from providers.orm import ProviderLabel
 
@@ -13,9 +13,9 @@ InferenceReason: TypeAlias = str
 """TODO: Should be an enum, but enums for SQLAlchemy take some work"""
 
 
-class InferenceModelLabel(BaseModel):
+class FoundationModelLabel(BaseModel):
     provider: ProviderLabel
-    human_id: InferenceModelHumanID
+    human_id: FoundationModelHumanID
 
     model_config = ConfigDict(
         extra='forbid',
@@ -23,9 +23,9 @@ class InferenceModelLabel(BaseModel):
     )
 
 
-class InferenceModelRecord(BaseModel):
-    id: InferenceModelRecordID
-    human_id: InferenceModelHumanID
+class FoundationModelRecord(BaseModel):
+    id: FoundationModelRecordID
+    human_id: FoundationModelHumanID
 
     first_seen_at: Optional[datetime] = None
     last_seen: Optional[datetime] = None
@@ -43,7 +43,7 @@ class InferenceModelRecord(BaseModel):
     )
 
 
-class InferenceModelResponse(InferenceModelRecord):
+class FoundationModelResponse(FoundationModelRecord):
     stats: Optional[dict] = None
     label: Optional[ProviderLabel] = None
 
@@ -53,14 +53,14 @@ class InferenceModelResponse(InferenceModelRecord):
     )
 
 
-class InferenceModelAddRequest(BaseModel):
+class FoundationModelAddRequest(BaseModel):
     """
     TODO: This should really inherit from the normal Record class, but:
 
     - frozen=True needs to get unset
     - provider_identifiers should be nullable, since model requests always come with Provider.identifiers
     """
-    human_id: InferenceModelHumanID
+    human_id: FoundationModelHumanID
 
     first_seen_at: Optional[datetime] = None
     last_seen: Optional[datetime] = None
@@ -76,11 +76,11 @@ class InferenceModelAddRequest(BaseModel):
     )
 
 
-class InferenceModelRecordOrm(Base):
+class FoundationeModelRecordOrm(Base):
     __tablename__ = 'InferenceModelRecords'
 
-    id: InferenceModelRecordID = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-    human_id: InferenceModelHumanID = Column(String, nullable=False)
+    id: FoundationModelRecordID = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
+    human_id: FoundationModelHumanID = Column(String, nullable=False)
 
     first_seen_at = Column(DateTime)
     last_seen = Column(DateTime)
@@ -118,7 +118,7 @@ class InferenceModelRecordOrm(Base):
                          name="all columns"),
     )
 
-    def merge_in_updates(self, model_in: InferenceModelRecord | InferenceModelAddRequest) -> Self:
+    def merge_in_updates(self, model_in: FoundationModelRecord | FoundationModelAddRequest) -> Self:
         # Update the last-seen date, if needed
         if model_in.first_seen_at is not None:
             if self.first_seen_at is None:
@@ -143,7 +143,7 @@ class InferenceModelRecordOrm(Base):
         return self
 
     def model_dump(self) -> Iterable[tuple[str, Any]]:
-        for column in InferenceModelRecordOrm.__mapper__.columns:
+        for column in FoundationeModelRecordOrm.__mapper__.columns:
             yield column.name, getattr(self, column.name)
 
     def as_json(self):
@@ -158,36 +158,36 @@ class InferenceModelRecordOrm(Base):
 
 
 def lookup_inference_model(
-        human_id: InferenceModelHumanID,
+        human_id: FoundationModelHumanID,
         provider_identifiers: str,
         history_db: HistoryDB,
-) -> InferenceModelRecordOrm:
+) -> FoundationeModelRecordOrm:
     return history_db.execute(
-        select(InferenceModelRecordOrm)
-        .where(InferenceModelRecordOrm.provider_identifiers == provider_identifiers,
-               InferenceModelRecordOrm.human_id == human_id)
-        .order_by(InferenceModelRecordOrm.last_seen.desc())
+        select(FoundationeModelRecordOrm)
+        .where(FoundationeModelRecordOrm.provider_identifiers == provider_identifiers,
+               FoundationeModelRecordOrm.human_id == human_id)
+        .order_by(FoundationeModelRecordOrm.last_seen.desc())
         .limit(1)
     ).scalar_one_or_none()
 
 
-def lookup_inference_model_detailed(
-        model_in: InferenceModelAddRequest,
+def lookup_foundation_model_detailed(
+        model_in: FoundationModelAddRequest,
         history_db: HistoryDB,
-) -> InferenceModelRecordOrm | None:
+) -> FoundationeModelRecordOrm | None:
     where_clauses = [
-        InferenceModelRecordOrm.human_id == model_in.human_id,
-        InferenceModelRecordOrm.provider_identifiers == model_in.provider_identifiers,
+        FoundationeModelRecordOrm.human_id == model_in.human_id,
+        FoundationeModelRecordOrm.provider_identifiers == model_in.provider_identifiers,
     ]
     # NULL will always return not equal in SQL, so check only if there's something to check
     if model_in.model_identifiers:
-        where_clauses.append(InferenceModelRecordOrm.model_identifiers == model_in.model_identifiers)
+        where_clauses.append(FoundationeModelRecordOrm.model_identifiers == model_in.model_identifiers)
     if model_in.combined_inference_parameters:
         where_clauses.append(
-            InferenceModelRecordOrm.combined_inference_parameters == model_in.combined_inference_parameters)
+            FoundationeModelRecordOrm.combined_inference_parameters == model_in.combined_inference_parameters)
 
     return history_db.execute(
-        select(InferenceModelRecordOrm)
+        select(FoundationeModelRecordOrm)
         .where(*where_clauses)
     ).scalar_one_or_none()
 
@@ -202,7 +202,7 @@ class InferenceEventOrm(Base):
     __tablename__ = 'InferenceEvents'
 
     id: InferenceEventID = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
-    model_record_id: InferenceModelRecordID = Column(Integer, nullable=False)
+    model_record_id: FoundationModelRecordID = Column(Integer, nullable=False)
 
     prompt_tokens = Column(Integer)
     prompt_eval_time = Column(Double)
@@ -257,19 +257,19 @@ class InferenceEventOrm(Base):
 def lookup_inference_model_for_event_id(
         inference_id: InferenceEventID,
         history_db: HistoryDB,
-) -> InferenceModelRecordOrm | None:
+) -> FoundationeModelRecordOrm | None:
     return history_db.execute(
-        select(InferenceModelRecordOrm)
-        .join(InferenceEventOrm, InferenceEventOrm.model_record_id == InferenceModelRecordOrm.id)
+        select(FoundationeModelRecordOrm)
+        .join(InferenceEventOrm, InferenceEventOrm.model_record_id == FoundationeModelRecordOrm.id)
         .where(InferenceEventOrm.id == inference_id)
     ).scalar_one_or_none()
 
 
 def inject_inference_stats(
-        models: Iterable[InferenceModelRecord],
+        models: Iterable[FoundationModelRecord],
         history_db: HistoryDB,
         include_all: bool = False
-) -> Iterable[tuple[InferenceModelResponse, tuple]]:
+) -> Iterable[tuple[FoundationModelResponse, tuple]]:
     for inference_model in models:
         query = (
             select(
@@ -321,7 +321,7 @@ def inject_inference_stats(
                 if query_result[3] and query_result[4]:
                     stats_dict["response token/sec"] = query_result[3] / query_result[4]
 
-        statsed = InferenceModelResponse(**inference_model.model_dump())
+        statsed = FoundationModelResponse(**inference_model.model_dump())
         statsed.stats = stats_dict
 
         sort_keys = (

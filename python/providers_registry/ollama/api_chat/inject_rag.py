@@ -18,7 +18,7 @@ from inference.continuation import InferenceOptions, AutonamingOptions
 from inference.iterators import tee_to_console_output, stream_bytes_to_json, consolidate_and_call, dump_to_bytes
 from inference.prompting.templating import apply_llm_template
 from client.database import HistoryDB
-from providers.inference_models.orm import InferenceEventOrm, InferenceReason, InferenceModelRecordOrm
+from providers.inference_models.orm import InferenceEventOrm, InferenceReason, FoundationeModelRecordOrm
 from providers_registry.ollama.api_chat.converter import convert_chat_to_generate
 from providers_registry.ollama.api_chat.intercept import do_capture_chat_messages
 from providers_registry.ollama.api_chat.logging import ollama_log_indexer, ollama_response_consolidator, \
@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 async def do_proxy_chat_rag(
         original_request: starlette.requests.Request,
         request_content_json: OllamaRequestContentJSON,
-        inference_model: InferenceModelRecordOrm,
+        inference_model: FoundationeModelRecordOrm,
         inference_options: InferenceOptions,
         autonaming_options: AutonamingOptions,
         retrieval_label: RetrievalLabel,

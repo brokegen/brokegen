@@ -11,7 +11,7 @@ from starlette.background import BackgroundTask
 from _util.json import JSONDict
 from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks
 from _util.status import ServerStatusHolder
-from _util.typing import InferenceModelHumanID
+from _util.typing import FoundationModelHumanID
 from audit.content_scrubber import scrub_json
 from audit.http import AuditDB, get_db, HttpEvent
 from inference.iterators import stream_bytes_to_json, tee_to_console_output, dump_to_bytes, consolidate_and_call
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 async def keepalive_wrapper(
-        inference_model_human_id: InferenceModelHumanID,
+        inference_model_human_id: FoundationModelHumanID,
         real_response_maker: Awaitable[JSONStreamingResponse],
         status_holder: ServerStatusHolder,
         allow_non_ollama_fields: bool = False,

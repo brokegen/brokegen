@@ -12,11 +12,11 @@ from fastapi import Request
 import providers
 import providers_registry
 from _util.json import safe_get
-from _util.typing import InferenceModelHumanID
+from _util.typing import FoundationModelHumanID
 from audit.http import AuditDB
 from client.database import HistoryDB
-from providers.inference_models.orm import InferenceModelRecord, InferenceModelRecordOrm, inject_inference_stats, \
-    InferenceModelResponse
+from providers.inference_models.orm import FoundationModelRecord, FoundationeModelRecordOrm, inject_inference_stats, \
+    FoundationModelResponse
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry, BaseProvider
 from providers_registry.ollama.json import OllamaEventBuilder
@@ -40,7 +40,7 @@ async def do_list_available_models(
         provider: "providers.ollama.ExternalOllamaProvider",
         history_db: HistoryDB,
         audit_db: AuditDB,
-) -> AsyncGenerator[InferenceModelResponse, None]:
+) -> AsyncGenerator[FoundationModelResponse, None]:
     intercept = OllamaEventBuilder("ollama:/api/tags", audit_db)
     cached_accessed_at = intercept.wrapped_event.accessed_at
 
@@ -59,7 +59,7 @@ async def do_list_available_models(
 
     response: starlette.responses.Response = await intercept.wrap_response(response)
 
-    available_models_generator: Generator[InferenceModelRecord, None, None] = \
+    available_models_generator: Generator[FoundationModelRecord, None, None] = \
         build_models_from_api_tags(
             await provider.make_record(),
             cached_accessed_at,
@@ -68,17 +68,17 @@ async def do_list_available_models(
         )
 
     async def api_show_injector(
-            inference_models: Generator[InferenceModelRecord, None, None]
-    ) -> Generator[InferenceModelRecord, None, None]:
-        inference_model: InferenceModelRecord
+            inference_models: Generator[FoundationModelRecord, None, None]
+    ) -> Generator[FoundationModelRecord, None, None]:
+        inference_model: FoundationModelRecord
         for inference_model in inference_models:
-            inference_model_orm: InferenceModelRecordOrm
+            inference_model_orm: FoundationeModelRecordOrm
             inference_model_orm = await do_api_show(inference_model.human_id, history_db, audit_db)
-            yield InferenceModelRecord.from_orm(inference_model_orm)
+            yield FoundationModelRecord.from_orm(inference_model_orm)
 
     # NB This sorting is basically useless, because we don't have a way to sort models across providers.
     # NB Swift JSON decode does not preserve order, because JSON dict spec does not preserve order.
-    models_and_sort_keys: Iterable[tuple[InferenceModelResponse, tuple]] = \
+    models_and_sort_keys: Iterable[tuple[FoundationModelResponse, tuple]] = \
         inject_inference_stats(
             [amodel async for amodel in api_show_injector(available_models_generator)],
             history_db)
@@ -116,7 +116,7 @@ async def do_api_tags(
         )
 
         # Run an /api/show request on each /api/tags request, also.
-        # Otherwise we have have-built InferenceModels, and due to how we implemented Providers, sometimes we can't access the original.
+        # Otherwise we have have-built FoundationModels, and due to how we implemented Providers, sometimes we can't access the original.
         # In particular, the model options for x86 vs arm "providers" get weird.
         for inference_model in inference_models:
             if (
@@ -131,10 +131,10 @@ async def do_api_tags(
 
 
 async def do_api_show(
-        model_name: InferenceModelHumanID,
+        model_name: FoundationModelHumanID,
         history_db: HistoryDB,
         audit_db: AuditDB,
-) -> InferenceModelRecordOrm:
+) -> FoundationeModelRecordOrm:
     intercept = OllamaEventBuilder("ollama:/api/show", audit_db)
     logger.debug(f"ollama proxy: start handler for POST /api/show")
 

@@ -23,5 +23,5 @@ LLMs are usually trained with ChatML surrounding the 'assistant' token.
 ChatMessageID: TypeAlias = pydantic.PositiveInt
 ChatSequenceID: TypeAlias = pydantic.PositiveInt
 
-InferenceModelRecordID: TypeAlias = PositiveInt
-InferenceModelHumanID: TypeAlias = str
+FoundationModelRecordID: TypeAlias = PositiveInt
+FoundationModelHumanID: TypeAlias = str

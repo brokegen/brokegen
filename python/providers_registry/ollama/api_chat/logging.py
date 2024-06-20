@@ -9,7 +9,7 @@ from _util.typing import PromptText
 from client.chat_message import ChatMessageOrm
 from client.chat_sequence import ChatSequence
 from client.database import HistoryDB
-from providers.inference_models.orm import InferenceEventOrm, InferenceModelRecordOrm
+from providers.inference_models.orm import InferenceEventOrm, FoundationeModelRecordOrm
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ def finalize_inference_job(
 
 async def inference_event_logger(
         consolidated_response: OllamaResponseContentJSON,
-        inference_model: InferenceModelRecordOrm,
+        inference_model: FoundationeModelRecordOrm,
         history_db: HistoryDB,
 ) -> InferenceEventOrm:
     inference_event = InferenceEventOrm(

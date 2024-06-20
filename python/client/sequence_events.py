@@ -8,7 +8,7 @@ from pydantic import BaseModel, Json
 from sqlalchemy import select
 
 from _util.json import safe_get
-from _util.typing import InferenceModelRecordID, ChatSequenceID
+from _util.typing import FoundationModelRecordID, ChatSequenceID
 from client.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import InferenceEventOrm, InferenceReason, InferenceEventID
 
@@ -42,7 +42,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
     @router_ish.post("/models/{model_record_id:int}/inference-events")
     def construct_inference_event(
             response: fastapi.Response,
-            model_record_id: InferenceModelRecordID,
+            model_record_id: FoundationModelRecordID,
             inference_event_in: InferenceEventIn,
             history_db: HistoryDB = Depends(get_history_db),
     ) -> InferenceEventAddResponse:

@@ -17,7 +17,7 @@ from _util.typing import ChatSequenceID, PromptText
 from audit.http import AuditDB
 from inference.continuation import InferenceOptions
 from client.database import HistoryDB
-from providers.inference_models.orm import InferenceModelRecord, InferenceModelResponse, InferenceModelRecordOrm
+from providers.inference_models.orm import FoundationModelRecord, FoundationModelResponse, FoundationeModelRecordOrm
 from providers.orm import ProviderLabel, ProviderRecord, ProviderType
 
 logger = logging.getLogger(__name__)
@@ -34,8 +34,8 @@ class BaseProvider:
 
     @abstractmethod
     def list_models(self) -> (
-            AsyncGenerator[InferenceModelRecord | InferenceModelResponse, None]
-            | AsyncIterable[InferenceModelRecord | InferenceModelResponse]):
+            AsyncGenerator[FoundationModelRecord | FoundationModelResponse, None]
+            | AsyncIterable[FoundationModelRecord | FoundationModelResponse]):
         """
         Method not marked async because it returns AsyncGenerator
         """
@@ -45,7 +45,7 @@ class BaseProvider:
     async def chat(
             self,
             sequence_id: ChatSequenceID,
-            inference_model: InferenceModelRecordOrm,
+            inference_model: FoundationeModelRecordOrm,
             inference_options: InferenceOptions,
             retrieval_context: Awaitable[PromptText | None],
             status_holder: ServerStatusHolder,
@@ -132,7 +132,7 @@ class ProviderRegistry(_Borg):
 
     def provider_from(
             self,
-            inference_model: InferenceModelRecord | InferenceModelResponse,
+            inference_model: FoundationModelRecord | FoundationModelResponse,
     ) -> ProviderLabel | None:
         matching_provider: BaseProvider | None = None
         for provider_record, provider in self.by_record.items():
@@ -143,7 +143,7 @@ class ProviderRegistry(_Borg):
 
     def provider_label_from(
             self,
-            inference_model: InferenceModelRecord | InferenceModelResponse,
+            inference_model: FoundationModelRecord | FoundationModelResponse,
     ) -> ProviderLabel | None:
         matching_provider: BaseProvider | None = self.provider_from(inference_model)
         if matching_provider is None:

@@ -11,9 +11,9 @@ from providers_registry.ollama.json import OllamaEventBuilder
 from providers_registry.ollama.model_routes import do_api_show, _real_ollama_client
 from inference.prompting.templating import apply_llm_template
 from client.database import HistoryDB
-from providers.inference_models.orm import InferenceModelRecordOrm, InferenceEventOrm, lookup_inference_model, \
+from providers.inference_models.orm import FoundationeModelRecordOrm, InferenceEventOrm, lookup_inference_model, \
     InferenceReason
-from _util.typing import InferenceModelHumanID
+from _util.typing import FoundationModelHumanID
 from providers.orm import ProviderLabel, ProviderRecord
 from providers.registry import ProviderRegistry
 
@@ -21,9 +21,9 @@ logger = logging.getLogger(__name__)
 
 
 async def lookup_model_offline(
-        model_name: InferenceModelHumanID,
+        model_name: FoundationModelHumanID,
         history_db: HistoryDB,
-) -> Tuple[InferenceModelRecordOrm, ProviderRecord]:
+) -> Tuple[FoundationeModelRecordOrm, ProviderRecord]:
     provider = await ProviderRegistry().try_make(ProviderLabel(type="ollama", id="http://localhost:11434"))
     if provider is None:
         raise HTTPException(500, "No Provider loaded")
@@ -34,16 +34,16 @@ async def lookup_model_offline(
         raise HTTPException(400, "Trying to look up model that doesn't exist, you should create it first")
     if not safe_get(model.combined_inference_parameters, 'template'):
         logger.error(f"No Ollama template info for {model.human_id}, fill it in with an /api/show proxy call")
-        raise HTTPException(500, "No model template available, confirm that InferenceModelRecords are complete")
+        raise HTTPException(500, "No model template available, confirm that FoundationModelRecords are complete")
 
     return model, provider_record
 
 
 async def lookup_model(
-        model_name: InferenceModelHumanID,
+        model_name: FoundationModelHumanID,
         history_db: HistoryDB,
         audit_db: AuditDB,
-) -> Tuple[InferenceModelRecordOrm, ProviderRecord]:
+) -> Tuple[FoundationeModelRecordOrm, ProviderRecord]:
     try:
         return await lookup_model_offline(model_name, history_db)
     except (ValueError, HTTPException):

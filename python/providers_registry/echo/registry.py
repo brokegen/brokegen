@@ -13,8 +13,8 @@ from client.sequence_get import do_get_sequence
 from inference.continuation import InferenceOptions
 from inference.iterators import tee_to_console_output, consolidate_and_call
 from inference.logging import inference_event_logger, construct_new_sequence_from
-from providers.inference_models.orm import InferenceModelRecord, InferenceModelResponse, InferenceModelAddRequest, \
-    lookup_inference_model_detailed, InferenceModelRecordOrm
+from providers.inference_models.orm import FoundationModelRecord, FoundationModelResponse, FoundationModelAddRequest, \
+    lookup_foundation_model_detailed, FoundationeModelRecordOrm
 from providers.orm import ProviderType, ProviderLabel, ProviderRecord
 from providers.registry import BaseProvider, ProviderRegistry, ProviderFactory
 
@@ -86,11 +86,11 @@ class EchoProvider(BaseProvider):
         )
 
     async def list_models(self) -> (
-            AsyncGenerator[InferenceModelRecord | InferenceModelResponse, None]
-            | AsyncIterable[InferenceModelRecord | InferenceModelResponse]
+            AsyncGenerator[FoundationModelRecord | FoundationModelResponse, None]
+            | AsyncIterable[FoundationModelRecord | FoundationModelResponse]
     ):
         access_time = datetime.now(tz=timezone.utc)
-        model_in = InferenceModelAddRequest(
+        model_in = FoundationModelAddRequest(
             human_id=f"echo-{self.provider_id}",
             first_seen_at=access_time,
             last_seen=access_time,
@@ -101,25 +101,25 @@ class EchoProvider(BaseProvider):
 
         history_db: HistoryDB = next(get_history_db())
 
-        maybe_model = lookup_inference_model_detailed(model_in, history_db)
+        maybe_model = lookup_foundation_model_detailed(model_in, history_db)
         if maybe_model is not None:
             maybe_model.merge_in_updates(model_in)
             history_db.add(maybe_model)
             history_db.commit()
 
-            yield InferenceModelRecord.from_orm(maybe_model)
+            yield FoundationModelRecord.from_orm(maybe_model)
 
         else:
-            new_model = InferenceModelRecordOrm(**model_in.model_dump())
+            new_model = FoundationeModelRecordOrm(**model_in.model_dump())
             history_db.add(new_model)
             history_db.commit()
 
-            yield InferenceModelRecord.from_orm(new_model)
+            yield FoundationModelRecord.from_orm(new_model)
 
     def chat(
             self,
             sequence_id: ChatSequenceID,
-            inference_model: InferenceModelRecordOrm,
+            inference_model: FoundationeModelRecordOrm,
             inference_options: InferenceOptions,
             retrieval_context: Awaitable[PromptText | None],
             status_holder: ServerStatusHolder,

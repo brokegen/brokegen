@@ -12,7 +12,7 @@ from _util.typing import ChatSequenceID, RoleName, PromptText, ChatMessageID
 from client.chat_message import ChatMessageOrm, ChatMessage
 from client.chat_sequence import ChatSequence, lookup_sequence_parents
 from client.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import InferenceModelRecordOrm, lookup_inference_model_for_event_id
+from providers.inference_models.orm import FoundationeModelRecordOrm, lookup_inference_model_for_event_id
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ class InfoMessageOut(BaseModel):
     content: PromptText
 
 
-def translate_model_info(model0: InferenceModelRecordOrm | None) -> InfoMessageOut:
+def translate_model_info(model0: FoundationeModelRecordOrm | None) -> InfoMessageOut:
     if model0 is None:
         return InfoMessageOut(
             role='model config',
@@ -43,8 +43,8 @@ def translate_model_info(model0: InferenceModelRecordOrm | None) -> InfoMessageO
 
 
 def translate_model_info_diff(
-        model0: InferenceModelRecordOrm | None,
-        model1: InferenceModelRecordOrm,
+        model0: FoundationeModelRecordOrm | None,
+        model1: FoundationeModelRecordOrm,
 ) -> InfoMessageOut | None:
     if model0 is None:
         return translate_model_info(model1)
@@ -70,7 +70,7 @@ def do_get_sequence(
         include_model_info_diffs: bool = False,
 ) -> list[ChatMessage | InfoMessageOut]:
     messages_list: list[ChatMessage | InfoMessageOut] = []
-    last_seen_model: InferenceModelRecordOrm | None = None
+    last_seen_model: FoundationeModelRecordOrm | None = None
 
     sequence: ChatSequence
     for sequence in lookup_sequence_parents(id, history_db):

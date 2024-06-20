@@ -12,7 +12,7 @@ from _util.status import ServerStatusHolder
 from audit.http import AuditDB, get_db as get_audit_db
 from client.database import HistoryDB, get_db as get_history_db
 from inference.continuation import select_continuation_model, InferenceOptions, AutonamingOptions
-from providers.inference_models.orm import InferenceReason, InferenceModelRecordOrm
+from providers.inference_models.orm import InferenceReason, FoundationeModelRecordOrm
 from providers.registry import ProviderRegistry
 from providers_registry.ollama.api_chat.inject_rag import do_proxy_chat_rag
 from providers_registry.ollama.chat_routes import do_proxy_generate, lookup_model_offline
