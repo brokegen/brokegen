@@ -42,6 +42,11 @@ class CSCSettingsService: Observable, ObservableObject {
             set { override.pinChatSequenceDesc = newValue }
         }
 
+        var showMessageHeaders: Bool {
+            get { override.showMessageHeaders ?? true }
+            set { override.showMessageHeaders = newValue }
+        }
+
         var showOIMPicker: Bool {
             get { override.showOIMPicker ?? defaults.showOIMPicker }
             set { override.showOIMPicker = newValue }

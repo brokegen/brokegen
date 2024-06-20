@@ -114,6 +114,10 @@ struct CSCSettingsView: View {
                 })
                 .frame(maxWidth: .infinity)
 
+                WidePicker(defaultIsOn: true,
+                           overrideIsOn: $settings.override.showMessageHeaders,
+                           labelText: "Show ChatMessage headers in the UI", trueText: "show headers", falseText: "don't show headers")
+
                 WidePicker(defaultIsOn: settings.defaults.showOIMPicker,
                            overrideIsOn: $settings.override.showOIMPicker,
                            labelText: "Show InferenceModel override picker in ChatSequence Views", trueText: "show", falseText: "don't show")

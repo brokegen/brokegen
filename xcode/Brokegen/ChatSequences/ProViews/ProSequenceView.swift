@@ -411,7 +411,7 @@ struct ProSequenceView: View {
 
                         ScrollViewReader { proxy in
                             ScrollView(.vertical) {
-                                LazyVStack(spacing: 0) {
+                                LazyVStack(alignment: .leading, spacing: 0) {
                                     if !settings.pinChatSequenceDesc {
                                         ChatNameReadOnly(
                                             Binding(
@@ -422,31 +422,41 @@ struct ProSequenceView: View {
                                     }
 
                                     ForEach(viewModel.sequence.messages) { message in
-                                        ProMessageView(message)
+                                        let indentMessage = !settings.showMessageHeaders && message.role != "user"
+
+                                        ProMessageView(.legacy(message), showMessageHeaders: settings.showMessageHeaders)
+                                            .padding(.leading, indentMessage ? 24.0 : 0.0)
                                     }
 
                                     if viewModel.responseInEdit != nil {
-                                        ProMessageView(viewModel.responseInEdit!, stillUpdating: true)
+                                        ProMessageView(.legacy(viewModel.responseInEdit!), stillUpdating: true, showMessageHeaders: settings.showMessageHeaders)
                                     }
 
                                     if settings.showOIMPicker {
-                                        OFMPicker(
-                                            boxLabel: "Select a different inference model for next message:",
-                                            selectedModelBinding: $viewModel.continuationInferenceModel,
-                                            showModelPicker: $showContinuationModelPicker,
-                                            geometry: geometry,
-                                            allowClear: true)
-                                        .frame(maxWidth: 800)
-                                        .foregroundStyle(Color(.disabledControlTextColor))
-                                        // TODO: We can eventually make this something like pull-to-refresh, putting it relatively far below the fold.
-                                        .padding(.bottom, 120)
-                                        .padding(.top, max(
-                                            120,
-                                            geometry.size.height * 0.2
-                                        ))
-                                        .contentShape(Rectangle())
-                                        .onHover { isHovered in
-                                            modelPickerHovered = isHovered
+                                        HStack(spacing: 0) {
+                                            Spacer()
+
+                                            OFMPicker(
+                                                boxLabel: "Select a different inference model for next message:",
+                                                selectedModelBinding: $viewModel.continuationInferenceModel,
+                                                showModelPicker: $showContinuationModelPicker,
+                                                geometry: geometry,
+                                                allowClear: true)
+                                            .frame(maxWidth: 800)
+                                            .foregroundStyle(Color(.disabledControlTextColor))
+                                            // TODO: We can eventually make this something like pull-to-refresh, putting it relatively far below the fold.
+                                            .padding(.bottom, 120)
+                                            .padding(.top, max(
+                                                120,
+                                                geometry.size.height * 0.2
+                                            ))
+                                            .contentShape(Rectangle())
+                                            .onHover { isHovered in
+                                                modelPickerHovered = isHovered
+                                            }
+                                            .layoutPriority(0.2)
+
+                                            Spacer()
                                         }
                                     }
                                 }

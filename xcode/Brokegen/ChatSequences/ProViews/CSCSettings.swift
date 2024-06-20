@@ -10,6 +10,8 @@ struct PersistentDefaultCSUISettings {
     @AppStorage("defaultUiSettings.forceRetrieval")
     var forceRetrieval: Bool = false
 
+    // Placeholder: non-global settings
+
     @AppStorage("defaultUiSettings.showOIMPicker")
     var showOIMPicker: Bool = false
 
@@ -26,6 +28,8 @@ struct OverrideCSUISettings {
     var forceRetrieval: Bool? = nil
 
     var pinChatSequenceDesc: Bool? = nil
+    var showMessageHeaders: Bool? = nil
+
     var showOIMPicker: Bool? = nil
     var allowNewlineSubmit: Bool? = nil
     var stayAwakeDuringInference: Bool? = nil

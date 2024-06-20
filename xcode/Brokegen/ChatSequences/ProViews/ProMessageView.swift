@@ -4,42 +4,22 @@ struct ProMessageView: View {
     let message: MessageLike
     let sequence: ChatSequence?
     let stillExpectingUpdate: Bool
+    let showMessageHeaders: Bool
 
     @State var expandContent: Bool
     @State var isHovered: Bool = false
 
     init(
-        _ message: Message,
-        sequence: ChatSequence? = nil,
-        stillUpdating: Bool = false
-    ) {
-        self.init(MessageLike.legacy(message), sequence: sequence, stillUpdating: stillUpdating)
-    }
-
-    init(
-        _ message: ChatMessage,
-        sequence: ChatSequence? = nil,
-        stillUpdating: Bool = false
-    ) {
-        self.init(MessageLike.stored(message), sequence: sequence, stillUpdating: stillUpdating)
-    }
-
-    init(
-        _ message: TemporaryChatMessage,
-        sequence: ChatSequence? = nil,
-        stillUpdating: Bool = false
-    ) {
-        self.init(MessageLike.temporary(message), sequence: sequence, stillUpdating: stillUpdating)
-    }
-
-    init(
         _ message: MessageLike,
-        sequence: ChatSequence?,
-        stillUpdating: Bool
+        sequence: ChatSequence? = nil,
+        stillUpdating stillExpectingUpdate: Bool = false,
+        showMessageHeaders: Bool
     ) {
         self.message = message
         self.sequence = sequence
-        self.stillExpectingUpdate = stillUpdating
+        self.stillExpectingUpdate = stillExpectingUpdate
+        self.showMessageHeaders = showMessageHeaders
+
         self._expandContent = State(initialValue: message.role != "model config")
     }
 
@@ -108,7 +88,9 @@ struct ProMessageView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            headerSection
+            if showMessageHeaders {
+                headerSection
+            }
 
             if stillExpectingUpdate && (message.content.isEmpty && expandContent) {
                 ProgressView()
@@ -155,14 +137,16 @@ If you're willing, could you please share some ideas or topics you think would b
 Your input will help me generate more targeted and valuable responses. Let's collaborate to create something exciting together!
 """, createdAt: Date(timeIntervalSinceNow: +5))
 
-    return VStack {
+    let showMessageHeaders = true
+
+    return VStack(alignment: .leading, spacing: 0) {
         ProMessageView(
-            ChatMessage(serverId: -3, role: "user", content: "Hello this is a prompt", createdAt: Date(timeIntervalSinceNow: -604_800)))
+            .stored(ChatMessage(serverId: -3, role: "user", content: "Hello this is a prompt", createdAt: Date(timeIntervalSinceNow: -604_800))), showMessageHeaders: showMessageHeaders)
 
         ProMessageView(
-            TemporaryChatMessage(role: "clown", content: "Hello! How can I help you today with your prompt? Please provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now))
+            .temporary(TemporaryChatMessage(role: "clown", content: "Hello! How can I help you today with your prompt? Please provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now)), showMessageHeaders: showMessageHeaders)
 
-        ProMessageView(message3)
+        ProMessageView(.temporary(message3), showMessageHeaders: showMessageHeaders)
 
         Spacer()
     }
