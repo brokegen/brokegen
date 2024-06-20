@@ -84,12 +84,17 @@ class ChatSyncService: Observable, ObservableObject {
             loadedChatSequences.insert(updatedSequence, at: 0)
         }
 
-        // TODO: .filter is throwing an error, so just do it manually
-        for clientModel in chatSequenceClientModels {
-            if clientModel.sequence.serverId == updatedSequence.serverId {
+        let staticSequenceId = updatedSequence.serverId
+        let predicate = #Predicate<OneSequenceViewModel> {
+            $0.sequence.serverId == staticSequenceId
+        }
+
+        do {
+            for clientModel in try chatSequenceClientModels.filter(predicate) {
                 clientModel.sequence = updatedSequence
             }
         }
+        catch {}
     }
 
     func updateSequence(_ originalSequenceId: ChatSequenceServerID?, withNewSequence updatedSequenceId: ChatSequenceServerID) async {
