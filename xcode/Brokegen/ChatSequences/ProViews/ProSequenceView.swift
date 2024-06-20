@@ -429,7 +429,10 @@ struct ProSequenceView: View {
                                     }
 
                                     if viewModel.responseInEdit != nil {
+                                        let indentMessage = !settings.showMessageHeaders
+
                                         ProMessageView(.legacy(viewModel.responseInEdit!), stillUpdating: true, showMessageHeaders: settings.showMessageHeaders)
+                                            .padding(.leading, indentMessage ? 24.0 : 0.0)
                                     }
 
                                     if settings.showOIMPicker {

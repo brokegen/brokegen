@@ -16,9 +16,13 @@ class OneSequenceViewModel: ObservableObject {
     var promptInEdit: String = ""
     var submitting: Bool = false
 
-    /// This field does double duty to indicate whether we are currently receiving data.
-    /// `nil` before first data, and then reset to `nil` once we're done receiving.
     var responseInEdit: Message? = nil
+    var receiving: Bool {
+        /// This field does double duty to indicate whether we are currently receiving data.
+        /// `nil` before first data, and then reset to `nil` once we're done receiving.
+        get { responseInEdit != nil }
+    }
+
     @ObservationIgnored var submittedAssistantResponseSeed: String? = nil
     @ObservationIgnored private var receivingStreamer: AnyCancellable? = nil
     var serverStatus: String? = nil
