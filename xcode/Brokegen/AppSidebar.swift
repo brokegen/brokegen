@@ -124,7 +124,7 @@ struct AppSidebar: View {
             }
 
             NavigationLink(destination: FoundationModelSettingsView(appSettings: appSettings)) {
-                ASRow("Inference Models", showChevron: true)
+                ASRow("Foundation Models", showChevron: true)
             }
 
             ASRow("Retrieval and Vector Stores", showChevron: true)
@@ -193,7 +193,7 @@ struct AppSidebar: View {
                         NavigationLink(destination: {
                             ModelPickerView()
                         }) {
-                            ASRow("Inference Models")
+                            ASRow("Foundation Models")
                         }
 
                         Divider()
