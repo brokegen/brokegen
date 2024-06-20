@@ -3,7 +3,7 @@ import SwiftUI
 @Observable
 class CSCSettingsService: Observable, ObservableObject {
     @AppStorage("useSimplifiedSequenceViews")
-    @ObservationIgnored public var useSimplifiedSequenceViews: Bool = false
+    @ObservationIgnored public var useSimplifiedSequenceViews: Bool = true
 
     @ObservationIgnored let defaults: PersistentDefaultCSUISettings = PersistentDefaultCSUISettings()
     var perSequenceUiSettings: [ChatSequence : OverrideCSUISettings] = [:]
