@@ -43,7 +43,7 @@ class CSCSettingsService: Observable, ObservableObject {
         }
 
         var showMessageHeaders: Bool {
-            get { override.showMessageHeaders ?? true }
+            get { override.showMessageHeaders ?? defaults.showMessageHeaders }
             set { override.showMessageHeaders = newValue }
         }
 

@@ -10,7 +10,11 @@ struct PersistentDefaultCSUISettings {
     @AppStorage("defaultUiSettings.forceRetrieval")
     var forceRetrieval: Bool = false
 
-    // Placeholder: non-global settings
+//    @AppStorage("defaultUiSettings.pinChatSequenceDesc")
+//    var pinChatSequenceDesc: Bool? = nil
+
+    @AppStorage("defaultUiSettings.showMessageHeaders")
+    var showMessageHeaders: Bool = true
 
     @AppStorage("defaultUiSettings.showOIMPicker")
     var showOIMPicker: Bool = false
