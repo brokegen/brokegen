@@ -223,24 +223,44 @@ struct MiniSequencePickerSidebar: View {
                 Text("Chats")
             }
         }) {
-            NavigationLink(destination: {
-                BlankOneSequenceView()
-            }) {
-                HStack {
+            if chatSettingsService.useSimplifiedSequenceViews {
+                NavigationLink(destination: {
+                    BlankOneSequenceView()
+                }) {
+                    HStack {
+                        Image(systemName: "plus")
+                            .padding(.trailing, 0)
+                            .layoutPriority(0.2)
+                        Text("New Chat...")
+                            .layoutPriority(0.5)
+
+                        Spacer()
+                    }
+                    .contentShape(Rectangle())
+                    .foregroundStyle(Color.accentColor)
+                }
+                .padding(.leading, -24)
+                .padding(.trailing, -24)
+                .frame(maxWidth: .infinity)
+            }
+            else {
+                NavigationLink(destination: {
+                    ProSequenceView(
+                        OneSequenceViewModel.createBlank(chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
+                    )
+                }) {
                     Image(systemName: "plus")
                         .padding(.trailing, 0)
                         .layoutPriority(0.2)
-                    Text("New")
+                    Text("New Chat (experimental)")
                         .layoutPriority(0.5)
 
                     Spacer()
                 }
-                .contentShape(Rectangle())
-                .foregroundStyle(Color.accentColor)
+                .padding(.leading, -24)
+                .padding(.trailing, -24)
+                .frame(maxWidth: .infinity)
             }
-            .padding(.leading, -24)
-            .padding(.trailing, -24)
-            .frame(maxWidth: .infinity)
 
             if chatService.loadedChatSequences.isEmpty {
                 if navLimit <= 0 {
@@ -418,7 +438,7 @@ struct SequencePickerView: View {
                         OneSequenceViewModel.createBlank(chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
                     )
                 }) {
-                    Label("New Chat (ProSequenceView, experimental)", systemImage: "plus")
+                    Label("New Chat (experimental)", systemImage: "plus")
                         .buttonStyle(.accessoryBar)
                         .padding(12)
                 }
