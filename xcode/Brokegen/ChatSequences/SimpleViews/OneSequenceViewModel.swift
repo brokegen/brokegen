@@ -10,6 +10,7 @@ class OneSequenceViewModel: ObservableObject {
     var sequence: ChatSequence
     let chatService: ChatSyncService
     let settings: CSCSettingsService.SettingsProxy
+    let chatSettingsService: CSCSettingsService
     let appSettings: AppSettings
 
     var promptInEdit: String = ""
@@ -54,22 +55,24 @@ class OneSequenceViewModel: ObservableObject {
             inference: CSInferenceSettings()
         )
 
-        return OneSequenceViewModel(sequence: sequence, chatService: chatService, settings: settings, appSettings: appSettings)
+        return OneSequenceViewModel(sequence: sequence, chatService: chatService, settings: settings, chatSettingsService: chatSettingsService, appSettings: appSettings)
     }
 
     convenience init(_ sequence: ChatSequence, chatService: ChatSyncService, appSettings: AppSettings, chatSettingsService: CSCSettingsService) {
-        self.init(sequence: sequence, chatService: chatService, settings: chatSettingsService.settings(for: sequence), appSettings: appSettings)
+        self.init(sequence: sequence, chatService: chatService, settings: chatSettingsService.settings(for: sequence), chatSettingsService: chatSettingsService, appSettings: appSettings)
     }
 
     init(
         sequence: ChatSequence,
         chatService: ChatSyncService,
         settings: CSCSettingsService.SettingsProxy,
+        chatSettingsService: CSCSettingsService,
         appSettings: AppSettings
     ) {
         self.sequence = sequence
         self.chatService = chatService
         self.settings = settings
+        self.chatSettingsService = chatSettingsService
         self.appSettings = appSettings
     }
 
@@ -391,10 +394,16 @@ class OneSequenceViewModel: ObservableObject {
     }
 
     func replaceSequence(_ newSequenceId: ChatSequenceServerID) async {
+        // If our original sequence.serverId was nil, we need to reset/reattach our Settings, too.
+        let startedFromBlank = self.sequence.serverId == nil
+
         print("[DEBUG] Attempting to update OneSequenceViewModel to new_sequence_id: \(newSequenceId)")
-        await self.chatService.updateSequence(self.sequence.serverId, withNewSequence: newSequenceId)
-        // NB This call will update all ViewModels held by ChatService, which should include us, in the future.
-        // (Previously, there was a second update here, which probably caused a race condition.)
+        let newSequence = await self.chatService.updateSequence(self.sequence.serverId, withNewSequence: newSequenceId)
+
+        if startedFromBlank && newSequence != nil {
+            self.chatSettingsService.perSequenceUiSettings[newSequence!] = settings.override
+            self.chatSettingsService.perSequenceInferenceSettings[newSequence!] = settings.inference
+        }
     }
 }
 

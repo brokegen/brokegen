@@ -97,7 +97,8 @@ class ChatSyncService: Observable, ObservableObject {
         catch {}
     }
 
-    func updateSequence(_ originalSequenceId: ChatSequenceServerID?, withNewSequence updatedSequenceId: ChatSequenceServerID) async {
+    func updateSequence(_ originalSequenceId: ChatSequenceServerID?, withNewSequence updatedSequenceId: ChatSequenceServerID) async -> ChatSequence? {
+        return nil
     }
 
     // MARK: - ChatSequence extend/continue
@@ -146,8 +147,8 @@ class DefaultChatSyncService: ChatSyncService {
         return try await doRefreshPinnedChatSequences(lookback: lookback, limit: limit)
     }
 
-    override func updateSequence(_ originalSequenceId: ChatSequenceServerID?, withNewSequence updatedSequenceId: ChatSequenceServerID) async {
-        _ = await doUpdateSequence(originalSequenceId: originalSequenceId, updatedSequenceId: updatedSequenceId)
+    override func updateSequence(_ originalSequenceId: ChatSequenceServerID?, withNewSequence updatedSequenceId: ChatSequenceServerID) async -> ChatSequence? {
+        return await doUpdateSequence(originalSequenceId: originalSequenceId, updatedSequenceId: updatedSequenceId)
     }
 
     // MARK: - ChatSequence extend/continue
