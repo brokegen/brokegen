@@ -4,7 +4,7 @@ import httpx
 import orjson
 import starlette
 import starlette.responses
-from fastapi import FastAPI, APIRouter, Depends
+from fastapi import FastAPI, APIRouter, Depends, HTTPException
 from starlette.requests import Request
 
 from _util.json import safe_get, JSONDict, safe_get_arrayed
@@ -64,43 +64,57 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
         inference_model_human_id = safe_get(request_content_json, "model")
         status_holder = ServerStatusHolder(f"Received /api/chat request for {inference_model_human_id}, processing")
 
-        inference_model, _ = await lookup_model_offline(
-            inference_model_human_id,
-            history_db,
-        )
-
-        if safe_get(request_content_json, 'options', 'temperature') is not None:
-            logger.debug(
-                f"Intentionally disabling Ollama client request for {request_content_json['options']['temperature']=}")
-            del request_content_json['options']['temperature']
-
-        last_message_images: JSONDict | None = safe_get_arrayed(request_content_json, 'messages', -1, 'images')
-        if last_message_images:
-            logger.info("Can't convert multimodal request, disabling RAG")
-            return await keepalive_wrapper(
+        try:
+            inference_model, _ = await lookup_model_offline(
                 inference_model_human_id,
-                forward_request(request, audit_db),
-                status_holder,
+                history_db,
             )
 
-        return await keepalive_wrapper(
-            inference_model_human_id,
-            do_proxy_chat_rag(
-                request,
-                request_content_json,
-                inference_model=inference_model,
-                inference_options=InferenceOptions(),
-                autonaming_options=AutonamingOptions(),
-                retrieval_label=RetrievalLabel(
-                    retrieval_policy="simple" if force_ollama_rag else "skip",
-                ),
-                history_db=history_db,
-                audit_db=audit_db,
-                capture_chat_messages=True,
-                status_holder=status_holder,
-            ),
-            status_holder,
-        )
+            if safe_get(request_content_json, 'options', 'temperature') is not None:
+                logger.debug(
+                    f"Intentionally disabling Ollama client request for {request_content_json['options']['temperature']=}")
+                del request_content_json['options']['temperature']
+
+            last_message_images: JSONDict | None = safe_get_arrayed(request_content_json, 'messages', -1, 'images')
+            if last_message_images:
+                logger.info("Can't convert multimodal request, disabling RAG")
+                return await keepalive_wrapper(
+                    inference_model_human_id,
+                    forward_request(request, audit_db),
+                    status_holder,
+                )
+
+            else:
+                return await keepalive_wrapper(
+                    inference_model_human_id,
+                    do_proxy_chat_rag(
+                        request,
+                        request_content_json,
+                        inference_model=inference_model,
+                        inference_options=InferenceOptions(),
+                        autonaming_options=AutonamingOptions(),
+                        retrieval_label=RetrievalLabel(
+                            retrieval_policy="simple" if force_ollama_rag else "skip",
+                        ),
+                        history_db=history_db,
+                        audit_db=audit_db,
+                        capture_chat_messages=True,
+                        status_holder=status_holder,
+                    ),
+                    status_holder,
+                )
+        except HTTPException as e:
+            return starlette.responses.JSONResponse(
+                content={
+                    "model": inference_model_human_id,
+                    "message": {
+                        "role": "assistant",
+                        "content": str(e),
+                    },
+                    "done": True,
+                },
+                status_code=200,
+            )
 
     # TODO: Using a router prefix breaks this, somehow
     @ollama_forwarder.head("/ollama-proxy/{ollama_head_path:path}")
