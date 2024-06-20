@@ -430,7 +430,7 @@ struct ProSequenceView: View {
                                     }
 
                                     if settings.showOIMPicker {
-                                        OIMPicker(
+                                        OFMPicker(
                                             boxLabel: "Select a different inference model for next message:",
                                             selectedModelBinding: $viewModel.continuationInferenceModel,
                                             showModelPicker: $showContinuationModelPicker,

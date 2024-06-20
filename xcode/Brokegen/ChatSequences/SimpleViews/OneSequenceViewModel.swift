@@ -33,7 +33,7 @@ class OneSequenceViewModel: ObservableObject {
     var showInferenceOptions: Bool = false
     var showRetrievalOptions: Bool = false
 
-    var continuationInferenceModel: InferenceModel? = nil
+    var continuationInferenceModel: FoundationModel? = nil
     var showAssistantResponseSeed: Bool = false
     var showSystemPromptOverride: Bool = false
 
@@ -160,7 +160,7 @@ class OneSequenceViewModel: ObservableObject {
     }
 
     func requestStart(
-        model continuationModelId: InferenceModelRecordID? = nil,
+        model continuationModelId: FoundationModelRecordID? = nil,
         withRetrieval: Bool = false
     ) -> Self {
         print("[INFO] OneSequenceViewModel.requestStart(\(continuationModelId), withRetrieval: \(withRetrieval))")
@@ -236,7 +236,7 @@ class OneSequenceViewModel: ObservableObject {
     }
 
     func requestContinue(
-        model continuationModelId: InferenceModelRecordID? = nil,
+        model continuationModelId: FoundationModelRecordID? = nil,
         withRetrieval: Bool = false
     ) -> Self {
         print("[INFO] OneSequenceViewModel.requestContinue(\(continuationModelId), withRetrieval: \(withRetrieval))")
@@ -286,7 +286,7 @@ class OneSequenceViewModel: ObservableObject {
     }
 
     func requestExtend(
-        model continuationModelId: InferenceModelRecordID? = nil,
+        model continuationModelId: FoundationModelRecordID? = nil,
         withRetrieval: Bool = false
     ) {
         print("[INFO] OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval))")

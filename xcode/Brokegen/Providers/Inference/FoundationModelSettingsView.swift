@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct InferenceModelSettingsView: View {
+struct FoundationModelSettingsView: View {
     @ObservedObject var appSettings: AppSettings
     
     @State private var showDefaultInferenceModelPicker = false
@@ -17,7 +17,7 @@ struct InferenceModelSettingsView: View {
                             .progressViewStyle(.linear)
                     }
 
-                    OIMPicker(
+                    OFMPicker(
                         boxLabel: "defaultInferenceModel",
                         selectedModelBinding: $appSettings.defaultInferenceModel,
                         showModelPicker: $showDefaultInferenceModelPicker,
@@ -25,7 +25,7 @@ struct InferenceModelSettingsView: View {
                         allowClear: true
                     )
 
-                    OIMPicker(
+                    OFMPicker(
                         boxLabel: "fallbackInferenceModel",
                         selectedModelBinding: $appSettings.fallbackInferenceModel,
                         showModelPicker: $showFallbackInferenceModelPicker,
@@ -33,7 +33,7 @@ struct InferenceModelSettingsView: View {
                         allowClear: true
                     )
 
-                    OIMPicker(
+                    OFMPicker(
                         boxLabel: "chatSummaryModel",
                         selectedModelBinding: $appSettings.chatSummaryModel,
                         showModelPicker: $showChatSummaryModelPicker,
@@ -41,7 +41,7 @@ struct InferenceModelSettingsView: View {
                         allowClear: true
                     )
 
-                    OIMPicker(
+                    OFMPicker(
                         boxLabel: "preferredEmbeddingModel",
                         selectedModelBinding: $appSettings.preferredEmbeddingModel,
                         showModelPicker: $showPreferredEmbeddingModelPicker,

@@ -10,20 +10,20 @@ func formatJson(_ jsonDict: [String : Any], indent: Int = 0) -> String {
     return stringMaker
 }
 
-struct OneInferenceModelView: View {
-    private var model: InferenceModel
+struct OneFoundationModelView: View {
+    private var model: FoundationModel
 
     @State private var modelAvailable: Bool
     @State private var expandContent = false
     @State private var isHovered = false
 
-    @Binding private var modelSelection: InferenceModel?
+    @Binding private var modelSelection: FoundationModel?
     private let enableModelSelection: Bool
 
     init(
-        model: InferenceModel,
+        model: FoundationModel,
         modelAvailable: Bool,
-        modelSelection: Binding<InferenceModel?>,
+        modelSelection: Binding<FoundationModel?>,
         enableModelSelection: Bool = true
     ) {
         self.model = model
@@ -119,9 +119,9 @@ struct OneInferenceModelView: View {
     }
 }
 
-struct OIMPicker: View {
+struct OFMPicker: View {
     let boxLabel: String
-    @Binding var selectedModelBinding: InferenceModel?
+    @Binding var selectedModelBinding: FoundationModel?
     @Binding var showModelPicker: Bool
     let geometry: GeometryProxy
     let allowClear: Bool
@@ -135,7 +135,7 @@ struct OIMPicker: View {
         ) {
             VStack(alignment: .leading, spacing: 36) {
                 if let model = selectedModelBinding {
-                    OneInferenceModelView(
+                    OneFoundationModelView(
                         model: model,
                         modelAvailable: true,
                         modelSelection: $selectedModelBinding,

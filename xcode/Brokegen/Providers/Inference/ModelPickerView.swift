@@ -1,18 +1,18 @@
 import SwiftUI
 
-fileprivate let INVALID_MODEL_ID: InferenceModelRecordID = -4
+fileprivate let INVALID_MODEL_ID: FoundationModelRecordID = -4
 
 struct ModelPickerView: View {
     @Environment(ProviderService.self) private var providerService
     @Environment(\.dismiss) var dismiss
 
-    @Binding private var modelSelection: InferenceModel?
+    @Binding private var modelSelection: FoundationModel?
     private var enableModelSelection: Bool
     private var hideDismissButton: Bool
     @State private var isDismissButtonHovered: Bool = false
 
     init(
-        modelSelection: Binding<InferenceModel?>? = nil
+        modelSelection: Binding<FoundationModel?>? = nil
     ) {
         if modelSelection != nil {
             self._modelSelection = modelSelection!
@@ -30,7 +30,7 @@ struct ModelPickerView: View {
         }
     }
 
-    var sortedModels: [InferenceModel] {
+    var sortedModels: [FoundationModel] {
         get {
             providerService.allModels
             .sorted {
@@ -54,7 +54,7 @@ struct ModelPickerView: View {
                 ScrollView {
                     VFlowLayout(spacing: 24) {
                         ForEach(sortedModels) { model in
-                            OneInferenceModelView(
+                            OneFoundationModelView(
                                 model: model,
                                 modelAvailable: providerService.availableModels.contains {
                                     $0.serverId == model.serverId
@@ -65,7 +65,7 @@ struct ModelPickerView: View {
                         }
                     }
 
-                    Text("End of loaded InferenceModels")
+                    Text("End of loaded FoundationModels")
                         .foregroundStyle(Color(.disabledControlTextColor))
                         .frame(height: 400)
                         .frame(maxWidth: .infinity)
@@ -74,7 +74,7 @@ struct ModelPickerView: View {
 
                 List {
                     ForEach(sortedModels) { model in
-                        OneInferenceModelView(
+                        OneFoundationModelView(
                             model: model,
                             modelAvailable: providerService.availableModels.contains {
                                 $0.serverId == model.serverId
@@ -88,7 +88,7 @@ struct ModelPickerView: View {
                     }
                 }
 
-                Text("End of loaded InferenceModels")
+                Text("End of loaded FoundationModels")
                     .foregroundStyle(Color(.disabledControlTextColor))
                     .frame(height: 400)
                     .frame(maxWidth: .infinity)
@@ -128,8 +128,8 @@ struct ModelPickerView: View {
     }
 }
 
-fileprivate func makeFakeModel() -> InferenceModel {
-    return InferenceModel(
+fileprivate func makeFakeModel() -> FoundationModel {
+    return FoundationModel(
         id: UUID(),
         serverId: 1000,
         humanId: "test-model:FP32",
@@ -166,7 +166,7 @@ fileprivate func makeFakeModel() -> InferenceModel {
 #Preview {
     struct ViewHolder: View {
         let providerService = ProviderService()
-        @State var modelSelection: InferenceModel? = nil
+        @State var modelSelection: FoundationModel? = nil
 
         init() {
             providerService.allModels = [

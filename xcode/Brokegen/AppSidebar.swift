@@ -123,7 +123,7 @@ struct AppSidebar: View {
                 ASRow("Providers", showChevron: true)
             }
 
-            NavigationLink(destination: InferenceModelSettingsView(appSettings: appSettings)) {
+            NavigationLink(destination: FoundationModelSettingsView(appSettings: appSettings)) {
                 ASRow("Inference Models", showChevron: true)
             }
 

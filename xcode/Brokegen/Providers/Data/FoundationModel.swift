@@ -41,10 +41,10 @@ extension JSON {
     }
 }
 
-typealias InferenceModelRecordID = Int
+typealias FoundationModelRecordID = Int
 typealias InferenceEventID = Int
 
-public struct InferenceModel: Identifiable {
+public struct FoundationModel: Identifiable {
     public let id: UUID
     public let serverId: Int
 
@@ -64,10 +64,10 @@ public struct InferenceModel: Identifiable {
     public let label: [String : JSON]?
 }
 
-extension InferenceModel {
-    static func fromData(_ data: Data) -> InferenceModel {
+extension FoundationModel {
+    static func fromData(_ data: Data) -> FoundationModel {
         let jsonModel = JSON(data)
-        return InferenceModel(jsonModel)
+        return FoundationModel(jsonModel)
     }
 
     init(_ jsonModel: [String: Any?]) {
@@ -88,8 +88,8 @@ extension InferenceModel {
             label: jsonModel["label"].dictionary)
     }
 
-    func replaceId(_ newClientId: UUID) -> InferenceModel {
-        return InferenceModel(
+    func replaceId(_ newClientId: UUID) -> FoundationModel {
+        return FoundationModel(
             id: newClientId,
             serverId: self.serverId,
             humanId: self.humanId,
@@ -104,8 +104,8 @@ extension InferenceModel {
     }
 }
 
-extension InferenceModel: Equatable {
-    public static func == (lhs: InferenceModel, rhs: InferenceModel) -> Bool {
+extension FoundationModel: Equatable {
+    public static func == (lhs: FoundationModel, rhs: FoundationModel) -> Bool {
         if lhs.serverId != rhs.serverId {
             return false
         }
@@ -118,7 +118,7 @@ extension InferenceModel: Equatable {
     }
 }
 
-extension InferenceModel: Hashable {
+extension FoundationModel: Hashable {
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
         hasher.combine(serverId)

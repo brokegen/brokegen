@@ -6,7 +6,7 @@ struct BlankOneSequenceView: View {
     @EnvironmentObject public var chatSettingsService: CSCSettingsService
     @EnvironmentObject public var appSettings: AppSettings
 
-    @State var modelSelection: InferenceModel?
+    @State var modelSelection: FoundationModel?
     @State var chatSequenceHumanDesc: String = ""
     @State var submitting: Bool = false
     @State var promptInEdit: String = ""
@@ -26,7 +26,7 @@ struct BlankOneSequenceView: View {
                     ChatNameInput($chatSequenceHumanDesc)
                         .padding(.bottom, 24)
 
-                    OIMPicker(
+                    OFMPicker(
                         boxLabel: modelSelection == nil && appSettings.defaultInferenceModel != nil
                         ? "Default Inference Model"
                         : "Inference Model",

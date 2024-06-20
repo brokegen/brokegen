@@ -2,18 +2,18 @@ import SwiftUI
 
 /// These are represented by `nil` everywhere else in the code, but `@AppStorage` is more simpler.
 /// Well, these should only ever be positive integers, anyway.
-fileprivate let INVALID_MODEL_ID: InferenceModelRecordID = -3
+fileprivate let INVALID_MODEL_ID: FoundationModelRecordID = -3
 
 @Observable
 class AppSettings: ObservableObject {
     @AppStorage("defaultInferenceModelId")
-    @ObservationIgnored private var defaultInferenceModelId: InferenceModelRecordID = INVALID_MODEL_ID
+    @ObservationIgnored private var defaultInferenceModelId: FoundationModelRecordID = INVALID_MODEL_ID
     @AppStorage("fallbackInferenceModelId")
-    @ObservationIgnored private var fallbackInferenceModelId: InferenceModelRecordID = INVALID_MODEL_ID
+    @ObservationIgnored private var fallbackInferenceModelId: FoundationModelRecordID = INVALID_MODEL_ID
     @AppStorage("chatSummaryModelId")
-    @ObservationIgnored private var chatSummaryModelId: InferenceModelRecordID = INVALID_MODEL_ID
+    @ObservationIgnored private var chatSummaryModelId: FoundationModelRecordID = INVALID_MODEL_ID
     @AppStorage("preferredEmbeddingModelId")
-    @ObservationIgnored private var preferredEmbeddingModelId: InferenceModelRecordID = INVALID_MODEL_ID
+    @ObservationIgnored private var preferredEmbeddingModelId: FoundationModelRecordID = INVALID_MODEL_ID
 
     // MARK: - connecting ProviderService
     private var providerService: ProviderService? = nil
@@ -27,7 +27,7 @@ class AppSettings: ObservableObject {
     }
 
     // MARK: - retrieving fully populated models
-    var defaultInferenceModel: InferenceModel? {
+    var defaultInferenceModel: FoundationModel? {
         get {
             return providerService?.allModels.first {
                 $0.serverId == defaultInferenceModelId
@@ -38,7 +38,7 @@ class AppSettings: ObservableObject {
         }
     }
 
-    var fallbackInferenceModel: InferenceModel? {
+    var fallbackInferenceModel: FoundationModel? {
         get {
             return providerService?.allModels.first {
                 $0.serverId == fallbackInferenceModelId
@@ -49,7 +49,7 @@ class AppSettings: ObservableObject {
         }
     }
 
-    var chatSummaryModel: InferenceModel? {
+    var chatSummaryModel: FoundationModel? {
         get {
             return providerService?.allModels.first {
                 $0.serverId == chatSummaryModelId
@@ -60,7 +60,7 @@ class AppSettings: ObservableObject {
         }
     }
 
-    var preferredEmbeddingModel: InferenceModel? {
+    var preferredEmbeddingModel: FoundationModel? {
         get {
             return providerService?.allModels.first {
                 $0.serverId == preferredEmbeddingModelId

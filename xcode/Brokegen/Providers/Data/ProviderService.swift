@@ -8,7 +8,7 @@ enum ProviderServiceError: Error {
 }
 
 class ProviderService: Observable, ObservableObject {
-    @Published var allModels: [InferenceModel] = []
+    @Published var allModels: [FoundationModel] = []
 
     func fetchAvailableModels() async throws {}
 
@@ -16,10 +16,10 @@ class ProviderService: Observable, ObservableObject {
         return []
     }
 
-    var availableModels: [InferenceModel] {
+    var availableModels: [FoundationModel] {
         get {
             do {
-                let predicate = #Predicate<InferenceModel> {
+                let predicate = #Predicate<FoundationModel> {
                     $0.humanId.contains("instruct")
                     // This relies on the way our stats field is implemented, but, fine.
                     || $0.stats?.count ?? 0 > 1
@@ -33,7 +33,7 @@ class ProviderService: Observable, ObservableObject {
     }
 
     @MainActor
-    func replaceModelById(_ originalModelId: InferenceModelRecordID?, with updatedModel: InferenceModel) {
+    func replaceModelById(_ originalModelId: FoundationModelRecordID?, with updatedModel: FoundationModel) {
         var priorClientId: UUID? = nil
         var priorRemovalIndex: Int? = nil
 
@@ -112,8 +112,8 @@ class DefaultProviderService: ProviderService {
 
         for (_, modelData) in JSON(allModelsData!) {
             print("[TRACE] Received modelData: \(modelData["human_id"])")
-            let inferenceModel = InferenceModel(modelData.dictionaryValue)
-            await self.replaceModelById(inferenceModel.serverId, with: inferenceModel)
+            let FoundationModel = FoundationModel(modelData.dictionaryValue)
+            await self.replaceModelById(FoundationModel.serverId, with: FoundationModel)
         }
     }
 

@@ -6,8 +6,8 @@ import SwiftyJSON
 
 struct ChatSequenceParameters: Codable, Hashable {
     var nextMessage: Message? = nil
-    var continuationModelId: InferenceModelRecordID? = nil
-    var fallbackModelId: InferenceModelRecordID? = nil
+    var continuationModelId: FoundationModelRecordID? = nil
+    var fallbackModelId: FoundationModelRecordID? = nil
 
     var inferenceOptions: String? = nil
     var overrideModelTemplate: String? = nil
@@ -16,10 +16,10 @@ struct ChatSequenceParameters: Codable, Hashable {
 
     var retrievalPolicy: String? = nil
     var retrievalSearchArgs: String? = nil
-    var preferredEmbeddingModel: InferenceModelRecordID? = nil
+    var preferredEmbeddingModel: FoundationModelRecordID? = nil
 
     var autonamingPolicy: String? = nil
-    var preferredAutonamingModel: InferenceModelRecordID? = nil
+    var preferredAutonamingModel: FoundationModelRecordID? = nil
 
     // These parameters shouldn't be passed to the server,
     // but the information is needed to complete the request.

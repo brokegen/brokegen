@@ -19,7 +19,7 @@ class ChatSequence: Identifiable, Codable {
     /// Put a different way, this list is entirely a client-side construction/interpretation of messages returned to us.
     ///
     var messages: [Message] = []
-    let inferenceModelId: InferenceModelRecordID?
+    let inferenceModelId: FoundationModelRecordID?
 
     static func createBlank() -> ChatSequence {
         return ChatSequence(
@@ -77,7 +77,7 @@ class ChatSequence: Identifiable, Codable {
         humanDesc: String?,
         userPinned: Bool,
         messages: [Message],
-        inferenceModelId: InferenceModelRecordID?
+        inferenceModelId: FoundationModelRecordID?
     ) {
         self.id = clientId
         self.serverId = serverId
