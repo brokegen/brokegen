@@ -68,6 +68,8 @@ struct CSCSettingsView: View {
                 WideToggle(isOn: $settings.defaults.forceRetrieval,
                            labelText: "Force retrieval-augmented generation on every query")
 
+                WideToggle(isOn: $settings.defaults.showOIMPicker,
+                           labelText: "Show InferenceModel override picker in ChatSequence Views")
                 WideToggle(isOn: $settings.defaults.allowNewlineSubmit,
                            labelText: "Allow mouseless submit by pressing enter (or if the last pasted character was a newline)")
                 WideToggle(isOn: $settings.defaults.stayAwakeDuringInference,
@@ -111,6 +113,10 @@ struct CSCSettingsView: View {
                     }
                 })
                 .frame(maxWidth: .infinity)
+
+                WidePicker(defaultIsOn: settings.defaults.showOIMPicker,
+                           overrideIsOn: $settings.override.showOIMPicker,
+                           labelText: "Show InferenceModel override picker in ChatSequence Views", trueText: "show", falseText: "don't show")
 
                 WidePicker(defaultIsOn: settings.defaults.allowNewlineSubmit,
                            overrideIsOn: $settings.override.allowNewlineSubmit,

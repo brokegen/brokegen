@@ -42,6 +42,11 @@ class CSCSettingsService: Observable, ObservableObject {
             set { override.pinChatSequenceDesc = newValue }
         }
 
+        var showOIMPicker: Bool {
+            get { override.showOIMPicker ?? defaults.showOIMPicker }
+            set { override.showOIMPicker = newValue }
+        }
+
         var allowNewlineSubmit: Bool {
             get { override.allowNewlineSubmit ?? defaults.allowNewlineSubmit }
             set { override.allowNewlineSubmit = newValue }

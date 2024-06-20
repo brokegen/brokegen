@@ -429,27 +429,26 @@ struct ProSequenceView: View {
                                         ProMessageView(viewModel.responseInEdit!, stillUpdating: true)
                                     }
 
-                                    OIMPicker(
-                                        boxLabel: "Select a different inference model for next message:",
-                                        selectedModelBinding: $viewModel.continuationInferenceModel,
-                                        showModelPicker: $showContinuationModelPicker,
-                                        geometry: geometry,
-                                        allowClear: true)
-                                    .frame(maxWidth: 800)
-                                    .foregroundStyle(Color(.disabledControlTextColor))
-                                    // TODO: We can eventually make this something like pull-to-refresh, putting it relatively far below the fold.
-                                    .padding(.bottom, 120)
-                                    .padding(.top, max(
-                                        120,
-                                        geometry.size.height * 0.2
-                                    ))
-                                    .contentShape(Rectangle())
-                                    .onHover { isHovered in
-                                        modelPickerHovered = isHovered
+                                    if settings.showOIMPicker {
+                                        OIMPicker(
+                                            boxLabel: "Select a different inference model for next message:",
+                                            selectedModelBinding: $viewModel.continuationInferenceModel,
+                                            showModelPicker: $showContinuationModelPicker,
+                                            geometry: geometry,
+                                            allowClear: true)
+                                        .frame(maxWidth: 800)
+                                        .foregroundStyle(Color(.disabledControlTextColor))
+                                        // TODO: We can eventually make this something like pull-to-refresh, putting it relatively far below the fold.
+                                        .padding(.bottom, 120)
+                                        .padding(.top, max(
+                                            120,
+                                            geometry.size.height * 0.2
+                                        ))
+                                        .contentShape(Rectangle())
+                                        .onHover { isHovered in
+                                            modelPickerHovered = isHovered
+                                        }
                                     }
-                                    // DEBUG: Hovering isn't working, which just makes this ugly.
-                                    .opacity(0.0)
-                                    .disabled(true)
                                 }
                             }
                             .defaultScrollAnchor(.bottom)
