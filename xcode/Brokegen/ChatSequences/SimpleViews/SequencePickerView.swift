@@ -415,7 +415,7 @@ struct SequencePickerView: View {
             else {
                 NavigationLink(destination: {
                     ProSequenceView(
-                        OneSequenceViewModel(ChatSequence.createBlank(), chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
+                        OneSequenceViewModel.createBlank(chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
                     )
                 }) {
                     Label("New Chat (ProSequenceView, experimental)", systemImage: "plus")

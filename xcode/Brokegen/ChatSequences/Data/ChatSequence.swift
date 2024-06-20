@@ -21,18 +21,6 @@ class ChatSequence: Identifiable {
     var messages: [Message] = []
     let inferenceModelId: FoundationModelRecordID?
 
-    static func createBlank() -> ChatSequence {
-        return ChatSequence(
-            clientId: UUID(),
-            serverId: nil,
-            humanDesc: nil,
-            userPinned: false,
-            messages: [
-                Message(role: "placeholder", content: "", createdAt: nil),
-            ],
-            inferenceModelId: nil)
-    }
-
     static func fromData(serverId: ChatSequenceServerID? = nil, data: Data) throws -> ChatSequence {
         let sequenceJson = JSON(data)
 
