@@ -223,7 +223,18 @@ struct MiniSequencePickerSidebar: View {
                 Text("Chats")
             }
         }) {
-            NavigationLink(destination: { BlankOneSequenceView() }) {
+            NavigationLink(destination: {
+                if chatSettingsService.useSimplifiedSequenceViews {
+                    BlankOneSequenceView()
+                }
+                else {
+                    // TODO: Make a ProSequenceView() that doesn't lock up
+                    BlankOneSequenceView()
+                        .onAppear {
+                            _ = OneSequenceViewModel(ChatSequence.createBlank(), chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
+                        }
+                }
+            }) {
                 HStack {
                     Image(systemName: "plus")
                         .padding(.trailing, 0)
@@ -400,7 +411,18 @@ struct SequencePickerView: View {
 
             Spacer()
 
-            NavigationLink(destination: BlankOneSequenceView()) {
+            NavigationLink(destination: {
+                    if chatSettingsService.useSimplifiedSequenceViews {
+                        BlankOneSequenceView()
+                    }
+                    else {
+                        // TODO: Make a ProSequenceView() that doesn't lock up
+                        BlankOneSequenceView()
+                            .onAppear {
+                                _ = OneSequenceViewModel(ChatSequence.createBlank(), chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
+                            }
+                    }
+            }) {
                 Label("New Chat...", systemImage: "plus")
                     .buttonStyle(.accessoryBar)
                     .padding(12)

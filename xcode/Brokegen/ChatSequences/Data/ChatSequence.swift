@@ -21,6 +21,18 @@ class ChatSequence: Identifiable, Codable {
     var messages: [Message] = []
     let inferenceModelId: InferenceModelRecordID?
 
+    static func createBlank() -> ChatSequence {
+        return ChatSequence(
+            clientId: UUID(),
+            serverId: nil,
+            humanDesc: nil,
+            userPinned: false,
+            messages: [
+                Message(role: "placeholder", content: "", createdAt: nil),
+            ],
+            inferenceModelId: nil)
+    }
+
     convenience init(_ serverId: ChatSequenceServerID? = nil, data: Data) throws {
         try self.init(clientId: UUID(), serverId: serverId, data: data)
     }
