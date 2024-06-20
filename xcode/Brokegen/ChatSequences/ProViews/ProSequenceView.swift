@@ -21,11 +21,18 @@ struct ProSequenceView: View {
     }
 
     var textEntryView: some View {
-        // Tab.retrieval
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 InlineTextInput($viewModel.promptInEdit, allowNewlineSubmit: settings.allowNewlineSubmit, isFocused: $focusTextInput) {
-                    if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
+                    if viewModel.sequence.serverId == nil {
+                        if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
+                            _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
+                        }
+                        else {
+                            _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId)
+                        }
+                    }
+                    else if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
                         if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
                             _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
                         }
@@ -60,7 +67,10 @@ struct ProSequenceView: View {
                     }()
 
                     Button(action: {
-                        if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
+                        if viewModel.sequence.serverId == nil {
+                            _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
+                        }
+                        else if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
                             _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
                         }
                         else {
@@ -104,7 +114,10 @@ struct ProSequenceView: View {
                     }
                     else {
                         if settings.showSeparateRetrievalButton {
-                            if viewModel.promptInEdit.isEmpty {
+                            if viewModel.sequence.serverId == nil {
+                                _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId)
+                            }
+                            else if viewModel.promptInEdit.isEmpty {
                                 if settings.allowContinuation {
                                     _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId)
                                 }
@@ -115,7 +128,10 @@ struct ProSequenceView: View {
                             }
                         }
                         else {
-                            if viewModel.promptInEdit.isEmpty {
+                            if viewModel.sequence.serverId == nil {
+                                _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: settings.forceRetrieval)
+                            }
+                            else if viewModel.promptInEdit.isEmpty {
                                 if settings.allowContinuation {
                                     _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: settings.forceRetrieval)
                                 }

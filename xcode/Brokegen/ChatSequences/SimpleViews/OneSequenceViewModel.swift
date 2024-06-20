@@ -48,6 +48,9 @@ class OneSequenceViewModel: ObservableObject {
         if !(sequence.humanDesc ?? "").isEmpty {
             return sequence.humanDesc!
         }
+        if sequence.serverId == nil {
+            return "[uncommitted ChatSequence]"
+        }
 
         return "ChatSequence#\(sequence.serverId!)"
     }
@@ -154,6 +157,82 @@ class OneSequenceViewModel: ObservableObject {
                 print("[ERROR] \(callerName): decoding error or something")
             }
         }
+    }
+
+    func requestStart(
+        model continuationModelId: InferenceModelRecordID? = nil,
+        withRetrieval: Bool = false
+    ) -> Self {
+        print("[INFO] OneSequenceViewModel.requestStart(\(continuationModelId), withRetrieval: \(withRetrieval))")
+        if settings.stayAwakeDuringInference {
+            _ = stayAwake.createAssertion(reason: "brokegen OneSequenceViewModel.requestStart() for ChatSequence#\(self.sequence.serverId ?? -1)")
+        }
+
+        Task {
+            guard submitting == false else {
+                print("[ERROR] OneSequenceViewModel.requestStart(withRetrieval: \(withRetrieval)) during another submission")
+                return
+            }
+            DispatchQueue.main.async {
+                self.submitting = true
+                self.serverStatus = "/sequences/[TBD]/extend: submitting request"
+            }
+
+            let messageId: ChatMessageServerID? = try? await chatService.constructChatMessage(from: TemporaryChatMessage(
+                role: "user",
+                content: promptInEdit,
+                createdAt: Date.now
+            ))
+            guard messageId != nil else {
+                submitting = false
+                print("[ERROR] Couldn't construct ChatMessage from text: \(promptInEdit)")
+                return
+            }
+
+            let sequenceId: ChatSequenceServerID? = try? await chatService.constructNewChatSequence(messageId: messageId!, humanDesc: "")
+            guard sequenceId != nil else {
+                submitting = false
+                print("[ERROR] Couldn't construct sequence from: ChatMessage#\(messageId!)")
+                return
+            }
+            sequence.serverId = sequenceId
+            sequence.messages = [
+                Message(
+                    role: "user",
+                    content: promptInEdit,
+                    createdAt: Date.now
+                )
+            ]
+
+            submittedAssistantResponseSeed = settings.seedAssistantResponse
+
+            receivingStreamer = await chatService.sequenceContinue(
+                ChatSequenceParameters(
+                    nextMessage: nil,
+                    continuationModelId: continuationModelId,
+                    fallbackModelId: appSettings.fallbackInferenceModel?.serverId,
+                    inferenceOptions: settings.inferenceOptions,
+                    overrideModelTemplate: settings.overrideModelTemplate,
+                    overrideSystemPrompt: settings.overrideSystemPrompt,
+                    seedAssistantResponse: settings.seedAssistantResponse,
+                    retrievalPolicy: withRetrieval ? settings.retrievalPolicy : nil,
+                    retrievalSearchArgs: withRetrieval ? settings.retrievalSearchArgs : nil,
+                    preferredEmbeddingModel: withRetrieval ? appSettings.preferredEmbeddingModel?.serverId : nil,
+                    autonamingPolicy: settings.autonamingPolicy.rawValue,
+                    preferredAutonamingModel: appSettings.chatSummaryModel?.serverId,
+                    sequenceId: sequence.serverId!
+                )
+            )
+                .sink(receiveCompletion: completionHandler(
+                    caller: "ChatSyncService.sequenceContinue",
+                    endpoint: "/sequences/\(sequence.serverId!)/continue"
+                ), receiveValue: receiveHandler(
+                    caller: "OneSequenceViewModel.requestContinue(withRetrieval: \(withRetrieval))",
+                    endpoint: "/sequences/\(sequence.serverId!)/continue"
+                ))
+        }
+
+        return self
     }
 
     func requestContinue(

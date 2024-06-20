@@ -224,16 +224,7 @@ struct MiniSequencePickerSidebar: View {
             }
         }) {
             NavigationLink(destination: {
-                if chatSettingsService.useSimplifiedSequenceViews {
-                    BlankOneSequenceView()
-                }
-                else {
-                    // TODO: Make a ProSequenceView() that doesn't lock up
-                    BlankOneSequenceView()
-                        .onAppear {
-                            _ = OneSequenceViewModel(ChatSequence.createBlank(), chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
-                        }
-                }
+                BlankOneSequenceView()
             }) {
                 HStack {
                     Image(systemName: "plus")
@@ -411,23 +402,28 @@ struct SequencePickerView: View {
 
             Spacer()
 
-            NavigationLink(destination: {
-                    if chatSettingsService.useSimplifiedSequenceViews {
-                        BlankOneSequenceView()
-                    }
-                    else {
-                        // TODO: Make a ProSequenceView() that doesn't lock up
-                        BlankOneSequenceView()
-                            .onAppear {
-                                _ = OneSequenceViewModel(ChatSequence.createBlank(), chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
-                            }
-                    }
-            }) {
-                Label("New Chat...", systemImage: "plus")
-                    .buttonStyle(.accessoryBar)
-                    .padding(12)
+            if chatSettingsService.useSimplifiedSequenceViews {
+                NavigationLink(destination: {
+                    BlankOneSequenceView()
+                }) {
+                    Label("New Chat...", systemImage: "plus")
+                        .buttonStyle(.accessoryBar)
+                        .padding(12)
+                }
+                .layoutPriority(0.5)
             }
-            .layoutPriority(0.5)
+            else {
+                NavigationLink(destination: {
+                    ProSequenceView(
+                        OneSequenceViewModel(ChatSequence.createBlank(), chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
+                    )
+                }) {
+                    Label("New Chat (ProSequenceView, experimental)", systemImage: "plus")
+                        .buttonStyle(.accessoryBar)
+                        .padding(12)
+                }
+                .layoutPriority(0.5)
+            }
         }
         .padding(24)
         .font(.system(size: 18))
