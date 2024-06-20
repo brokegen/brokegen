@@ -108,12 +108,23 @@ async def do_api_tags(
 
     async def on_done_fetching(response_content_json):
         provider = ProviderRegistry().by_label[ProviderLabel(type="ollama", id=str(_real_ollama_client.base_url))]
-        list(build_models_from_api_tags(
+        inference_models = build_models_from_api_tags(
             await provider.make_record(),
             cached_accessed_at,
             response_content_json,
             history_db=history_db,
-        ))
+        )
+
+        # Run an /api/show request on each /api/tags request, also.
+        # Otherwise we have have-built InferenceModels, and due to how we implemented Providers, sometimes we can't access the original.
+        # In particular, the model options for x86 vs arm "providers" get weird.
+        for inference_model in inference_models:
+            if (
+                    inference_model.combined_inference_parameters is None
+                    or inference_model.combined_inference_parameters == ""
+                    or inference_model.combined_inference_parameters == "null"
+            ):
+                _ = await do_api_show(inference_model.human_id, history_db, audit_db)
 
     upstream_response = await _real_ollama_client.send(upstream_request)
     return await intercept.wrap_response(upstream_response, on_done_fetching)
