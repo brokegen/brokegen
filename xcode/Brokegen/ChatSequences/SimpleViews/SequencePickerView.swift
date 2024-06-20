@@ -427,7 +427,6 @@ struct SequencePickerView: View {
         }
         .padding(24)
         .font(.system(size: 18))
-        .frame(maxWidth: 1000)
 
         List {
             ForEach(sectionedSequences, id: \.0) { pair in
