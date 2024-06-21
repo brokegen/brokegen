@@ -24,7 +24,7 @@ from client.database import HistoryDB, get_db as get_history_db
 from client.sequence_get import do_get_sequence, do_extend_sequence
 from inference.continuation import ContinueRequest, ExtendRequest, select_continuation_model, InferenceOptions, \
     AutonamingOptions
-from inference.iterators import consolidate_and_yield, tee_to_console_output, stream_bytes_to_json
+from inference.iterators import consolidate_and_yield, tee_to_console_output
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.orm import FoundationeModelRecordOrm, InferenceEventOrm, InferenceReason
 from providers.orm import ProviderLabel
@@ -134,6 +134,7 @@ async def do_continuation(
         nonlocal inference_model
         inference_model = history_db.merge(inference_model)
 
+        # Store everything we can into the InferenceEvent
         inference_event = InferenceEventOrm(
             model_record_id=inference_model.id,
             prompt_with_templating=prompt_with_templating,
@@ -150,9 +151,19 @@ async def do_continuation(
             logger.exception(f"Failed to commit `prompt_with_templating` for {inference_event}")
             history_db.rollback()
 
-        response_sequence: ChatSequence | None = \
-            await construct_new_sequence_from(original_sequence, inference_options.seed_assistant_response,
-                                              consolidated_response, inference_event, history_db)
+        # And now, construct the ChatSequence (which references the InferenceEvent, actually)
+        response_sequence: ChatSequence | None = None
+        try:
+            response_sequence = await construct_new_sequence_from(
+                original_sequence,
+                inference_options.seed_assistant_response,
+                consolidated_response,
+                inference_event,
+                history_db,
+            )
+        except sqlalchemy.exc.SQLAlchemyError:
+            logger.exception(f"Failed to create add-on ChatSequence {response_sequence}")
+            history_db.rollback()
 
         if response_sequence is None:
             status_holder.set("Failed to construct a new ChatSequence")
@@ -162,6 +173,7 @@ async def do_continuation(
             }
             return
 
+        # Lastly (after inference), do auto-naming
         if response_sequence is not None and not response_sequence.human_desc:
             name = await autoname_sequence(messages_list, inference_model, status_holder)
             logger.info(f"Auto-generated chat title is {len(name)} chars: {name=}")

@@ -58,12 +58,6 @@ async def construct_new_sequence_from(
         inference_event: InferenceEventOrm,
         history_db: HistoryDB,
 ) -> ChatSequence | None:
-    # Wrap the output in a… something that appends new ChatSequence information
-    response_sequence = ChatSequence(
-        human_desc=original_sequence.human_desc,
-        parent_sequence=original_sequence.id,
-    )
-
     assistant_response = ChatMessageOrm(
         role="assistant",
         content=(assistant_response_seed or "") + (
@@ -79,7 +73,13 @@ async def construct_new_sequence_from(
     history_db.commit()
 
     # Add what we need for response_sequence
-    response_sequence.user_pinned = original_sequence.user_pinned
+    response_sequence = ChatSequence(
+        human_desc=original_sequence.human_desc,
+        parent_sequence=original_sequence.id,
+    )
+
+    # (Due to race conditions or something, we basically need to ignore whatever the original pin status was.)
+    response_sequence.user_pinned = True
     original_sequence.user_pinned = False
 
     history_db.add(original_sequence)
@@ -93,27 +93,14 @@ async def construct_new_sequence_from(
     if inference_event.response_error:
         response_sequence.inference_error = inference_event.response_error
 
-    history_db.add(response_sequence)
     history_db.commit()
 
     # And complete the circular reference that really should be handled in the SQLAlchemy ORM
     inference_job = history_db.merge(inference_event)
     inference_job.parent_sequence = response_sequence.id
 
-    # TODO: This is disabled while we figure out why the duplicate InferenceEvent never commits its response content
-    if False and not inference_job.response_error:
-        inference_job.response_error = (
-            "this is a duplicate InferenceEvent, because do_generate_raw_templated will dump its own raws in. "
-            "we're keeping this one because it's tied into the actual ChatSequence."
-        )
-
     history_db.add(inference_job)
-
-    try:
-        history_db.commit()
-    except sqlalchemy.exc.SQLAlchemyError:
-        logger.exception(f"Failed to create add-on ChatSequence {response_sequence}")
-        history_db.rollback()
+    history_db.commit()
 
     return response_sequence
 
