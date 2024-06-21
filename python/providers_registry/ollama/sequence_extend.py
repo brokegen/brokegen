@@ -1,9 +1,11 @@
+import functools
 import logging
 from datetime import datetime, timezone
 from typing import AsyncIterator
 
 import fastapi.routing
 import orjson
+import sqlalchemy
 import starlette.datastructures
 import starlette.requests
 from fastapi import Depends
@@ -13,7 +15,7 @@ from starlette.responses import RedirectResponse
 from _util.json import safe_get, JSONDict
 from _util.json_streaming import JSONStreamingResponse
 from _util.status import ServerStatusHolder, StatusContext
-from _util.typing import ChatSequenceID, PromptText
+from _util.typing import ChatSequenceID, PromptText, TemplatedPromptText
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
 from client.chat_message import ChatMessageOrm, lookup_chat_message, ChatMessage
@@ -94,15 +96,25 @@ async def do_continuation(
         empty_request: starlette.requests.Request,
         history_db: HistoryDB,
         audit_db: AuditDB,
-):
+) -> JSONStreamingResponse:
     async def append_response_chunk(
             response_content_json: OllamaResponseContentJSON,
+            prompt_with_templating: TemplatedPromptText,
     ) -> AsyncIterator[JSONDict]:
         nonlocal inference_model
         inference_model = history_db.merge(inference_model)
 
         inference_event: InferenceEventOrm = \
             await inference_event_logger(response_content_json, inference_model, history_db)
+        inference_event.prompt_with_templating = prompt_with_templating
+
+        try:
+            history_db.add(inference_event)
+            history_db.commit()
+        except sqlalchemy.exc.SQLAlchemyError:
+            logger.exception(f"Failed to commit `prompt_with_templating` for {inference_event}")
+            history_db.rollback()
+
         response_sequence: ChatSequence | None = \
             await construct_new_sequence_from(original_sequence, inference_options.seed_assistant_response, response_content_json, inference_event, history_db)
 
@@ -178,7 +190,9 @@ async def do_continuation(
         "model": inference_model.human_id,
     }
 
-    proxied_response: JSONStreamingResponse = await do_proxy_chat_rag(
+    prompt_with_templating: TemplatedPromptText
+    proxied_response: JSONStreamingResponse
+    prompt_with_templating, proxied_response = await do_proxy_chat_rag(
         empty_request,
         constructed_ollama_request_content_json,
         inference_model=inference_model,
@@ -200,7 +214,7 @@ async def do_continuation(
     iter3: AsyncIterator[JSONDict] = hide_done(iter2)
     iter4: AsyncIterator[JSONDict] = consolidate_and_yield(
         iter3, ollama_response_consolidator, {},
-        append_response_chunk
+        functools.partial(append_response_chunk, prompt_with_templating=prompt_with_templating),
     )
 
     proxied_response._content_iterable = iter4

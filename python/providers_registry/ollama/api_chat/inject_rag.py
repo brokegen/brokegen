@@ -1,31 +1,27 @@
 import logging
-from datetime import datetime, timezone
 from typing import AsyncIterator
 
 import sqlalchemy
-import sqlalchemy.exc
 import starlette.datastructures
 import starlette.requests
 
 from _util.json import safe_get, JSONArray, JSONDict
-from _util.json_streaming import JSONStreamingResponse, consolidate_stream_to_json
+from _util.json_streaming import JSONStreamingResponse
 from _util.status import ServerStatusHolder, StatusContext
-from _util.typing import PromptText
+from _util.typing import PromptText, TemplatedPromptText
 from audit.http import AuditDB
-from client.chat_message import ChatMessageOrm
 from client.chat_sequence import ChatSequence
-from inference.continuation import InferenceOptions, AutonamingOptions
-from inference.iterators import tee_to_console_output, stream_bytes_to_json, consolidate_and_call, dump_to_bytes
-from inference.prompting.templating import apply_llm_template
 from client.database import HistoryDB
+from inference.continuation import InferenceOptions, AutonamingOptions
+from inference.iterators import tee_to_console_output, stream_bytes_to_json, consolidate_and_call, dump_to_bytes, \
+    decode_from_bytes, stream_str_to_json
+from inference.prompting.templating import apply_llm_template
 from providers.inference_models.orm import InferenceEventOrm, InferenceReason, FoundationeModelRecordOrm
 from providers_registry.ollama.api_chat.converter import convert_chat_to_generate
 from providers_registry.ollama.api_chat.intercept import do_capture_chat_messages
 from providers_registry.ollama.api_chat.logging import ollama_log_indexer, ollama_response_consolidator, \
-    finalize_inference_job, OllamaRequestContentJSON, OllamaResponseContentJSON, inference_event_logger, \
-    construct_new_sequence_from
+    OllamaRequestContentJSON, OllamaResponseContentJSON, inference_event_logger
 from providers_registry.ollama.chat_rag_util import do_generate_raw_templated
-from providers_registry.ollama.chat_routes import lookup_model_offline
 from retrieval.faiss.knowledge import get_knowledge
 from retrieval.faiss.retrieval import RetrievalPolicy, RetrievalLabel, SimpleRetrievalPolicy, \
     SummarizingRetrievalPolicy
@@ -45,7 +41,7 @@ async def do_proxy_chat_rag(
         capture_chat_messages: bool = True,
         capture_chat_response: bool = False,
         status_holder: ServerStatusHolder | None = None,
-) -> JSONStreamingResponse:
+) -> tuple[TemplatedPromptText, JSONStreamingResponse]:
     # For now, everything we could possibly retrieve is from intercepting an Ollama /api/chat,
     # so there's no need to check for /api/generate's 'content' field.
     chat_messages: JSONArray | None = safe_get(request_content_json, 'messages')
@@ -103,8 +99,12 @@ async def do_proxy_chat_rag(
             inference_reason=inference_reason,
         )
 
-        response0_json = await consolidate_stream_to_json(response0.body_iterator)
-        return response0_json['response']
+        iter0: AsyncIterator[bytes] = response0.body_iterator
+        iter1: AsyncIterator[str] = decode_from_bytes(iter0)
+        iter2: AsyncIterator[JSONDict] = stream_str_to_json(iter1)
+
+        response0_json = await anext(iter2)
+        return safe_get(response0_json, "response")
 
     prompt_override: PromptText | None = None
     with StatusContext(f"Retrieving documents with {retrieval_label=}", status_holder):
@@ -138,7 +138,7 @@ async def do_proxy_chat_rag(
         status_desc += f" (with retrieval context of {len(prompt_override):_} chars)"
 
     with StatusContext(status_desc, status_holder):
-        ollama_response = await convert_chat_to_generate(
+        prompt_with_templating, ollama_response = await convert_chat_to_generate(
             original_request=original_request,
             chat_request_content=request_content_json,
             inference_model=inference_model,
@@ -149,15 +149,19 @@ async def do_proxy_chat_rag(
             audit_db=audit_db,
         )
 
-    # TODO: Split into inference_event_logger and construct_new_sequence_from
-    async def consolidate_wrapper(
+    async def record_inference_event(
             consolidated_response: OllamaResponseContentJSON,
     ) -> None:
-        if not capture_chat_response:
-            return
-
-        _: InferenceEventOrm = \
+        inference_event: InferenceEventOrm = \
             await inference_event_logger(consolidated_response, inference_model, history_db)
+        inference_event.prompt_with_templating = prompt_with_templating
+
+        try:
+            history_db.add(inference_event)
+            history_db.commit()
+        except sqlalchemy.exc.SQLAlchemyError:
+            logger.exception(f"Failed to commit `prompt_with_templating` for {inference_event}")
+            history_db.rollback()
 
     if status_holder is not None:
         status_holder.set(f"Running Ollama response")
@@ -167,9 +171,9 @@ async def do_proxy_chat_rag(
     iter2: AsyncIterator[JSONDict] = tee_to_console_output(iter1, ollama_log_indexer)
     iter3: AsyncIterator[JSONDict] = consolidate_and_call(
         iter2, ollama_response_consolidator, {},
-        consolidate_wrapper,
+        record_inference_event,
     )
     iter4: AsyncIterator[bytes] = dump_to_bytes(iter3)
 
     ollama_response._content_iterable = iter4
-    return ollama_response
+    return prompt_with_templating, ollama_response

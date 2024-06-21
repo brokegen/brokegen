@@ -18,6 +18,25 @@ from providers_registry.ollama.model_routes import _real_ollama_client
 OllamaModelName: TypeAlias = str
 
 
+async def do_generate_nolog(
+        request_content: OllamaRequestContentJSON,
+        audit_db: AuditDB,
+) -> tuple[httpx.Response, ]:
+    upstream_request = _real_ollama_client.build_request(
+        method='POST',
+        url="/api/generate",
+        content=orjson.dumps(request_content),
+        # https://github.com/encode/httpx/discussions/2959
+        # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
+        headers=[('Connection', 'close')],
+    )
+
+    with HttpxLogger(_real_ollama_client, audit_db):
+        upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
+
+    return upstream_response
+
+
 async def do_generate_raw_templated(
         request_content: OllamaRequestContentJSON,
         request_headers: starlette.datastructures.Headers,

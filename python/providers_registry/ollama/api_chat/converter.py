@@ -30,7 +30,7 @@ async def convert_chat_to_generate(
         prompt_override: PromptText | None,
         history_db: HistoryDB,
         audit_db: AuditDB,
-):
+) -> tuple[TemplatedPromptText, JSONStreamingResponse]:
     model, executor_record = await lookup_model(
         chat_request_content['model'],
         history_db,
@@ -163,7 +163,7 @@ async def convert_chat_to_generate(
         if unsupported_field in converted_response_headers:
             del converted_response_headers[unsupported_field]
 
-    return JSONStreamingResponse(
+    return generate_request_content['prompt'], JSONStreamingResponse(
         content=translate_generate_to_chat(generate_response.body_iterator),
         status_code=generate_response.status_code,
         headers=converted_response_headers,

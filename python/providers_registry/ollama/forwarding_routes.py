@@ -85,9 +85,8 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
                 )
 
             else:
-                return await keepalive_wrapper(
-                    inference_model_human_id,
-                    do_proxy_chat_rag(
+                async def get_response():
+                    _, ollama_response = await do_proxy_chat_rag(
                         request,
                         request_content_json,
                         inference_model=inference_model,
@@ -100,7 +99,13 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
                         audit_db=audit_db,
                         capture_chat_messages=True,
                         status_holder=status_holder,
-                    ),
+                    )
+
+                    return ollama_response
+
+                return await keepalive_wrapper(
+                    inference_model_human_id,
+                    get_response(),
                     status_holder,
                 )
         except HTTPException as e:

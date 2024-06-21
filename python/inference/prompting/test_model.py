@@ -1,7 +1,7 @@
 """
 DSPy-focused test suite for inducting new inference models
 
-- `pip install "dspy-ai[qdrant]"`
+- `pip install "dspy-ai[chromadb]"`
 - Behind a proxy, the `pystemmer==2.2.0.1` package tries to download a file.
   In its working directory, run: `curl -L -O https://snowballstem.org/dist/libstemmer_c-2.2.0.tar.gz`
 - The training dataset is also always downloaded, so: HF_DATASETS_OFFLINE=1
@@ -10,6 +10,7 @@ import json
 import logging
 
 import dspy
+from dspy import Example
 from dspy.datasets import DataLoader, HotPotQA
 from dspy.datasets.gsm8k import GSM8K, gsm8k_metric
 from dspy.evaluate import Evaluate
@@ -69,7 +70,17 @@ def test_philosophy():
     print(result)
 
     # Save and load
-    print(json.dumps(optimized_program.dump_state(), indent=2))
+    class DictEncoder(json.JSONEncoder):
+        def default(self, obj):
+            if isinstance(obj, Example):
+                return obj.toDict()
+            else:
+                return json.JSONEncoder.default(self, obj)
+
+    try:
+        print(json.dumps(optimized_program.dump_state(), indent=2, cls=DictEncoder))
+    except TypeError:
+        print(optimized_program.dump_state())
 
 
 if __name__ == '__main__':
