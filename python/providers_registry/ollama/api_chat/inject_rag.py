@@ -1,7 +1,6 @@
 import logging
 from typing import AsyncIterator
 
-import sqlalchemy
 import starlette.datastructures
 import starlette.requests
 
@@ -13,14 +12,12 @@ from audit.http import AuditDB
 from client.chat_sequence import ChatSequence
 from client.database import HistoryDB
 from inference.continuation import InferenceOptions, AutonamingOptions
-from inference.iterators import tee_to_console_output, stream_bytes_to_json, consolidate_and_call, dump_to_bytes, \
-    decode_from_bytes, stream_str_to_json
+from inference.iterators import decode_from_bytes, stream_str_to_json
 from inference.prompting.templating import apply_llm_template
-from providers.inference_models.orm import InferenceEventOrm, InferenceReason, FoundationeModelRecordOrm
+from providers.inference_models.orm import InferenceReason, FoundationeModelRecordOrm
 from providers_registry.ollama.api_chat.converter import convert_chat_to_generate
 from providers_registry.ollama.api_chat.intercept import do_capture_chat_messages
-from providers_registry.ollama.api_chat.logging import ollama_log_indexer, ollama_response_consolidator, \
-    OllamaRequestContentJSON, OllamaResponseContentJSON, inference_event_logger
+from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON
 from providers_registry.ollama.chat_rag_util import do_generate_raw_templated
 from retrieval.faiss.knowledge import get_knowledge
 from retrieval.faiss.retrieval import RetrievalPolicy, RetrievalLabel, SimpleRetrievalPolicy, \
@@ -149,31 +146,4 @@ async def do_proxy_chat_rag(
             audit_db=audit_db,
         )
 
-    async def record_inference_event(
-            consolidated_response: OllamaResponseContentJSON,
-    ) -> None:
-        inference_event: InferenceEventOrm = \
-            await inference_event_logger(consolidated_response, inference_model, history_db)
-        inference_event.prompt_with_templating = prompt_with_templating
-
-        try:
-            history_db.add(inference_event)
-            history_db.commit()
-        except sqlalchemy.exc.SQLAlchemyError:
-            logger.exception(f"Failed to commit `prompt_with_templating` for {inference_event}")
-            history_db.rollback()
-
-    if status_holder is not None:
-        status_holder.set(f"Running Ollama response")
-
-    iter0: AsyncIterator[bytes] = ollama_response._content_iterable
-    iter1: AsyncIterator[JSONDict] = stream_bytes_to_json(iter0)
-    iter2: AsyncIterator[JSONDict] = tee_to_console_output(iter1, ollama_log_indexer)
-    iter3: AsyncIterator[JSONDict] = consolidate_and_call(
-        iter2, ollama_response_consolidator, {},
-        record_inference_event,
-    )
-    iter4: AsyncIterator[bytes] = dump_to_bytes(iter3)
-
-    ollama_response._content_iterable = iter4
     return prompt_with_templating, ollama_response

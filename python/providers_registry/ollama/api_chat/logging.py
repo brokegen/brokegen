@@ -51,29 +51,6 @@ def finalize_inference_job(
     inference_job.response_info = dict(response_content_json)
 
 
-async def inference_event_logger(
-        consolidated_response: OllamaResponseContentJSON,
-        inference_model: FoundationeModelRecordOrm,
-        history_db: HistoryDB,
-) -> InferenceEventOrm:
-    inference_event = InferenceEventOrm(
-        model_record_id=inference_model.id,
-        reason="chat sequence",
-        response_created_at=datetime.now(tz=timezone.utc),
-        response_error="[haven't received/finalized response info yet]",
-    )
-    finalize_inference_job(inference_event, consolidated_response)
-
-    try:
-        history_db.add(inference_event)
-        history_db.commit()
-    except sqlalchemy.exc.SQLAlchemyError:
-        logger.exception(f"Failed to commit intercepted inference event for {inference_event}")
-        history_db.rollback()
-
-    return inference_event
-
-
 async def construct_new_sequence_from(
         original_sequence: ChatSequence,
         assistant_response_seed: PromptText | None,

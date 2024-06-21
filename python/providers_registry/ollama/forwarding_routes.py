@@ -1,7 +1,10 @@
 import logging
+from datetime import datetime, timezone
+from typing import AsyncIterator
 
 import httpx
 import orjson
+import sqlalchemy
 import starlette
 import starlette.responses
 from fastapi import FastAPI, APIRouter, Depends, HTTPException
@@ -11,14 +14,16 @@ from _util.json import safe_get, JSONDict, safe_get_arrayed
 from _util.status import ServerStatusHolder
 from audit.http import AuditDB, get_db as get_audit_db
 from client.database import HistoryDB, get_db as get_history_db
-from inference.continuation import select_continuation_model, InferenceOptions, AutonamingOptions
-from providers.inference_models.orm import InferenceReason, FoundationeModelRecordOrm
+from inference.continuation import InferenceOptions, AutonamingOptions
+from inference.iterators import dump_to_bytes, consolidate_and_call, tee_to_console_output, stream_bytes_to_json
+from providers.inference_models.orm import InferenceReason, InferenceEventOrm
 from providers.registry import ProviderRegistry
 from providers_registry.ollama.api_chat.inject_rag import do_proxy_chat_rag
+from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON, OllamaResponseContentJSON, \
+    finalize_inference_job, ollama_response_consolidator, ollama_log_indexer
 from providers_registry.ollama.chat_routes import do_proxy_generate, lookup_model_offline
 from providers_registry.ollama.forwarding import forward_request_nolog, forward_request
 from providers_registry.ollama.json import keepalive_wrapper
-from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON
 from providers_registry.ollama.model_routes import do_api_tags, do_api_show
 from providers_registry.ollama.registry import ExternalOllamaFactory
 from retrieval.faiss.retrieval import RetrievalLabel
@@ -86,7 +91,7 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
 
             else:
                 async def get_response():
-                    _, ollama_response = await do_proxy_chat_rag(
+                    prompt_with_templating, ollama_response = await do_proxy_chat_rag(
                         request,
                         request_content_json,
                         inference_model=inference_model,
@@ -101,6 +106,41 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
                         status_holder=status_holder,
                     )
 
+                    async def record_inference_event(
+                            consolidated_response: OllamaResponseContentJSON,
+                    ) -> None:
+                        nonlocal inference_model
+                        inference_model = history_db.merge(inference_model)
+
+                        inference_event = InferenceEventOrm(
+                            model_record_id=inference_model.id,
+                            prompt_with_templating=prompt_with_templating,
+                            reason="/api/chat intercept",
+                            response_created_at=datetime.now(tz=timezone.utc),
+                            response_error="[haven't received/finalized response info yet]",
+                        )
+                        finalize_inference_job(inference_event, consolidated_response)
+
+                        try:
+                            history_db.add(inference_event)
+                            history_db.commit()
+                        except sqlalchemy.exc.SQLAlchemyError:
+                            logger.exception(f"Failed to commit intercepted inference event for {inference_event}")
+                            history_db.rollback()
+
+                    if status_holder is not None:
+                        status_holder.set(f"Running Ollama response")
+
+                    iter0: AsyncIterator[bytes] = ollama_response._content_iterable
+                    iter1: AsyncIterator[JSONDict] = stream_bytes_to_json(iter0)
+                    iter2: AsyncIterator[JSONDict] = tee_to_console_output(iter1, ollama_log_indexer)
+                    iter3: AsyncIterator[JSONDict] = consolidate_and_call(
+                        iter2, ollama_response_consolidator, {},
+                        record_inference_event,
+                    )
+                    iter4: AsyncIterator[bytes] = dump_to_bytes(iter3)
+
+                    ollama_response._content_iterable = iter4
                     return ollama_response
 
                 return await keepalive_wrapper(

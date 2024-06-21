@@ -14,9 +14,9 @@ from client.database import HistoryDB
 from inference.continuation import InferenceOptions
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.orm import FoundationeModelRecordOrm
-from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON
-from providers_registry.ollama.chat_rag_util import do_generate_raw_templated
-from providers_registry.ollama.chat_routes import lookup_model
+from .logging import OllamaRequestContentJSON
+from ..chat_rag_util import do_generate_raw_templated
+from ..chat_routes import lookup_model
 
 logger = logging.getLogger(__name__)
 

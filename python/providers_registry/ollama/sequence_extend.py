@@ -24,14 +24,15 @@ from client.database import HistoryDB, get_db as get_history_db
 from client.sequence_get import do_get_sequence, do_extend_sequence
 from inference.continuation import ContinueRequest, ExtendRequest, select_continuation_model, InferenceOptions, \
     AutonamingOptions
-from inference.iterators import stream_str_to_json, decode_from_bytes, consolidate_and_yield
+from inference.iterators import stream_str_to_json, decode_from_bytes, consolidate_and_yield, consolidate_and_call, \
+    tee_to_console_output, stream_bytes_to_json
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.orm import FoundationeModelRecordOrm, InferenceEventOrm, InferenceReason
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry
 from providers_registry.ollama.api_chat.inject_rag import do_proxy_chat_rag
-from providers_registry.ollama.api_chat.logging import ollama_response_consolidator, inference_event_logger, \
-    construct_new_sequence_from, OllamaResponseContentJSON
+from providers_registry.ollama.api_chat.logging import ollama_response_consolidator, construct_new_sequence_from, \
+    OllamaResponseContentJSON, finalize_inference_job, ollama_log_indexer
 from providers_registry.ollama.chat_rag_util import do_generate_raw_templated
 from providers_registry.ollama.json import keepalive_wrapper
 from retrieval.faiss.retrieval import RetrievalLabel
@@ -98,15 +99,20 @@ async def do_continuation(
         audit_db: AuditDB,
 ) -> JSONStreamingResponse:
     async def append_response_chunk(
-            response_content_json: OllamaResponseContentJSON,
+            consolidated_response: OllamaResponseContentJSON,
             prompt_with_templating: TemplatedPromptText,
     ) -> AsyncIterator[JSONDict]:
         nonlocal inference_model
         inference_model = history_db.merge(inference_model)
 
-        inference_event: InferenceEventOrm = \
-            await inference_event_logger(response_content_json, inference_model, history_db)
-        inference_event.prompt_with_templating = prompt_with_templating
+        inference_event = InferenceEventOrm(
+            model_record_id=inference_model.id,
+            prompt_with_templating=prompt_with_templating,
+            reason="ChatSequence continuation",
+            response_created_at=datetime.now(tz=timezone.utc),
+            response_error="[haven't received/finalized response info yet]",
+        )
+        finalize_inference_job(inference_event, consolidated_response)
 
         try:
             history_db.add(inference_event)
@@ -116,7 +122,8 @@ async def do_continuation(
             history_db.rollback()
 
         response_sequence: ChatSequence | None = \
-            await construct_new_sequence_from(original_sequence, inference_options.seed_assistant_response, response_content_json, inference_event, history_db)
+            await construct_new_sequence_from(original_sequence, inference_options.seed_assistant_response,
+                                              consolidated_response, inference_event, history_db)
 
         if response_sequence is None:
             status_holder.set("Failed to construct a new ChatSequence")
@@ -207,8 +214,8 @@ async def do_continuation(
 
     # Convert to JSON chunks
     iter0: AsyncIterator[bytes] = proxied_response._content_iterable
-    iter1: AsyncIterator[str] = decode_from_bytes(iter0)
-    iter2: AsyncIterator[JSONDict] = stream_str_to_json(iter1)
+    iter1: AsyncIterator[JSONDict] = stream_bytes_to_json(iter0)
+    iter2: AsyncIterator[JSONDict] = tee_to_console_output(iter1, ollama_log_indexer)
 
     # All for the sake of consolidate + add "new_sequence_id" chunk
     iter3: AsyncIterator[JSONDict] = hide_done(iter2)
