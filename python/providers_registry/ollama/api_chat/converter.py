@@ -15,7 +15,7 @@ from inference.continuation import InferenceOptions
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.orm import FoundationeModelRecordOrm
 from .logging import OllamaRequestContentJSON
-from ..chat_rag_util import do_generate_raw_templated
+from ..chat_rag_util import do_generate_raw_templated, do_generate_nolog
 from ..chat_routes import lookup_model
 
 logger = logging.getLogger(__name__)
@@ -122,13 +122,9 @@ async def convert_chat_to_generate(
     modified_headers = original_request.headers.mutablecopy()
     del modified_headers['content-length']
 
-    generate_response = await do_generate_raw_templated(
+    generate_response = await do_generate_nolog(
         generate_request_content,
-        modified_headers,
-        httpx.Cookies(original_request.cookies),
-        history_db,
         audit_db,
-        inference_reason="ollama: /chat to /generate raw",
     )
 
     async def translate_generate_to_chat(
