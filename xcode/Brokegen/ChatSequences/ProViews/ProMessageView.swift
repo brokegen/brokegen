@@ -24,7 +24,7 @@ struct ProMessageView: View {
     }
 
     var headerSection: some View {
-        HStack(spacing: 0) {
+        HStack(alignment: .bottom, spacing: 0) {
             Button(action: {
                 withAnimation(.snappy) {
                     expandContent.toggle()
@@ -53,13 +53,16 @@ struct ProMessageView: View {
                     .id("progress view")
             }
 
-            Text(message.createdAtString)
-                .foregroundStyle(Color(.disabledControlTextColor))
-                .padding(.leading, 18)
-                .padding(.trailing, 18)
-                .opacity(isHovered ? 1.0 : 0.0)
-
             Spacer()
+
+            VStack(alignment: .trailing, spacing: 0) {
+                Text(message.createdAtString)
+                Text(message.serverIdStr)
+            }
+            .foregroundStyle(Color(.disabledControlTextColor))
+            .opacity(isHovered ? 1.0 : 0.0)
+            .padding(.leading, 24)
+            .padding(.trailing, 24)
 
             HStack(spacing: 24) {
                 Button(action: {}, label: {
@@ -79,8 +82,8 @@ struct ProMessageView: View {
             .opacity(isHovered ? 1.0 : 0.0)
             .disabled(!isHovered)
             .padding(.trailing, 18)
+            .padding(.bottom, -24)
         }
-        .frame(height: 42)
         .font(.system(size: 18))
         .padding(16)
 

@@ -51,6 +51,19 @@ enum MessageLike: Equatable, Hashable {
     case stored(ChatMessage)
     case temporary(TemporaryChatMessage)
 
+    var serverIdStr: String {
+        get {
+            switch(self) {
+            case .legacy(let m):
+                m.serverId == nil ? "[unknown ChatMessage]" : "ChatMessage#\(m.serverId!)"
+            case .stored(let m):
+                "ChatMessage#\(m.serverId)"
+            case .temporary(let m):
+                "TemporaryChatMessage"
+            }
+        }
+    }
+
     var role: String {
         get {
             switch(self) {
