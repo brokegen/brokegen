@@ -48,6 +48,7 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
             inference_model_human_id,
             do_proxy_generate(request, inference_reason, history_db, audit_db),
             status_holder,
+            request,
         )
 
     @ollama_forwarder.post("/ollama-proxy/api/chat")
@@ -87,6 +88,7 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
                     inference_model_human_id,
                     forward_request(request, audit_db),
                     status_holder,
+                    request,
                 )
 
             else:
@@ -131,22 +133,21 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
                     if status_holder is not None:
                         status_holder.set(f"Running Ollama response")
 
-                    iter0: AsyncIterator[bytes] = ollama_response._content_iterable
-                    iter1: AsyncIterator[JSONDict] = stream_bytes_to_json(iter0)
+                    iter1: AsyncIterator[JSONDict] = ollama_response._content_iterable
                     iter2: AsyncIterator[JSONDict] = tee_to_console_output(iter1, ollama_log_indexer)
                     iter3: AsyncIterator[JSONDict] = consolidate_and_call(
                         iter2, ollama_response_consolidator, {},
                         record_inference_event,
                     )
-                    iter4: AsyncIterator[bytes] = dump_to_bytes(iter3)
 
-                    ollama_response._content_iterable = iter4
+                    ollama_response._content_iterable = iter3
                     return ollama_response
 
                 return await keepalive_wrapper(
                     inference_model_human_id,
                     get_response(),
                     status_holder,
+                    request,
                 )
         except HTTPException as e:
             return starlette.responses.JSONResponse(

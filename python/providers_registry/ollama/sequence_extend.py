@@ -219,8 +219,7 @@ async def do_continuation(
     )
 
     # Convert to JSON chunks
-    iter0: AsyncIterator[bytes] = proxied_response._content_iterable
-    iter1: AsyncIterator[JSONDict] = stream_bytes_to_json(iter0)
+    iter1: AsyncIterator[JSONDict] = proxied_response._content_iterable
     iter2: AsyncIterator[JSONDict] = tee_to_console_output(iter1, ollama_log_indexer)
 
     # All for the sake of consolidate + add "new_sequence_id" chunk
@@ -240,7 +239,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         response_model=None,
     )
     async def sequence_continue(
-            empty_request: starlette.requests.Request,
+            request: starlette.requests.Request,
             sequence_id: ChatSequenceID,
             params: ContinueRequest,
             history_db: HistoryDB = Depends(get_history_db),
@@ -261,7 +260,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         provider_label: ProviderLabel | None = registry.provider_label_from(inference_model)
         if provider_label is not None and provider_label.type != "ollama":
             return RedirectResponse(
-                empty_request.url_for('sequence_continue_v2', sequence_id=original_sequence.id)
+                request.url_for('sequence_continue_v2', sequence_id=original_sequence.id)
                 .include_query_params(parameters=params)
             )
 
@@ -285,11 +284,12 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 autonaming_options=params,
                 retrieval_label=retrieval_label,
                 status_holder=status_holder,
-                empty_request=empty_request,
+                empty_request=request,
                 history_db=history_db,
                 audit_db=audit_db,
             ),
             status_holder,
+            request,
             allow_non_ollama_fields=True,
         )
 
@@ -298,7 +298,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         response_model=None,
     )
     async def sequence_extend(
-            empty_request: starlette.requests.Request,
+            request: starlette.requests.Request,
             sequence_id: ChatSequenceID,
             params: ExtendRequest,
             history_db: HistoryDB = Depends(get_history_db),
@@ -350,7 +350,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         if provider_label is not None and provider_label.type != "ollama":
             new_sequence: ChatSequence = do_extend_sequence(sequence_id, user_sequence.current_message, history_db)
             return RedirectResponse(
-                empty_request.url_for('sequence_continue_v2', sequence_id=new_sequence.id)
+                request.url_for('sequence_continue_v2', sequence_id=new_sequence.id)
                 .include_query_params(parameters=params)
             )
 
@@ -374,10 +374,11 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 autonaming_options=params,
                 retrieval_label=retrieval_label,
                 status_holder=status_holder,
-                empty_request=empty_request,
+                empty_request=request,
                 history_db=history_db,
                 audit_db=audit_db,
             ),
             status_holder,
+            request,
             allow_non_ollama_fields=True,
         )

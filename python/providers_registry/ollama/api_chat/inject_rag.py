@@ -135,6 +135,8 @@ async def do_proxy_chat_rag(
         status_desc += f" (with retrieval context of {len(prompt_override):_} chars)"
 
     with StatusContext(status_desc, status_holder):
+        prompt_with_templating: TemplatedPromptText
+        ollama_response: JSONStreamingResponse
         prompt_with_templating, ollama_response = await convert_chat_to_generate(
             original_request=original_request,
             chat_request_content=request_content_json,

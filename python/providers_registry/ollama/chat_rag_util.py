@@ -14,14 +14,14 @@ from providers_registry.ollama.api_chat.logging import finalize_inference_job, O
 from providers_registry.ollama.chat_routes import lookup_model_offline
 from providers_registry.ollama.json import OllamaEventBuilder
 from providers_registry.ollama.model_routes import _real_ollama_client
+from audit.http import get_db as get_audit_db
 
 OllamaModelName: TypeAlias = str
 
 
 async def do_generate_nolog(
         request_content: OllamaRequestContentJSON,
-        audit_db: AuditDB,
-) -> tuple[httpx.Response, ]:
+) -> httpx.Response:
     upstream_request = _real_ollama_client.build_request(
         method='POST',
         url="/api/generate",
@@ -31,7 +31,7 @@ async def do_generate_nolog(
         headers=[('Connection', 'close')],
     )
 
-    with HttpxLogger(_real_ollama_client, audit_db):
+    with HttpxLogger(_real_ollama_client, next(get_audit_db())):
         upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
 
     return upstream_response
@@ -45,7 +45,7 @@ async def do_generate_raw_templated(
         audit_db: AuditDB,
         inference_reason: InferenceReason | None = None,
         on_done_fn: Callable[[OllamaResponseContentJSON], Awaitable[Any]] | None = None,
-):
+) -> starlette.responses.StreamingResponse:
     intercept = OllamaEventBuilder("ollama:/api/generate", audit_db)
 
     model, executor_record = await lookup_model_offline(request_content['model'], history_db)

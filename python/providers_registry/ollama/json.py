@@ -5,6 +5,7 @@ from typing import AsyncIterator, Any, Callable, Awaitable, AsyncGenerator
 import httpx
 import orjson
 import sqlalchemy.exc
+import starlette.requests
 import starlette.responses
 from starlette.background import BackgroundTask
 
@@ -24,6 +25,7 @@ async def keepalive_wrapper(
         inference_model_human_id: FoundationModelHumanID,
         real_response_maker: Awaitable[JSONStreamingResponse],
         status_holder: ServerStatusHolder,
+        request: starlette.requests.Request,
         allow_non_ollama_fields: bool = False,
 ) -> JSONStreamingResponse:
     async def nonblocking_response_maker():
@@ -57,9 +59,12 @@ async def keepalive_wrapper(
                     constructed_chunk["status"] = status_holder.get()
 
                 yield orjson.dumps(constructed_chunk)
-                continue
 
-            yield chunk
+            else:
+                yield chunk
+
+            if await request.is_disconnected():
+                logger.fatal(f"Detected client disconnection! Ignoring, because we want inference to continue.")
 
     return JSONStreamingResponse(
         content=do_keepalive(nonblocking_response_maker()),

@@ -1,24 +1,37 @@
 import logging
-from typing import AsyncIterable
+from typing import AsyncIterator, AsyncGenerator
 
 import httpx
-import orjson
 import starlette.requests
 from starlette.exceptions import HTTPException
 
-from _util.json import safe_get
+from _util.json import safe_get, JSONDict
 from _util.json_streaming import JSONStreamingResponse
 from _util.typing import PromptText, TemplatedPromptText
 from audit.http import AuditDB
 from client.database import HistoryDB
 from inference.continuation import InferenceOptions
+from inference.iterators import stream_str_to_json
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.orm import FoundationeModelRecordOrm
 from .logging import OllamaRequestContentJSON
-from ..chat_rag_util import do_generate_raw_templated, do_generate_nolog
+from ..chat_rag_util import do_generate_nolog
 from ..chat_routes import lookup_model
 
 logger = logging.getLogger(__name__)
+
+
+async def translate_generate_to_chat(
+        primordial: AsyncIterator[JSONDict],
+) -> AsyncGenerator[JSONDict, None]:
+    async for chunk_json in primordial:
+        chunk_json['message'] = {
+            'content': safe_get(chunk_json, 'response'),
+            'role': 'assistant',
+        }
+        del chunk_json['response']
+
+        yield chunk_json
 
 
 async def convert_chat_to_generate(
@@ -122,35 +135,10 @@ async def convert_chat_to_generate(
     modified_headers = original_request.headers.mutablecopy()
     del modified_headers['content-length']
 
-    generate_response = await do_generate_nolog(
-        generate_request_content,
-        audit_db,
-    )
-
-    async def translate_generate_to_chat(
-            primordial: AsyncIterable[str | bytes],
-    ) -> AsyncIterable[bytes]:
-        """
-        Technically, this would be easier as a simple callback,
-        rather than constructing a duplicate StreamingResponse. Whatever.
-
-        TODO: How to deal with ndjson chunks that are split across chunks
-        """
-        async for chunk0 in primordial:
-            chunk0_json = orjson.loads(chunk0)
-
-            chunk1 = dict(chunk0_json)
-            del chunk1['response']
-            chunk1['message'] = {
-                'content': chunk0_json['response'],
-                'role': 'assistant',
-            }
-
-            yield orjson.dumps(chunk1)
-
-            # TODO: Make everything upstream/downstream handle this well, particularly logging
-            if await original_request.is_disconnected() and not chunk1['done']:
-                logger.warning(f"Detected client disconnection! Ignoring.")
+    generate_response: httpx.Response = await do_generate_nolog(generate_request_content)
+    iter0: AsyncIterator[str] = generate_response.aiter_text()
+    iter1: AsyncIterator[JSONDict] = stream_str_to_json(iter0)
+    iter2: AsyncIterator[JSONDict] = translate_generate_to_chat(iter1)
 
     # DEBUG: content-length is also still not correct, sometimes?
     # I would guess this only happens for `stream=false` requests, because otherwise how would this make sense?
@@ -160,8 +148,7 @@ async def convert_chat_to_generate(
             del converted_response_headers[unsupported_field]
 
     return generate_request_content['prompt'], JSONStreamingResponse(
-        content=translate_generate_to_chat(generate_response.body_iterator),
+        content=iter2,
         status_code=generate_response.status_code,
         headers=converted_response_headers,
-        background=generate_response.background,
     )
