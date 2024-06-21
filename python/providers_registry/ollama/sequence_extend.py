@@ -163,7 +163,7 @@ async def do_continuation(
             return
 
         if response_sequence is not None and not response_sequence.human_desc:
-            name = autoname_sequence(messages_list, inference_model, status_holder)
+            name = await autoname_sequence(messages_list, inference_model, status_holder)
             logger.info(f"Auto-generated chat title is {len(name)} chars: {name=}")
             response_sequence.human_desc = name
 
