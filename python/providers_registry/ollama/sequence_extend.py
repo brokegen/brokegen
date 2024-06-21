@@ -24,8 +24,7 @@ from client.database import HistoryDB, get_db as get_history_db
 from client.sequence_get import do_get_sequence, do_extend_sequence
 from inference.continuation import ContinueRequest, ExtendRequest, select_continuation_model, InferenceOptions, \
     AutonamingOptions
-from inference.iterators import stream_str_to_json, decode_from_bytes, consolidate_and_yield, consolidate_and_call, \
-    tee_to_console_output, stream_bytes_to_json
+from inference.iterators import consolidate_and_yield, tee_to_console_output, stream_bytes_to_json
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.orm import FoundationeModelRecordOrm, InferenceEventOrm, InferenceReason
 from providers.orm import ProviderLabel
@@ -42,8 +41,6 @@ logger = logging.getLogger(__name__)
 
 async def ollama_generate_helper_fn(
         inference_model: FoundationeModelRecordOrm,
-        history_db: HistoryDB,
-        audit_db: AuditDB,
         inference_reason: InferenceReason,
         system_message: PromptText | None,
         user_prompt: PromptText | None,
@@ -73,8 +70,8 @@ async def ollama_generate_helper_fn(
         },
         request_headers=starlette.datastructures.Headers(),
         request_cookies=None,
-        history_db=history_db,
-        audit_db=audit_db,
+        history_db=next(get_history_db()),
+        audit_db=next(get_audit_db()),
         inference_reason=inference_reason,
     )
 
@@ -84,6 +81,38 @@ async def ollama_generate_helper_fn(
 
     response0_json = orjson.loads(b''.join(content_chunks))
     return response0_json['response']
+
+
+async def autoname_sequence(
+        messages_list: list[ChatMessage],
+        inference_model: FoundationeModelRecordOrm,
+        status_holder: ServerStatusHolder,
+) -> PromptText:
+    with StatusContext("summarizing prompt as tab name", status_holder):
+        name: str = await ollama_generate_helper_fn(
+            inference_model,
+            inference_reason="ChatSequence.human_desc",
+            # NB This only works as a system message on models that respect that.
+            #    So, append it to both.
+            system_message="You are a concise summarizer, seizing on easily identifiable + distinguishing factors of the text.",
+            user_prompt="Provide a summary of the provided text, suitable as a short description for a tab title. " +
+                        "Answer with that title only, do not provide additional information. Reply with at most one sentence.\n\n" +
+                        '\n'.join([m.content for m in messages_list]),
+            assistant_response="Tab title: "
+        )
+
+    # Only strip when both leading and trailing, otherwise we're probably just dropping half of a set.
+    # TODO: Switch this to DSPy
+    if len(name) > 0:
+        name = name.strip()
+        # Or, if there's literally only one quote at the end
+        if name.count('"') == 1 and name[-1] == '"':
+            name = name[:-1]
+    if len(name) > 2:
+        if name[0] == '"' and name[-1] == '"':
+            name = name.strip('"')
+
+    return name
 
 
 async def do_continuation(
@@ -134,32 +163,9 @@ async def do_continuation(
             return
 
         if response_sequence is not None and not response_sequence.human_desc:
-            with StatusContext("summarizing prompt as tab name", status_holder):
-                machine_desc: str = await ollama_generate_helper_fn(
-                    inference_model,
-                    history_db,
-                    audit_db,
-                    inference_reason="ChatSequence.human_desc",
-                    # NB This only works as a system message on models that respect that.
-                    #    So, append it to both.
-                    system_message="You are a concise summarizer, seizing on easily identifiable + distinguishing factors of the text.",
-                    user_prompt="Provide a summary of the provided text, suitable as a short description for a tab title. " +
-                                "Answer with that title only, do not provide additional information. Reply with at most one sentence.\n\n" +
-                                '\n'.join([m.content for m in messages_list]),
-                    assistant_response="Tab title: "
-                )
-
-            # Only strip when both leading and trailing, otherwise we're probably just dropping half of a set.
-            if len(machine_desc) > 0:
-                machine_desc = machine_desc.strip()
-                # Or, if there's literally only one quote at the end
-                if machine_desc.count('"') == 1 and machine_desc[-1] == '"':
-                    machine_desc = machine_desc[:-1]
-            if len(machine_desc) > 2:
-                if machine_desc[0] == '"' and machine_desc[-1] == '"':
-                    machine_desc = machine_desc.strip('"')
-            logger.info(f"Auto-generated chat title is {len(machine_desc)} chars: {machine_desc=}")
-            response_sequence.human_desc = machine_desc
+            name = autoname_sequence(messages_list, inference_model, status_holder)
+            logger.info(f"Auto-generated chat title is {len(name)} chars: {name=}")
+            response_sequence.human_desc = name
 
             history_db.add(response_sequence)
             history_db.commit()
