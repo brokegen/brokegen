@@ -5,14 +5,14 @@ from http.client import HTTPException
 from typing import Annotated, Any
 
 import fastapi.routing
-import starlette.status
-import starlette.responses
 import starlette.requests
+import starlette.responses
+import starlette.status
 from fastapi import Depends, Query
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from _util.typing import ChatSequenceID, RoleName, PromptText, ChatMessageID
+from _util.typing import ChatSequenceID, RoleName, PromptText
 from client.chat_message import ChatMessageOrm, ChatMessage
 from client.chat_sequence import ChatSequence, lookup_sequence_parents
 from client.database import HistoryDB, get_db as get_history_db
@@ -128,15 +128,22 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
     @router_ish.get("/sequences/pinned")
     def get_pinned_recent_sequences_redirect(
             request: fastapi.Request,
-            lookback: float | None = None,
-            limit: int | None = None,
+            lookback: Annotated[float | None, Query(description="Maximum age in seconds for returned items")] = None,
+            limit: Annotated[int | None, Query(description="Maximum number of items to return")] = None,
     ) -> starlette.responses.RedirectResponse:
+        query_kwargs = {
+            "only_user_pinned": "true",
+        }
+        if lookback is not None:
+            query_kwargs["lookback"] = lookback
+        if limit is not None:
+            query_kwargs["limit"] = limit
+
         return starlette.responses.RedirectResponse(
-            request.url_for("fetch_recent_sequences_as_ids",
-                            lookback=lookback,
-                            limit=limit)
-            .include_query_params(only_user_pinned=True),
-            status_code=starlette.status.HTTP_301_MOVED_PERMANENTLY,
+            request.url_for("fetch_recent_sequences_as_ids")
+            .include_query_params(**query_kwargs),
+            # TODO: This should be a 301, but we're debugging. Why can't we forward correctly?
+            status_code=starlette.status.HTTP_307_TEMPORARY_REDIRECT,
         )
 
     @router_ish.get("/sequences/.recent/as-messages")
@@ -181,7 +188,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         if limit is not None:
             query = query.limit(limit)
         if only_user_pinned:
-            query = query.filter_by(only_user_pinned=only_user_pinned)
+            query = query.filter_by(user_pinned=only_user_pinned)
 
         matching_sequence_ids = history_db.execute(query).scalars()
         return {"sequence_ids": list(matching_sequence_ids)}
