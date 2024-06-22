@@ -175,9 +175,11 @@ struct SequencePickerView: View {
     @EnvironmentObject public var chatSettingsService: CSCSettingsService
 
     let onlyUserPinned: Bool
+    let showNewChatButton: Bool
 
-    init(onlyUserPinned: Bool = true) {
+    init(onlyUserPinned: Bool = true, showNewChatButton: Bool = true) {
         self.onlyUserPinned = onlyUserPinned
+        self.showNewChatButton = showNewChatButton
     }
 
     private var sectionedSequences: [(String, [ChatSequence])] {
@@ -192,11 +194,6 @@ struct SequencePickerView: View {
         }
 
         return Array(sectionedSequences)
-            // DEBUG: This should be redundant with the above .sorted(), removing for now
-//            .map {
-//                // Sorts the individual ChatSequences within a section
-//                ($0.0, $0.1.sorted())
-//            }
             .sorted { $0.0 > $1.0 }
     }
 
@@ -225,27 +222,27 @@ struct SequencePickerView: View {
 
             Spacer()
 
-            if chatSettingsService.useSimplifiedSequenceViews {
-                NavigationLink(destination: {
-                    BlankOneSequenceView()
-                }) {
-                    Label("New Chat...", systemImage: "plus")
-                        .buttonStyle(.accessoryBar)
-                        .padding(12)
+            if showNewChatButton {
+                if chatSettingsService.useSimplifiedSequenceViews {
+                    NavigationLink(destination: {
+                        BlankOneSequenceView()
+                    }) {
+                        Label("New Chat...", systemImage: "plus")
+                            .buttonStyle(.accessoryBar)
+                            .padding(12)
+                    }
+                    .layoutPriority(0.5)
                 }
-                .layoutPriority(0.5)
-            }
-            else {
-                NavigationLink(destination: {
-                    ProSequenceView(
-                        OneSequenceViewModel.createBlank(chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
-                    )
-                }) {
-                    Label("New Chat (experimental)", systemImage: "plus")
-                        .buttonStyle(.accessoryBar)
-                        .padding(12)
+                else {
+                    NavigationLink(destination: {
+                        BlankProSequenceView(chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
+                    }) {
+                        Label("New Chat (experimental)", systemImage: "plus")
+                            .buttonStyle(.accessoryBar)
+                            .padding(12)
+                    }
+                    .layoutPriority(0.5)
                 }
-                .layoutPriority(0.5)
             }
         }
         .padding(24)

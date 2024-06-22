@@ -2,6 +2,7 @@ import Alamofire
 import Combine
 import Foundation
 import SwiftData
+import SwiftyJSON
 
 let maxPinChatSequenceDesc = 140
 
@@ -41,26 +42,6 @@ class OneSequenceViewModel: ObservableObject {
     var continuationInferenceModel: FoundationModel? = nil
     var showAssistantResponseSeed: Bool = false
     var showSystemPromptOverride: Bool = false
-
-    static func createBlank(chatService: ChatSyncService, appSettings: AppSettings, chatSettingsService: CSCSettingsService) -> OneSequenceViewModel {
-        let sequence = ChatSequence(
-            clientId: UUID(),
-            serverId: nil,
-            humanDesc: nil,
-            userPinned: false,
-            messages: [
-                Message(role: "placeholder", content: "", createdAt: nil),
-            ],
-            inferenceModelId: nil)
-
-        let settings = CSCSettingsService.SettingsProxy(
-            defaults: chatSettingsService.defaults,
-            override: OverrideCSUISettings(),
-            inference: CSInferenceSettings()
-        )
-
-        return OneSequenceViewModel(sequence: sequence, chatService: chatService, settings: settings, chatSettingsService: chatSettingsService, appSettings: appSettings)
-    }
 
     convenience init(_ sequence: ChatSequence, chatService: ChatSyncService, appSettings: AppSettings, chatSettingsService: CSCSettingsService) {
         self.init(sequence: sequence, chatService: chatService, settings: chatSettingsService.settings(for: sequence), chatSettingsService: chatSettingsService, appSettings: appSettings)
@@ -156,34 +137,29 @@ class OneSequenceViewModel: ObservableObject {
             }
 
             serverStatus = "\(endpoint) response: (\(responseInEdit!.content.count) characters so far)"
-            do {
-                let jsonDict = try JSONSerialization.jsonObject(with: data) as! [String : Any]
-                if let status = jsonDict["status"] as? String {
-                    serverStatus = status
-                }
 
-                if let message = jsonDict["message"] as? [String : Any] {
-                    if let fragment = message["content"] as? String {
-                        if !fragment.isEmpty {
-                            DispatchQueue.main.async {
-                                self.responseInEdit = self.responseInEdit!.appendContent(fragment)
-                                self.objectWillChange.send()
-                            }
-                        }
-                    }
-                }
+            let jsonData: JSON = JSON(data)
 
-                if let done = jsonDict["done"] as? Bool {
-                    let newSequenceId: ChatSequenceServerID? = jsonDict["new_sequence_id"] as? Int
-                    if done && newSequenceId != nil {
-                        Task {
-                            await self.replaceSequence(newSequenceId!)
-                        }
-                    }
+            if let status = jsonData["status"].string {
+                serverStatus = status
+            }
+
+            let messageFragment = jsonData["message"]["content"].stringValue
+            if !messageFragment.isEmpty {
+                DispatchQueue.main.async {
+                    self.responseInEdit = self.responseInEdit!.appendContent(messageFragment)
+                    self.objectWillChange.send()
                 }
             }
-            catch {
-                print("[ERROR] \(callerName): decoding error or something")
+
+            if jsonData["done"].boolValue {
+                if let newSequenceId: ChatSequenceServerID = jsonData["new_sequence_id"].int {
+
+                    Task {
+                        print("[DEBUG] Attempting to update OneSequenceViewModel to new_sequence_id: \(newSequenceId)")
+                        _ = await self.chatService.updateSequence(self.sequence.serverId, withNewSequence: newSequenceId)
+                    }
+                }
             }
         }
     }
@@ -256,7 +232,7 @@ class OneSequenceViewModel: ObservableObject {
                     caller: "ChatSyncService.sequenceContinue",
                     endpoint: "/sequences/\(sequence.serverId!)/continue"
                 ), receiveValue: receiveHandler(
-                    caller: "OneSequenceViewModel.requestContinue(withRetrieval: \(withRetrieval))",
+                    caller: "OneSequenceViewModel.requestStart(withRetrieval: \(withRetrieval))",
                     endpoint: "/sequences/\(sequence.serverId!)/continue"
                 ))
         }
@@ -387,19 +363,6 @@ class OneSequenceViewModel: ObservableObject {
             if userRequested {
                 serverStatus = "[WARNING] Requested stop of receive, but TODO: Ollama/server don't actually stop inference"
             }
-        }
-    }
-
-    func replaceSequence(_ newSequenceId: ChatSequenceServerID) async {
-        // If our original sequence.serverId was nil, we need to reset/reattach our Settings, too.
-        let startedFromBlank = self.sequence.serverId == nil
-
-        print("[DEBUG] Attempting to update OneSequenceViewModel to new_sequence_id: \(newSequenceId)")
-        let newSequence = await self.chatService.updateSequence(self.sequence.serverId, withNewSequence: newSequenceId)
-
-        if startedFromBlank && newSequence != nil {
-            self.chatSettingsService.perSequenceUiSettings[newSequence!] = settings.override
-            self.chatSettingsService.perSequenceInferenceSettings[newSequence!] = settings.inference
         }
     }
 }

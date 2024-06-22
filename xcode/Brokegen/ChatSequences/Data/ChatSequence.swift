@@ -288,10 +288,9 @@ extension DefaultChatSyncService {
             }
         }
 
-        if let updatedSequenceData = try? await getDataBlocking("/sequences/\(updatedSequenceId)") {
+        if let updatedSequenceData = try? await getDataBlocking("/sequences/\(updatedSequenceId)/as-messages") {
             do {
-                let updatedSequence = try ChatSequence(
-                    clientId: priorSequenceClientId ?? UUID(),
+                let updatedSequence = try ChatSequence.fromData(
                     serverId: updatedSequenceId,
                     data: updatedSequenceData)
 

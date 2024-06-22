@@ -9,7 +9,6 @@ struct ProSequenceView: View {
     @FocusState private var focusTextInput: Bool
     @State private var showContinuationModelPicker: Bool = false
     @State private var splitViewLoaded: Bool = false
-    @State private var modelPickerHovered: Bool = false
 
     @FocusState private var focusSystemPromptOverride: Bool
     @FocusState private var focusModelTemplateOverride: Bool
@@ -454,9 +453,6 @@ struct ProSequenceView: View {
                                                 geometry.size.height * 0.2
                                             ))
                                             .contentShape(Rectangle())
-                                            .onHover { isHovered in
-                                                modelPickerHovered = isHovered
-                                            }
                                             .layoutPriority(0.2)
 
                                             Spacer()
@@ -558,11 +554,8 @@ struct ProSequenceView: View {
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
             .background(BackgroundEffectView().ignoresSafeArea())
-            .navigationTitle(viewModel.displayHumanDesc)
-            .navigationSubtitle(
-                viewModel.sequence.serverId != nil
-                ? "ChatSequence#\(viewModel.sequence.serverId!)"
-                : "")
+            .navigationTitle(viewModel.sequence.displayServerId())
+            .navigationSubtitle(viewModel.sequence.displayHumanDesc())
         }
     }
 }

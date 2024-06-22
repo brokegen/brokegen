@@ -33,6 +33,7 @@
 		CE8229AF2BF7306000029DC2 /* JobsManagerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8229AE2BF7306000029DC2 /* JobsManagerService.swift */; };
 		CE9065202C272960003593F1 /* SequencePickerSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE90651F2C272960003593F1 /* SequencePickerSidebar.swift */; };
 		CE9065222C272A6A003593F1 /* SPViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9065212C272A6A003593F1 /* SPViewModel.swift */; };
+		CE9065252C2751CD003593F1 /* BlankProSequenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9065242C2751CD003593F1 /* BlankProSequenceView.swift */; };
 		CE9867512BF4047C008D6C41 /* BrokegenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867502BF4047C008D6C41 /* BrokegenApp.swift */; };
 		CE9867552BF4047E008D6C41 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE9867542BF4047E008D6C41 /* Assets.xcassets */; };
 		CE9867592BF4047E008D6C41 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE9867582BF4047E008D6C41 /* Preview Assets.xcassets */; };
@@ -112,6 +113,7 @@
 		CE8229AE2BF7306000029DC2 /* JobsManagerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsManagerService.swift; sourceTree = "<group>"; };
 		CE90651F2C272960003593F1 /* SequencePickerSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequencePickerSidebar.swift; sourceTree = "<group>"; };
 		CE9065212C272A6A003593F1 /* SPViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPViewModel.swift; sourceTree = "<group>"; };
+		CE9065242C2751CD003593F1 /* BlankProSequenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankProSequenceView.swift; sourceTree = "<group>"; };
 		CE98674D2BF4047C008D6C41 /* Brokegen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Brokegen.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE9867502BF4047C008D6C41 /* BrokegenApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrokegenApp.swift; sourceTree = "<group>"; };
 		CE9867542BF4047E008D6C41 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -184,6 +186,7 @@
 			isa = PBXGroup;
 			children = (
 				CE145DAC2C1A106A00577314 /* ProMessageView.swift */,
+				CE9065242C2751CD003593F1 /* BlankProSequenceView.swift */,
 				CE145DA92C1A0E9800577314 /* ProSequenceView.swift */,
 				CEF73F2A2C1BE32200C46AA5 /* CSCSettings.swift */,
 				CEFA69442C14AE67007EEF8D /* CSCSettingsService.swift */,
@@ -523,6 +526,7 @@
 				CE9867512BF4047C008D6C41 /* BrokegenApp.swift in Sources */,
 				CEDCF2AB2BFFD623006ABBA9 /* OneMessageView.swift in Sources */,
 				CE145DA32C18071E00577314 /* ProviderPickerView.swift in Sources */,
+				CE9065252C2751CD003593F1 /* BlankProSequenceView.swift in Sources */,
 				CECA47A82BF6D5B8007A28F2 /* System.swift in Sources */,
 				CE4634E22BF97A180063142E /* JobOutputView.swift in Sources */,
 				CE4634E52BFA5F890063142E /* OneShotProcess.swift in Sources */,
