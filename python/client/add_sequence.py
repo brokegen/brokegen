@@ -88,6 +88,20 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         pinned = history_db.execute(query).scalars()
         return {"sequence_ids": list(pinned)}
 
+    @router_ish.get("/sequences/{sequence_id:int}/parent")
+    def get_sequence_parent(
+            sequence_id: ChatSequenceID,
+            history_db: HistoryDB = Depends(get_history_db),
+    ) -> ChatSequenceID | None:
+        match_object = history_db.execute(
+            select(ChatSequence)
+            .filter_by(id=sequence_id)
+        ).scalar_one_or_none()
+        if match_object is None:
+            raise HTTPException(starlette.status.HTTP_404_NOT_FOUND, "No matching object")
+
+        return match_object.parent_sequence
+
     @router_ish.post("/sequences/{sequence_id:int}/user_pinned")
     def set_sequence_pinned(
             sequence_id: ChatSequenceID,
