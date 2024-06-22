@@ -52,16 +52,6 @@ fileprivate func dateToISOWeekStartingMonday(_ date: Date) -> String {
     return "\(paddedYear)-ww\(paddedWeek).\(weekday)" + formatter.string(from: date)
 }
 
-extension ChatSequence {
-    func displayHumanDesc() -> String {
-        if !(humanDesc ?? "").isEmpty {
-            return humanDesc!
-        }
-
-        return "ChatSequence#\(serverId!)"
-    }
-}
-
 struct SequenceRow: View {
     @Environment(ProviderService.self) private var providerService
 
@@ -276,6 +266,30 @@ struct SequencePickerView: View {
                             pathHost.push(
                                 chatService.clientModel(for: sequence, appSettings: appSettings, chatSettingsService: chatSettingsService)
                             )
+                        }
+                        .contextMenu {
+                            Text(sequence.displayRecognizableDesc())
+                                .font(.system(size: 18))
+
+                            Divider()
+
+                            Button {
+                                let updatedSequence = chatService.pinChatSequence(sequence, pinned: !sequence.userPinned)
+                                chatService.updateSequence(withSameId: updatedSequence)
+                            } label: {
+                                Toggle(isOn: .constant(sequence.userPinned)) {
+                                    Text("Keep ChatSequence pinned (show in \"recents\")")
+                                        .font(.system(size: 18))
+                                }
+                            }
+
+                            Button {
+                                let updatedSequence = chatService.renameChatSequence(sequence, to: nil)
+                                chatService.updateSequence(withSameId: updatedSequence)
+                            } label: {
+                                Text("Rename...")
+                                    .font(.system(size: 18))
+                            }
                         }
                     }
                 }

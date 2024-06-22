@@ -115,6 +115,51 @@ class ChatSequence: Identifiable {
         guard !messages.isEmpty else { return nil }
         return messages.last!.createdAt
     }
+
+    func displayServerId() -> String {
+        if serverId == nil {
+            return "[uncommitted ChatSequence]"
+        }
+
+        return "ChatSequence#\(serverId!)"
+    }
+
+    func displayRecognizableDesc(
+        displayLimit: Int? = 140
+    ) -> String {
+        if serverId == nil {
+            return displayHumanDesc(displayLimit: displayLimit)
+        }
+        else {
+            if !(humanDesc ?? "").isEmpty {
+                let fullString = "\(displayServerId()): \(humanDesc!)"
+                if displayLimit != nil {
+                    return String(fullString.prefix(displayLimit!))
+                }
+                else {
+                    return fullString
+                }
+            }
+            else {
+                return displayServerId()
+            }
+        }
+    }
+
+    func displayHumanDesc(
+        displayLimit: Int? = nil
+    ) -> String {
+        if !(humanDesc ?? "").isEmpty {
+            if displayLimit != nil {
+                return String(humanDesc!.prefix(displayLimit!))
+            }
+            else {
+                return humanDesc!
+            }
+        }
+
+        return displayServerId()
+    }
 }
 
 extension ChatSequence: Equatable {
@@ -135,9 +180,8 @@ extension ChatSequence: Hashable {
 }
 
 extension ChatSyncService {
-    func renameChatSequence(_ sequence: ChatSequence, to newHumanDesc: String) -> ChatSequence {
-//        sequence.humanDesc = newHumanDesc
-        // TODO: Send up to server
+    // TODO: Not implemented
+    func renameChatSequence(_ sequence: ChatSequence, to newHumanDesc: String?) -> ChatSequence {
         return sequence
     }
 
@@ -146,7 +190,6 @@ extension ChatSyncService {
         pinned userPinned: Bool
     ) -> ChatSequence {
         guard userPinned != sequence.userPinned else { return sequence }
-//        sequence.userPinned = pinned
         return sequence
     }
 }

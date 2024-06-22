@@ -81,14 +81,7 @@ class OneSequenceViewModel: ObservableObject {
     }
 
     var displayHumanDesc: String {
-        if !(sequence.humanDesc ?? "").isEmpty {
-            return sequence.humanDesc!
-        }
-        if sequence.serverId == nil {
-            return "[uncommitted ChatSequence]"
-        }
-
-        return "ChatSequence#\(sequence.serverId!)"
+        return sequence.displayHumanDesc()
     }
 
     var displayServerStatus: String? {
