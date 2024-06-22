@@ -4,9 +4,12 @@ from typing import Optional, Annotated
 
 import fastapi.routing
 import fastapi.routing
-from fastapi import Depends, Query
+import starlette.requests
+import starlette.status
+from fastapi import Depends, Query, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
+from starlette.responses import RedirectResponse
 
 from _util.typing import ChatMessageID
 from _util.typing import ChatSequenceID
@@ -84,3 +87,22 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
         pinned = history_db.execute(query).scalars()
         return {"sequence_ids": list(pinned)}
+
+    @router_ish.post("/sequences/{sequence_id:int}/user_pinned")
+    def set_sequence_pinned(
+            sequence_id: ChatSequenceID,
+            value: Annotated[bool, Query(description="Whether to pin or unpin")] = True,
+            history_db: HistoryDB = Depends(get_history_db),
+    ):
+        match_object = history_db.execute(
+            select(ChatSequence)
+            .filter_by(id=sequence_id)
+        ).scalar_one_or_none()
+        if match_object is None:
+            raise HTTPException(starlette.status.HTTP_404_NOT_FOUND, "No matching object")
+
+        match_object.user_pinned = value
+        history_db.add(match_object)
+        history_db.commit()
+
+        return starlette.responses.Response(status_code=starlette.status.HTTP_204_NO_CONTENT)

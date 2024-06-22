@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from http.client import HTTPException
 
 import fastapi.routing
+import starlette.status
 from fastapi import Depends
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -149,7 +150,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             .filter_by(id=sequence_id)
         ).scalar_one_or_none()
         if match_object is None:
-            raise HTTPException(400, "No matching object")
+            raise HTTPException(starlette.status.HTTP_404_NOT_FOUND, "No matching object")
 
         # This modifies the SQLAlchemy object, when we should really have turned it into a JSON first.
         # TODO: Turn the `match_object` into a JSON object first.

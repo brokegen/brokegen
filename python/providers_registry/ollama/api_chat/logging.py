@@ -78,8 +78,7 @@ async def construct_new_sequence_from(
         parent_sequence=original_sequence.id,
     )
 
-    # (Due to race conditions or something, we basically need to ignore whatever the original pin status was.)
-    response_sequence.user_pinned = True
+    response_sequence.user_pinned = original_sequence.user_pinned
     original_sequence.user_pinned = False
 
     history_db.add(original_sequence)
