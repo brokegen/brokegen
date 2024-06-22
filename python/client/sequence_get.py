@@ -1,11 +1,14 @@
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from http.client import HTTPException
+from typing import Annotated, Any
 
 import fastapi.routing
 import starlette.status
-from fastapi import Depends
+import starlette.responses
+import starlette.requests
+from fastapi import Depends, Query
 from pydantic import BaseModel
 from sqlalchemy import select
 
@@ -65,7 +68,7 @@ def translate_model_info_diff(
     )
 
 
-def do_get_sequence(
+def fetch_messages_for_sequence(
         id: ChatSequenceID,
         history_db: HistoryDB,
         include_model_info_diffs: bool = False,
@@ -102,46 +105,100 @@ def do_get_sequence(
     return messages_list[::-1]
 
 
-def do_extend_sequence(
-        sequence_id: ChatSequenceID,
-        message_id: ChatMessageID,
+def emit_sequence_details(
+        sequence: ChatSequence,
         history_db: HistoryDB,
-) -> ChatSequence:
-    """
-    This just stacks a new user message onto the end of our chain.
+        add_display_info: bool = True,
+) -> ChatSequence | Any:
+    # This modifies the SQLAlchemy object, when we should really have turned it into a JSON first.
+    # TODO: Turn the `match_object` into a JSON object first.
+    sequence.messages = fetch_messages_for_sequence(sequence.id, history_db, include_model_info_diffs=True)
 
-    Rely on /continue to run any inference.
-    """
-    # First, store the message that was painstakingly generated for us.
-    original_sequence = history_db.execute(
-        select(ChatSequence)
-        .filter_by(id=sequence_id)
-    ).scalar_one()
+    # Stick latest model name onto SequenceID, for client ease-of-display
+    for sequence_node in lookup_sequence_parents(sequence.id, history_db):
+        model = lookup_inference_model_for_event_id(sequence_node.inference_job_id, history_db)
+        if model is not None:
+            sequence.inference_model_id = model.id
+            break
 
-    user_sequence = ChatSequence(
-        human_desc=original_sequence.human_desc,
-        parent_sequence=original_sequence.id,
-        generated_at=datetime.now(tz=timezone.utc),
-        generation_complete=False,
-    )
-
-    user_sequence.current_message = message_id
-    user_sequence.generation_complete = True
-
-    # Mark this user response as the current up-to-date
-    user_sequence.user_pinned = original_sequence.user_pinned
-    original_sequence.user_pinned = False
-
-    history_db.add(original_sequence)
-    history_db.add(user_sequence)
-    history_db.commit()
-
-    return user_sequence
+    return sequence
 
 
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
+    @router_ish.get("/sequences/pinned")
+    def get_pinned_recent_sequences_redirect(
+            request: fastapi.Request,
+            lookback: float | None = None,
+            limit: int | None = None,
+    ) -> starlette.responses.RedirectResponse:
+        return starlette.responses.RedirectResponse(
+            request.url_for("fetch_recent_sequences_as_ids",
+                            lookback=lookback,
+                            limit=limit)
+            .include_query_params(only_user_pinned=True),
+            status_code=starlette.status.HTTP_301_MOVED_PERMANENTLY,
+        )
+
+    @router_ish.get("/sequences/.recent/as-messages")
+    def fetch_recent_sequences_as_messages(
+            lookback: Annotated[float | None, Query(description="Maximum age in seconds for returned items")] = None,
+            limit: Annotated[int | None, Query(description="Maximum number of items to return")] = None,
+            only_user_pinned: Annotated[bool | None, Query(description="Only include user_pinned sequences")] = None,
+            history_db: HistoryDB = Depends(get_history_db),
+    ):
+        query = (
+            select(ChatSequence)
+            .order_by(ChatSequence.generated_at.desc())
+        )
+        if lookback is not None:
+            reference_time = datetime.now(tz=timezone.utc) - timedelta(seconds=lookback)
+            query = query.where(ChatSequence.generated_at > reference_time)
+        if limit is not None:
+            query = query.limit(limit)
+        if only_user_pinned:
+            query = query.filter_by(only_user_pinned=only_user_pinned)
+
+        return {"sequences": [
+            emit_sequence_details(match_object, history_db)
+            for match_object
+            in history_db.execute(query).scalars()
+        ]}
+
+    @router_ish.get("/sequences/.recent/as-ids")
+    def fetch_recent_sequences_as_ids(
+            lookback: Annotated[float | None, Query(description="Maximum age in seconds for returned items")] = None,
+            limit: Annotated[int | None, Query(description="Maximum number of items to return")] = None,
+            only_user_pinned: Annotated[bool | None, Query(description="Only include user_pinned sequences")] = None,
+            history_db: HistoryDB = Depends(get_history_db),
+    ):
+        query = (
+            select(ChatSequence.id)
+            .order_by(ChatSequence.generated_at.desc())
+        )
+        if lookback is not None:
+            reference_time = datetime.now(tz=timezone.utc) - timedelta(seconds=lookback)
+            query = query.where(ChatSequence.generated_at > reference_time)
+        if limit is not None:
+            query = query.limit(limit)
+        if only_user_pinned:
+            query = query.filter_by(only_user_pinned=only_user_pinned)
+
+        matching_sequence_ids = history_db.execute(query).scalars()
+        return {"sequence_ids": list(matching_sequence_ids)}
+
     @router_ish.get("/sequences/{sequence_id:int}")
-    def get_sequence(
+    def get_sequence_as_messages_redirect(
+            request: fastapi.Request,
+            sequence_id: ChatSequenceID,
+    ) -> starlette.responses.RedirectResponse:
+        return starlette.responses.RedirectResponse(
+            request.url_for("fetch_sequence_as_messages",
+                            sequence_id=sequence_id),
+            status_code=starlette.status.HTTP_301_MOVED_PERMANENTLY,
+        )
+
+    @router_ish.get("/sequences/{sequence_id:int}/as-messages")
+    def fetch_sequence_as_messages(
             sequence_id: ChatSequenceID,
             history_db: HistoryDB = Depends(get_history_db),
     ):
@@ -152,25 +209,37 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         if match_object is None:
             raise HTTPException(starlette.status.HTTP_404_NOT_FOUND, "No matching object")
 
-        # This modifies the SQLAlchemy object, when we should really have turned it into a JSON first.
-        # TODO: Turn the `match_object` into a JSON object first.
-        match_object.messages = do_get_sequence(sequence_id, history_db, include_model_info_diffs=True)
+        return emit_sequence_details(match_object, history_db)
 
-        # Stick latest model name onto SequenceID, for client ease-of-display
-        for sequence in lookup_sequence_parents(sequence_id, history_db):
-            model = lookup_inference_model_for_event_id(sequence.inference_job_id, history_db)
-            if model is not None:
-                match_object.inference_model_id = model.id
-                break
-
-        return match_object
-
-    @router_ish.post("/sequences/{sequence_id:int}/add/{message_id:int}")
-    def extend_sequence(
+    @router_ish.get("/sequences/{sequence_id:int}/parent")
+    def get_sequence_parent(
             sequence_id: ChatSequenceID,
-            message_id: ChatMessageID,
+            history_db: HistoryDB = Depends(get_history_db),
+    ) -> ChatSequenceID | None:
+        match_object = history_db.execute(
+            select(ChatSequence)
+            .filter_by(id=sequence_id)
+        ).scalar_one_or_none()
+        if match_object is None:
+            raise HTTPException(starlette.status.HTTP_404_NOT_FOUND, "No matching object")
+
+        return match_object.parent_sequence
+
+    @router_ish.post("/sequences/{sequence_id:int}/user_pinned")
+    def set_sequence_pinned(
+            sequence_id: ChatSequenceID,
+            value: Annotated[bool, Query(description="Whether to pin or unpin")] = True,
             history_db: HistoryDB = Depends(get_history_db),
     ):
-        return {
-            "sequence_id": do_extend_sequence(sequence_id, message_id, history_db).id,
-        }
+        match_object = history_db.execute(
+            select(ChatSequence)
+            .filter_by(id=sequence_id)
+        ).scalar_one_or_none()
+        if match_object is None:
+            raise HTTPException(starlette.status.HTTP_404_NOT_FOUND, "No matching object")
+
+        match_object.user_pinned = value
+        history_db.add(match_object)
+        history_db.commit()
+
+        return starlette.responses.Response(status_code=starlette.status.HTTP_204_NO_CONTENT)

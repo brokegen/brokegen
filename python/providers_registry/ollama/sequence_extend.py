@@ -21,7 +21,8 @@ from audit.http import get_db as get_audit_db
 from client.chat_message import ChatMessageOrm, lookup_chat_message, ChatMessage
 from client.chat_sequence import ChatSequence
 from client.database import HistoryDB, get_db as get_history_db
-from client.sequence_get import do_get_sequence, do_extend_sequence
+from client.sequence_add import do_extend_sequence
+from client.sequence_get import fetch_messages_for_sequence
 from inference.continuation import ContinueRequest, ExtendRequest, select_continuation_model, InferenceOptions, \
     AutonamingOptions
 from inference.iterators import consolidate_and_yield, tee_to_console_output
@@ -264,7 +265,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         ).scalar_one()
 
         messages_list: list[ChatMessage] = \
-            do_get_sequence(sequence_id, history_db, include_model_info_diffs=False)
+            fetch_messages_for_sequence(sequence_id, history_db, include_model_info_diffs=False)
 
         # Decide how to continue inference for this sequence
         inference_model: FoundationeModelRecordOrm = \
@@ -319,7 +320,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
     ) -> JSONStreamingResponse | RedirectResponse:
         # Manually fetch the message + model config history from our requests
         messages_list: list[ChatMessage] = \
-            do_get_sequence(sequence_id, history_db, include_model_info_diffs=False)
+            fetch_messages_for_sequence(sequence_id, history_db, include_model_info_diffs=False)
 
         # First, store the message that was painstakingly generated for us.
         original_sequence = history_db.execute(
