@@ -15,6 +15,7 @@ struct MiniSequencePickerSidebar: View {
 
     func someSectionedSequences(limit: Int) -> [(String, [ChatSequence])] {
         let someSequences = chatService.loadedChatSequences
+            .filter { $0.userPinned == true }
             .sorted()
             .prefix(limit)
 
@@ -24,19 +25,6 @@ struct MiniSequencePickerSidebar: View {
 
         return Array(sectionedSomeSequences)
             // Make sure the section names are sorted, because I guess they don't stay sorted
-            .sorted { $0.0 > $1.0 }
-    }
-
-    func sectionedSequences() -> [(String, [ChatSequence])] {
-        let sectionedSequences = Dictionary(grouping: chatService.loadedChatSequences) {
-            dateToSectionName($0.lastMessageDate)
-        }
-
-        return Array(sectionedSequences)
-            .map {
-                // Sort the individual ChatSequences within a section
-                ($0.0, $0.1.sorted())
-            }
             .sorted { $0.0 > $1.0 }
     }
 

@@ -180,16 +180,29 @@ struct SequencePickerView: View {
     @EnvironmentObject public var appSettings: AppSettings
     @EnvironmentObject public var chatSettingsService: CSCSettingsService
 
+    let onlyUserPinned: Bool
+
+    init(onlyUserPinned: Bool = true) {
+        self.onlyUserPinned = onlyUserPinned
+    }
+
     private var sectionedSequences: [(String, [ChatSequence])] {
-        let sectionedSequences = Dictionary(grouping: chatService.loadedChatSequences) {
+        var sortedSequences = chatService.loadedChatSequences
+        if onlyUserPinned {
+            sortedSequences = sortedSequences.filter { $0.userPinned == true }
+        }
+        sortedSequences = sortedSequences.sorted()
+
+        let sectionedSequences = Dictionary(grouping: sortedSequences) {
             dateToSectionName($0.lastMessageDate)
         }
 
         return Array(sectionedSequences)
-            .map {
-                // Sorts the individual ChatSequences within a section
-                ($0.0, $0.1.sorted())
-            }
+            // DEBUG: This should be redundant with the above .sorted(), removing for now
+//            .map {
+//                // Sorts the individual ChatSequences within a section
+//                ($0.0, $0.1.sorted())
+//            }
             .sorted { $0.0 > $1.0 }
     }
 
