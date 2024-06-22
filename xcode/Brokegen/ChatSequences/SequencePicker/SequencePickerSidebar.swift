@@ -33,49 +33,29 @@ struct MiniSequencePickerSidebar: View {
             HStack {
                 Image(systemName: "message")
                     .padding(.trailing, 4)
-
+                
                 Text("Chats")
             }
         }) {
-            if chatSettingsService.useSimplifiedSequenceViews {
-                NavigationLink(destination: {
-                    BlankOneSequenceView()
-                }) {
-                    HStack {
-                        Image(systemName: "plus")
-                            .padding(.trailing, 0)
-                            .layoutPriority(0.2)
-                        Text("New Chat...")
-                            .layoutPriority(0.5)
-
-                        Spacer()
-                    }
-                    .contentShape(Rectangle())
-                    .foregroundStyle(Color.accentColor)
-                }
-                .padding(.leading, -24)
-                .padding(.trailing, -24)
-                .frame(maxWidth: .infinity)
-            }
-            else {
-                NavigationLink(destination: {
-                    ProSequenceView(
-                        OneSequenceViewModel.createBlank(chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
-                    )
-                }) {
+            NavigationLink(destination: {
+                BlankOneSequenceView()
+            }) {
+                HStack {
                     Image(systemName: "plus")
                         .padding(.trailing, 0)
                         .layoutPriority(0.2)
-                    Text("New Chat (experimental)")
+                    Text("New Chat...")
                         .layoutPriority(0.5)
-
+                    
                     Spacer()
                 }
-                .padding(.leading, -24)
-                .padding(.trailing, -24)
-                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+                .foregroundStyle(Color.accentColor)
             }
-
+            .padding(.leading, -24)
+            .padding(.trailing, -24)
+            .frame(maxWidth: .infinity)
+            
             if chatService.loadedChatSequences.isEmpty {
                 if navLimit <= 0 {
                     NavigationLink(destination: SequencePickerView()) {
@@ -108,12 +88,12 @@ struct MiniSequencePickerSidebar: View {
                 NavigationLink(destination: SequencePickerView()) {
                     ASRow("Browse Recent", showChevron: true)
                 }
-
+                
                 Divider()
-
+                
                 ForEach(someSectionedSequences(limit: navLimit), id: \.0) { pair in
                     let (sectionName, sectionSequences) = pair
-
+                    
                     Section(content: {
                         ForEach(sectionSequences, id: \.serverId) { sequence in
                             Button(action: {
