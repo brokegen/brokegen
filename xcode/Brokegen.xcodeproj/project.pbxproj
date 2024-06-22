@@ -32,6 +32,7 @@
 		CE7FFE182C06772400DB7CFA /* BlankOneSequenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE172C06772400DB7CFA /* BlankOneSequenceView.swift */; };
 		CE8229AF2BF7306000029DC2 /* JobsManagerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8229AE2BF7306000029DC2 /* JobsManagerService.swift */; };
 		CE9065202C272960003593F1 /* SequencePickerSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE90651F2C272960003593F1 /* SequencePickerSidebar.swift */; };
+		CE9065222C272A6A003593F1 /* SPViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9065212C272A6A003593F1 /* SPViewModel.swift */; };
 		CE9867512BF4047C008D6C41 /* BrokegenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867502BF4047C008D6C41 /* BrokegenApp.swift */; };
 		CE9867552BF4047E008D6C41 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE9867542BF4047E008D6C41 /* Assets.xcassets */; };
 		CE9867592BF4047E008D6C41 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE9867582BF4047E008D6C41 /* Preview Assets.xcassets */; };
@@ -110,6 +111,7 @@
 		CE7FFE172C06772400DB7CFA /* BlankOneSequenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankOneSequenceView.swift; sourceTree = "<group>"; };
 		CE8229AE2BF7306000029DC2 /* JobsManagerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsManagerService.swift; sourceTree = "<group>"; };
 		CE90651F2C272960003593F1 /* SequencePickerSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequencePickerSidebar.swift; sourceTree = "<group>"; };
+		CE9065212C272A6A003593F1 /* SPViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPViewModel.swift; sourceTree = "<group>"; };
 		CE98674D2BF4047C008D6C41 /* Brokegen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Brokegen.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE9867502BF4047C008D6C41 /* BrokegenApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrokegenApp.swift; sourceTree = "<group>"; };
 		CE9867542BF4047E008D6C41 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -172,12 +174,8 @@
 			isa = PBXGroup;
 			children = (
 				CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */,
-				CE145DA72C1A0DFD00577314 /* SequenceWidgets.swift */,
 				CE7FFE172C06772400DB7CFA /* BlankOneSequenceView.swift */,
 				CE2988312C09101F00A997A1 /* OneSequenceView.swift */,
-				CEE99E582C0D85AD008E1B07 /* OneSequenceViewModel.swift */,
-				CE4634F12BFBB4730063142E /* SequencePickerView.swift */,
-				CE90651F2C272960003593F1 /* SequencePickerSidebar.swift */,
 			);
 			path = SimpleViews;
 			sourceTree = "<group>";
@@ -220,8 +218,11 @@
 			isa = PBXGroup;
 			children = (
 				CEF73F302C1E106400C46AA5 /* DateCoders.swift */,
+				CEE99E582C0D85AD008E1B07 /* OneSequenceViewModel.swift */,
+				CE145DA72C1A0DFD00577314 /* SequenceWidgets.swift */,
 				CEAA2B6E2C070AAE002BEB26 /* Data */,
 				CE145DA62C1A0A1E00577314 /* SimpleViews */,
+				CE9065232C272B12003593F1 /* SequencePicker */,
 				CE145DAB2C1A103C00577314 /* ProViews */,
 			);
 			path = ChatSequences;
@@ -233,6 +234,16 @@
 				CE66FAFF2C16915C00BD8745 /* ChatMessageTests.swift */,
 			);
 			path = BrokegenTests;
+			sourceTree = "<group>";
+		};
+		CE9065232C272B12003593F1 /* SequencePicker */ = {
+			isa = PBXGroup;
+			children = (
+				CE4634F12BFBB4730063142E /* SequencePickerView.swift */,
+				CE90651F2C272960003593F1 /* SequencePickerSidebar.swift */,
+				CE9065212C272A6A003593F1 /* SPViewModel.swift */,
+			);
+			path = SequencePicker;
 			sourceTree = "<group>";
 		};
 		CE9867442BF4047C008D6C41 = {
@@ -489,6 +500,7 @@
 				CECA47AA2BF6D62E007A28F2 /* SystemInfoView.swift in Sources */,
 				CEFEB4762BFDA67400334522 /* SimplePing.swift in Sources */,
 				CEE99E6B2C1002F9008E1B07 /* AppSidebar.swift in Sources */,
+				CE9065222C272A6A003593F1 /* SPViewModel.swift in Sources */,
 				CEE99E592C0D85AD008E1B07 /* OneSequenceViewModel.swift in Sources */,
 				CE145DAD2C1A106A00577314 /* ProMessageView.swift in Sources */,
 				CE7FFE142C04435D00DB7CFA /* ProviderService.swift in Sources */,

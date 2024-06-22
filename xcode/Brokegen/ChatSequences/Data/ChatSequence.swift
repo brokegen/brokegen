@@ -134,6 +134,23 @@ extension ChatSequence: Hashable {
     }
 }
 
+extension ChatSyncService {
+    func renameChatSequence(_ sequence: ChatSequence, to newHumanDesc: String) -> ChatSequence {
+//        sequence.humanDesc = newHumanDesc
+        // TODO: Send up to server
+        return sequence
+    }
+
+    func pinChatSequence(
+        _ sequence: ChatSequence,
+        pinned userPinned: Bool
+    ) -> ChatSequence {
+        guard userPinned != sequence.userPinned else { return sequence }
+//        sequence.userPinned = pinned
+        return sequence
+    }
+}
+
 extension DefaultChatSyncService {
     func doConstructNewChatSequence(messageId: ChatMessageServerID, humanDesc: String = "") async throws -> ChatSequenceServerID? {
         struct Parameters: Codable {
