@@ -72,6 +72,14 @@ class AppSettings: ObservableObject {
     }
 
     // MARK: - misc properties
+    @AppStorage("startServicesImmediately")
+    @ObservationIgnored var _startServicesImmediately: Bool = true
+
+    var startServicesImmediately: Bool {
+        get { _startServicesImmediately }
+        set { _startServicesImmediately = newValue }
+    }
+
     @AppStorage("allowExternalTraffic")
     @ObservationIgnored var _allowExternalTraffic: Bool = false
 

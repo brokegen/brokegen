@@ -16,7 +16,9 @@ let configuration: URLSessionConfiguration = { slowTimeouts in
 @main
 struct BrokegenApp: App {
     @State private var chatService: ChatSyncService = DefaultChatSyncService(serverBaseURL, configuration: configuration)
-    @State private var jobsService: JobsManagerService = DefaultJobsManagerService(startServicesImmediately: true, allowExternalTraffic: UserDefaults.standard.bool(forKey: "allowExternalTraffic"))
+    @State private var jobsService: JobsManagerService = DefaultJobsManagerService(
+        startServicesImmediately: UserDefaults.standard.bool(forKey: "startServicesImmediately"),
+        allowExternalTraffic: UserDefaults.standard.bool(forKey: "allowExternalTraffic"))
     @State private var providerService: ProviderService = DefaultProviderService(serverBaseURL, configuration: configuration)
 
     @ObservedObject private var appSettings = AppSettings()
@@ -111,6 +113,10 @@ struct BrokegenApp: App {
                 })
 
                 Divider()
+
+                Toggle(isOn: $appSettings.startServicesImmediately, label: {
+                    Text("Start brokegen/ollama services on app startup")
+                })
 
                 Toggle(isOn: $appSettings.allowExternalTraffic, label: {
                     Text("Allow non-localhost traffic\n(applies at next service launch)")
