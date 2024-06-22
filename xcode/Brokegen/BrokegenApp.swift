@@ -29,7 +29,9 @@ struct BrokegenApp: App {
 
     init() {
         // Do on-startup init, because otherwise we store no data and app is empty
-        callInitializers()
+        if UserDefaults.standard.bool(forKey: "startServicesImmediately") {
+            callInitializers()
+        }
 
         NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { [self] _ in
             // Terminate Jobs on exit
