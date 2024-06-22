@@ -33,6 +33,8 @@ struct BrokegenApp: App {
             callInitializers()
         }
 
+        appSettings.link(to: providerService)
+
         NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { [self] _ in
             // Terminate Jobs on exit
             jobsService.terminateAll()
@@ -46,8 +48,6 @@ struct BrokegenApp: App {
 
             do { try await providerService.fetchAvailableModels() }
             catch { print("[ERROR] Failed to providerService.fetchAvailableModels()") }
-
-            appSettings.link(to: providerService)
         }
     }
 
