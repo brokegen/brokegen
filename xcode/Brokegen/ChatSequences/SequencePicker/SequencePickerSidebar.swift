@@ -88,7 +88,7 @@ struct MiniSequencePickerSidebar: View {
                         // do something with ProgressView and timeouts.
                         Button("Refresh Chats List", systemImage: "arrow.clockwise") {
                             timesRefreshClicked += 1
-                            Task { try? await chatService.refreshPinnedChatSequences(limit: navLimit) }
+                            Task { try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned :true) }
                         }
                         .padding(.leading, -24)
                         .padding(.trailing, -24)
@@ -96,7 +96,7 @@ struct MiniSequencePickerSidebar: View {
                     else {
                         Button("Load Chats", systemImage: "arrow.clockwise") {
                             timesRefreshClicked += 1
-                            Task { try? await chatService.refreshPinnedChatSequences(limit: navLimit) }
+                            Task { try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: true) }
                         }
                         .foregroundStyle(Color.accentColor)
                         .padding(.leading, -24)

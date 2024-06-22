@@ -187,13 +187,20 @@ extension DefaultChatSyncService {
         }
     }
 
-    func doRefreshPinnedChatSequences(lookback: TimeInterval?, limit: Int?) async throws {
-        var endpointMaker = "/sequences/pinned?"
+    func doFetchRecents(
+        lookback: TimeInterval?,
+        limit: Int?,
+        onlyUserPinned: Bool?
+    ) async throws {
+        var endpointMaker = "/sequences/.recent/as-ids?"
         if lookback != nil {
             endpointMaker += "&lookback=\(lookback!)"
         }
         if limit != nil {
             endpointMaker += "&limit=\(limit!)"
+        }
+        if onlyUserPinned != nil {
+            endpointMaker += "&only_user_pinned=\(onlyUserPinned!)"
         }
 
         let sequenceIds = try await getDataBlocking(endpointMaker)

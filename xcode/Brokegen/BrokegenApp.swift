@@ -54,6 +54,8 @@ struct BrokegenApp: App {
     func resetAllUserSettings() {
         DispatchQueue.main.async {
             UserDefaults.resetStandardUserDefaults()
+            // This is needed for any HTTP 301's we left lying around during testing.
+            URLCache.shared.removeAllCachedResponses()
 
             chatService.chatSequenceClientModels = []
             chatService.loadedChatSequences = []

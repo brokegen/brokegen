@@ -59,7 +59,7 @@ class ChatSyncService: Observable, ObservableObject {
     }
 
     // MARK: - ChatSequence change members
-    public func refreshPinnedChatSequences(lookback: TimeInterval? = nil, limit: Int? = nil) async throws {
+    public func fetchRecents(lookback: TimeInterval? = nil, limit: Int? = nil, onlyUserPinned: Bool? = nil) async throws {
     }
 
     func updateSequence(withSameId updatedSequence: ChatSequence) {
@@ -143,8 +143,8 @@ class DefaultChatSyncService: ChatSyncService {
     }
 
     // MARK: - ChatSequence change members
-    override public func refreshPinnedChatSequences(lookback: TimeInterval?, limit: Int?) async throws {
-        return try await doRefreshPinnedChatSequences(lookback: lookback, limit: limit)
+    override public func fetchRecents(lookback: TimeInterval?, limit: Int?, onlyUserPinned: Bool?) async throws {
+        return try await doFetchRecents(lookback: lookback, limit: limit, onlyUserPinned: onlyUserPinned)
     }
 
     override func updateSequence(_ originalSequenceId: ChatSequenceServerID?, withNewSequence updatedSequenceId: ChatSequenceServerID) async -> ChatSequence? {
@@ -179,9 +179,21 @@ extension DefaultChatSyncService {
             .response { r in
                 switch r.result {
                 case .success(let data):
-                    if responseStatusCode != nil && !(200..<400).contains(responseStatusCode!) {
-                        continuation.resume(throwing: ChatSyncServiceError.invalidResponseStatusCode(responseStatusCode!))
+                    if responseStatusCode != nil {
+                        print("[TRACE] \(self.serverBaseURL + endpoint) returned HTTP \(responseStatusCode!)")
+                        // If it's in the 400 range, don't do the continuation; we'll follow the redirect
+                        if (300..<400).contains(responseStatusCode!) {
+                            return
+                        }
+                        else if (200..<300).contains(responseStatusCode!) {
+                            // Do nothing, fall through to below handlers
+                        }
+                        else {
+                            // If the HTTP code is super invalid, throw an error
+                            continuation.resume(throwing: ChatSyncServiceError.invalidResponseStatusCode(responseStatusCode!))
+                        }
                     }
+
                     if data != nil {
                         continuation.resume(returning: data!)
                     }

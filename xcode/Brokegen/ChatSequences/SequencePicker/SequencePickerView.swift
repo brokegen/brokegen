@@ -209,21 +209,21 @@ struct SequencePickerView: View {
     var body: some View {
         HStack(spacing: 24) {
             Button("Refresh \(maxSidebarItems)", systemImage: "arrow.clockwise") {
-                Task { try? await chatService.refreshPinnedChatSequences(limit: maxSidebarItems) }
+                Task { try? await chatService.fetchRecents(limit: maxSidebarItems, onlyUserPinned: onlyUserPinned) }
             }
             .buttonStyle(.accessoryBar)
             .padding(12)
             .layoutPriority(0.2)
 
             Button("Refresh -- 2d", systemImage: "arrow.clockwise") {
-                Task { try? await chatService.refreshPinnedChatSequences(lookback: 172_800) }
+                Task { try? await chatService.fetchRecents(lookback: 172_800, onlyUserPinned: onlyUserPinned) }
             }
             .buttonStyle(.accessoryBar)
             .padding(12)
             .layoutPriority(0.2)
 
             Button("Refresh -- 14d", systemImage: "arrow.clockwise") {
-                Task { try? await chatService.refreshPinnedChatSequences(lookback: 1_209_600) }
+                Task { try? await chatService.fetchRecents(lookback: 1_209_600, onlyUserPinned: onlyUserPinned) }
             }
             .buttonStyle(.accessoryBar)
             .padding(12)

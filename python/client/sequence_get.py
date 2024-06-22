@@ -125,27 +125,6 @@ def emit_sequence_details(
 
 
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
-    @router_ish.get("/sequences/pinned")
-    def get_pinned_recent_sequences_redirect(
-            request: fastapi.Request,
-            lookback: Annotated[float | None, Query(description="Maximum age in seconds for returned items")] = None,
-            limit: Annotated[int | None, Query(description="Maximum number of items to return")] = None,
-    ) -> starlette.responses.RedirectResponse:
-        query_kwargs = {
-            "only_user_pinned": "true",
-        }
-        if lookback is not None:
-            query_kwargs["lookback"] = lookback
-        if limit is not None:
-            query_kwargs["limit"] = limit
-
-        return starlette.responses.RedirectResponse(
-            request.url_for("fetch_recent_sequences_as_ids")
-            .include_query_params(**query_kwargs),
-            # TODO: This should be a 301, but we're debugging. Why can't we forward correctly?
-            status_code=starlette.status.HTTP_307_TEMPORARY_REDIRECT,
-        )
-
     @router_ish.get("/sequences/.recent/as-messages")
     def fetch_recent_sequences_as_messages(
             lookback: Annotated[float | None, Query(description="Maximum age in seconds for returned items")] = None,
