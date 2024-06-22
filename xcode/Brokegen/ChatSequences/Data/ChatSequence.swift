@@ -222,7 +222,7 @@ extension DefaultChatSyncService {
 
     public func doFetchChatSequenceDetails(_ sequenceId: ChatSequenceServerID) async throws -> ChatSequence? {
         if let entireSequence = try await getDataBlocking("/sequences/\(sequenceId)/as-messages") {
-            return try ChatSequence(sequenceId, data: entireSequence)
+            return try ChatSequence.fromData(serverId: sequenceId, data: entireSequence)
         }
         else {
             throw ChatSyncServiceError.noResponseContentReturned

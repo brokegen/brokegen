@@ -102,18 +102,22 @@ struct SequenceRow: View {
         }, label: {
             HStack(spacing: 0) {
                 HStack(alignment: .top, spacing: 16) {
-                    Image(systemName: "bubble")
-                        .font(.title)
+                    Image(systemName: sequence.userPinned
+                          ? "bubble"
+                          : "eye.slash")
 
                     Text(sequence.displayHumanDesc())
-                        .font(.title)
                         .lineLimit(1...4)
-                        .foregroundStyle(Color(.controlTextColor).opacity(0.8))
                         .multilineTextAlignment(.leading)
                 }
-                .foregroundStyle(Color(.controlTextColor))
+                .font(.title)
                 .padding(12)
                 .padding(.leading, -8)
+                .foregroundStyle(
+                    sequence.userPinned
+                    ? Color(.controlTextColor)
+                    : Color(.disabledControlTextColor)
+                )
 
                 Spacer()
 
@@ -208,8 +212,8 @@ struct SequencePickerView: View {
 
     var body: some View {
         HStack(spacing: 24) {
-            Button("Refresh \(maxSidebarItems)", systemImage: "arrow.clockwise") {
-                Task { try? await chatService.fetchRecents(limit: maxSidebarItems, onlyUserPinned: onlyUserPinned) }
+            Button("Refresh \(maxSidebarItems * 5)", systemImage: "arrow.clockwise") {
+                Task { try? await chatService.fetchRecents(limit: maxSidebarItems * 5, onlyUserPinned: onlyUserPinned) }
             }
             .buttonStyle(.accessoryBar)
             .padding(12)
