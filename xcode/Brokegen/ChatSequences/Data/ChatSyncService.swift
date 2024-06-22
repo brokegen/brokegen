@@ -58,6 +58,18 @@ class ChatSyncService: Observable, ObservableObject {
         return nil
     }
 
+    func renameChatSequence(_ sequence: ChatSequence, to newHumanDesc: String?) -> ChatSequence {
+        return sequence.replaceHumanDesc(desc: newHumanDesc)
+    }
+
+    func pinChatSequence(
+        _ sequence: ChatSequence,
+        pinned userPinned: Bool
+    ) -> ChatSequence {
+        guard userPinned != sequence.userPinned else { return sequence }
+        return sequence.replaceUserPinned(pinned: userPinned)
+    }
+
     // MARK: - ChatSequence change members
     public func fetchRecents(lookback: TimeInterval? = nil, limit: Int? = nil, onlyUserPinned: Bool? = nil) async throws {
     }
@@ -140,6 +152,23 @@ class DefaultChatSyncService: ChatSyncService {
 
     override public func fetchChatSequenceDetails(_ sequenceId: ChatSequenceServerID) async throws -> ChatSequence? {
         return try await doFetchChatSequenceDetails(sequenceId)
+    }
+
+    override func renameChatSequence(_ sequence: ChatSequence, to newHumanDesc: String?) -> ChatSequence {
+        return sequence.replaceHumanDesc(desc: newHumanDesc)
+    }
+
+    override func pinChatSequence(
+        _ sequence: ChatSequence,
+        pinned userPinned: Bool
+    ) -> ChatSequence {
+        guard userPinned != sequence.userPinned else { return sequence }
+        // Start this in a Task because we don't much care what it returns.
+        Task {
+            try? await self.postDataBlocking(nil, endpoint: "/sequences/\(sequence.serverId!)/user_pinned?value=\(userPinned)")
+        }
+
+        return sequence.replaceUserPinned(pinned: userPinned)
     }
 
     // MARK: - ChatSequence change members
@@ -228,16 +257,21 @@ extension DefaultChatSyncService {
                 switch r.result {
                 case .success(let data):
                     if responseStatusCode != nil && !(200..<400).contains(responseStatusCode!) {
+                        print("[DEBUG] \(endpoint) returned HTTP \(responseStatusCode!)")
                         continuation.resume(throwing: ChatSyncServiceError.invalidResponseStatusCode(responseStatusCode!))
                     }
+
                     if data != nil {
+                        print("[DEBUG] \(endpoint) returned \(String(describing: data))")
                         continuation.resume(returning: data!)
                     }
                     else {
+                        print("[DEBUG] \(endpoint) returned no data")
                         continuation.resume(throwing: ChatSyncServiceError.noResponseContentReturned)
                     }
 
                 case .failure(let error):
+                    print("[DEBUG] \(endpoint) failed: \(error)")
                     continuation.resume(throwing: error)
                 }
             }

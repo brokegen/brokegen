@@ -111,6 +111,28 @@ class ChatSequence: Identifiable {
         )
     }
 
+    func replaceHumanDesc(desc humanDesc: String?) -> ChatSequence {
+        return ChatSequence(
+            clientId: self.id,
+            serverId: self.serverId,
+            humanDesc: humanDesc,
+            userPinned: self.userPinned,
+            messages: self.messages,
+            inferenceModelId: self.inferenceModelId
+        )
+    }
+
+    func replaceUserPinned(pinned userPinned: Bool) -> ChatSequence {
+        return ChatSequence(
+            clientId: self.id,
+            serverId: self.serverId,
+            humanDesc: self.humanDesc,
+            userPinned: userPinned,
+            messages: self.messages,
+            inferenceModelId: self.inferenceModelId
+        )
+    }
+
     var lastMessageDate: Date? {
         guard !messages.isEmpty else { return nil }
         return messages.last!.createdAt
@@ -176,21 +198,6 @@ extension ChatSequence: Hashable {
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
         hasher.combine(serverId)
-    }
-}
-
-extension ChatSyncService {
-    // TODO: Not implemented
-    func renameChatSequence(_ sequence: ChatSequence, to newHumanDesc: String?) -> ChatSequence {
-        return sequence
-    }
-
-    func pinChatSequence(
-        _ sequence: ChatSequence,
-        pinned userPinned: Bool
-    ) -> ChatSequence {
-        guard userPinned != sequence.userPinned else { return sequence }
-        return sequence
     }
 }
 
