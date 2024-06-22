@@ -132,17 +132,6 @@ struct AppSidebar: View {
 
             Divider()
 
-            Toggle(isOn: $appSettings.allowExternalTraffic, label: {
-                HStack(spacing: 0) {
-                    Text("Allow non-localhost traffic (applies at next service launch)")
-                        .layoutPriority(0.2)
-
-                    Spacer()
-                }
-            })
-            .toggleStyle(.switch)
-            .padding(.trailing, -12)
-
             Toggle(isOn: useSimplifiedSequenceViews, label: {
                 HStack(spacing: 0) {
                     Text("Use simplified chat interface")
