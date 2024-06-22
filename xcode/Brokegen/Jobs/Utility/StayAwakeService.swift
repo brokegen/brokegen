@@ -1,4 +1,6 @@
 import Foundation
+
+#if os(macOS)
 import IOKit.pwr_mgt
 
 /// Assertion changes can be seen with `/usr/bin/pmset -g assertionslog`
@@ -44,6 +46,25 @@ class StayAwake {
         return (false, nil)
     }
 }
+#endif
+
+#if os(iOS)
+class StayAwake {
+    deinit {
+        _ = self.destroyAssertion()
+    }
+
+    func createAssertion(reason: String) -> (Bool, String?) {
+        UIApplication.shared.isIdleTimerDisabled = true
+        return (true, nil)
+    }
+
+    func destroyAssertion() -> (Bool, String?) {
+        // TODO: Race condition if we have two instances working
+        return (true, nil)
+    }
+}
+#endif
 
 class StayAwakeService: Job {
     var stayAwake: StayAwake = StayAwake()

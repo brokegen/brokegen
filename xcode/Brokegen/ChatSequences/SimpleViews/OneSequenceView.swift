@@ -298,6 +298,7 @@ struct OneSequenceView: View {
     }
 }
 
+#if os(macOS)
 #Preview(traits: .fixedLayout(width: 800, height: 800)) {
     VSplitView {
         GeometryReader{geometry in
@@ -311,3 +312,4 @@ struct OneSequenceView: View {
         }
     }
 }
+#endif

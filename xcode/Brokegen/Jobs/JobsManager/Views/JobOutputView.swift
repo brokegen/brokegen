@@ -1,5 +1,4 @@
 import SwiftUI
-import AppKit
 
 struct JobOutputView: View {
     @ObservedObject var job: BaseJob
