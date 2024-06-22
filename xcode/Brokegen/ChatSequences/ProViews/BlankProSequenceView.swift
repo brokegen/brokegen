@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// TODO: Class is busted. Every time you send a follow-up message, it's based on the original sequenceId.
 struct BlankProSequenceView: View {
     let chatService: ChatSyncService
     let chatSettingsService: CSCSettingsService

@@ -223,26 +223,14 @@ struct SequencePickerView: View {
             Spacer()
 
             if showNewChatButton {
-                if chatSettingsService.useSimplifiedSequenceViews {
-                    NavigationLink(destination: {
-                        BlankOneSequenceView()
-                    }) {
-                        Label("New Chat...", systemImage: "plus")
-                            .buttonStyle(.accessoryBar)
-                            .padding(12)
-                    }
-                    .layoutPriority(0.5)
+                NavigationLink(destination: {
+                    BlankOneSequenceView()
+                }) {
+                    Label("New Chat...", systemImage: "plus")
+                        .buttonStyle(.accessoryBar)
+                        .padding(12)
                 }
-                else {
-                    NavigationLink(destination: {
-                        BlankProSequenceView(chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
-                    }) {
-                        Label("New Chat (experimental)", systemImage: "plus")
-                            .buttonStyle(.accessoryBar)
-                            .padding(12)
-                    }
-                    .layoutPriority(0.5)
-                }
+                .layoutPriority(0.5)
             }
         }
         .padding(24)
