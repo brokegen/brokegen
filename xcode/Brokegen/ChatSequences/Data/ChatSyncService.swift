@@ -14,7 +14,7 @@ enum ChatSyncServiceError: Error {
     case emptyRequestContent
     case noResponseContentReturned
     case invalidResponseContentReturned
-    case invalidResponseStatusCode(_ errorCode: Int)
+    case invalidResponseStatusCode(_ errorCode: Int, data: Data?)
     case callingAbstractBaseMethod
 }
 
@@ -163,9 +163,13 @@ class DefaultChatSyncService: ChatSyncService {
         pinned userPinned: Bool
     ) -> ChatSequence {
         guard userPinned != sequence.userPinned else { return sequence }
-        // Start this in a Task because we don't much care what it returns.
+
+        // TODO: Figure out how to try and make this synchronous, because otherwise failures still result in client updates.
+        // For now, this succeeds most of the time, but _silently_.
         Task {
-            try? await self.postDataBlocking(nil, endpoint: "/sequences/\(sequence.serverId!)/user_pinned?value=\(userPinned)")
+            _ = try? await self.postDataBlocking(
+                nil,
+                endpoint: "/sequences/\(sequence.serverId!)/user_pinned?value=\(userPinned)")
         }
 
         return sequence.replaceUserPinned(pinned: userPinned)
@@ -208,19 +212,9 @@ extension DefaultChatSyncService {
             .response { r in
                 switch r.result {
                 case .success(let data):
-                    if responseStatusCode != nil {
-                        print("[TRACE] \(self.serverBaseURL + endpoint) returned HTTP \(responseStatusCode!)")
-                        // If it's in the 400 range, don't do the continuation; we'll follow the redirect
-                        if (300..<400).contains(responseStatusCode!) {
-                            return
-                        }
-                        else if (200..<300).contains(responseStatusCode!) {
-                            // Do nothing, fall through to below handlers
-                        }
-                        else {
-                            // If the HTTP code is super invalid, throw an error
-                            continuation.resume(throwing: ChatSyncServiceError.invalidResponseStatusCode(responseStatusCode!))
-                        }
+                    if responseStatusCode != nil && !(200..<400).contains(responseStatusCode!) {
+                        continuation.resume(throwing: ChatSyncServiceError.invalidResponseStatusCode(responseStatusCode!, data: data))
+                        return
                     }
 
                     if data != nil {
@@ -257,21 +251,18 @@ extension DefaultChatSyncService {
                 switch r.result {
                 case .success(let data):
                     if responseStatusCode != nil && !(200..<400).contains(responseStatusCode!) {
-                        print("[DEBUG] \(endpoint) returned HTTP \(responseStatusCode!)")
-                        continuation.resume(throwing: ChatSyncServiceError.invalidResponseStatusCode(responseStatusCode!))
+                        continuation.resume(throwing: ChatSyncServiceError.invalidResponseStatusCode(responseStatusCode!, data: data))
+                        return
                     }
 
                     if data != nil {
-                        print("[DEBUG] \(endpoint) returned \(String(describing: data))")
                         continuation.resume(returning: data!)
                     }
                     else {
-                        print("[DEBUG] \(endpoint) returned no data")
                         continuation.resume(throwing: ChatSyncServiceError.noResponseContentReturned)
                     }
 
                 case .failure(let error):
-                    print("[DEBUG] \(endpoint) failed: \(error)")
                     continuation.resume(throwing: error)
                 }
             }

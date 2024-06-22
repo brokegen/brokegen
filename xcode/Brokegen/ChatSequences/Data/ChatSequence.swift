@@ -220,21 +220,12 @@ extension DefaultChatSyncService {
             generatedAt: Date.now,
             generationComplete: true
         )
+        let encodedParams: Data = try jsonEncoder.encode(params)
 
-        do {
-            let encodedParams = try jsonEncoder.encode(params)
+        let responseData: Data? = try? await postDataBlocking(encodedParams, endpoint: "/sequences")
+        guard responseData != nil else { throw ChatSyncServiceError.invalidResponseContentReturned }
 
-            let jsonDict = try await self.postDataAsJson(
-                encodedParams,
-                endpoint: "/sequences")
-            guard jsonDict != nil else { return nil }
-
-            let sequenceID: ChatMessageServerID? = jsonDict!["sequence_id"] as? Int
-            return sequenceID
-        }
-        catch {
-            return nil
-        }
+        return JSON(responseData!)["sequence_id"].int
     }
 
     func doFetchRecents(

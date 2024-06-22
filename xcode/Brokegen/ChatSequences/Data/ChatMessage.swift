@@ -128,7 +128,7 @@ extension DefaultChatSyncService {
     func doConstructChatMessage(from tempMessage: TemporaryChatMessage) async throws -> ChatMessageServerID {
         let httpBody = try tempMessage.asJsonData()
         let responseData: Data? = try await postDataBlocking(httpBody, endpoint: "/messages")
-        guard responseData != nil else { throw ChatSyncServiceError.emptyRequestContent }
+        guard responseData != nil else { throw ChatSyncServiceError.invalidResponseContentReturned }
 
         if let messageId: ChatMessageServerID = JSON(responseData!)["message_id"].int {
             return messageId
