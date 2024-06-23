@@ -11,11 +11,14 @@ import starlette.status
 from fastapi import Depends, Query
 from pydantic import BaseModel
 from sqlalchemy import select
+from starlette.background import BackgroundTask
 
-from _util.typing import ChatSequenceID, RoleName, PromptText
+from _util.status import ServerStatusHolder
+from _util.typing import ChatSequenceID, RoleName, PromptText, FoundationModelRecordID
 from client.chat_message import ChatMessageOrm, ChatMessage
 from client.chat_sequence import ChatSequence, lookup_sequence_parents
 from client.database import HistoryDB, get_db as get_history_db
+from inference.autonaming import autoname_sequence
 from providers.inference_models.orm import FoundationeModelRecordOrm, lookup_inference_model_for_event_id
 
 logger = logging.getLogger(__name__)
@@ -229,3 +232,51 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         history_db.commit()
 
         return starlette.responses.Response(status_code=starlette.status.HTTP_204_NO_CONTENT)
+
+    @router_ish.post("/sequences/{sequence_id:int}/autoname")
+    async def request_sequence_autoname(
+            sequence_id: ChatSequenceID,
+            preferred_autonaming_model: Annotated[FoundationModelRecordID | None, Query(
+                description="Requested foundation model to use for autonaming"
+            )] = None,
+            wait_for_response: bool = False,
+            history_db: HistoryDB = Depends(get_history_db),
+    ):
+        match_object = history_db.execute(
+            select(ChatSequence)
+            .filter_by(id=sequence_id)
+        ).scalar_one_or_none()
+        if match_object is None:
+            raise HTTPException(starlette.status.HTTP_404_NOT_FOUND, "No matching object")
+
+        async def do_autoname(
+                sequence: ChatSequence,
+                history_db: HistoryDB,
+        ) -> PromptText | None:
+            status_holder = ServerStatusHolder(f"/sequences/{sequence_id}/autoname: setting up")
+
+            autoname: PromptText | None = await autoname_sequence(
+                sequence, preferred_autonaming_model, status_holder)
+            if autoname is not None:
+                sequence.human_desc = autoname
+                history_db.add(sequence)
+                history_db.commit()
+
+                status_holder.set(f"Done autonaming, chat title is {len(autoname)} chars: {autoname=}")
+                return autoname
+            else:
+                status_holder.set(f"Failed autonaming, chat title is unchanged")
+                return autoname
+
+        if wait_for_response:
+            autoname: PromptText = await do_autoname(match_object, history_db)
+            return starlette.responses.JSONResponse({
+                "autoname": autoname,
+                "done": True,
+            })
+
+        else:
+            return starlette.responses.Response(
+                status_code=starlette.status.HTTP_202_ACCEPTED,
+                background=BackgroundTask(lambda: do_autoname(match_object, history_db)),
+            )

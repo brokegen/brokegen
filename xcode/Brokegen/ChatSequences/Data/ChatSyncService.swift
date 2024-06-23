@@ -2,6 +2,7 @@ import Alamofire
 import Combine
 import Foundation
 import SwiftUI
+import SwiftyJSON
 
 typealias ChatMessageServerID = Int
 
@@ -55,6 +56,15 @@ class ChatSyncService: Observable, ObservableObject {
     }
 
     public func fetchChatSequenceDetails(_ sequenceId: ChatSequenceServerID) async throws -> ChatSequence? {
+        return nil
+    }
+
+    func autonameChatSequence(_ sequence: ChatSequence, preferredAutonamingModel: FoundationModelRecordID?) -> String? {
+        if let result = Optional("[mock client-side autoname]") {
+            let autonamedSequence = sequence.replaceHumanDesc(desc: result)
+            self.updateSequence(withSameId: autonamedSequence)
+            return result
+        }
         return nil
     }
 
@@ -152,6 +162,26 @@ class DefaultChatSyncService: ChatSyncService {
 
     override public func fetchChatSequenceDetails(_ sequenceId: ChatSequenceServerID) async throws -> ChatSequence? {
         return try await doFetchChatSequenceDetails(sequenceId)
+    }
+
+    override func autonameChatSequence(_ sequence: ChatSequence, preferredAutonamingModel: FoundationModelRecordID?) -> String? {
+        Task {
+            var endpointBuilder = "/sequences/\(sequence.serverId!)/autoname?wait_for_response=true"
+            if preferredAutonamingModel != nil {
+                endpointBuilder += "&preferred_autonaming_model=\(preferredAutonamingModel!)"
+            }
+
+            if let resultData: Data = try? await self.postDataBlocking(nil, endpoint: endpointBuilder) {
+                if let autoname: String = JSON(resultData)["autoname"].string {
+                    let autonamedSequence = sequence.replaceHumanDesc(desc: autoname)
+                    DispatchQueue.main.async {
+                        self.updateSequence(withSameId: autonamedSequence)
+                    }
+                }
+            }
+        }
+
+        return nil
     }
 
     override func renameChatSequence(_ sequence: ChatSequence, to newHumanDesc: String?) -> ChatSequence {
@@ -264,37 +294,6 @@ extension DefaultChatSyncService {
 
                 case .failure(let error):
                     continuation.resume(throwing: error)
-                }
-            }
-        }
-    }
-
-    func postDataAsJson(_ httpBody: Data?, endpoint: String) async throws -> [String : Any]? {
-        return try await withCheckedThrowingContinuation { continuation in
-            session.request(
-                serverBaseURL + endpoint
-            ) { urlRequest in
-                urlRequest.method = .post
-                urlRequest.headers = [
-                    "Content-Type": "application/json"
-                ]
-                urlRequest.httpBody = httpBody
-            }
-            .response { r in
-                switch r.result {
-                case .success(let data):
-                    do {
-                        let jsonDict = try JSONSerialization.jsonObject(with: data!, options: []) as! [String : Any]
-                        print("POST \(endpoint): \(jsonDict)")
-                        continuation.resume(returning: jsonDict)
-                    }
-                    catch {
-                        print("POST \(endpoint) decoding failed: \(String(describing: data))")
-                        continuation.resume(returning: nil)
-                    }
-                case .failure(let error):
-                    print("POST \(endpoint) failed: " + error.localizedDescription)
-                    continuation.resume(returning: nil)
                 }
             }
         }

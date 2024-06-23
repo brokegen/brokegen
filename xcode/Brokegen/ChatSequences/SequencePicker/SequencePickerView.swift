@@ -197,6 +197,39 @@ struct SequencePickerView: View {
             .sorted { $0.0 > $1.0 }
     }
 
+    @ViewBuilder
+    func contextMenu(for sequence: ChatSequence) -> some View {
+        Text(sequence.displayRecognizableDesc())
+            .font(.system(size: 18))
+
+        Divider()
+
+        Button {
+            let updatedSequence = chatService.pinChatSequence(sequence, pinned: !sequence.userPinned)
+            chatService.updateSequence(withSameId: updatedSequence)
+        } label: {
+            Toggle(isOn: .constant(sequence.userPinned)) {
+                Text("Pin ChatSequence (keep visible in \"recents\" sidebar and SequencePicker)")
+                    .font(.system(size: 18))
+            }
+        }
+
+        Button {
+            _ = chatService.autonameChatSequence(sequence, preferredAutonamingModel: appSettings.chatSummaryModel?.serverId)
+        } label: {
+            Text("Autoname ChatSequence (server-side request)")
+                .font(.system(size: 18))
+        }
+
+        Button {
+            let updatedSequence = chatService.renameChatSequence(sequence, to: nil)
+            chatService.updateSequence(withSameId: updatedSequence)
+        } label: {
+            Text("Rename...")
+                .font(.system(size: 18))
+        }
+    }
+
     var body: some View {
         HStack(spacing: 24) {
             Button("Refresh \(maxSidebarItems * 5)", systemImage: "arrow.clockwise") {
@@ -253,28 +286,7 @@ struct SequencePickerView: View {
                             )
                         }
                         .contextMenu {
-                            Text(sequence.displayRecognizableDesc())
-                                .font(.system(size: 18))
-
-                            Divider()
-
-                            Button {
-                                let updatedSequence = chatService.pinChatSequence(sequence, pinned: !sequence.userPinned)
-                                chatService.updateSequence(withSameId: updatedSequence)
-                            } label: {
-                                Toggle(isOn: .constant(sequence.userPinned)) {
-                                    Text("Keep ChatSequence pinned (show in \"recents\")")
-                                        .font(.system(size: 18))
-                                }
-                            }
-
-                            Button {
-                                let updatedSequence = chatService.renameChatSequence(sequence, to: nil)
-                                chatService.updateSequence(withSameId: updatedSequence)
-                            } label: {
-                                Text("Rename...")
-                                    .font(.system(size: 18))
-                            }
+                            contextMenu(for: sequence)
                         }
                     }
                 }
