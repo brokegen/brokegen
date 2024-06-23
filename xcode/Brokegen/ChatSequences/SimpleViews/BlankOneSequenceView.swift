@@ -163,8 +163,9 @@ struct BlankOneSequenceView: View {
                 chatService.updateSequence(withSameId: nextSequence!)
                 
                 pathHost.push(
-                    chatService.clientModel(for: nextSequence!, appSettings: appSettings, chatSettingsService: chatSettingsService)
-                        .requestContinue(model: modelSelection?.serverId, withRetrieval: withRetrieval)
+                    chatService
+                        .clientModel(for: nextSequence!, appSettings: appSettings, chatSettingsService: chatSettingsService)
+                        .requestContinue(model: modelSelection?.serverId ?? appSettings.defaultInferenceModel?.serverId, withRetrieval: withRetrieval)
                 )
             }
         }

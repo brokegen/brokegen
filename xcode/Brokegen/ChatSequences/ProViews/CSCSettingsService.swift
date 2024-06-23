@@ -2,6 +2,9 @@ import SwiftUI
 
 @Observable
 class CSCSettingsService: Observable, ObservableObject {
+    @AppStorage("useSimplifiedBlankOSV")
+    @ObservationIgnored public var useSimplifiedBlankOSV: Bool = true
+
     @AppStorage("useSimplifiedSequenceViews")
     @ObservationIgnored public var useSimplifiedSequenceViews: Bool = true
 

@@ -180,8 +180,10 @@ class OneSequenceViewModel: ObservableObject {
             }
             DispatchQueue.main.async {
                 self.submitting = true
-                self.serverStatus = "/sequences/[TBD]/extend: submitting request"
+                self.serverStatus = "/sequences/???/continue: preparing request"
             }
+
+            submittedAssistantResponseSeed = settings.seedAssistantResponse
 
             let messageId: ChatMessageServerID? = try? await chatService.constructChatMessage(from: TemporaryChatMessage(
                 role: "user",
@@ -200,6 +202,8 @@ class OneSequenceViewModel: ObservableObject {
                 print("[ERROR] Couldn't construct sequence from: ChatMessage#\(messageId!)")
                 return
             }
+
+            // Manually (re)construct server data, rather than fetching the same data back.
             sequence.serverId = sequenceId
             sequence.messages = [
                 Message(
@@ -208,8 +212,6 @@ class OneSequenceViewModel: ObservableObject {
                     createdAt: Date.now
                 )
             ]
-
-            submittedAssistantResponseSeed = settings.seedAssistantResponse
 
             receivingStreamer = await chatService.sequenceContinue(
                 ChatSequenceParameters(

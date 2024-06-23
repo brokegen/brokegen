@@ -129,6 +129,10 @@ struct BrokegenApp: App {
                 Toggle(isOn: $chatSettingsService.useSimplifiedSequenceViews) {
                     Text("Use simplified chat interface")
                 }
+
+                Toggle(isOn: $chatSettingsService.useSimplifiedBlankOSV) {
+                    Text("Use simplified chat interface when starting New Chats")
+                }
             })
         }
     }

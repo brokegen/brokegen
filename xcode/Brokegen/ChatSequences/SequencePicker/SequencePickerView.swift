@@ -278,7 +278,12 @@ struct SequencePickerView: View {
 
             if showNewChatButton {
                 NavigationLink(destination: {
-                    BlankOneSequenceView()
+                    if chatSettingsService.useSimplifiedBlankOSV {
+                        BlankProSequenceView(chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
+                    }
+                    else {
+                        BlankOneSequenceView()
+                    }
                 }) {
                     Label("New Chat...", systemImage: "plus")
                         .buttonStyle(.accessoryBar)

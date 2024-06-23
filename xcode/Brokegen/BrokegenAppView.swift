@@ -39,7 +39,7 @@ struct BrokegenAppView: View {
             NavigationSplitView(sidebar: {
                 sharedSidebar
             }, detail: {
-                BlankOneSequenceView(alwaysShowModelPicker: true)
+                SequencePickerView()
             })
             .navigationDestination(for: OneSequenceViewModel.self) { clientModel in
                 NavigationSplitView(sidebar: {
