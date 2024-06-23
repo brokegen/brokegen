@@ -198,7 +198,22 @@ struct SequencePickerView: View {
     }
 
     @ViewBuilder
-    func contextMenu(for sequence: ChatSequence) -> some View {
+    func sectionContextMenu(for sectionName: String, sequences: [ChatSequence]) -> some View {
+        Button {
+            for sequence in sequences {
+                _ = chatService.autonameChatSequence(sequence, preferredAutonamingModel: appSettings.chatSummaryModel?.serverId)
+            }
+        } label: {
+            Text(appSettings.chatSummaryModel == nil
+                 ? "Autoname \(sequences.count) sequences (disabled, select a preferred model first)"
+                 : "Autoname \(sequences.count) sequences")
+                .font(.system(size: 18))
+        }
+        .disabled(appSettings.chatSummaryModel == nil)
+    }
+
+    @ViewBuilder
+    func sequenceContextMenu(for sequence: ChatSequence) -> some View {
         Text(sequence.displayRecognizableDesc())
             .font(.system(size: 18))
 
@@ -282,6 +297,9 @@ struct SequencePickerView: View {
                     .monospaced()
                     .foregroundColor(.accentColor)
                     .padding(.top, 36)
+                    .contextMenu {
+                        sectionContextMenu(for: sectionName, sequences: sectionSequences)
+                    }
                 ) {
                     ForEach(sectionSequences, id: \.serverId) { sequence in
                         SequenceRow(sequence) {
@@ -290,7 +308,7 @@ struct SequencePickerView: View {
                             )
                         }
                         .contextMenu {
-                            contextMenu(for: sequence)
+                            sequenceContextMenu(for: sequence)
                         }
                     }
                 }
