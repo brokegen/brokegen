@@ -5,7 +5,7 @@ struct FoundationModelSettingsView: View {
     
     @State private var showDefaultInferenceModelPicker = false
     @State private var showFallbackInferenceModelPicker = false
-    @State private var showChatSummaryModelPicker = false
+    @State private var showPreferredAutonamingModelPicker = false
     @State private var showPreferredEmbeddingModelPicker = false
 
     var body: some View {
@@ -34,9 +34,9 @@ struct FoundationModelSettingsView: View {
                     )
 
                     OFMPicker(
-                        boxLabel: "chatSummaryModel",
-                        selectedModelBinding: $appSettings.chatSummaryModel,
-                        showModelPicker: $showChatSummaryModelPicker,
+                        boxLabel: "Preferred Autonaming Model",
+                        selectedModelBinding: $appSettings.preferredAutonamingModel,
+                        showModelPicker: $showPreferredAutonamingModelPicker,
                         geometry: geometry,
                         allowClear: true
                     )

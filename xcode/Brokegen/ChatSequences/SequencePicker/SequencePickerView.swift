@@ -201,15 +201,15 @@ struct SequencePickerView: View {
     func sectionContextMenu(for sectionName: String, sequences: [ChatSequence]) -> some View {
         Button {
             for sequence in sequences {
-                _ = chatService.autonameChatSequence(sequence, preferredAutonamingModel: appSettings.chatSummaryModel?.serverId)
+                _ = chatService.autonameChatSequence(sequence, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
             }
         } label: {
-            Text(appSettings.chatSummaryModel == nil
+            Text(appSettings.preferredAutonamingModel == nil
                  ? "Autoname \(sequences.count) sequences (disabled, select a preferred model first)"
                  : "Autoname \(sequences.count) sequences")
                 .font(.system(size: 18))
         }
-        .disabled(appSettings.chatSummaryModel == nil)
+        .disabled(appSettings.preferredAutonamingModel == nil)
     }
 
     @ViewBuilder
@@ -230,14 +230,14 @@ struct SequencePickerView: View {
         }
 
         Button {
-            _ = chatService.autonameChatSequence(sequence, preferredAutonamingModel: appSettings.chatSummaryModel?.serverId)
+            _ = chatService.autonameChatSequence(sequence, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
         } label: {
-            Text(appSettings.chatSummaryModel == nil
+            Text(appSettings.preferredAutonamingModel == nil
                  ? "Autoname sequence (disabled, select a preferred model first)"
-                 : "Autoname sequence (server-side request with \(appSettings.chatSummaryModel!.humanId))")
+                 : "Autoname sequence (server-side request with \(appSettings.preferredAutonamingModel!.humanId))")
                 .font(.system(size: 18))
         }
-        .disabled(appSettings.chatSummaryModel == nil)
+        .disabled(appSettings.preferredAutonamingModel == nil)
 
         Button {
             let updatedSequence = chatService.renameChatSequence(sequence, to: nil)

@@ -224,7 +224,7 @@ class OneSequenceViewModel: ObservableObject {
                     retrievalSearchArgs: withRetrieval ? settings.retrievalSearchArgs : nil,
                     preferredEmbeddingModel: withRetrieval ? appSettings.preferredEmbeddingModel?.serverId : nil,
                     autonamingPolicy: settings.autonamingPolicy.rawValue,
-                    preferredAutonamingModel: appSettings.chatSummaryModel?.serverId,
+                    preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId,
                     sequenceId: sequence.serverId!
                 )
             )
@@ -274,7 +274,7 @@ class OneSequenceViewModel: ObservableObject {
                     retrievalSearchArgs: withRetrieval ? settings.retrievalSearchArgs : nil,
                     preferredEmbeddingModel: withRetrieval ? appSettings.preferredEmbeddingModel?.serverId : nil,
                     autonamingPolicy: settings.autonamingPolicy.rawValue,
-                    preferredAutonamingModel: appSettings.chatSummaryModel?.serverId,
+                    preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId,
                     sequenceId: sequence.serverId!
                 )
             )
@@ -331,7 +331,7 @@ class OneSequenceViewModel: ObservableObject {
                     retrievalSearchArgs: withRetrieval ? settings.retrievalSearchArgs : nil,
                     preferredEmbeddingModel: withRetrieval ? appSettings.preferredEmbeddingModel?.serverId : nil,
                     autonamingPolicy: settings.autonamingPolicy.rawValue,
-                    preferredAutonamingModel: appSettings.chatSummaryModel?.serverId,
+                    preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId,
                     sequenceId: sequence.serverId!
                 )
             )

@@ -11,7 +11,7 @@ class AppSettings: ObservableObject {
     @AppStorage("fallbackInferenceModelId")
     @ObservationIgnored private var fallbackInferenceModelId: FoundationModelRecordID = INVALID_MODEL_ID
     @AppStorage("chatSummaryModelId")
-    @ObservationIgnored private var chatSummaryModelId: FoundationModelRecordID = INVALID_MODEL_ID
+    @ObservationIgnored private var preferredAutonamingModelId: FoundationModelRecordID = INVALID_MODEL_ID
     @AppStorage("preferredEmbeddingModelId")
     @ObservationIgnored private var preferredEmbeddingModelId: FoundationModelRecordID = INVALID_MODEL_ID
 
@@ -49,14 +49,14 @@ class AppSettings: ObservableObject {
         }
     }
 
-    var chatSummaryModel: FoundationModel? {
+    var preferredAutonamingModel: FoundationModel? {
         get {
             return providerService?.allModels.first {
-                $0.serverId == chatSummaryModelId
+                $0.serverId == preferredAutonamingModelId
             }
         }
         set {
-            chatSummaryModelId = newValue?.serverId ?? INVALID_MODEL_ID
+            preferredAutonamingModelId = newValue?.serverId ?? INVALID_MODEL_ID
         }
     }
 
