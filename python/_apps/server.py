@@ -253,6 +253,7 @@ def run_proxy(
         host=bind_host,
         port=bind_port,
         log_level="debug",
+        access_log=False,
         reload=False,
         workers=4,
     )
