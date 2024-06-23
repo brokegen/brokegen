@@ -89,10 +89,10 @@ async def autoname_sequence(
         inference_model: FoundationModelRecordOrm,
         status_holder: ServerStatusHolder,
 ) -> PromptText:
-    with StatusContext("summarizing prompt as tab name", status_holder):
+    with StatusContext(f"Autonaming ChatSequence with {len(messages_list)} messages => ollama {inference_model.human_id}", status_holder):
         name: str = await do_autoname_sequence(
             inference_model,
-            inference_reason="ChatSequence.human_desc",
+            inference_reason=f"ChatSequence autoname",
             # NB This only works as a system message on models that respect that.
             #    So, append it to both.
             system_message="You are a concise summarizer, seizing on easily identifiable + distinguishing factors of the text.",
