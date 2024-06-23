@@ -71,7 +71,6 @@ async def forward_request_nodetails(
 async def forward_request(
         original_request: starlette.requests.Request,
         audit_db: AuditDB,
-        on_done_fn: Callable[[OllamaResponseContentJSON], Awaitable[Any]] | None = None,
 ) -> starlette.responses.StreamingResponse:
     urlpath_noprefix = original_request.url.path.removeprefix("/ollama-proxy")
     logger.debug(f"ollama proxy: start handler for {original_request.method} {urlpath_noprefix}")
@@ -93,4 +92,4 @@ async def forward_request(
     with HttpxLogger(_real_ollama_client, audit_db):
         upstream_response: httpx.Response = await _real_ollama_client.send(upstream_request, stream=True)
 
-    return await intercept.wrap_entire_streaming_response(upstream_response, on_done_fn)
+    return await intercept.wrap_entire_streaming_response(upstream_response)

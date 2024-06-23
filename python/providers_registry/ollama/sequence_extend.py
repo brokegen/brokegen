@@ -40,7 +40,7 @@ from retrieval.faiss.retrieval import RetrievalLabel
 logger = logging.getLogger(__name__)
 
 
-async def ollama_generate_helper_fn(
+async def do_autoname_sequence(
         inference_model: FoundationModelRecordOrm,
         inference_reason: InferenceReason,
         system_message: PromptText | None,
@@ -90,7 +90,7 @@ async def autoname_sequence(
         status_holder: ServerStatusHolder,
 ) -> PromptText:
     with StatusContext("summarizing prompt as tab name", status_holder):
-        name: str = await ollama_generate_helper_fn(
+        name: str = await do_autoname_sequence(
             inference_model,
             inference_reason="ChatSequence.human_desc",
             # NB This only works as a system message on models that respect that.

@@ -179,10 +179,9 @@ class OllamaEventBuilder:
     async def wrap_entire_streaming_response(
             self,
             upstream_response: httpx.Response,
-            *on_done_fns: Callable[[OllamaResponseContentJSON], Awaitable[Any]],
             enable_logging: bool = False,
     ) -> starlette.responses.StreamingResponse:
-        async def response_recorder(
+        async def http_event_recorder(
                 consolidated_response: OllamaResponseContentJSON,
         ) -> None:
             if upstream_response.is_success and self.response_content_json:
@@ -205,11 +204,6 @@ class OllamaEventBuilder:
             await upstream_response.aclose()
             self._try_commit()
 
-            for on_done_fn in on_done_fns:
-                if on_done_fn is not None:
-                    logger.debug(f"Calling {on_done_fn=}")
-                    await on_done_fn(self.response_content_json or {})
-
         iter0: AsyncIterator[bytes] = upstream_response.aiter_bytes()
         iter1: AsyncIterator[JSONDict] = stream_bytes_to_json(iter0)
         if enable_logging:
@@ -219,7 +213,7 @@ class OllamaEventBuilder:
 
         iter3: AsyncIterator[JSONDict] = consolidate_and_call(
             iter2, ollama_response_consolidator, {},
-            response_recorder,
+            http_event_recorder,
         )
         iter4: AsyncIterator[bytes] = dump_to_bytes(iter3)
 
