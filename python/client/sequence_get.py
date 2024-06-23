@@ -5,7 +5,6 @@ from http.client import HTTPException
 from typing import Annotated, Any, AsyncIterator, AsyncGenerator, Awaitable
 
 import fastapi.routing
-import orjson
 import starlette.requests
 import starlette.responses
 import starlette.status
@@ -24,6 +23,7 @@ from client.database import HistoryDB, get_db as get_history_db
 from inference.autonaming import autoname_sequence
 from inference.routes_langchain import JSONStreamingResponse
 from providers.inference_models.orm import FoundationModelRecordOrm, lookup_inference_model_for_event_id
+from providers.registry import ProviderRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -245,6 +245,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             )] = None,
             wait_for_response: bool = False,
             history_db: HistoryDB = Depends(get_history_db),
+            registry: ProviderRegistry = Depends(ProviderRegistry),
     ):
         match_object = history_db.execute(
             select(ChatSequence)
@@ -260,7 +261,12 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 history_db: HistoryDB,
         ) -> PromptText | None:
             autoname: PromptText | None = await autoname_sequence(
-                sequence, preferred_autonaming_model, status_holder)
+                sequence,
+                preferred_autonaming_model,
+                status_holder,
+                history_db,
+                registry,
+            )
             if autoname is not None:
                 sequence.human_desc = autoname
                 history_db.add(sequence)

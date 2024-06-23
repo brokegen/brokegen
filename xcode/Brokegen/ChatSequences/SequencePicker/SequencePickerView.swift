@@ -217,17 +217,21 @@ struct SequencePickerView: View {
         Button {
             _ = chatService.autonameChatSequence(sequence, preferredAutonamingModel: appSettings.chatSummaryModel?.serverId)
         } label: {
-            Text("Autoname ChatSequence (server-side request)")
+            Text(appSettings.chatSummaryModel == nil
+                 ? "Autoname sequence (disabled, select a preferred model first)"
+                 : "Autoname sequence (server-side request with \(appSettings.chatSummaryModel!.humanId))")
                 .font(.system(size: 18))
         }
+        .disabled(appSettings.chatSummaryModel == nil)
 
         Button {
             let updatedSequence = chatService.renameChatSequence(sequence, to: nil)
             chatService.updateSequence(withSameId: updatedSequence)
         } label: {
-            Text("Rename...")
+            Text("Rename... (disabled, not implemented)")
                 .font(.system(size: 18))
         }
+        .disabled(true)
     }
 
     var body: some View {
