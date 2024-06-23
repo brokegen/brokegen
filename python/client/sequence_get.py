@@ -1,8 +1,9 @@
+import itertools
 import json
 import logging
 from datetime import datetime, timezone, timedelta
 from http.client import HTTPException
-from typing import Annotated, Any, AsyncIterator, AsyncGenerator, Awaitable
+from typing import Annotated, Any, AsyncIterator, AsyncGenerator, Awaitable, Iterable
 
 import fastapi.routing
 import starlette.requests
@@ -205,10 +206,10 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         return emit_sequence_details(match_object, history_db)
 
     @router_ish.get("/sequences/{sequence_id:int}/parent")
-    def get_sequence_parent(
+    def get_one_sequence_parent(
             sequence_id: ChatSequenceID,
             history_db: HistoryDB = Depends(get_history_db),
-    ) -> ChatSequenceID | None:
+    ) -> JSONDict:
         match_object = history_db.execute(
             select(ChatSequence)
             .filter_by(id=sequence_id)
@@ -216,7 +217,31 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         if match_object is None:
             raise HTTPException(starlette.status.HTTP_404_NOT_FOUND, "No matching object")
 
-        return match_object.parent_sequence
+        return { "sequence_id": match_object.parent_sequence }
+
+    @router_ish.get("/sequences/{sequence_id:int}/parents")
+    def get_sequence_parent(
+            sequence_id: ChatSequenceID,
+            max_ids_limit: Annotated[int | None, Query()] = None,
+            history_db: HistoryDB = Depends(get_history_db),
+    ) -> JSONDict:
+        def do_get_one_sequence_parent(sequence_id: ChatSequenceID) -> ChatSequenceID | None:
+            match_object = history_db.execute(
+                select(ChatSequence)
+                .filter_by(id=sequence_id)
+            ).scalar_one_or_none()
+
+            return match_object.parent_sequence
+
+        def get_multiple() -> Iterable[ChatSequenceID]:
+            current_sequence = sequence_id
+            while current_sequence is not None:
+                yield current_sequence
+                current_sequence = do_get_one_sequence_parent(current_sequence)
+
+        return {
+            "sequence_ids": list(itertools.islice(get_multiple(), max_ids_limit))
+        }
 
     @router_ish.post("/sequences/{sequence_id:int}/user_pinned")
     def set_sequence_pinned(
