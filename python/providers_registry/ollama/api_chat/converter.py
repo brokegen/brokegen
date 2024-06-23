@@ -13,7 +13,7 @@ from client.database import HistoryDB
 from inference.continuation import InferenceOptions
 from inference.iterators import stream_str_to_json
 from inference.prompting.templating import apply_llm_template
-from providers.inference_models.orm import FoundationeModelRecordOrm
+from providers.inference_models.orm import FoundationModelRecordOrm
 from .logging import OllamaRequestContentJSON
 from ..chat_rag_util import do_generate_nolog
 from ..chat_routes import lookup_model
@@ -37,7 +37,7 @@ async def translate_generate_to_chat(
 async def convert_chat_to_generate(
         original_request: starlette.requests.Request,
         chat_request_content: OllamaRequestContentJSON,
-        inference_model: FoundationeModelRecordOrm,
+        inference_model: FoundationModelRecordOrm,
         inference_options: InferenceOptions,
         requested_system_message: PromptText | None,
         prompt_override: PromptText | None,

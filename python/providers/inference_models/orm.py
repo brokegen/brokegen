@@ -76,7 +76,7 @@ class FoundationModelAddRequest(BaseModel):
     )
 
 
-class FoundationeModelRecordOrm(Base):
+class FoundationModelRecordOrm(Base):
     __tablename__ = 'InferenceModelRecords'
 
     id: FoundationModelRecordID = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
@@ -143,7 +143,7 @@ class FoundationeModelRecordOrm(Base):
         return self
 
     def model_dump(self) -> Iterable[tuple[str, Any]]:
-        for column in FoundationeModelRecordOrm.__mapper__.columns:
+        for column in FoundationModelRecordOrm.__mapper__.columns:
             yield column.name, getattr(self, column.name)
 
     def as_json(self):
@@ -161,12 +161,12 @@ def lookup_inference_model(
         human_id: FoundationModelHumanID,
         provider_identifiers: str,
         history_db: HistoryDB,
-) -> FoundationeModelRecordOrm:
+) -> FoundationModelRecordOrm:
     return history_db.execute(
-        select(FoundationeModelRecordOrm)
-        .where(FoundationeModelRecordOrm.provider_identifiers == provider_identifiers,
-               FoundationeModelRecordOrm.human_id == human_id)
-        .order_by(FoundationeModelRecordOrm.last_seen.desc())
+        select(FoundationModelRecordOrm)
+        .where(FoundationModelRecordOrm.provider_identifiers == provider_identifiers,
+               FoundationModelRecordOrm.human_id == human_id)
+        .order_by(FoundationModelRecordOrm.last_seen.desc())
         .limit(1)
     ).scalar_one_or_none()
 
@@ -174,20 +174,20 @@ def lookup_inference_model(
 def lookup_foundation_model_detailed(
         model_in: FoundationModelAddRequest,
         history_db: HistoryDB,
-) -> FoundationeModelRecordOrm | None:
+) -> FoundationModelRecordOrm | None:
     where_clauses = [
-        FoundationeModelRecordOrm.human_id == model_in.human_id,
-        FoundationeModelRecordOrm.provider_identifiers == model_in.provider_identifiers,
+        FoundationModelRecordOrm.human_id == model_in.human_id,
+        FoundationModelRecordOrm.provider_identifiers == model_in.provider_identifiers,
     ]
     # NULL will always return not equal in SQL, so check only if there's something to check
     if model_in.model_identifiers:
-        where_clauses.append(FoundationeModelRecordOrm.model_identifiers == model_in.model_identifiers)
+        where_clauses.append(FoundationModelRecordOrm.model_identifiers == model_in.model_identifiers)
     if model_in.combined_inference_parameters:
         where_clauses.append(
-            FoundationeModelRecordOrm.combined_inference_parameters == model_in.combined_inference_parameters)
+            FoundationModelRecordOrm.combined_inference_parameters == model_in.combined_inference_parameters)
 
     return history_db.execute(
-        select(FoundationeModelRecordOrm)
+        select(FoundationModelRecordOrm)
         .where(*where_clauses)
     ).scalar_one_or_none()
 
@@ -257,10 +257,10 @@ class InferenceEventOrm(Base):
 def lookup_inference_model_for_event_id(
         inference_id: InferenceEventID,
         history_db: HistoryDB,
-) -> FoundationeModelRecordOrm | None:
+) -> FoundationModelRecordOrm | None:
     return history_db.execute(
-        select(FoundationeModelRecordOrm)
-        .join(InferenceEventOrm, InferenceEventOrm.model_record_id == FoundationeModelRecordOrm.id)
+        select(FoundationModelRecordOrm)
+        .join(InferenceEventOrm, InferenceEventOrm.model_record_id == FoundationModelRecordOrm.id)
         .where(InferenceEventOrm.id == inference_id)
     ).scalar_one_or_none()
 

@@ -14,7 +14,7 @@ from inference.continuation import InferenceOptions
 from inference.iterators import tee_to_console_output, consolidate_and_call
 from inference.logging import inference_event_logger, construct_new_sequence_from
 from providers.inference_models.orm import FoundationModelRecord, FoundationModelResponse, FoundationModelAddRequest, \
-    lookup_foundation_model_detailed, FoundationeModelRecordOrm
+    lookup_foundation_model_detailed, FoundationModelRecordOrm
 from providers.orm import ProviderType, ProviderLabel, ProviderRecord
 from providers.registry import BaseProvider, ProviderRegistry, ProviderFactory
 
@@ -110,7 +110,7 @@ class EchoProvider(BaseProvider):
             yield FoundationModelRecord.from_orm(maybe_model)
 
         else:
-            new_model = FoundationeModelRecordOrm(**model_in.model_dump())
+            new_model = FoundationModelRecordOrm(**model_in.model_dump())
             history_db.add(new_model)
             history_db.commit()
 
@@ -119,7 +119,7 @@ class EchoProvider(BaseProvider):
     def chat(
             self,
             sequence_id: ChatSequenceID,
-            inference_model: FoundationeModelRecordOrm,
+            inference_model: FoundationModelRecordOrm,
             inference_options: InferenceOptions,
             retrieval_context: Awaitable[PromptText | None],
             status_holder: ServerStatusHolder,

@@ -9,7 +9,7 @@ from sqlalchemy import select, or_, func
 from _util.json import safe_get
 from _util.typing import FoundationModelHumanID
 from client.database import HistoryDB
-from providers.inference_models.orm import FoundationeModelRecordOrm, FoundationModelRecord, FoundationModelAddRequest, \
+from providers.inference_models.orm import FoundationModelRecordOrm, FoundationModelRecord, FoundationModelAddRequest, \
     lookup_foundation_model_detailed
 from providers.orm import ProviderRecordOrm, ProviderRecord
 from providers_registry.ollama.api_chat.logging import OllamaResponseContentJSON
@@ -21,14 +21,14 @@ def fetch_model_record(
         executor_record: ProviderRecordOrm,
         model_name: str,
         history_db: HistoryDB,
-) -> FoundationeModelRecordOrm | None:
+) -> FoundationModelRecordOrm | None:
     sorted_executor_info = dict(sorted(executor_record.identifiers.items()))
 
     return history_db.execute(
-        select(FoundationeModelRecordOrm)
-        .where(FoundationeModelRecordOrm.provider_identifiers == sorted_executor_info,
-               FoundationeModelRecordOrm.human_id == model_name)
-        .order_by(FoundationeModelRecordOrm.last_seen)
+        select(FoundationModelRecordOrm)
+        .where(FoundationModelRecordOrm.provider_identifiers == sorted_executor_info,
+               FoundationModelRecordOrm.human_id == model_name)
+        .order_by(FoundationModelRecordOrm.last_seen)
         .limit(1)
     ).scalar_one_or_none()
 
@@ -68,7 +68,7 @@ def build_models_from_api_tags(
 
         else:
             logger.info(f"GET /api/tags returned a new FoundationModelRecord: {safe_get(sorted_model_json, 'name')}")
-            new_model = FoundationeModelRecordOrm(**model_in.model_dump())
+            new_model = FoundationModelRecordOrm(**model_in.model_dump())
             history_db.add(new_model)
             history_db.commit()
 
@@ -81,7 +81,7 @@ def build_model_from_api_show(
         provider_identifiers: str,
         response_json: OllamaResponseContentJSON,
         history_db: HistoryDB,
-) -> FoundationeModelRecordOrm:
+) -> FoundationModelRecordOrm:
     sorted_response_json = orjson.loads(
         orjson.dumps(response_json, option=orjson.OPT_SORT_KEYS)
     )
@@ -140,15 +140,15 @@ def build_model_from_api_show(
     """In particular, sqlalchemy.func.json_extract() returns a _string_, while orjson is bytes."""
 
     # Check for an exact match first, which should be the most common case
-    exact_match: FoundationeModelRecordOrm | None = history_db.execute(
-        select(FoundationeModelRecordOrm)
+    exact_match: FoundationModelRecordOrm | None = history_db.execute(
+        select(FoundationModelRecordOrm)
         .where(
-            FoundationeModelRecordOrm.human_id == human_id,
-            FoundationeModelRecordOrm.provider_identifiers == provider_identifiers,
-            func.json_extract(FoundationeModelRecordOrm.model_identifiers, "$.details") == reference_model_details,
-            FoundationeModelRecordOrm.combined_inference_parameters == updated_inference_parameters,
+            FoundationModelRecordOrm.human_id == human_id,
+            FoundationModelRecordOrm.provider_identifiers == provider_identifiers,
+            func.json_extract(FoundationModelRecordOrm.model_identifiers, "$.details") == reference_model_details,
+            FoundationModelRecordOrm.combined_inference_parameters == updated_inference_parameters,
         )
-        .order_by(FoundationeModelRecordOrm.last_seen.desc())
+        .order_by(FoundationModelRecordOrm.last_seen.desc())
         .limit(1)
     ).scalar_one_or_none()
     if exact_match is not None:
@@ -161,18 +161,18 @@ def build_model_from_api_show(
     # Scan for /api/tags-created entries one-at-a-time and figure out how to merge in data.
     # This merge is only feasible when /api/tags response and /api/show's 'details' sections are identical,
     # which seems to be true testing a few models with `ollama --version` `0.1.33+e9ae607e`.
-    api_tags_match: FoundationeModelRecordOrm | None = history_db.execute(
-        select(FoundationeModelRecordOrm)
+    api_tags_match: FoundationModelRecordOrm | None = history_db.execute(
+        select(FoundationModelRecordOrm)
         .where(
-            FoundationeModelRecordOrm.human_id == human_id,
-            FoundationeModelRecordOrm.provider_identifiers == provider_identifiers,
-            func.json_extract(FoundationeModelRecordOrm.model_identifiers, "$.details") == reference_model_details,
+            FoundationModelRecordOrm.human_id == human_id,
+            FoundationModelRecordOrm.provider_identifiers == provider_identifiers,
+            func.json_extract(FoundationModelRecordOrm.model_identifiers, "$.details") == reference_model_details,
             or_(
-                FoundationeModelRecordOrm.combined_inference_parameters.is_(None),
-                FoundationeModelRecordOrm.combined_inference_parameters.is_("null"),
+                FoundationModelRecordOrm.combined_inference_parameters.is_(None),
+                FoundationModelRecordOrm.combined_inference_parameters.is_("null"),
             ),
         )
-        .order_by(FoundationeModelRecordOrm.last_seen.desc())
+        .order_by(FoundationModelRecordOrm.last_seen.desc())
         .limit(1)
     ).scalar_one_or_none()
     if api_tags_match is not None:

@@ -9,7 +9,7 @@ from _util.typing import PromptText
 from client.chat_message import ChatMessageOrm
 from client.chat_sequence import ChatSequence
 from client.database import HistoryDB
-from providers.inference_models.orm import InferenceEventOrm, FoundationeModelRecordOrm
+from providers.inference_models.orm import InferenceEventOrm, FoundationModelRecordOrm
 
 logger = logging.getLogger(__name__)
 

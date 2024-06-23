@@ -11,7 +11,7 @@ from providers_registry.ollama.json import OllamaEventBuilder
 from providers_registry.ollama.model_routes import do_api_show, _real_ollama_client
 from inference.prompting.templating import apply_llm_template
 from client.database import HistoryDB
-from providers.inference_models.orm import FoundationeModelRecordOrm, InferenceEventOrm, lookup_inference_model, \
+from providers.inference_models.orm import FoundationModelRecordOrm, InferenceEventOrm, lookup_inference_model, \
     InferenceReason
 from _util.typing import FoundationModelHumanID
 from providers.orm import ProviderLabel, ProviderRecord
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 async def lookup_model_offline(
         model_name: FoundationModelHumanID,
         history_db: HistoryDB,
-) -> Tuple[FoundationeModelRecordOrm, ProviderRecord]:
+) -> Tuple[FoundationModelRecordOrm, ProviderRecord]:
     provider = await ProviderRegistry().try_make(ProviderLabel(type="ollama", id="http://localhost:11434"))
     if provider is None:
         raise HTTPException(500, "No Provider loaded")
@@ -43,7 +43,7 @@ async def lookup_model(
         model_name: FoundationModelHumanID,
         history_db: HistoryDB,
         audit_db: AuditDB,
-) -> Tuple[FoundationeModelRecordOrm, ProviderRecord]:
+) -> Tuple[FoundationModelRecordOrm, ProviderRecord]:
     try:
         return await lookup_model_offline(model_name, history_db)
     except (ValueError, HTTPException):

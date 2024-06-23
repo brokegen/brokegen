@@ -15,7 +15,7 @@ from _util.json import safe_get, JSONDict
 from providers._util import local_provider_identifiers, local_fetch_machine_info
 from client.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import FoundationModelRecord, FoundationModelAddRequest, \
-    lookup_foundation_model_detailed, FoundationeModelRecordOrm
+    lookup_foundation_model_detailed, FoundationModelRecordOrm
 from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord, ProviderType
 from providers.registry import ProviderRegistry, BaseProvider, ProviderFactory
 
@@ -190,7 +190,7 @@ class LlamafileProvider(BaseProvider):
 
         else:
             logger.info(f".llamafile constructed a new FoundationModelRecord: {model_in.model_dump_json()}")
-            new_model = FoundationeModelRecordOrm(**model_in.model_dump())
+            new_model = FoundationModelRecordOrm(**model_in.model_dump())
             history_db.add(new_model)
             history_db.commit()
 

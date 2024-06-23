@@ -15,7 +15,7 @@ from _util.json import safe_get
 from _util.typing import FoundationModelHumanID
 from audit.http import AuditDB
 from client.database import HistoryDB
-from providers.inference_models.orm import FoundationModelRecord, FoundationeModelRecordOrm, inject_inference_stats, \
+from providers.inference_models.orm import FoundationModelRecord, FoundationModelRecordOrm, inject_inference_stats, \
     FoundationModelResponse
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry, BaseProvider
@@ -72,7 +72,7 @@ async def do_list_available_models(
     ) -> Generator[FoundationModelRecord, None, None]:
         inference_model: FoundationModelRecord
         for inference_model in inference_models:
-            inference_model_orm: FoundationeModelRecordOrm
+            inference_model_orm: FoundationModelRecordOrm
             inference_model_orm = await do_api_show(inference_model.human_id, history_db, audit_db)
             yield FoundationModelRecord.from_orm(inference_model_orm)
 
@@ -134,7 +134,7 @@ async def do_api_show(
         model_name: FoundationModelHumanID,
         history_db: HistoryDB,
         audit_db: AuditDB,
-) -> FoundationeModelRecordOrm:
+) -> FoundationModelRecordOrm:
     intercept = OllamaEventBuilder("ollama:/api/show", audit_db)
     logger.debug(f"ollama proxy: start handler for POST /api/show")
 

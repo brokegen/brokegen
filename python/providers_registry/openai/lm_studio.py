@@ -13,7 +13,7 @@ from providers._util import local_provider_identifiers, local_fetch_machine_info
 from client.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import FoundationModelRecord
 from providers.inference_models.orm import lookup_foundation_model_detailed, \
-    FoundationModelAddRequest, FoundationeModelRecordOrm
+    FoundationModelAddRequest, FoundationModelRecordOrm
 from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord, ProviderType
 from providers.registry import ProviderRegistry, BaseProvider, ProviderFactory
 
@@ -139,7 +139,7 @@ class LMStudioProvider(BaseProvider):
 
             else:
                 logger.info(f"GET /v1/models returned a new FoundationModelRecord: {safe_get(model_identifiers, 'id')}")
-                new_model = FoundationeModelRecordOrm(**model_in.model_dump())
+                new_model = FoundationModelRecordOrm(**model_in.model_dump())
                 history_db.add(new_model)
                 history_db.commit()
 

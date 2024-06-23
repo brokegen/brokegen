@@ -9,7 +9,7 @@ from _util.typing import FoundationModelRecordID, ChatSequenceID, PromptText
 from client.chat_message import ChatMessage
 from client.chat_sequence import lookup_sequence_parents
 from client.database import HistoryDB
-from providers.inference_models.orm import InferenceEventOrm, FoundationeModelRecordOrm
+from providers.inference_models.orm import InferenceEventOrm, FoundationModelRecordOrm
 from retrieval.faiss.retrieval import RetrievalLabel
 
 
@@ -46,8 +46,8 @@ def select_continuation_model(
         # TODO: Take this opportunity to confirm the InferenceModel is online.
         #       Though, maybe the inference events later on should be robust enough to handle errors.
         return history_db.execute(
-            select(FoundationeModelRecordOrm)
-            .where(FoundationeModelRecordOrm.id == requested_model_id)
+            select(FoundationModelRecordOrm)
+            .where(FoundationModelRecordOrm.id == requested_model_id)
         ).scalar_one()
 
     # Iterate over all sequence nodes until we find enough model info.
@@ -56,9 +56,9 @@ def select_continuation_model(
         if sequence.inference_job_id is None:
             continue
 
-        inference_model: FoundationeModelRecordOrm = history_db.execute(
-            select(FoundationeModelRecordOrm)
-            .join(InferenceEventOrm, InferenceEventOrm.model_record_id == FoundationeModelRecordOrm.id)
+        inference_model: FoundationModelRecordOrm = history_db.execute(
+            select(FoundationModelRecordOrm)
+            .join(InferenceEventOrm, InferenceEventOrm.model_record_id == FoundationModelRecordOrm.id)
             .where(InferenceEventOrm.id == sequence.inference_job_id)
         ).scalar_one()
 
@@ -66,8 +66,8 @@ def select_continuation_model(
 
     if fallback_model_id is not None:
         return history_db.execute(
-            select(FoundationeModelRecordOrm)
-            .where(FoundationeModelRecordOrm.id == fallback_model_id)
+            select(FoundationModelRecordOrm)
+            .where(FoundationModelRecordOrm.id == fallback_model_id)
         ).scalar_one()
 
     raise HTTPException(400, f"Couldn't find any models ({requested_model_id=}, {fallback_model_id}, {sequence_id=})")

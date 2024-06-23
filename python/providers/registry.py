@@ -17,7 +17,7 @@ from _util.typing import ChatSequenceID, PromptText
 from audit.http import AuditDB
 from inference.continuation import InferenceOptions
 from client.database import HistoryDB
-from providers.inference_models.orm import FoundationModelRecord, FoundationModelResponse, FoundationeModelRecordOrm
+from providers.inference_models.orm import FoundationModelRecord, FoundationModelResponse, FoundationModelRecordOrm
 from providers.orm import ProviderLabel, ProviderRecord, ProviderType
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ class BaseProvider:
     async def chat(
             self,
             sequence_id: ChatSequenceID,
-            inference_model: FoundationeModelRecordOrm,
+            inference_model: FoundationModelRecordOrm,
             inference_options: InferenceOptions,
             retrieval_context: Awaitable[PromptText | None],
             status_holder: ServerStatusHolder,

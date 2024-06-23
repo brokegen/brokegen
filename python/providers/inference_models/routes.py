@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from _util.typing import FoundationModelRecordID
 from client.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import FoundationeModelRecordOrm, lookup_inference_model, \
+from providers.inference_models.orm import FoundationModelRecordOrm, lookup_inference_model, \
     lookup_foundation_model_detailed, FoundationModelAddRequest
 from providers.orm import ProviderRecordOrm, ProviderRecord, ProviderAddRequest
 
@@ -89,7 +89,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                     just_created=False,
                 )
 
-        new_model = FoundationeModelRecordOrm(
+        new_model = FoundationModelRecordOrm(
             **model_in.model_dump(),
         )
         history_db.add(new_model)
@@ -107,7 +107,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             history_db: HistoryDB = Depends(get_history_db),
     ):
         match_object = history_db.execute(
-            select(FoundationeModelRecordOrm)
+            select(FoundationModelRecordOrm)
             .filter_by(id=id)
         ).scalar_one_or_none()
         if match_object is None:
