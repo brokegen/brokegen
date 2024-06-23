@@ -14,7 +14,7 @@ from sqlalchemy import select
 from starlette.background import BackgroundTask
 
 from _util.json import JSONDict
-from _util.json_streaming import emit_keepalive_chunks_with_log
+from _util.json_streaming import emit_keepalive_chunks
 from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, RoleName, PromptText, FoundationModelRecordID
 from client.chat_message import ChatMessageOrm, ChatMessage
@@ -288,12 +288,16 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
         async def do_keepalive(
                 primordial: AsyncIterator[JSONDict],
-        ) -> AsyncGenerator[JSONDict, None]:
-            async for chunk in emit_keepalive_chunks_with_log(primordial, 4.9, None):
+        ) -> AsyncGenerator[JSONDict]:
+            start_time = datetime.now(tz=timezone.utc)
+            async for chunk in emit_keepalive_chunks(primordial, 4.9, None):
                 if chunk is None:
+                    current_time = datetime.now(tz=timezone.utc)
                     yield {
                         "done": False,
                         "status": status_holder.get(),
+                        "created_at": current_time.isoformat() + "Z",
+                        "elapsed": str(current_time - start_time),
                     }
 
                 else:
@@ -302,7 +306,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         if wait_for_response:
             awaitable: Awaitable[PromptText | None] = do_autoname(match_object, history_db)
             iter0: AsyncIterator[JSONDict] = nonblocking_response_maker(awaitable)
-            iter1: AsyncIterator[bytes] = do_keepalive(iter0)
+            iter1: AsyncIterator[JSONDict] = do_keepalive(iter0)
             return JSONStreamingResponse(
                 content=iter1,
                 status_code=218,
