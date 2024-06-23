@@ -1,4 +1,6 @@
+import asyncio
 import logging
+from datetime import timezone, datetime
 
 from _util.status import ServerStatusHolder
 from _util.typing import PromptText, FoundationModelRecordID
@@ -12,4 +14,5 @@ async def autoname_sequence(
         preferred_autonaming_model: FoundationModelRecordID,
         status_holder: ServerStatusHolder,
 ) -> PromptText | None:
-    return f"[mock autoname for ChatSequence#{sequence.id}]"
+    await asyncio.sleep(10)
+    return f"[{datetime.now(tz=timezone.utc)} -- mock autoname for ChatSequence#{sequence.id}]"

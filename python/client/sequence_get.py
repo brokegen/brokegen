@@ -2,9 +2,10 @@ import json
 import logging
 from datetime import datetime, timezone, timedelta
 from http.client import HTTPException
-from typing import Annotated, Any
+from typing import Annotated, Any, AsyncIterator, AsyncGenerator, Awaitable
 
 import fastapi.routing
+import orjson
 import starlette.requests
 import starlette.responses
 import starlette.status
@@ -13,12 +14,15 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from starlette.background import BackgroundTask
 
+from _util.json import JSONDict
+from _util.json_streaming import emit_keepalive_chunks
 from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, RoleName, PromptText, FoundationModelRecordID
 from client.chat_message import ChatMessageOrm, ChatMessage
 from client.chat_sequence import ChatSequence, lookup_sequence_parents
 from client.database import HistoryDB, get_db as get_history_db
 from inference.autonaming import autoname_sequence
+from inference.routes_langchain import JSONStreamingResponse
 from providers.inference_models.orm import FoundationeModelRecordOrm, lookup_inference_model_for_event_id
 
 logger = logging.getLogger(__name__)
@@ -249,12 +253,12 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         if match_object is None:
             raise HTTPException(starlette.status.HTTP_404_NOT_FOUND, "No matching object")
 
+        status_holder = ServerStatusHolder(f"/sequences/{sequence_id}/autoname: setting up")
+
         async def do_autoname(
                 sequence: ChatSequence,
                 history_db: HistoryDB,
         ) -> PromptText | None:
-            status_holder = ServerStatusHolder(f"/sequences/{sequence_id}/autoname: setting up")
-
             autoname: PromptText | None = await autoname_sequence(
                 sequence, preferred_autonaming_model, status_holder)
             if autoname is not None:
@@ -268,12 +272,35 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 status_holder.set(f"Failed autonaming, chat title is unchanged")
                 return autoname
 
-        if wait_for_response:
-            autoname: PromptText = await do_autoname(match_object, history_db)
-            return starlette.responses.JSONResponse({
-                "autoname": autoname,
+        async def nonblocking_response_maker(
+                real_response_maker: Awaitable[PromptText | None],
+        ) -> AsyncIterator[JSONDict]:
+            yield {
+                "autoname": await real_response_maker,
                 "done": True,
-            })
+            }
+
+        async def do_keepalive(
+                primordial: AsyncIterator[JSONDict],
+        ) -> AsyncGenerator[JSONDict, None]:
+            async for chunk in emit_keepalive_chunks(primordial, 4.9, None):
+                if chunk is None:
+                    yield {
+                        "done": False,
+                        "status": status_holder.get(),
+                    }
+
+                else:
+                    yield chunk
+
+        if wait_for_response:
+            awaitable: Awaitable[PromptText | None] = do_autoname(match_object, history_db)
+            iter0: AsyncIterator[JSONDict] = nonblocking_response_maker(awaitable)
+            iter1: AsyncIterator[bytes] = do_keepalive(iter0)
+            return JSONStreamingResponse(
+                content=iter1,
+                status_code=218,
+            )
 
         else:
             return starlette.responses.Response(
