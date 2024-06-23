@@ -73,7 +73,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         function_id = request.url_for('sequence_continue_v2', sequence_id=sequence_id)
         status_holder = ServerStatusHolder(f"{function_id}: setting up")
 
-        async def real_response_maker() -> Awaitable[AsyncIterator[JSONDict]]:
+        def real_response_maker() -> Awaitable[AsyncIterator[JSONDict]]:
             # Decide how to continue inference for this sequence
             inference_model: FoundationeModelRecordOrm = \
                 select_continuation_model(sequence_id, parameters.continuation_model_id, parameters.fallback_model_id,
