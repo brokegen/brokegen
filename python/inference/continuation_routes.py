@@ -11,7 +11,7 @@ import starlette.requests
 from fastapi import Depends, Body
 
 from _util.json import JSONDict
-from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks
+from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks_with_log
 from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import ChatSequenceID, PromptText
 from audit.http import AuditDB
@@ -109,7 +109,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         async def do_keepalive(
                 primordial: AsyncIterator[JSONDict],
         ) -> AsyncGenerator[bytes, None]:
-            async for chunk in emit_keepalive_chunks(primordial, 0.5, None):
+            async for chunk in emit_keepalive_chunks_with_log(primordial, 0.5, None):
                 if chunk is None:
                     yield orjson.dumps({
                         "created_at": datetime.now(tz=timezone.utc),

@@ -16,18 +16,14 @@ import asyncio
 import logging
 from collections.abc import AsyncIterable
 from datetime import datetime, timezone
-from typing import Callable, Awaitable, AsyncIterator, TypeVar, Any
+from typing import Callable, AsyncIterator, TypeVar, Any
 from typing import Iterable
 
-import orjson
 import starlette.datastructures
 import starlette.requests
 from starlette.background import BackgroundTask
 from starlette.concurrency import iterate_in_threadpool
 from starlette.responses import StreamingResponse, JSONResponse
-
-from _util.json import safe_get, JSONDict
-from _util.typing import FoundationModelHumanID
 
 logger = logging.getLogger(__name__)
 
@@ -70,12 +66,10 @@ async def emit_keepalive_chunks(
         timeout: float | None,
         sentinel: T,
 ) -> AsyncIterator[U | T]:
-    start_time = datetime.now(tz=timezone.utc)
-    maybe_next: asyncio.Future[U] | None = None
-
     # Emit an initial keepalive, in case our async chunks are enormous
-    logger.debug(f"emit_keepalive_chunks(): emitting zero sentinel after {datetime.now(tz=timezone.utc) - start_time}")
     yield sentinel
+
+    maybe_next: asyncio.Future[U] | None = None
 
     try:
         maybe_next = asyncio.ensure_future(primordial.__anext__())
@@ -84,8 +78,6 @@ async def emit_keepalive_chunks(
                 yield await asyncio.wait_for(asyncio.shield(maybe_next), timeout)
                 maybe_next = asyncio.ensure_future(primordial.__anext__())
             except asyncio.TimeoutError:
-                current_time = datetime.now(tz=timezone.utc)
-                logger.debug(f"emit_keepalive_chunks(): emitting sentinel after {current_time - start_time}")
                 yield sentinel
 
     except StopAsyncIteration:
@@ -94,3 +86,19 @@ async def emit_keepalive_chunks(
     finally:
         if maybe_next is not None:
             maybe_next.cancel()
+
+
+async def emit_keepalive_chunks_with_log(
+        primordial: AsyncIterator[U],
+        timeout: float | None,
+        sentinel: T,
+        emit_logger_fn: Callable[[str], Any],
+) -> AsyncIterator[U | T]:
+    start_time = datetime.now(tz=timezone.utc)
+
+    async for item in emit_keepalive_chunks(primordial, timeout, sentinel):
+        yield item
+
+        if item == sentinel:
+            current_time = datetime.now(tz=timezone.utc)
+            emit_logger_fn(f"emit_keepalive_chunks(): emitting sentinel after {current_time - start_time}")

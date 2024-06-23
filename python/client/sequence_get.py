@@ -14,7 +14,7 @@ from sqlalchemy import select
 from starlette.background import BackgroundTask
 
 from _util.json import JSONDict
-from _util.json_streaming import emit_keepalive_chunks
+from _util.json_streaming import emit_keepalive_chunks_with_log
 from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, RoleName, PromptText, FoundationModelRecordID
 from client.chat_message import ChatMessageOrm, ChatMessage
@@ -289,7 +289,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         async def do_keepalive(
                 primordial: AsyncIterator[JSONDict],
         ) -> AsyncGenerator[JSONDict, None]:
-            async for chunk in emit_keepalive_chunks(primordial, 4.9, None):
+            async for chunk in emit_keepalive_chunks_with_log(primordial, 4.9, None):
                 if chunk is None:
                     yield {
                         "done": False,
