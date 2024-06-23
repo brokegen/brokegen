@@ -1,6 +1,6 @@
 import SwiftUI
 
-let maxSidebarItems = 10
+let maxSidebarItems = 8
 
 fileprivate func dateToString(_ date: Date) -> String {
     let calendar = Calendar(identifier: .iso8601)
@@ -250,9 +250,11 @@ struct SequencePickerView: View {
     }
 
     var body: some View {
+        let itemCount = self.onlyUserPinned ? maxSidebarItems : Int(maxSidebarItems * 2)
+
         HStack(spacing: 24) {
-            Button("Refresh \(maxSidebarItems * 5)", systemImage: "arrow.clockwise") {
-                Task { try? await chatService.fetchRecents(limit: maxSidebarItems * 5, onlyUserPinned: onlyUserPinned) }
+            Button("Refresh \(itemCount)", systemImage: "arrow.clockwise") {
+                Task { try? await chatService.fetchRecents(limit: itemCount, onlyUserPinned: onlyUserPinned) }
             }
             .buttonStyle(.accessoryBar)
             .padding(12)
