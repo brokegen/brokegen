@@ -1,9 +1,8 @@
 import logging
 from datetime import datetime, timezone
-from typing import AsyncIterator, AsyncGenerator, Annotated, Awaitable
+from typing import AsyncIterator, Annotated, Awaitable
 
 import fastapi.routing
-import orjson
 import starlette.datastructures
 import starlette.datastructures
 import starlette.requests
@@ -11,13 +10,13 @@ import starlette.requests
 from fastapi import Depends, Body
 
 from _util.json import JSONDict
-from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks_with_log, emit_keepalive_chunks
+from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks
 from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import ChatSequenceID, PromptText
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
-from inference.continuation import ContinueRequest, select_continuation_model
 from client.database import HistoryDB, get_db as get_history_db
+from inference.continuation import ContinueRequest, select_continuation_model
 from providers.inference_models.orm import FoundationModelRecordOrm
 from providers.registry import ProviderRegistry, BaseProvider
 from retrieval.faiss.knowledge import get_knowledge, KnowledgeSingleton

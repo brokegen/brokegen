@@ -288,7 +288,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
         async def do_keepalive(
                 primordial: AsyncIterator[JSONDict],
-        ) -> AsyncGenerator[JSONDict]:
+        ) -> AsyncGenerator[JSONDict, None]:
             start_time = datetime.now(tz=timezone.utc)
             async for chunk in emit_keepalive_chunks(primordial, 4.9, None):
                 if chunk is None:

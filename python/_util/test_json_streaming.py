@@ -5,7 +5,7 @@ from typing import Callable, Awaitable, AsyncIterator
 import orjson
 
 from _util.json import safe_get
-from _util.json_streaming import emit_keepalive_chunks_with_log, JSONStreamingResponse
+from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks
 from _util.typing import FoundationModelHumanID
 
 
@@ -39,7 +39,7 @@ async def complex_nothing_chain(
             "done": True,
         })
 
-    async for chunk in emit_keepalive_chunks_with_log(fake_timeout(), 0.5, None):
+    async for chunk in emit_keepalive_chunks(fake_timeout(), 0.5, None):
         if await is_disconnected():
             print(f"Somehow detected a client disconnect! (Expected client to just stop iteration)")
 
