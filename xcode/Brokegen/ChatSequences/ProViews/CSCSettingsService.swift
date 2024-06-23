@@ -93,7 +93,7 @@ class CSCSettingsService: Observable, ObservableObject {
             set { inference.retrievalSearchArgs = newValue }
         }
 
-        var autonamingPolicy: CSInferenceSettings.ChatAutoNaming {
+        var autonamingPolicy: CSInferenceSettings.AutonamingPolicy {
             get { inference.autonamingPolicy }
             set { inference.autonamingPolicy = newValue }
         }

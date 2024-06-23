@@ -40,7 +40,7 @@ struct OverrideCSUISettings {
 }
 
 struct CSInferenceSettings {
-    enum ChatAutoNaming: String {
+    enum AutonamingPolicy: String {
         case serverDefault, disable, summarizeAfterAsync, summarizeBefore
     }
 
@@ -52,5 +52,5 @@ struct CSInferenceSettings {
     var retrievalPolicy: String? = "simple"
     var retrievalSearchArgs: String? = "{\"k\": 18}"
 
-    var autonamingPolicy: ChatAutoNaming = .serverDefault
+    var autonamingPolicy: AutonamingPolicy = .serverDefault
 }

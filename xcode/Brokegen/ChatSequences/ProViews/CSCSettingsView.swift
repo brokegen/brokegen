@@ -151,16 +151,16 @@ struct CSCSettingsView: View {
             Text("ChatSequence auto-naming policy")
             Picker("", selection: $settings.autonamingPolicy) {
                 Text("server default")
-                    .tag(CSInferenceSettings.ChatAutoNaming.serverDefault)
+                    .tag(CSInferenceSettings.AutonamingPolicy.serverDefault)
 
                 Text("disable")
-                    .tag(CSInferenceSettings.ChatAutoNaming.disable)
+                    .tag(CSInferenceSettings.AutonamingPolicy.disable)
 
                 Text("summarize after inference (asynchronous)")
-                    .tag(CSInferenceSettings.ChatAutoNaming.summarizeAfterAsync)
+                    .tag(CSInferenceSettings.AutonamingPolicy.summarizeAfterAsync)
 
                 Text("summarize before inference")
-                    .tag(CSInferenceSettings.ChatAutoNaming.summarizeBefore)
+                    .tag(CSInferenceSettings.AutonamingPolicy.summarizeBefore)
             }
             .pickerStyle(.inline)
         }, label: {
