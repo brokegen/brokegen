@@ -127,9 +127,7 @@ struct OFMPicker: View {
     let allowClear: Bool
 
     var body: some View {
-        GroupBox(label:
-                    Text(boxLabel)
-            .monospaced()
+        GroupBox(label: Text(boxLabel)
             .layoutPriority(0.2)
             .font(.system(size: 36))
         ) {

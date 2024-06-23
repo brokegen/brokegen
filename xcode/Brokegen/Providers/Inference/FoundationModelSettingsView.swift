@@ -18,7 +18,7 @@ struct FoundationModelSettingsView: View {
                     }
 
                     OFMPicker(
-                        boxLabel: "defaultInferenceModel",
+                        boxLabel: "Default Inference Model (for new Chats)",
                         selectedModelBinding: $appSettings.defaultInferenceModel,
                         showModelPicker: $showDefaultInferenceModelPicker,
                         geometry: geometry,
@@ -26,7 +26,7 @@ struct FoundationModelSettingsView: View {
                     )
 
                     OFMPicker(
-                        boxLabel: "fallbackInferenceModel",
+                        boxLabel: "Fallback Inference Model",
                         selectedModelBinding: $appSettings.fallbackInferenceModel,
                         showModelPicker: $showFallbackInferenceModelPicker,
                         geometry: geometry,
