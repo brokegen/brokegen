@@ -15,7 +15,7 @@ from inference.iterators import tee_to_console_output, consolidate_and_call
 from inference.logging import inference_event_logger, construct_new_sequence_from
 from providers.inference_models.orm import FoundationModelRecord, FoundationModelResponse, FoundationModelAddRequest, \
     lookup_foundation_model_detailed, FoundationModelRecordOrm
-from providers.orm import ProviderType, ProviderLabel, ProviderRecord
+from providers.orm import ProviderType, ProviderLabel, ProviderRecord, ProviderID
 from providers.registry import BaseProvider, ProviderRegistry, ProviderFactory
 
 
@@ -74,8 +74,8 @@ def echo_consolidator(chunk: JSONDict, consolidated_response: JSONDict) -> JSOND
 
 
 class EchoProvider(BaseProvider):
-    def __init__(self, id: str):
-        self.provider_id = id
+    def __init__(self, provider_id: ProviderID):
+        self.provider_id = provider_id
 
     async def available(self) -> bool:
         return True
@@ -141,7 +141,7 @@ class EchoProvider(BaseProvider):
 class EchoProviderFactory(ProviderFactory):
     async def try_make(self, label: ProviderLabel) -> BaseProvider | None:
         if label.type == "echo":
-            return EchoProvider(id=label.id)
+            return EchoProvider(provider_id=label.id)
 
         return None
 
