@@ -65,7 +65,12 @@ struct ProMessageView: View {
             .padding(.trailing, 24)
 
             HStack(spacing: 24) {
-                Button(action: {}, label: {
+                Button(action: {
+                    let pasteboard = NSPasteboard.general
+                    // https://stackoverflow.com/questions/49211910/s
+                    pasteboard.clearContents()
+                    pasteboard.setString(message.content, forType: .string)
+                }, label: {
                     Image(systemName: "clipboard")
                 })
 
@@ -73,10 +78,12 @@ struct ProMessageView: View {
                 }, label: {
                     Image(systemName: "arrow.triangle.branch")
                 })
+                .disabled(true)
 
                 Button(action: {}, label: {
                     Image(systemName: "info.circle")
                 })
+                .disabled(true)
             }
             .font(.system(size: 24))
             .buttonStyle(.borderless)
