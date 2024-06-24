@@ -29,9 +29,8 @@ async def emulate_api_tags(
 
             return sha256_hasher.hexdigest()
 
-        # If it's an Ollama-compatible record, just return that
         model_out = {
-            "name": f"{label.type}::{label.id}::{model.human_id}",
+            "name": model.as_name(override_label=label),
             "model": model.human_id,
             "digest": compute_hash(),
             "size": 0,

@@ -6,7 +6,7 @@ from sqlalchemy import Column, Integer, String, DateTime, JSON, Double, select, 
 
 from _util.typing import ChatSequenceID, TemplatedPromptText, FoundationModelRecordID, FoundationModelHumanID
 from client.database import Base, HistoryDB
-from providers.orm import ProviderLabel
+from providers.orm import ProviderLabel, ProviderType, ProviderID
 
 InferenceEventID: TypeAlias = PositiveInt
 InferenceReason: TypeAlias = str
@@ -30,6 +30,8 @@ class FoundationModelRecord(BaseModel):
     first_seen_at: Optional[datetime] = None
     last_seen: Optional[datetime] = None
 
+    provider_type: Optional[ProviderType] = None
+    provider_id: Optional[ProviderID] = None
     provider_identifiers: str
     model_identifiers: Optional[dict] = None
 
@@ -41,6 +43,12 @@ class FoundationModelRecord(BaseModel):
         frozen=True,
         protected_namespaces=(),
     )
+
+    def as_name(self, override_label: ProviderLabel | None = None) -> str:
+        if override_label is not None:
+            return f"{override_label.type}::{override_label.id}::{self.human_id}"
+
+        return f"{self.provider_type}::{self.provider_id}::{self.human_id}"
 
 
 class FoundationModelResponse(FoundationModelRecord):
