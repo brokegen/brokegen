@@ -8,21 +8,93 @@ DSPy-focused test suite for inducting new inference models
 """
 import json
 import logging
+from contextlib import contextmanager, asynccontextmanager
+from typing import Any
 
 import dspy
 from dspy import Example
-from dspy.datasets import DataLoader, HotPotQA
-from dspy.datasets.gsm8k import GSM8K, gsm8k_metric
-from dspy.evaluate import Evaluate
+from dspy.datasets import HotPotQA
 from dspy.teleprompt import BootstrapFewShot
 
-from dspy.teleprompt import BootstrapFewShotWithRandomSearch
-from dspy.teleprompt.ensemble import Ensemble
+from providers.inference_models.orm import FoundationModelRecordOrm, FoundationModelRecord, FoundationModelResponse
+from providers.orm import ProviderType
+from providers.registry import ProviderRegistry
+from providers_registry.echo.registry import EchoProvider
 
 logger = logging.getLogger(__name__)
 
 
-def test_philosophy():
+class DSPyLMProxy(dspy.LM):
+    def __init__(
+            self,
+            inference_model: FoundationModelRecord | FoundationModelResponse,
+            use_chat_endpoint: bool = True,
+    ):
+        super().__init__(model)
+        pass
+
+    def basic_request(self, prompt, **kwargs):
+        pass
+
+    def __call__(
+            self,
+            prompt: str,
+            only_completed: bool = True,
+            return_sorted: bool = False,
+            **kwargs,
+    ) -> list[dict[str, Any]]:
+        """Retrieves completions from Ollama.
+
+        Args:
+            prompt (str): prompt to send to Ollama
+            only_completed (bool, optional): return only completed responses and ignores completion due to length. Defaults to True.
+            return_sorted (bool, optional): sort the completion choices using the returned probabilities. Defaults to False.
+
+        Returns:
+            list[dict[str, Any]]: list of completion choices
+        """
+
+        assert only_completed, "for now"
+        assert return_sorted is False, "for now"
+
+        response = self.request(prompt, **kwargs)
+
+        choices = response["choices"]
+
+        completed_choices = [c for c in choices if c["finish_reason"] != "length"]
+
+        if only_completed and len(completed_choices):
+            choices = completed_choices
+
+        completions = [self._get_choice_text(c) for c in choices]
+
+        return completions
+
+
+@asynccontextmanager
+async def dspy_proxy_any(type: ProviderType | None):
+    # inference_model = ProviderRegistry()
+    x = await anext(EchoProvider(__name__).list_models())
+
+    with dspy.context(lm=DSPyLMProxy(x)):
+        yield
+
+
+@contextmanager
+def dspy_proxy(inference_model: FoundationModelRecordOrm):
+    with dspy.context(lm=DSPyLMProxy(inference_model)):
+        yield
+
+
+def xtest_providers():
+    pass
+
+    lm = dspy.OllamaLocal
+    with dspy_proxy():
+        pass
+
+
+def xtest_philosophy():
     dataset = HotPotQA(train_seed=15586946, train_size=20, eval_seed=426205314, dev_size=20, test_size=20)
     hf_dataset_test = [x.with_inputs('question') for x in dataset.test]
     hf_dataset_train = [x.with_inputs('question') for x in dataset.train]
@@ -40,7 +112,7 @@ def test_philosophy():
         question = dspy.InputField(desc="Question to be answered")
         answer = dspy.InputField(desc="Answer for the question")
         insightful = dspy.OutputField(desc="Is the answer insightful?",
-                                             prefix="Insightful[Yes/No]:")
+                                      prefix="Insightful[Yes/No]:")
 
     judge = dspy.ChainOfThought(LifeCoachJudge)
 
@@ -61,7 +133,7 @@ def test_philosophy():
             return self.prog(question=question)
 
     teleprompter = BootstrapFewShot(
-         metric=lifecoach_metric, max_bootstrapped_demos=4, max_labeled_demos=16, max_rounds=1, max_errors=5
+        metric=lifecoach_metric, max_bootstrapped_demos=4, max_labeled_demos=16, max_rounds=1, max_errors=5
     )
     optimized_program: TheProgram = teleprompter.compile(TheProgram(), trainset=hf_dataset_train)
 
@@ -87,7 +159,7 @@ if __name__ == '__main__':
     ollama_lm = dspy.OllamaLocal(model='llama3-8b-instruct:bpefix-Q8_0-8k', max_tokens=256)
     dspy.settings.configure(lm=ollama_lm)
 
-    test_philosophy()
+    xtest_philosophy()
 
     ollama_lm.inspect_history(n=1)
     print("OK")
