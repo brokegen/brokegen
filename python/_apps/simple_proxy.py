@@ -14,15 +14,16 @@ from fastapi import Depends, FastAPI, Request
 
 from audit.http import init_db as init_audit_db, AuditDB, get_db as get_audit_db
 from audit.http_raw import SqlLoggingMiddleware
-from providers_registry.ollama.forwarding import forward_request, forward_request_nodetails
+from client_ollama.forward import forward_request, forward_request_nodetails
 
 
-def install_proxy_routes(app: FastAPI):
+def install_proxy_routes(app: FastAPI, install_logging_middleware: bool):
     proxy_app = FastAPI()
-    proxy_app.add_middleware(
-        SqlLoggingMiddleware,
-        audit_db=next(get_audit_db()),
-    )
+    if install_logging_middleware:
+        proxy_app.add_middleware(
+            SqlLoggingMiddleware,
+            audit_db=next(get_audit_db()),
+        )
 
     @proxy_app.get("/{path:path}")
     @proxy_app.head("/{path:path}")
@@ -62,7 +63,10 @@ def try_install_timing_middleware(app: FastAPI):
 
 
 def try_install_logging_middleware(app: FastAPI):
-    pass
+    app.add_middleware(
+        SqlLoggingMiddleware,
+        audit_db=next(get_audit_db()),
+    )
 
 
 @asynccontextmanager
@@ -139,11 +143,9 @@ def run_proxy(
     import uvicorn
 
     init_audit_db(f"{data_dir}/audit.db")
-    install_proxy_routes(app)
+    install_proxy_routes(app, install_logging_middleware)
     if install_timing_middleware:
         try_install_timing_middleware(app)
-    if install_logging_middleware:
-        try_install_logging_middleware(app)
 
     # NB Forget it, no multiprocess'd workers, I can't figure out what to do with them from within PyInstaller
     config = uvicorn.Config(

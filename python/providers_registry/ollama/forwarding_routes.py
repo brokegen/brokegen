@@ -14,15 +14,15 @@ from _util.json import safe_get, JSONDict, safe_get_arrayed
 from _util.status import ServerStatusHolder
 from audit.http import AuditDB, get_db as get_audit_db
 from client.database import HistoryDB, get_db as get_history_db
+from client_ollama.forward import forward_request_nolog, forward_request
 from inference.continuation import InferenceOptions, AutonamingOptions
-from inference.iterators import dump_to_bytes, consolidate_and_call, tee_to_console_output, stream_bytes_to_json
+from inference.iterators import consolidate_and_call, tee_to_console_output
 from providers.inference_models.orm import InferenceReason, InferenceEventOrm
 from providers.registry import ProviderRegistry
 from providers_registry.ollama.api_chat.inject_rag import do_proxy_chat_rag
 from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON, OllamaResponseContentJSON, \
     finalize_inference_job, ollama_response_consolidator, ollama_log_indexer
 from providers_registry.ollama.chat_routes import do_proxy_generate, lookup_model_offline
-from providers_registry.ollama.forwarding import forward_request_nolog, forward_request
 from providers_registry.ollama.json import keepalive_wrapper
 from providers_registry.ollama.model_routes import do_api_tags, do_api_show
 from providers_registry.ollama.registry import ExternalOllamaFactory

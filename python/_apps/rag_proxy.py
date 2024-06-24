@@ -13,9 +13,9 @@ import click
 from fastapi import APIRouter, Depends, FastAPI, Request
 
 from audit.http import init_db as init_audit_db, AuditDB, get_db as get_audit_db
-from retrieval.faiss.knowledge import get_knowledge, KnowledgeSingleton, get_knowledge_dependency
+from client_ollama.forward import forward_request, forward_request_nodetails
 from inference.routes_langchain import do_transparent_rag
-from providers_registry.ollama.forwarding import forward_request, forward_request_nodetails
+from retrieval.faiss.knowledge import get_knowledge, KnowledgeSingleton, get_knowledge_dependency
 
 
 def reconfigure_loglevels():
@@ -50,20 +50,20 @@ async def lifespan_for_fastapi(app: FastAPI):
     def install_langchain_routes(app: FastAPI):
         ollama_forwarder = APIRouter()
 
-        @ollama_forwarder.get("/ollama-proxy/{path}")
-        @ollama_forwarder.head("/ollama-proxy/{path}")
-        @ollama_forwarder.post("/ollama-proxy/{path}")
+        @ollama_forwarder.get("/ollama-rag-proxy/{path}")
+        @ollama_forwarder.head("/ollama-rag-proxy/{path}")
+        @ollama_forwarder.post("/ollama-rag-proxy/{path}")
         async def do_proxy_get_post(
                 request: Request,
                 audit_db: AuditDB = Depends(get_audit_db),
                 knowledge: KnowledgeSingleton = Depends(get_knowledge_dependency),
         ):
-            if request.url.path == "/ollama-proxy/api/generate":
+            if request.url.path == "/ollama-rag-proxy/api/generate":
                 return await do_transparent_rag(request, knowledge)
 
             if (
                     request.method == 'HEAD'
-                    or request.url.path == "/ollama-proxy/api/show"
+                    or request.url.path == "/ollama-rag-proxy/api/show"
             ):
                 return await forward_request_nodetails(request, audit_db)
 

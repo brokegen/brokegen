@@ -231,7 +231,7 @@ def run_proxy(
 
     # Ollama proxy & emulation
     providers_registry.ollama.forwarding_routes.install_forwards(app, force_ollama_rag)
-    client_ollama.install_forwards(app)
+    client_ollama.emulate.install_forwards(app)
 
     # Direct test points, only used in Swagger test UI
     providers_registry.ollama.direct_routes.install_test_points(app)

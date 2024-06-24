@@ -10,11 +10,18 @@ from typing_extensions import deprecated
 
 from audit.http import AuditDB
 from audit.http_raw import HttpxLogger
-from providers_registry.ollama.json import OllamaEventBuilder
-from providers_registry.ollama.api_chat.logging import OllamaResponseContentJSON
-from providers_registry.ollama.model_routes import _real_ollama_client
 
 logger = logging.getLogger(__name__)
+
+_real_ollama_client = httpx.AsyncClient(
+    base_url="http://localhost:11434",
+    http2=True,
+    proxy=None,
+    cert=None,
+    timeout=httpx.Timeout(2.0, read=None),
+    max_redirects=0,
+    follow_redirects=False,
+)
 
 
 async def forward_request_nolog(
@@ -75,6 +82,7 @@ async def forward_request(
     urlpath_noprefix = original_request.url.path.removeprefix("/ollama-proxy")
     logger.debug(f"ollama proxy: start handler for {original_request.method} {urlpath_noprefix}")
 
+    from providers_registry.ollama.json import OllamaEventBuilder
     intercept = OllamaEventBuilder(f"ollama:{urlpath_noprefix}", audit_db)
     if original_request.url.query:
         raise NotImplementedError(f"Haven't implemented anything to handle query args in {original_request}")
