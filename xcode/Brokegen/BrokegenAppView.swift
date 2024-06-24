@@ -38,6 +38,7 @@ struct BrokegenAppView: View {
         NavigationStack(path: $pathHost.path) {
             NavigationSplitView(sidebar: {
                 sharedSidebar
+                    .navigationSplitViewColumnWidth(ideal: 360)
             }, detail: {
                 SequencePickerView()
             })
@@ -55,7 +56,6 @@ struct BrokegenAppView: View {
             }
         }
         .environment(pathHost)
-        .frame(idealWidth: 1280, idealHeight: 1080)
     }
 }
 

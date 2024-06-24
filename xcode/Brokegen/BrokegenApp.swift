@@ -75,6 +75,7 @@ struct BrokegenApp: App {
                 }
         }
         .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 1080, height: 1800)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button(action: {
