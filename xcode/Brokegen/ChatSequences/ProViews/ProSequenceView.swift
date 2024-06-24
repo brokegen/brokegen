@@ -391,6 +391,58 @@ struct ProSequenceView: View {
         .frame(height: tabBarHeight)
     }
 
+    @ViewBuilder
+    var contextMenuItems: some View {
+        Text(viewModel.sequence.displayRecognizableDesc())
+
+        Divider()
+
+        Section(header: Text("UI Options")) {
+            Button(action: {
+                NSApp.keyWindow?.contentViewController?.tryToPerform(
+                    #selector(NSSplitViewController.toggleSidebar(_:)),
+                    with: nil)
+            }, label: {
+                Text("Toggle Sidebar")
+            })
+            .keyboardShortcut("\\", modifiers: [.command])
+
+            Toggle(isOn: $settings.pinChatSequenceDesc) {
+                Text("Pin chat name to top of window")
+            }
+
+            Toggle(isOn: $settings.showMessageHeaders) {
+                Text("Show message headers in the UI")
+            }
+
+            Toggle(isOn: $settings.showOIMPicker) {
+                Text("Show InferenceModel override picker")
+            }
+        }
+
+        Divider()
+
+        Section(header: Text("Chat Data")) {
+            Button {
+                let updatedSequence = viewModel.chatService.pinChatSequence(viewModel.sequence, pinned: !viewModel.sequence.userPinned)
+                viewModel.chatService.updateSequence(withSameId: updatedSequence)
+            } label: {
+                Toggle(isOn: .constant(viewModel.sequence.userPinned)) {
+                    Text("Pin chat in app recents")
+                }
+            }
+
+            Button {
+                _ = viewModel.chatService.autonameChatSequence(viewModel.sequence, preferredAutonamingModel: viewModel.appSettings.preferredAutonamingModel?.serverId)
+            } label: {
+                Text(viewModel.appSettings.preferredAutonamingModel == nil
+                     ? "(disabled) Autoname chat"
+                     : "Autoname chat w/ \(viewModel.appSettings.preferredAutonamingModel!.humanId)")
+            }
+            .disabled(viewModel.appSettings.preferredAutonamingModel == nil)
+        }
+    }
+
     @State private var statusBarHeight: CGFloat = 0
     @State private var lowerVStackHeight: CGFloat = 0
 
@@ -474,6 +526,9 @@ struct ProSequenceView: View {
                             .onChange(of: viewModel.responseInEdit?.content) {
                                 // TODO: Replace this with a GeometryReader that merely nudges us, if we're already close to the bottom
                                 proxy.scrollTo(viewModel.responseInEdit, anchor: .bottom)
+                            }
+                            .contextMenu {
+                                contextMenuItems
                             }
                         }
                     }

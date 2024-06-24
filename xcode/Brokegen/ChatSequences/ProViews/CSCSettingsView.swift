@@ -109,7 +109,7 @@ struct CSCSettingsView: View {
                         .tag(false as Bool?)
                 }, label: {
                     HStack(spacing: 0) {
-                        Text("Keep ChatSequence description pinned to top of window")
+                        Text("Keep ChatSequence name pinned to top of its View window")
                             .lineLimit(1...4)
 
                     }
