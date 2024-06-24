@@ -6,6 +6,7 @@ from http.client import HTTPException
 from typing import Annotated, Any, AsyncIterator, AsyncGenerator, Awaitable, Iterable
 
 import fastapi.routing
+import sqlalchemy
 import starlette.requests
 import starlette.responses
 import starlette.status
@@ -133,6 +134,28 @@ def emit_sequence_details(
 
 
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
+    @router_ish.get("/sequences/.recent/as-ids")
+    def fetch_recent_sequences_as_ids(
+            lookback: Annotated[float | None, Query(description="Maximum age in seconds for returned items")] = None,
+            limit: Annotated[int | None, Query(description="Maximum number of items to return")] = None,
+            only_user_pinned: Annotated[bool | None, Query(description="Only include user_pinned sequences")] = None,
+            history_db: HistoryDB = Depends(get_history_db),
+    ):
+        query = (
+            select(ChatSequence.id)
+            .order_by(ChatSequence.generated_at.desc())
+        )
+        if lookback is not None:
+            reference_time = datetime.now(tz=timezone.utc) - timedelta(seconds=lookback)
+            query = query.where(ChatSequence.generated_at > reference_time)
+        if limit is not None:
+            query = query.limit(limit)
+        if only_user_pinned:
+            query = query.filter_by(user_pinned=only_user_pinned)
+
+        matching_sequence_ids = history_db.execute(query).scalars()
+        return {"sequence_ids": list(matching_sequence_ids)}
+
     @router_ish.get("/sequences/.recent/as-messages")
     def fetch_recent_sequences_as_messages(
             lookback: Annotated[float | None, Query(description="Maximum age in seconds for returned items")] = None,
@@ -158,15 +181,26 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             in history_db.execute(query).scalars()
         ]}
 
-    @router_ish.get("/sequences/.recent/as-ids")
-    def fetch_recent_sequences_as_ids(
+    @router_ish.get("/sequences/.leaf/as-messages")
+    def fetch_leaf_sequences_as_messages(
             lookback: Annotated[float | None, Query(description="Maximum age in seconds for returned items")] = None,
             limit: Annotated[int | None, Query(description="Maximum number of items to return")] = None,
-            only_user_pinned: Annotated[bool | None, Query(description="Only include user_pinned sequences")] = None,
+            exclude_user_pinned: Annotated[bool | None, Query()] = None,
             history_db: HistoryDB = Depends(get_history_db),
     ):
-        query = (
-            select(ChatSequence.id)
+        """
+        Return all ChatSequences that do not have dependents.
+        """
+        # Set up an "inverse" query that lists every sequence_id in the parent_sequences column.
+        with_dependents: sqlalchemy.Select = (
+            select(ChatSequence.parent_sequence)
+            .where(ChatSequence.parent_sequence.is_not(None))
+            .group_by(ChatSequence.parent_sequence)
+        )
+
+        query: sqlalchemy.Select = (
+            select(ChatSequence)
+            .where(ChatSequence.id.not_in(with_dependents))
             .order_by(ChatSequence.generated_at.desc())
         )
         if lookback is not None:
@@ -174,11 +208,14 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             query = query.where(ChatSequence.generated_at > reference_time)
         if limit is not None:
             query = query.limit(limit)
-        if only_user_pinned:
-            query = query.filter_by(user_pinned=only_user_pinned)
+        if exclude_user_pinned:
+            query = query.filter_by(only_user_pinned=not exclude_user_pinned)
 
-        matching_sequence_ids = history_db.execute(query).scalars()
-        return {"sequence_ids": list(matching_sequence_ids)}
+        return {"sequences": [
+            emit_sequence_details(match_object, history_db)
+            for match_object
+            in history_db.execute(query).scalars()
+        ]}
 
     @router_ish.get("/sequences/{sequence_id:int}")
     def get_sequence_as_messages_redirect(
@@ -217,12 +254,12 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         if match_object is None:
             raise HTTPException(starlette.status.HTTP_404_NOT_FOUND, "No matching object")
 
-        return { "sequence_id": match_object.parent_sequence }
+        return {"sequence_id": match_object.parent_sequence}
 
     @router_ish.get("/sequences/{sequence_id:int}/parents")
     def get_sequence_parent(
             sequence_id: ChatSequenceID,
-            max_ids_limit: Annotated[int | None, Query()] = None,
+            limit: Annotated[int | None, Query()] = None,
             history_db: HistoryDB = Depends(get_history_db),
     ) -> JSONDict:
         def do_get_one_sequence_parent(sequence_id: ChatSequenceID) -> ChatSequenceID | None:
@@ -240,7 +277,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 current_sequence = do_get_one_sequence_parent(current_sequence)
 
         return {
-            "sequence_ids": list(itertools.islice(get_multiple(), max_ids_limit))
+            "sequence_ids": list(itertools.islice(get_multiple(), limit)),
         }
 
     @router_ish.post("/sequences/{sequence_id:int}/user_pinned")
@@ -248,7 +285,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             sequence_id: ChatSequenceID,
             value: Annotated[bool, Query(description="Whether to pin or unpin")] = True,
             history_db: HistoryDB = Depends(get_history_db),
-    ):
+    ) -> JSONDict:
         match_object = history_db.execute(
             select(ChatSequence)
             .filter_by(id=sequence_id)
@@ -260,7 +297,10 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         history_db.add(match_object)
         history_db.commit()
 
-        return starlette.responses.Response(status_code=starlette.status.HTTP_204_NO_CONTENT)
+        return {
+            "sequence_id": match_object.id,
+            "user_pinned": match_object.user_pinned,
+        }
 
     @router_ish.post("/sequences/{sequence_id:int}/autoname")
     async def request_sequence_autoname(

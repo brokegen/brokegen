@@ -21,9 +21,7 @@ class ChatSequence: Identifiable {
     var messages: [Message] = []
     let inferenceModelId: FoundationModelRecordID?
 
-    static func fromData(serverId: ChatSequenceServerID? = nil, data: Data) throws -> ChatSequence {
-        let sequenceJson = JSON(data)
-
+    static func fromData(serverId: ChatSequenceServerID? = nil, json sequenceJson: JSON) throws -> ChatSequence {
         var messageBuilder: [Message] = []
         for messageJson in sequenceJson["messages"].arrayValue {
             let message = Message(
@@ -261,9 +259,42 @@ extension DefaultChatSyncService {
         }
     }
 
+    // DEBUG: Test out a few different concepts.
+    // In particular, request sequence bodies in `as-messages`, and see if UI updates are faster
+    func doFetchLeafs(
+        lookback: TimeInterval?,
+        limit: Int?,
+        excludeUserPinned: Bool?
+    ) async throws {
+        var endpointMaker = "/sequences/.leaf/as-messages?"
+        if lookback != nil {
+            endpointMaker += "&lookback=\(lookback!)"
+        }
+        if limit != nil {
+            endpointMaker += "&limit=\(limit!)"
+        }
+        if excludeUserPinned != nil {
+            endpointMaker += "&exclude_user_pinned=\(excludeUserPinned!)"
+        }
+
+        let sequencesData = try await getDataBlocking(endpointMaker)
+        guard sequencesData != nil else { throw ChatSyncServiceError.noResponseContentReturned }
+
+        for oneSequenceData in JSON(sequencesData!)["sequences"].arrayValue {
+            if let oneSequence = try? ChatSequence.fromData(
+                serverId: oneSequenceData["id"].int,
+                json: oneSequenceData
+            ) {
+                DispatchQueue.main.async {
+                    self.updateSequence(withSameId: oneSequence)
+                }
+            }
+        }
+    }
+
     public func doFetchChatSequenceDetails(_ sequenceId: ChatSequenceServerID) async throws -> ChatSequence? {
         if let entireSequence = try await getDataBlocking("/sequences/\(sequenceId)/as-messages") {
-            return try ChatSequence.fromData(serverId: sequenceId, data: entireSequence)
+            return try ChatSequence.fromData(serverId: sequenceId, json: JSON(entireSequence))
         }
         else {
             throw ChatSyncServiceError.noResponseContentReturned
@@ -290,7 +321,7 @@ extension DefaultChatSyncService {
             do {
                 let updatedSequence = try ChatSequence.fromData(
                     serverId: updatedSequenceId,
-                    data: updatedSequenceData)
+                    json: JSON(updatedSequenceData))
 
                 // Insert new ChatSequences in reverse order, newest at the top
                 DispatchQueue.main.async {

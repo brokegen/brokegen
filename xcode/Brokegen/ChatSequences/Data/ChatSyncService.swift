@@ -207,7 +207,7 @@ class DefaultChatSyncService: ChatSyncService {
 
     // MARK: - ChatSequence change members
     override public func fetchRecents(lookback: TimeInterval?, limit: Int?, onlyUserPinned: Bool?) async throws {
-        return try await doFetchRecents(lookback: lookback, limit: limit, onlyUserPinned: onlyUserPinned)
+        return try await doFetchLeafs(lookback: lookback, limit: limit, excludeUserPinned: false)
     }
 
     override func updateSequence(_ originalSequenceId: ChatSequenceServerID?, withNewSequence updatedSequenceId: ChatSequenceServerID) async -> ChatSequence? {
@@ -227,6 +227,7 @@ class DefaultChatSyncService: ChatSyncService {
 // MARK: - HTTP GET/POST Functions
 extension DefaultChatSyncService {
     func getDataBlocking(_ endpoint: String) async throws -> Data? {
+        print("[TRACE] GET \(endpoint)")
         var responseStatusCode: Int? = nil
 
         return try await withCheckedThrowingContinuation { continuation in
@@ -262,6 +263,7 @@ extension DefaultChatSyncService {
     }
 
     func postDataBlocking(_ httpBody: Data?, endpoint: String) async throws -> Data {
+        print("[TRACE] POST \(endpoint)")
         var responseStatusCode: Int? = nil
 
         return try await withCheckedThrowingContinuation { continuation in
