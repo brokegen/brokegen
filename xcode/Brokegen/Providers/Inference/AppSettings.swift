@@ -23,7 +23,7 @@ class AppSettings: ObservableObject {
     }
 
     var stillPopulating: Bool {
-        providerService == nil
+        providerService == nil || providerService!.allModels.isEmpty
     }
 
     // MARK: - retrieving fully populated models

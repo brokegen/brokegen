@@ -29,9 +29,7 @@ struct BrokegenApp: App {
 
     init() {
         // Do on-startup init, because otherwise we store no data and app is empty
-        if UserDefaults.standard.bool(forKey: "startServicesImmediately") {
-            callInitializers()
-        }
+        callInitializers()
 
         appSettings.link(to: providerService)
 

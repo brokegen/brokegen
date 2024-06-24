@@ -151,10 +151,13 @@ struct SequencePickerView: View {
         Button {
             _ = chatService.autonameChatSequence(sequence, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
         } label: {
-            Text(appSettings.preferredAutonamingModel == nil
-                 ? "Autoname chat (disabled, select a preferred model first)"
-                 : "Autoname chat (server-side request with \(appSettings.preferredAutonamingModel!.humanId))")
-                .font(.system(size: 18))
+            Text(appSettings.stillPopulating
+                 ? "Autoname disabled (still loading)"
+                 : (appSettings.preferredAutonamingModel == nil
+                    ? "Autoname disabled (set a model in settings)"
+                    : "Autoname chat with \(appSettings.preferredAutonamingModel!.humanId)")
+            )
+            .font(.system(size: 18))
         }
         .disabled(appSettings.preferredAutonamingModel == nil)
 

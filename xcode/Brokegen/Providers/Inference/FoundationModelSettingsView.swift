@@ -24,6 +24,7 @@ struct FoundationModelSettingsView: View {
                         geometry: geometry,
                         allowClear: true
                     )
+                    .disabled(appSettings.stillPopulating)
 
                     OFMPicker(
                         boxLabel: "Fallback Inference Model",
@@ -32,6 +33,7 @@ struct FoundationModelSettingsView: View {
                         geometry: geometry,
                         allowClear: true
                     )
+                    .disabled(appSettings.stillPopulating)
 
                     OFMPicker(
                         boxLabel: "Preferred Autonaming Model",
@@ -40,6 +42,7 @@ struct FoundationModelSettingsView: View {
                         geometry: geometry,
                         allowClear: true
                     )
+                    .disabled(appSettings.stillPopulating)
 
                     OFMPicker(
                         boxLabel: "preferredEmbeddingModel",
@@ -48,6 +51,7 @@ struct FoundationModelSettingsView: View {
                         geometry: geometry,
                         allowClear: true
                     )
+                    .disabled(appSettings.stillPopulating)
 
                     Spacer()
                         .frame(minHeight: 0)
