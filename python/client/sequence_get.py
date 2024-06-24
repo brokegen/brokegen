@@ -12,7 +12,7 @@ import starlette.responses
 import starlette.status
 from fastapi import Depends, Query
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from starlette.background import BackgroundTask
 
 from _util.json import JSONDict
@@ -156,11 +156,18 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         matching_sequence_ids = history_db.execute(query).scalars()
         return {"sequence_ids": list(matching_sequence_ids)}
 
-    @router_ish.get("/sequences/.recent/as-messages")
+    @router_ish.get(
+        "/sequences/.recent/as-json",
+        description="Fetch recent ChatSequence content as JSON.\n"
+                    "NB Returns nothing unless you specify one of the flags."
+    )
     def fetch_recent_sequences_as_messages(
             lookback: Annotated[float | None, Query(description="Maximum age in seconds for returned items")] = None,
             limit: Annotated[int | None, Query(description="Maximum number of items to return")] = None,
-            only_user_pinned: Annotated[bool | None, Query(description="Only include user_pinned sequences")] = None,
+            include_user_pinned: Annotated[bool | None, Query(description="Include user_pinned sequences")] = None,
+            include_leaf_sequences: Annotated[
+                bool | None, Query(description="Include sequences without dependents")] = None,
+            include_all: Annotated[bool, Query(description="Overrides the other two flags")] = False,
             history_db: HistoryDB = Depends(get_history_db),
     ):
         query = (
@@ -172,44 +179,26 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             query = query.where(ChatSequence.generated_at > reference_time)
         if limit is not None:
             query = query.limit(limit)
-        if only_user_pinned:
-            query = query.filter_by(only_user_pinned=only_user_pinned)
 
-        return {"sequences": [
-            emit_sequence_details(match_object, history_db)
-            for match_object
-            in history_db.execute(query).scalars()
-        ]}
+        if include_all:
+            pass
 
-    @router_ish.get("/sequences/.leaf/as-messages")
-    def fetch_leaf_sequences_as_messages(
-            lookback: Annotated[float | None, Query(description="Maximum age in seconds for returned items")] = None,
-            limit: Annotated[int | None, Query(description="Maximum number of items to return")] = None,
-            exclude_user_pinned: Annotated[bool | None, Query()] = None,
-            history_db: HistoryDB = Depends(get_history_db),
-    ):
-        """
-        Return all ChatSequences that do not have dependents.
-        """
-        # Set up an "inverse" query that lists every sequence_id in the parent_sequences column.
-        with_dependents: sqlalchemy.Select = (
-            select(ChatSequence.parent_sequence)
-            .where(ChatSequence.parent_sequence.is_not(None))
-            .group_by(ChatSequence.parent_sequence)
-        )
+        else:
+            where_clauses = []
+            if include_user_pinned:
+                where_clauses.append(ChatSequence.user_pinned == True)
+            if include_leaf_sequences:
+                # Set up an "inverse" query that lists every sequence_id in the parent_sequences column.
+                with_dependents: sqlalchemy.Select = (
+                    select(ChatSequence.parent_sequence)
+                    .where(ChatSequence.parent_sequence.is_not(None))
+                    .group_by(ChatSequence.parent_sequence)
+                )
 
-        query: sqlalchemy.Select = (
-            select(ChatSequence)
-            .where(ChatSequence.id.not_in(with_dependents))
-            .order_by(ChatSequence.generated_at.desc())
-        )
-        if lookback is not None:
-            reference_time = datetime.now(tz=timezone.utc) - timedelta(seconds=lookback)
-            query = query.where(ChatSequence.generated_at > reference_time)
-        if limit is not None:
-            query = query.limit(limit)
-        if exclude_user_pinned:
-            query = query.filter_by(only_user_pinned=not exclude_user_pinned)
+                where_clauses.append(ChatSequence.id.not_in(with_dependents))
+
+            if where_clauses:
+                query = query.where(or_(*where_clauses))
 
         return {"sequences": [
             emit_sequence_details(match_object, history_db)
@@ -228,7 +217,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             status_code=starlette.status.HTTP_301_MOVED_PERMANENTLY,
         )
 
-    @router_ish.get("/sequences/{sequence_id:int}/as-messages")
+    @router_ish.get("/sequences/{sequence_id:int}/as-json")
     def fetch_sequence_as_messages(
             sequence_id: ChatSequenceID,
             history_db: HistoryDB = Depends(get_history_db),

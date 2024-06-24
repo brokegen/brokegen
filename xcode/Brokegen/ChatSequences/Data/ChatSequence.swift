@@ -21,7 +21,7 @@ class ChatSequence: Identifiable {
     var messages: [Message] = []
     let inferenceModelId: FoundationModelRecordID?
 
-    static func fromData(serverId: ChatSequenceServerID? = nil, json sequenceJson: JSON) throws -> ChatSequence {
+    static func fromJsonDict(serverId: ChatSequenceServerID? = nil, json sequenceJson: JSON) throws -> ChatSequence {
         var messageBuilder: [Message] = []
         for messageJson in sequenceJson["messages"].arrayValue {
             let message = Message(
@@ -229,59 +229,33 @@ extension DefaultChatSyncService {
     func doFetchRecents(
         lookback: TimeInterval?,
         limit: Int?,
-        onlyUserPinned: Bool?
+        includeUserPinned: Bool?,
+        includeLeafSequences: Bool?,
+        includeAll: Bool?
     ) async throws {
-        var endpointMaker = "/sequences/.recent/as-ids?"
+        var endpointMaker = "/sequences/.recent/as-json?"
+
         if lookback != nil {
             endpointMaker += "&lookback=\(lookback!)"
         }
         if limit != nil {
             endpointMaker += "&limit=\(limit!)"
         }
-        if onlyUserPinned != nil {
-            endpointMaker += "&only_user_pinned=\(onlyUserPinned!)"
+        if includeUserPinned != nil {
+            endpointMaker += "&include_user_pinned=\(includeUserPinned!)"
         }
-
-        let sequenceIds = try await getDataBlocking(endpointMaker)
-        guard sequenceIds != nil else { throw ChatSyncServiceError.noResponseContentReturned }
-
-        for (_, newSequenceId) in JSON(sequenceIds!)["sequence_ids"] {
-            if newSequenceId.int == nil {
-                print("[ERROR] Got nil sequenceId from \(endpointMaker)")
-                continue
-            }
-
-            if let entireSequence = try await doFetchChatSequenceDetails(newSequenceId.int!) {
-                DispatchQueue.main.async {
-                    self.updateSequence(withSameId: entireSequence)
-                }
-            }
+        if includeLeafSequences != nil {
+            endpointMaker += "&include_leaf_sequences=\(includeLeafSequences!)"
         }
-    }
-
-    // DEBUG: Test out a few different concepts.
-    // In particular, request sequence bodies in `as-messages`, and see if UI updates are faster
-    func doFetchLeafs(
-        lookback: TimeInterval?,
-        limit: Int?,
-        excludeUserPinned: Bool?
-    ) async throws {
-        var endpointMaker = "/sequences/.leaf/as-messages?"
-        if lookback != nil {
-            endpointMaker += "&lookback=\(lookback!)"
-        }
-        if limit != nil {
-            endpointMaker += "&limit=\(limit!)"
-        }
-        if excludeUserPinned != nil {
-            endpointMaker += "&exclude_user_pinned=\(excludeUserPinned!)"
+        if includeAll != nil {
+            endpointMaker += "&include_all=\(includeAll!)"
         }
 
         let sequencesData = try await getDataBlocking(endpointMaker)
         guard sequencesData != nil else { throw ChatSyncServiceError.noResponseContentReturned }
 
         for oneSequenceData in JSON(sequencesData!)["sequences"].arrayValue {
-            if let oneSequence = try? ChatSequence.fromData(
+            if let oneSequence = try? ChatSequence.fromJsonDict(
                 serverId: oneSequenceData["id"].int,
                 json: oneSequenceData
             ) {
@@ -294,7 +268,7 @@ extension DefaultChatSyncService {
 
     public func doFetchChatSequenceDetails(_ sequenceId: ChatSequenceServerID) async throws -> ChatSequence? {
         if let entireSequence = try await getDataBlocking("/sequences/\(sequenceId)/as-messages") {
-            return try ChatSequence.fromData(serverId: sequenceId, json: JSON(entireSequence))
+            return try ChatSequence.fromJsonDict(serverId: sequenceId, json: JSON(entireSequence))
         }
         else {
             throw ChatSyncServiceError.noResponseContentReturned
@@ -319,7 +293,7 @@ extension DefaultChatSyncService {
 
         if let updatedSequenceData = try? await getDataBlocking("/sequences/\(updatedSequenceId)/as-messages") {
             do {
-                let updatedSequence = try ChatSequence.fromData(
+                let updatedSequence = try ChatSequence.fromJsonDict(
                     serverId: updatedSequenceId,
                     json: JSON(updatedSequenceData))
 

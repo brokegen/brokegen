@@ -207,7 +207,13 @@ class DefaultChatSyncService: ChatSyncService {
 
     // MARK: - ChatSequence change members
     override public func fetchRecents(lookback: TimeInterval?, limit: Int?, onlyUserPinned: Bool?) async throws {
-        return try await doFetchLeafs(lookback: lookback, limit: limit, excludeUserPinned: false)
+        return try await doFetchRecents(
+            lookback: lookback,
+            limit: limit,
+            includeUserPinned: true,
+            includeLeafSequences: !(onlyUserPinned ?? false),
+            includeAll: !(onlyUserPinned ?? false)
+        )
     }
 
     override func updateSequence(_ originalSequenceId: ChatSequenceServerID?, withNewSequence updatedSequenceId: ChatSequenceServerID) async -> ChatSequence? {

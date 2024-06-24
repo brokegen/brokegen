@@ -114,6 +114,9 @@ async def init_app(app: FastAPI):
 @click.option('--trace-fastapi-http', default=True, show_default=True,
               help='Record FastAPI ingress/egress, at the HTTP request/response level',
               type=click.BOOL)
+@click.option('--print-uvicorn-access-log', default=True, show_default=True,
+              help='Print all HTTP requests/response codes',
+              type=click.BOOL)
 @click.option('--force-ollama-rag', default=False, show_default=True,
               help='Load FAISS files from --data-dir, and apply them to any ollama-proxy /api/chat calls',
               type=click.BOOL)
@@ -129,6 +132,7 @@ def run_proxy(
         enable_colorlog: bool,
         trace_sqlalchemy: bool,
         trace_fastapi_http: bool,
+        print_uvicorn_access_log: bool,
         force_ollama_rag: bool,
         install_terminate_endpoint: bool,
 ):
@@ -253,7 +257,7 @@ def run_proxy(
         host=bind_host,
         port=bind_port,
         log_level="debug",
-        access_log=False,
+        access_log=print_uvicorn_access_log,
         reload=False,
         workers=4,
     )
