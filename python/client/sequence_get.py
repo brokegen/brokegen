@@ -298,9 +298,9 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         }
 
     @router_ish.post("/sequences/{sequence_id:int}/user_pinned")
-    def set_sequence_pinned(
+    def set_sequence_user_pinned(
             sequence_id: ChatSequenceID,
-            value: Annotated[bool, Query(description="Whether to pin or unpin")] = True,
+            value: Annotated[bool, Query(description="Whether to pin or unpin")],
             history_db: HistoryDB = Depends(get_history_db),
     ) -> JSONDict:
         match_object = history_db.execute(
@@ -317,6 +317,28 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         return {
             "sequence_id": match_object.id,
             "user_pinned": match_object.user_pinned,
+        }
+
+    @router_ish.post("/sequences/{sequence_id:int}/human_desc")
+    def set_sequence_human_desc(
+            sequence_id: ChatSequenceID,
+            value: Annotated[str, Query()],
+            history_db: HistoryDB = Depends(get_history_db),
+    ) -> JSONDict:
+        match_object = history_db.execute(
+            select(ChatSequenceOrm)
+            .filter_by(id=sequence_id)
+        ).scalar_one_or_none()
+        if match_object is None:
+            raise HTTPException(starlette.status.HTTP_404_NOT_FOUND, "No matching object")
+
+        match_object.human_desc = value
+        history_db.add(match_object)
+        history_db.commit()
+
+        return {
+            "sequence_id": match_object.id,
+            "human_desc": match_object.human_desc,
         }
 
     @router_ish.post("/sequences/{sequence_id:int}/autoname")

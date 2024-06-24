@@ -23,7 +23,7 @@ fileprivate func dateToISOWeek(_ date: Date) -> String {
     return formatter.string(from: date)
 }
 
-fileprivate func dateToISOWeekStartingMonday(_ date: Date) -> String {
+func dateToISOWeekStartingMonday(_ date: Date) -> String {
     // Manually fetch the day-of-week, because dateFormat 'e' counts days from Sunday.
     let calendar = Calendar(identifier: .iso8601)
     let components = calendar.dateComponents(
@@ -50,97 +50,6 @@ fileprivate func dateToISOWeekStartingMonday(_ date: Date) -> String {
 
     formatter.dateFormat = "'-'LLL'-'dd"
     return "\(paddedYear)-ww\(paddedWeek).\(weekday)" + formatter.string(from: date)
-}
-
-struct SequenceRow: View {
-    @Environment(ProviderService.self) private var providerService
-
-    let sequence: ChatSequence
-    let action: (() -> Void)
-
-    @State private var isLoading: Bool = false
-
-    init(_ sequence: ChatSequence, action: @escaping () -> Void) {
-        self.sequence = sequence
-        self.action = action
-    }
-
-    func displayDate() -> String? {
-        if let date = sequence.lastMessageDate {
-            return dateToISOWeekStartingMonday(date) + " " + date.formatted(date: .omitted, time: .standard)
-        }
-        else {
-            return nil
-        }
-    }
-
-    func displayInferenceModel() -> String? {
-        guard sequence.inferenceModelId != nil else { return nil }
-
-        if let model = providerService.allModels.first(where: {
-            $0.serverId == sequence.inferenceModelId!
-        }) {
-            return model.humanId
-        }
-        return nil
-    }
-
-    var body: some View {
-        Button(action: {
-            isLoading = true
-            action()
-        }, label: {
-            HStack(spacing: 0) {
-                HStack(alignment: .top, spacing: 16) {
-                    if sequence.userPinned {
-                        Image(systemName: "pin.fill")
-                    }
-
-                    if sequence.isLeafSequence ?? false {
-                        Image(systemName: "bubble")
-                    }
-                    else {
-                        Image(systemName: "eye.slash")
-                            .foregroundStyle(Color(.disabledControlTextColor))
-                    }
-
-                    Text(sequence.displayHumanDesc())
-                        .lineLimit(1...4)
-                        .multilineTextAlignment(.leading)
-                }
-                .font(.title)
-                .padding(12)
-                .padding(.leading, -8)
-                .foregroundStyle(
-                    sequence.userPinned || (sequence.isLeafSequence ?? false)
-                    ? Color(.controlTextColor)
-                    : Color(.disabledControlTextColor)
-                )
-
-                Spacer()
-
-                VStack(alignment: .trailing) {
-                    if let displayDate = displayDate() {
-                        Text(displayDate)
-                            .monospaced()
-                    }
-
-                    Text("\(sequence.messages.count) messages")
-
-                    if let modelName = displayInferenceModel() {
-                        Spacer()
-
-                        Text(modelName)
-                            .monospaced()
-                            .foregroundStyle(Color(.controlAccentColor).opacity(0.6))
-                    }
-                }
-                .padding(12)
-                .contentShape(Rectangle())
-            }
-        })
-        .buttonStyle(.borderless)
-    }
 }
 
 func dateToSectionName(_ date: Date?) -> String {
@@ -184,6 +93,8 @@ struct SequencePickerView: View {
 
     let onlyUserPinned: Bool
     let showNewChatButton: Bool
+
+    @State private var isRenaming: [ChatSequence] = []
 
     init(onlyUserPinned: Bool = true, showNewChatButton: Bool = true) {
         self.onlyUserPinned = onlyUserPinned
@@ -248,16 +159,15 @@ struct SequencePickerView: View {
         .disabled(appSettings.preferredAutonamingModel == nil)
 
         Button {
-            let updatedSequence = chatService.renameChatSequence(sequence, to: nil)
-            chatService.updateSequence(withSameId: updatedSequence)
+            self.isRenaming.append(sequence)
         } label: {
-            Text("Rename... (disabled, not implemented)")
+            Text("Rename (experimental)...")
                 .font(.system(size: 18))
         }
-        .disabled(true)
     }
 
-    var body: some View {
+    @ViewBuilder
+    var upperToolbar: some View {
         let itemCount = self.onlyUserPinned ? maxSidebarItems : Int(maxSidebarItems * 2)
 
         HStack(spacing: 24) {
@@ -300,8 +210,31 @@ struct SequencePickerView: View {
                 .layoutPriority(0.5)
             }
         }
-        .padding(24)
-        .font(.system(size: 18))
+    }
+
+    @ViewBuilder
+    func sequenceRow(_ sequence: ChatSequence) -> some View {
+        if self.isRenaming.contains(where: { $0 == sequence }) {
+            RenameableSequenceRow(sequence) {
+                let updatedSequence = chatService.renameChatSequence(sequence, to: $0)
+                chatService.updateSequence(withSameId: updatedSequence)
+
+                self.isRenaming.removeAll { $0 == sequence }
+            }
+        }
+        else {
+            SequenceRow(sequence) {
+                pathHost.push(
+                    chatService.clientModel(for: sequence, appSettings: appSettings, chatSettingsService: chatSettingsService)
+                )
+            }
+        }
+    }
+
+    var body: some View {
+        upperToolbar
+            .padding(24)
+            .font(.system(size: 18))
 
         List {
             ForEach(sectionedSequences, id: \.0) { pair in
@@ -317,14 +250,10 @@ struct SequencePickerView: View {
                     }
                 ) {
                     ForEach(sectionSequences, id: \.serverId) { sequence in
-                        SequenceRow(sequence) {
-                            pathHost.push(
-                                chatService.clientModel(for: sequence, appSettings: appSettings, chatSettingsService: chatSettingsService)
-                            )
-                        }
-                        .contextMenu {
-                            sequenceContextMenu(for: sequence)
-                        }
+                        sequenceRow(sequence)
+                            .contextMenu {
+                                sequenceContextMenu(for: sequence)
+                            }
                     }
                 }
                 .padding(8)

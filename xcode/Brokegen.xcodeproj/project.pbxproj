@@ -34,6 +34,7 @@
 		CE9065202C272960003593F1 /* SequencePickerSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE90651F2C272960003593F1 /* SequencePickerSidebar.swift */; };
 		CE9065222C272A6A003593F1 /* SPViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9065212C272A6A003593F1 /* SPViewModel.swift */; };
 		CE9065252C2751CD003593F1 /* BlankProSequenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9065242C2751CD003593F1 /* BlankProSequenceView.swift */; };
+		CE9065272C2A0824003593F1 /* SequenceRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9065262C2A0824003593F1 /* SequenceRow.swift */; };
 		CE9867512BF4047C008D6C41 /* BrokegenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867502BF4047C008D6C41 /* BrokegenApp.swift */; };
 		CE9867552BF4047E008D6C41 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE9867542BF4047E008D6C41 /* Assets.xcassets */; };
 		CE9867592BF4047E008D6C41 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE9867582BF4047E008D6C41 /* Preview Assets.xcassets */; };
@@ -114,6 +115,7 @@
 		CE90651F2C272960003593F1 /* SequencePickerSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequencePickerSidebar.swift; sourceTree = "<group>"; };
 		CE9065212C272A6A003593F1 /* SPViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPViewModel.swift; sourceTree = "<group>"; };
 		CE9065242C2751CD003593F1 /* BlankProSequenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankProSequenceView.swift; sourceTree = "<group>"; };
+		CE9065262C2A0824003593F1 /* SequenceRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequenceRow.swift; sourceTree = "<group>"; };
 		CE98674D2BF4047C008D6C41 /* Brokegen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Brokegen.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE9867502BF4047C008D6C41 /* BrokegenApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrokegenApp.swift; sourceTree = "<group>"; };
 		CE9867542BF4047E008D6C41 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -242,6 +244,7 @@
 		CE9065232C272B12003593F1 /* SequencePicker */ = {
 			isa = PBXGroup;
 			children = (
+				CE9065262C2A0824003593F1 /* SequenceRow.swift */,
 				CE4634F12BFBB4730063142E /* SequencePickerView.swift */,
 				CE90651F2C272960003593F1 /* SequencePickerSidebar.swift */,
 				CE9065212C272A6A003593F1 /* SPViewModel.swift */,
@@ -507,6 +510,7 @@
 				CEE99E592C0D85AD008E1B07 /* OneSequenceViewModel.swift in Sources */,
 				CE145DAD2C1A106A00577314 /* ProMessageView.swift in Sources */,
 				CE7FFE142C04435D00DB7CFA /* ProviderService.swift in Sources */,
+				CE9065272C2A0824003593F1 /* SequenceRow.swift in Sources */,
 				CE7FFE182C06772400DB7CFA /* BlankOneSequenceView.swift in Sources */,
 				CE4634DE2BF937320063142E /* JobsSidebar.swift in Sources */,
 				CEFA694B2C14C7BC007EEF8D /* CSCSettingsView.swift in Sources */,

@@ -185,6 +185,13 @@ class DefaultChatSyncService: ChatSyncService {
     }
 
     override func renameChatSequence(_ sequence: ChatSequence, to newHumanDesc: String?) -> ChatSequence {
+        // TODO: Make this synchronous, otherwise failures get eaten
+        Task {
+            _ = try? await self.postDataBlocking(
+                nil,
+                endpoint: "/sequences/\(sequence.serverId!)/human_desc?value=\(newHumanDesc ?? "")")
+        }
+
         return sequence.replaceHumanDesc(desc: newHumanDesc)
     }
 
