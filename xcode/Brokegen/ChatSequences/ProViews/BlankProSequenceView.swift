@@ -10,14 +10,11 @@ struct BlankProSequenceView: View {
 
     static func createBlank(chatService: ChatSyncService, appSettings: AppSettings, chatSettingsService: CSCSettingsService) -> OneSequenceViewModel {
         let sequence = ChatSequence(
-            clientId: UUID(),
             serverId: nil,
-            humanDesc: nil,
-            userPinned: false,
             messages: [
                 Message(role: "placeholder", content: "", createdAt: nil),
-            ],
-            inferenceModelId: nil)
+            ]
+        )
 
         let settings = CSCSettingsService.SettingsProxy(
             defaults: chatSettingsService.defaults,

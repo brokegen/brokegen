@@ -616,23 +616,14 @@ struct ProSequenceView: View {
 }
 
 #Preview(traits: .fixedLayout(width: 800, height: 800)) {
-    struct Parameters: Codable {
-        let humanDesc: String?
-        let userPinned: Bool
-        var messages: [Message] = []
-    }
-
-    let parameters = Parameters(
-        humanDesc: "xcode preview",
-        userPinned: true,
-        messages: []
-    )
-    let encoder = JSONEncoder()
-    encoder.keyEncodingStrategy = .convertToSnakeCase
-
     do {
         let chatService = ChatSyncService()
-        let sequence = try ChatSequence(-1, data: try encoder.encode(parameters))
+        let sequence = try ChatSequence(
+            serverId: nil,
+            humanDesc: "xcode preview",
+            userPinned: true,
+            messages: []
+        )
         let viewModel = OneSequenceViewModel(sequence, chatService: chatService, appSettings: AppSettings(), chatSettingsService: CSCSettingsService())
 
         return ProSequenceView(viewModel)
@@ -650,23 +641,14 @@ struct ProSequenceView: View {
         Message(role: "user", content: "Fourth message", createdAt: Date(timeIntervalSinceNow: +5))
     ]
 
-    struct Parameters: Codable {
-        let humanDesc: String?
-        let userPinned: Bool
-        var messages: [Message] = []
-    }
-
-    let parameters = Parameters(
-        humanDesc: "xcode preview",
-        userPinned: true,
-        messages: messages
-    )
-    let encoder = JSONEncoder()
-    encoder.keyEncodingStrategy = .convertToSnakeCase
-
     do {
         let chatService = ChatSyncService()
-        let sequence = try ChatSequence(-1, data: try encoder.encode(parameters))
+        let sequence = try ChatSequence(
+            serverId: nil,
+            humanDesc: "xcode preview",
+            userPinned: true,
+            messages: messages
+        )
         let viewModel = OneSequenceViewModel(sequence, chatService: chatService, appSettings: AppSettings(), chatSettingsService: CSCSettingsService())
         return ProSequenceView(viewModel)
     }

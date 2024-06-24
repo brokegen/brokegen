@@ -178,5 +178,26 @@ struct MiniSequencePickerSidebar: View {
                 } // second ViewThatFits option: overflow VStack
             }
         }
+        .contextMenu {
+            Button {
+                let updatedSequence = chatService.pinChatSequence(sequence, pinned: !sequence.userPinned)
+                chatService.updateSequence(withSameId: updatedSequence)
+            } label: {
+                Toggle(isOn: .constant(sequence.userPinned)) {
+                    Text("Pin ChatSequence (keep visible in \"recents\" sidebar and SequencePicker)")
+                        .font(.system(size: 18))
+                }
+            }
+
+            Button {
+                _ = chatService.autonameChatSequence(sequence, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
+            } label: {
+                Text(appSettings.preferredAutonamingModel == nil
+                     ? "Autoname chat (disabled, select a preferred model first)"
+                     : "Autoname chat (server-side request with \(appSettings.preferredAutonamingModel!.humanId))")
+                    .font(.system(size: 18))
+            }
+            .disabled(appSettings.preferredAutonamingModel == nil)
+        }
     }
 }

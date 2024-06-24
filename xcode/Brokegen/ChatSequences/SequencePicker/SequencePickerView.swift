@@ -92,9 +92,17 @@ struct SequenceRow: View {
         }, label: {
             HStack(spacing: 0) {
                 HStack(alignment: .top, spacing: 16) {
-                    Image(systemName: sequence.userPinned
-                          ? "bubble"
-                          : "eye.slash")
+                    if sequence.userPinned {
+                        Image(systemName: "pin.fill")
+                    }
+
+                    if sequence.isLeafSequence ?? false {
+                        Image(systemName: "bubble")
+                    }
+                    else {
+                        Image(systemName: "eye.slash")
+                            .foregroundStyle(Color(.disabledControlTextColor))
+                    }
 
                     Text(sequence.displayHumanDesc())
                         .lineLimit(1...4)
@@ -104,7 +112,7 @@ struct SequenceRow: View {
                 .padding(12)
                 .padding(.leading, -8)
                 .foregroundStyle(
-                    sequence.userPinned
+                    sequence.userPinned || (sequence.isLeafSequence ?? false)
                     ? Color(.controlTextColor)
                     : Color(.disabledControlTextColor)
                 )

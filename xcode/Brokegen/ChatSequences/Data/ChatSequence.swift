@@ -9,9 +9,10 @@ typealias ChatSequenceServerID = Int
 class ChatSequence: Identifiable {
     let id: UUID
     var serverId: ChatSequenceServerID?
-
     let humanDesc: String?
     let userPinned: Bool
+
+    let generatedAt: Date?
 
     /// This list is not synced with anything on the server; this is intentional.
     /// Only messages that are first uploaded to the server, and recorded with ChatSequence nodes, will get processed.
@@ -20,6 +21,9 @@ class ChatSequence: Identifiable {
     ///
     var messages: [Message] = []
     let inferenceModelId: FoundationModelRecordID?
+
+    let isLeafSequence: Bool?
+    let parentSequences: [ChatSequenceServerID]?
 
     static func fromJsonDict(serverId: ChatSequenceServerID? = nil, json sequenceJson: JSON) throws -> ChatSequence {
         var messageBuilder: [Message] = []
@@ -35,67 +39,37 @@ class ChatSequence: Identifiable {
         }
 
         return ChatSequence(
-            clientId: UUID(),
             serverId: serverId,
             humanDesc: sequenceJson["human_desc"].string,
             userPinned: sequenceJson["user_pinned"].bool ?? false,
+            generatedAt: sequenceJson["generated_at"].isoDate,
             messages: messageBuilder,
-            inferenceModelId: sequenceJson["inference_model_id"].int
+            inferenceModelId: sequenceJson["inference_model_id"].int,
+            isLeafSequence: sequenceJson["is_leaf_sequence"].bool,
+            parentSequences: sequenceJson["parent_sequences"].array as? [ChatSequenceServerID]
         )
     }
 
-    convenience init(_ serverId: ChatSequenceServerID? = nil, data: Data) throws {
-        try self.init(clientId: UUID(), serverId: serverId, data: data)
-    }
-
-    init(clientId: UUID, serverId: ChatSequenceServerID? = nil, data: Data) throws {
-        self.id = clientId
-        self.serverId = serverId
-
-        let jsonDict = try JSONSerialization.jsonObject(with: data, options: []) as! [String : Any]
-        humanDesc = jsonDict["human_desc"] as? String
-        userPinned = jsonDict["user_pinned"] != nil
-
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
-        let messagesJsonList = jsonDict["messages"] as? [[String : Any]]
-        for messageJson in messagesJsonList! {
-            var createdAt0: Date? = nil
-            if let createdAt1 = messageJson["created_at"] as? String {
-                if let createdAt2 = dateFormatter.date(from: createdAt1 + "Z") {
-                    createdAt0 = createdAt2
-                }
-            }
-
-            let newMessage = Message(
-                role: messageJson["role"] as? String ?? "[invalid]",
-                content: messageJson["content"] as? String ?? "",
-                createdAt: createdAt0
-            )
-            newMessage.serverId = messageJson["id"] as? Int
-
-            //print("[DEBUG] Added message \(newMessage.serverId ?? -1) to Sequence#\(self.serverId!)")
-            messages.append(newMessage)
-        }
-
-        inferenceModelId = jsonDict["inference_model_id"] as? Int
-    }
-
     init(
-        clientId: UUID,
+        clientId: UUID = UUID(),
         serverId: ChatSequenceServerID?,
-        humanDesc: String?,
-        userPinned: Bool,
+        humanDesc: String? = nil,
+        userPinned: Bool = false,
+        generatedAt: Date? = nil,
         messages: [Message],
-        inferenceModelId: FoundationModelRecordID?
+        inferenceModelId: FoundationModelRecordID? = nil,
+        isLeafSequence: Bool? = nil,
+        parentSequences: [ChatSequenceServerID]? = nil
     ) {
         self.id = clientId
         self.serverId = serverId
         self.humanDesc = humanDesc
         self.userPinned = userPinned
+        self.generatedAt = generatedAt
         self.messages = messages
         self.inferenceModelId = inferenceModelId
+        self.isLeafSequence = isLeafSequence
+        self.parentSequences = parentSequences
     }
 
     func replaceId(_ newClientId: UUID) -> ChatSequence {
@@ -104,8 +78,11 @@ class ChatSequence: Identifiable {
             serverId: self.serverId,
             humanDesc: self.humanDesc,
             userPinned: self.userPinned,
+            generatedAt: self.generatedAt,
             messages: self.messages,
-            inferenceModelId: self.inferenceModelId
+            inferenceModelId: self.inferenceModelId,
+            isLeafSequence: self.isLeafSequence,
+            parentSequences: self.parentSequences
         )
     }
 
@@ -115,8 +92,11 @@ class ChatSequence: Identifiable {
             serverId: self.serverId,
             humanDesc: humanDesc,
             userPinned: self.userPinned,
+            generatedAt: self.generatedAt,
             messages: self.messages,
-            inferenceModelId: self.inferenceModelId
+            inferenceModelId: self.inferenceModelId,
+            isLeafSequence: self.isLeafSequence,
+            parentSequences: self.parentSequences
         )
     }
 
@@ -126,8 +106,11 @@ class ChatSequence: Identifiable {
             serverId: self.serverId,
             humanDesc: self.humanDesc,
             userPinned: userPinned,
+            generatedAt: self.generatedAt,
             messages: self.messages,
-            inferenceModelId: self.inferenceModelId
+            inferenceModelId: self.inferenceModelId,
+            isLeafSequence: self.isLeafSequence,
+            parentSequences: self.parentSequences
         )
     }
 
