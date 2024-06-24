@@ -19,7 +19,7 @@ from _util.typing import ChatSequenceID, PromptText, TemplatedPromptText
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
 from client.chat_message import ChatMessageOrm, lookup_chat_message, ChatMessage
-from client.chat_sequence import ChatSequence
+from client.chat_sequence import ChatSequenceOrm
 from client.database import HistoryDB, get_db as get_history_db
 from client.sequence_add import do_extend_sequence
 from client.sequence_get import fetch_messages_for_sequence
@@ -118,7 +118,7 @@ async def autoname_sequence(
 
 async def do_continuation(
         messages_list: list[ChatMessage],
-        original_sequence: ChatSequence,
+        original_sequence: ChatSequenceOrm,
         inference_model: FoundationModelRecordOrm,
         inference_options: InferenceOptions,
         autonaming_options: AutonamingOptions,
@@ -153,7 +153,7 @@ async def do_continuation(
             history_db.rollback()
 
         # And now, construct the ChatSequence (which references the InferenceEvent, actually)
-        response_sequence: ChatSequence | None = None
+        response_sequence: ChatSequenceOrm | None = None
         try:
             response_sequence = await construct_new_sequence_from(
                 original_sequence,
@@ -260,7 +260,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ) -> JSONStreamingResponse | RedirectResponse:
         original_sequence = history_db.execute(
-            select(ChatSequence)
+            select(ChatSequenceOrm)
             .filter_by(id=sequence_id)
         ).scalar_one()
 
@@ -324,11 +324,11 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
         # First, store the message that was painstakingly generated for us.
         original_sequence = history_db.execute(
-            select(ChatSequence)
+            select(ChatSequenceOrm)
             .filter_by(id=sequence_id)
         ).scalar_one()
 
-        user_sequence = ChatSequence(
+        user_sequence = ChatSequenceOrm(
             human_desc=original_sequence.human_desc,
             parent_sequence=original_sequence.id,
             generated_at=datetime.now(tz=timezone.utc),
@@ -361,7 +361,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             select_continuation_model(sequence_id, params.continuation_model_id, params.fallback_model_id, history_db)
         provider_label: ProviderLabel | None = registry.provider_label_from(inference_model)
         if provider_label is not None and provider_label.type != "ollama":
-            new_sequence: ChatSequence = do_extend_sequence(sequence_id, user_sequence.current_message, history_db)
+            new_sequence: ChatSequenceOrm = do_extend_sequence(sequence_id, user_sequence.current_message, history_db)
             return RedirectResponse(
                 request.url_for('sequence_continue_v2', sequence_id=new_sequence.id)
                 .include_query_params(parameters=params)

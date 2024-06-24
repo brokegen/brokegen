@@ -7,7 +7,7 @@ from sqlalchemy import select
 from _util.status import ServerStatusHolder
 from _util.typing import PromptText, FoundationModelRecordID
 from client.chat_message import ChatMessage
-from client.chat_sequence import ChatSequence
+from client.chat_sequence import ChatSequenceOrm
 from client.database import HistoryDB
 from providers.inference_models.orm import FoundationModelRecordOrm
 from providers.orm import ProviderLabel
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 async def autoname_sequence(
-        sequence: ChatSequence,
+        sequence: ChatSequenceOrm,
         preferred_autonaming_model: FoundationModelRecordID,
         status_holder: ServerStatusHolder,
         history_db: HistoryDB,

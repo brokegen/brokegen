@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from . import add_message, sequence_add, chat_message, sequence_events, sequence_get
+from . import add_message, sequence_add, sequence_events, sequence_get, chat_message
 
 
 def install_routes(app: FastAPI) -> None:

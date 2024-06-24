@@ -4,10 +4,8 @@ from fastapi import HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from _util.json import JSONDict
 from _util.typing import FoundationModelRecordID, ChatSequenceID, PromptText
 from client.chat_message import ChatMessage
-from client.chat_sequence import lookup_sequence_parents
 from client.database import HistoryDB
 from providers.inference_models.orm import InferenceEventOrm, FoundationModelRecordOrm
 from retrieval.faiss.retrieval import RetrievalLabel
@@ -52,6 +50,10 @@ def select_continuation_model(
 
     # Iterate over all sequence nodes until we find enough model info.
     # (ChatSequences can be missing inference_job_ids if they're user prompts, or errored out)
+    #
+    # TODO: circular import
+    from client.chat_sequence import lookup_sequence_parents
+
     for sequence in lookup_sequence_parents(sequence_id, history_db):
         if sequence.inference_job_id is None:
             continue

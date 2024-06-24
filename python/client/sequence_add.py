@@ -1,20 +1,17 @@
 import logging
-from datetime import datetime, timedelta, timezone
-from typing import Optional, Annotated
+from datetime import datetime, timezone
+from typing import Optional
 
 import fastapi.routing
 import fastapi.routing
-import starlette.requests
-import starlette.status
-from fastapi import Depends, Query, HTTPException
+from fastapi import Depends
 from pydantic import BaseModel
 from sqlalchemy import select
-from starlette.responses import RedirectResponse
 
 from _util.typing import ChatMessageID
 from _util.typing import ChatSequenceID
-from client.chat_sequence import ChatSequence
-from client.database import HistoryDB, get_db as get_history_db
+from .chat_sequence import ChatSequenceOrm
+from .database import HistoryDB, get_db as get_history_db
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +38,7 @@ def do_extend_sequence(
         sequence_id: ChatSequenceID,
         message_id: ChatMessageID,
         history_db: HistoryDB,
-) -> ChatSequence:
+) -> ChatSequenceOrm:
     """
     This just stacks a new user message onto the end of our chain.
 
@@ -49,11 +46,11 @@ def do_extend_sequence(
     """
     # First, store the message that was painstakingly generated for us.
     original_sequence = history_db.execute(
-        select(ChatSequence)
+        select(ChatSequenceOrm)
         .filter_by(id=sequence_id)
     ).scalar_one()
 
-    user_sequence = ChatSequence(
+    user_sequence = ChatSequenceOrm(
         human_desc=original_sequence.human_desc,
         parent_sequence=original_sequence.id,
         generated_at=datetime.now(tz=timezone.utc),
@@ -82,7 +79,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             history_db: HistoryDB = Depends(get_history_db),
     ) -> SequenceAddResponse:
         maybe_sequence_id = history_db.execute(
-            select(ChatSequence.id)
+            select(ChatSequenceOrm.id)
             .filter_by(
                 current_message=seq_in.current_message,
                 parent_sequence=seq_in.parent_sequence,
@@ -95,7 +92,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 just_created=False,
             )
 
-        new_object = ChatSequence(**seq_in.model_dump())
+        new_object = ChatSequenceOrm(**seq_in.model_dump())
         history_db.add(new_object)
         history_db.commit()
 

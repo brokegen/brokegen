@@ -6,7 +6,7 @@ from sqlalchemy import select
 from _util.json import safe_get, JSONArray, safe_get_arrayed
 from _util.typing import PromptText
 from client.chat_message import ChatMessage, lookup_chat_message, ChatMessageOrm
-from client.chat_sequence import ChatSequence
+from client.chat_sequence import ChatSequenceOrm
 from client.database import HistoryDB
 
 logger = logging.getLogger(__name__)
@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 def do_capture_chat_messages(
         chat_messages: JSONArray,
         history_db: HistoryDB,
-) -> tuple[ChatSequence | None, PromptText | None]:
-    prior_sequence: ChatSequence | None = None
+) -> tuple[ChatSequenceOrm | None, PromptText | None]:
+    prior_sequence: ChatSequenceOrm | None = None
     system_message: PromptText | None = None
 
     for index in range(len(chat_messages)):
@@ -49,10 +49,10 @@ def do_capture_chat_messages(
             history_db.commit()
 
         # And then check for Sequences that might already exist, because we want to surface the new chat in every app
-        sequence_in: ChatSequence | None = history_db.execute(
-            select(ChatSequence)
-            .where(ChatSequence.current_message == message_in_orm.id)
-            .order_by(ChatSequence.generated_at.desc())
+        sequence_in: ChatSequenceOrm | None = history_db.execute(
+            select(ChatSequenceOrm)
+            .where(ChatSequenceOrm.current_message == message_in_orm.id)
+            .order_by(ChatSequenceOrm.generated_at.desc())
             .limit(1)
         ).scalar_one_or_none()
         if sequence_in is not None:
@@ -69,7 +69,7 @@ def do_capture_chat_messages(
         logger.debug(f"Constructing new ChatSequence from ChatMessage#{message_in_orm.id}"
                      f" because {sequence_in=} and {prior_sequence=}")
 
-        sequence_in = ChatSequence(
+        sequence_in = ChatSequenceOrm(
             user_pinned=index == len(chat_messages) - 1,
             current_message=message_in_orm.id,
             generated_at=datetime.now(tz=timezone.utc),

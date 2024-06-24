@@ -3,7 +3,7 @@ import json
 import logging
 from datetime import datetime, timezone, timedelta
 from http.client import HTTPException
-from typing import Annotated, Any, AsyncIterator, AsyncGenerator, Awaitable, Iterable
+from typing import Annotated, AsyncIterator, AsyncGenerator, Awaitable, Iterable
 
 import fastapi.routing
 import sqlalchemy
@@ -12,20 +12,19 @@ import starlette.responses
 import starlette.status
 from fastapi import Depends, Query
 from pydantic import BaseModel
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, and_
 from starlette.background import BackgroundTask
 
 from _util.json import JSONDict
 from _util.json_streaming import emit_keepalive_chunks
 from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, RoleName, PromptText, FoundationModelRecordID
-from client.chat_message import ChatMessageOrm, ChatMessage
-from client.chat_sequence import ChatSequence, lookup_sequence_parents
-from client.database import HistoryDB, get_db as get_history_db
-from inference.autonaming import autoname_sequence
 from inference.routes_langchain import JSONStreamingResponse
 from providers.inference_models.orm import FoundationModelRecordOrm, lookup_inference_model_for_event_id
 from providers.registry import ProviderRegistry
+from .chat_message import ChatMessageOrm, ChatMessage
+from .chat_sequence import ChatSequenceOrm, lookup_sequence_parents, ChatSequenceResponse, ChatSequence
+from .database import HistoryDB, get_db as get_history_db
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +84,7 @@ def fetch_messages_for_sequence(
     messages_list: list[ChatMessage | InfoMessageOut] = []
     last_seen_model: FoundationModelRecordOrm | None = None
 
-    sequence: ChatSequence
+    sequence: ChatSequenceOrm
     for sequence in lookup_sequence_parents(id, history_db):
         message = history_db.execute(
             select(ChatMessageOrm)
@@ -115,22 +114,51 @@ def fetch_messages_for_sequence(
 
 
 def emit_sequence_details(
-        sequence: ChatSequence,
+        sequence_orm: ChatSequenceOrm,
         history_db: HistoryDB,
-        add_display_info: bool = True,
-) -> ChatSequence | Any:
-    # This modifies the SQLAlchemy object, when we should really have turned it into a JSON first.
-    # TODO: Turn the `match_object` into a JSON object first.
-    sequence.messages = fetch_messages_for_sequence(sequence.id, history_db, include_model_info_diffs=True)
+) -> ChatSequenceResponse:
+    response_data: dict = ChatSequence.from_orm(sequence_orm).model_dump()
+    response_data["messages"] = fetch_messages_for_sequence(sequence_orm.id, history_db, include_model_info_diffs=True)
 
     # Stick latest model name onto SequenceID, for client ease-of-display
-    for sequence_node in lookup_sequence_parents(sequence.id, history_db):
+    for sequence_node in lookup_sequence_parents(sequence_orm.id, history_db):
         model = lookup_inference_model_for_event_id(sequence_node.inference_job_id, history_db)
         if model is not None:
-            sequence.inference_model_id = model.id
+            response_data["inference_model_id"] = model.id
             break
 
-    return sequence
+    # Check the DAG characteristics of this node
+    with_dependents: sqlalchemy.Select = (
+        select(ChatSequenceOrm.parent_sequence)
+        .where(ChatSequenceOrm.parent_sequence.is_not(None))
+        .group_by(ChatSequenceOrm.parent_sequence)
+    )
+
+    response_data["is_leaf_sequence"] = history_db.execute(
+        select(ChatSequenceOrm.id)
+        .where(and_(
+            ChatSequenceOrm.id.not_in(with_dependents),
+            ChatSequenceOrm.id == sequence_orm.id
+        ))
+    ).one_or_none() is not None
+
+    def do_get_one_sequence_parent(sequence_id: ChatSequenceID) -> ChatSequenceID | None:
+        match_object = history_db.execute(
+            select(ChatSequenceOrm)
+            .filter_by(id=sequence_id)
+        ).scalar_one_or_none()
+
+        return match_object.parent_sequence
+
+    def get_multiple(sequence_id: ChatSequenceID) -> Iterable[ChatSequenceID]:
+        current_sequence = sequence_id
+        while current_sequence is not None:
+            yield current_sequence
+            current_sequence = do_get_one_sequence_parent(current_sequence)
+
+    response_data["parent_sequences"] = list(get_multiple(sequence_orm.id))
+
+    return ChatSequenceResponse(**response_data)
 
 
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
@@ -142,12 +170,12 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             history_db: HistoryDB = Depends(get_history_db),
     ):
         query = (
-            select(ChatSequence.id)
-            .order_by(ChatSequence.generated_at.desc())
+            select(ChatSequenceOrm.id)
+            .order_by(ChatSequenceOrm.generated_at.desc())
         )
         if lookback is not None:
             reference_time = datetime.now(tz=timezone.utc) - timedelta(seconds=lookback)
-            query = query.where(ChatSequence.generated_at > reference_time)
+            query = query.where(ChatSequenceOrm.generated_at > reference_time)
         if limit is not None:
             query = query.limit(limit)
         if only_user_pinned:
@@ -171,12 +199,12 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             history_db: HistoryDB = Depends(get_history_db),
     ):
         query = (
-            select(ChatSequence)
-            .order_by(ChatSequence.generated_at.desc())
+            select(ChatSequenceOrm)
+            .order_by(ChatSequenceOrm.generated_at.desc())
         )
         if lookback is not None:
             reference_time = datetime.now(tz=timezone.utc) - timedelta(seconds=lookback)
-            query = query.where(ChatSequence.generated_at > reference_time)
+            query = query.where(ChatSequenceOrm.generated_at > reference_time)
         if limit is not None:
             query = query.limit(limit)
 
@@ -186,16 +214,16 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         else:
             where_clauses = []
             if include_user_pinned:
-                where_clauses.append(ChatSequence.user_pinned == True)
+                where_clauses.append(ChatSequenceOrm.user_pinned == True)
             if include_leaf_sequences:
                 # Set up an "inverse" query that lists every sequence_id in the parent_sequences column.
                 with_dependents: sqlalchemy.Select = (
-                    select(ChatSequence.parent_sequence)
-                    .where(ChatSequence.parent_sequence.is_not(None))
-                    .group_by(ChatSequence.parent_sequence)
+                    select(ChatSequenceOrm.parent_sequence)
+                    .where(ChatSequenceOrm.parent_sequence.is_not(None))
+                    .group_by(ChatSequenceOrm.parent_sequence)
                 )
 
-                where_clauses.append(ChatSequence.id.not_in(with_dependents))
+                where_clauses.append(ChatSequenceOrm.id.not_in(with_dependents))
 
             if where_clauses:
                 query = query.where(or_(*where_clauses))
@@ -223,7 +251,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             history_db: HistoryDB = Depends(get_history_db),
     ):
         match_object = history_db.execute(
-            select(ChatSequence)
+            select(ChatSequenceOrm)
             .filter_by(id=sequence_id)
         ).scalar_one_or_none()
         if match_object is None:
@@ -237,7 +265,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             history_db: HistoryDB = Depends(get_history_db),
     ) -> JSONDict:
         match_object = history_db.execute(
-            select(ChatSequence)
+            select(ChatSequenceOrm)
             .filter_by(id=sequence_id)
         ).scalar_one_or_none()
         if match_object is None:
@@ -253,7 +281,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
     ) -> JSONDict:
         def do_get_one_sequence_parent(sequence_id: ChatSequenceID) -> ChatSequenceID | None:
             match_object = history_db.execute(
-                select(ChatSequence)
+                select(ChatSequenceOrm)
                 .filter_by(id=sequence_id)
             ).scalar_one_or_none()
 
@@ -276,7 +304,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             history_db: HistoryDB = Depends(get_history_db),
     ) -> JSONDict:
         match_object = history_db.execute(
-            select(ChatSequence)
+            select(ChatSequenceOrm)
             .filter_by(id=sequence_id)
         ).scalar_one_or_none()
         if match_object is None:
@@ -302,7 +330,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ):
         match_object = history_db.execute(
-            select(ChatSequence)
+            select(ChatSequenceOrm)
             .filter_by(id=sequence_id)
         ).scalar_one_or_none()
         if match_object is None:
@@ -311,9 +339,12 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         status_holder = ServerStatusHolder(f"/sequences/{sequence_id}/autoname: setting up")
 
         async def do_autoname(
-                sequence: ChatSequence,
+                sequence: ChatSequenceOrm,
                 history_db: HistoryDB,
         ) -> PromptText | None:
+            # TODO: circular import
+            from inference.autonaming import autoname_sequence
+
             autoname: PromptText | None = await autoname_sequence(
                 sequence,
                 preferred_autonaming_model,

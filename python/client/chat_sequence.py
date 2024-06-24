@@ -1,12 +1,42 @@
-from typing import Iterator
+from datetime import datetime
+from typing import Iterator, Optional, Union
 
+from pydantic import BaseModel, ConfigDict, PositiveInt
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, select
 
-from _util.typing import ChatSequenceID, ChatMessageID
-from client.database import Base, HistoryDB
+from _util.typing import ChatSequenceID, ChatMessageID, FoundationModelRecordID
+from .chat_message import ChatMessage
+from .database import Base, HistoryDB
 
 
-class ChatSequence(Base):
+class ChatSequence(BaseModel):
+    id: ChatSequenceID
+    human_desc: Optional[str] = None
+    user_pinned: bool
+
+    current_message: ChatMessageID
+    parent_sequence: Optional[ChatSequenceID]
+
+    generated_at: datetime
+    generation_complete: bool
+    inference_job_id: Optional[PositiveInt] = None
+    """Should be `providers.inference_models.orm.InferenceEventID`, but circular import, for now."""
+    inference_error: Optional[str] = None
+
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
+
+
+class ChatSequenceResponse(ChatSequence):
+    messages: list[Union[ChatMessage]]  # TODO: This includes bridge responses, as well
+    inference_model_id: Optional[FoundationModelRecordID] = None
+
+    is_leaf_sequence: Optional[bool]
+    parent_sequences: list[ChatSequenceID]
+
+
+class ChatSequenceOrm(Base):
     """
     Represents a linked list node for Message sequences.
     """
@@ -38,12 +68,12 @@ class ChatSequence(Base):
 def lookup_sequence_parents(
         current_id: ChatSequenceID | None,
         history_db: HistoryDB,
-) -> Iterator[ChatSequence]:
+) -> Iterator[ChatSequenceOrm]:
     # TODO: We should take advantage of the ORM relationship, rather than doing this
     while current_id is not None:
         sequence = history_db.execute(
-            select(ChatSequence)
-            .where(ChatSequence.id == current_id)
+            select(ChatSequenceOrm)
+            .where(ChatSequenceOrm.id == current_id)
         ).scalar_one()
 
         yield sequence

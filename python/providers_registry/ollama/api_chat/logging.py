@@ -2,14 +2,12 @@ import logging
 from datetime import datetime, timezone
 from typing import TypeAlias, Union
 
-import sqlalchemy
-
 from _util.json import JSONDict, safe_get
 from _util.typing import PromptText
 from client.chat_message import ChatMessageOrm
-from client.chat_sequence import ChatSequence
+from client.chat_sequence import ChatSequenceOrm
 from client.database import HistoryDB
-from providers.inference_models.orm import InferenceEventOrm, FoundationModelRecordOrm
+from providers.inference_models.orm import InferenceEventOrm
 
 logger = logging.getLogger(__name__)
 
@@ -52,12 +50,12 @@ def finalize_inference_job(
 
 
 async def construct_new_sequence_from(
-        original_sequence: ChatSequence,
+        original_sequence: ChatSequenceOrm,
         assistant_response_seed: PromptText | None,
         consolidated_response: OllamaResponseContentJSON,
         inference_event: InferenceEventOrm,
         history_db: HistoryDB,
-) -> ChatSequence | None:
+) -> ChatSequenceOrm | None:
     assistant_response = ChatMessageOrm(
         role="assistant",
         content=(assistant_response_seed or "") + (
@@ -73,7 +71,7 @@ async def construct_new_sequence_from(
     history_db.commit()
 
     # Add what we need for response_sequence
-    response_sequence = ChatSequence(
+    response_sequence = ChatSequenceOrm(
         human_desc=original_sequence.human_desc,
         parent_sequence=original_sequence.id,
     )

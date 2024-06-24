@@ -9,7 +9,7 @@ from _util.json_streaming import JSONStreamingResponse
 from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import PromptText, TemplatedPromptText
 from audit.http import AuditDB
-from client.chat_sequence import ChatSequence
+from client.chat_sequence import ChatSequenceOrm
 from client.database import HistoryDB
 from inference.continuation import InferenceOptions, AutonamingOptions
 from inference.iterators import decode_from_bytes, stream_str_to_json
@@ -46,7 +46,7 @@ async def do_proxy_chat_rag(
         raise RuntimeError("No 'messages' provided in call to /api/chat")
 
     # Assume that these are messages from a third-party client, and try to feed them into the history database.
-    captured_sequence: ChatSequence | None = None
+    captured_sequence: ChatSequenceOrm | None = None
     requested_system_message: PromptText | None = None
     if capture_chat_messages:
         captured_sequence, requested_system_message = do_capture_chat_messages(chat_messages, history_db)
