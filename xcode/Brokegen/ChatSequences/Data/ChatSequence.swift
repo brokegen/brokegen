@@ -250,7 +250,7 @@ extension DefaultChatSyncService {
     }
 
     public func doFetchChatSequenceDetails(_ sequenceId: ChatSequenceServerID) async throws -> ChatSequence? {
-        if let entireSequence = try await getDataBlocking("/sequences/\(sequenceId)/as-messages") {
+        if let entireSequence = try await getDataBlocking("/sequences/\(sequenceId)/as-json") {
             return try ChatSequence.fromJsonDict(serverId: sequenceId, json: JSON(entireSequence))
         }
         else {
@@ -274,7 +274,7 @@ extension DefaultChatSyncService {
             }
         }
 
-        if let updatedSequenceData = try? await getDataBlocking("/sequences/\(updatedSequenceId)/as-messages") {
+        if let updatedSequenceData = try? await getDataBlocking("/sequences/\(updatedSequenceId)/as-json") {
             do {
                 let updatedSequence = try ChatSequence.fromJsonDict(
                     serverId: updatedSequenceId,

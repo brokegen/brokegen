@@ -69,7 +69,8 @@ struct ProMessageView: View {
                     Image(systemName: "clipboard")
                 })
 
-                Button(action: {}, label: {
+                Button(action: {
+                }, label: {
                     Image(systemName: "arrow.triangle.branch")
                 })
 
@@ -82,7 +83,6 @@ struct ProMessageView: View {
             .opacity(isHovered ? 1.0 : 0.0)
             .disabled(!isHovered)
             .padding(.trailing, 18)
-            .padding(.bottom, -24)
         }
         .font(.system(size: 18))
         .padding(16)
