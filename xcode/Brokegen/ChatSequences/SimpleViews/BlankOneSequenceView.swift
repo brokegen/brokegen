@@ -26,16 +26,23 @@ struct BlankOneSequenceView: View {
                     ChatNameInput($chatSequenceHumanDesc)
                         .padding(.bottom, 24)
 
+                    if appSettings.stillPopulating {
+                        ProgressView()
+                            .progressViewStyle(.linear)
+                            .frame(maxWidth: 800)
+                    }
+
                     OFMPicker(
                         boxLabel: modelSelection == nil && appSettings.defaultInferenceModel != nil
-                        ? "Default Inference Model"
-                        : "Inference Model",
+                        ? "Default inference model"
+                        : "Inference model",
                         selectedModelBinding: Binding(
                             get: { modelSelection ?? appSettings.defaultInferenceModel },
                             set: { modelSelection = $0 }),
                         showModelPicker: $showModelPicker,
                         geometry: geometry,
                         allowClear: modelSelection != nil)
+                    .disabled(appSettings.stillPopulating)
                     .frame(maxWidth: 800)
                     .layoutPriority(0.2)
 

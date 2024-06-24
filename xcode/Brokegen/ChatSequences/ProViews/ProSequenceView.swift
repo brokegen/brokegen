@@ -487,15 +487,22 @@ struct ProSequenceView: View {
                                     }
 
                                     if settings.showOIMPicker {
+                                        if viewModel.appSettings.stillPopulating {
+                                            ProgressView()
+                                                .progressViewStyle(.linear)
+                                                .frame(maxWidth: 800)
+                                        }
+                                        
                                         HStack(spacing: 0) {
                                             Spacer()
-
+                                            
                                             OFMPicker(
                                                 boxLabel: "Select a different inference model for next message:",
                                                 selectedModelBinding: $viewModel.continuationInferenceModel,
                                                 showModelPicker: $showContinuationModelPicker,
                                                 geometry: geometry,
                                                 allowClear: true)
+                                            .disabled(viewModel.appSettings.stillPopulating)
                                             .frame(maxWidth: 800)
                                             .foregroundStyle(Color(.disabledControlTextColor))
                                             // TODO: We can eventually make this something like pull-to-refresh, putting it relatively far below the fold.
@@ -506,7 +513,7 @@ struct ProSequenceView: View {
                                             ))
                                             .contentShape(Rectangle())
                                             .layoutPriority(0.2)
-
+                                            
                                             Spacer()
                                         }
                                     }
