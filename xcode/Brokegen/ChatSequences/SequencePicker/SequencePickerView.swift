@@ -279,10 +279,10 @@ struct SequencePickerView: View {
             if showNewChatButton {
                 NavigationLink(destination: {
                     if chatSettingsService.useSimplifiedBlankOSV {
-                        BlankProSequenceView(chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
+                        BlankOneSequenceView()
                     }
                     else {
-                        BlankOneSequenceView()
+                        BlankProSequenceView(chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
                     }
                 }) {
                     Label("New Chat...", systemImage: "plus")

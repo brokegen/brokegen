@@ -39,10 +39,10 @@ struct MiniSequencePickerSidebar: View {
         }) {
             NavigationLink(destination: {
                 if chatSettingsService.useSimplifiedBlankOSV {
-                    BlankProSequenceView(chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
+                    BlankOneSequenceView()
                 }
                 else {
-                    BlankOneSequenceView()
+                    BlankProSequenceView(chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
                 }
             }) {
                 HStack {
