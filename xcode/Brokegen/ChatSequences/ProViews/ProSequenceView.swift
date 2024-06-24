@@ -428,16 +428,19 @@ struct ProSequenceView: View {
                 viewModel.chatService.updateSequence(withSameId: updatedSequence)
             } label: {
                 Toggle(isOn: .constant(viewModel.sequence.userPinned)) {
-                    Text("Pin chat in app recents")
+                    Text("Pin ChatSequence to sidebar")
                 }
             }
 
             Button {
                 _ = viewModel.chatService.autonameChatSequence(viewModel.sequence, preferredAutonamingModel: viewModel.appSettings.preferredAutonamingModel?.serverId)
             } label: {
-                Text(viewModel.appSettings.preferredAutonamingModel == nil
-                     ? "(disabled) Autoname chat"
-                     : "Autoname chat w/ \(viewModel.appSettings.preferredAutonamingModel!.humanId)")
+                Text(viewModel.appSettings.stillPopulating
+                     ? "Autoname disabled (still loading)"
+                     : (viewModel.appSettings.preferredAutonamingModel == nil
+                        ? "Autoname disabled (set a model in settings)"
+                        : "Autoname chat with \(viewModel.appSettings.preferredAutonamingModel!.humanId)")
+                )
             }
             .disabled(viewModel.appSettings.preferredAutonamingModel == nil)
         }

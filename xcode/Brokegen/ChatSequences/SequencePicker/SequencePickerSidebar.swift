@@ -127,11 +127,6 @@ struct MiniSequencePickerSidebar: View {
 
     func sidebarRow(_ sequence: ChatSequence) -> some View {
         HStack(alignment: .top, spacing: 0) {
-            Image(systemName: "bubble")
-                .padding(.leading, -4)
-                .padding(.top, 2)
-                .padding(.trailing, 8)
-
             ViewThatFits(in: .horizontal) {
                 HStack(spacing: 0) {
                     Text(sequence.displayHumanDesc())
@@ -181,25 +176,32 @@ struct MiniSequencePickerSidebar: View {
             }
         }
         .contextMenu {
-            Button {
-                let updatedSequence = chatService.pinChatSequence(sequence, pinned: !sequence.userPinned)
-                chatService.updateSequence(withSameId: updatedSequence)
-            } label: {
-                Toggle(isOn: .constant(sequence.userPinned)) {
-                    Text("Pin ChatSequence (keep visible in \"recents\" sidebar and SequencePicker)")
-                        .font(.system(size: 18))
-                }
-            }
+            Text(sequence.displayRecognizableDesc())
 
-            Button {
-                _ = chatService.autonameChatSequence(sequence, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
-            } label: {
-                Text(appSettings.preferredAutonamingModel == nil
-                     ? "Autoname chat (disabled, select a preferred model first)"
-                     : "Autoname chat (server-side request with \(appSettings.preferredAutonamingModel!.humanId))")
-                    .font(.system(size: 18))
+            Divider()
+            
+            Section(header: Text("Chat Data")) {
+                Button {
+                    let updatedSequence = chatService.pinChatSequence(sequence, pinned: !sequence.userPinned)
+                    chatService.updateSequence(withSameId: updatedSequence)
+                } label: {
+                    Toggle(isOn: .constant(sequence.userPinned)) {
+                        Text("Pin ChatSequence to sidebar")
+                    }
+                }
+
+                Button {
+                    _ = chatService.autonameChatSequence(sequence, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
+                } label: {
+                    Text(appSettings.stillPopulating
+                         ? "Autoname disabled (still loading)"
+                         : (appSettings.preferredAutonamingModel == nil
+                            ? "Autoname disabled (set a model in settings)"
+                            : "Autoname chat with \(appSettings.preferredAutonamingModel!.humanId)")
+                    )
+                }
+                .disabled(appSettings.preferredAutonamingModel == nil)
             }
-            .disabled(appSettings.preferredAutonamingModel == nil)
         }
     }
 }

@@ -104,7 +104,9 @@ struct SequencePickerView: View {
     private var sectionedSequences: [(String, [ChatSequence])] {
         var sortedSequences = chatService.loadedChatSequences
         if onlyUserPinned {
-            sortedSequences = sortedSequences.filter { $0.userPinned == true }
+            sortedSequences = sortedSequences.filter {
+                $0.userPinned == true || $0.isLeafSequence == true
+            }
         }
         sortedSequences = sortedSequences.sorted()
 
@@ -134,38 +136,36 @@ struct SequencePickerView: View {
     @ViewBuilder
     func sequenceContextMenu(for sequence: ChatSequence) -> some View {
         Text(sequence.displayRecognizableDesc())
-            .font(.system(size: 18))
 
         Divider()
 
-        Button {
-            let updatedSequence = chatService.pinChatSequence(sequence, pinned: !sequence.userPinned)
-            chatService.updateSequence(withSameId: updatedSequence)
-        } label: {
-            Toggle(isOn: .constant(sequence.userPinned)) {
-                Text("Pin ChatSequence (keep visible in \"recents\" sidebar and SequencePicker)")
-                    .font(.system(size: 18))
+        Section(header: Text("Chat Data")) {
+            Button {
+                let updatedSequence = chatService.pinChatSequence(sequence, pinned: !sequence.userPinned)
+                chatService.updateSequence(withSameId: updatedSequence)
+            } label: {
+                Toggle(isOn: .constant(sequence.userPinned)) {
+                    Text("Pin ChatSequence to sidebar")
+                }
             }
-        }
 
-        Button {
-            _ = chatService.autonameChatSequence(sequence, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
-        } label: {
-            Text(appSettings.stillPopulating
-                 ? "Autoname disabled (still loading)"
-                 : (appSettings.preferredAutonamingModel == nil
-                    ? "Autoname disabled (set a model in settings)"
-                    : "Autoname chat with \(appSettings.preferredAutonamingModel!.humanId)")
-            )
-            .font(.system(size: 18))
-        }
-        .disabled(appSettings.preferredAutonamingModel == nil)
+            Button {
+                _ = chatService.autonameChatSequence(sequence, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
+            } label: {
+                Text(appSettings.stillPopulating
+                     ? "Autoname disabled (still loading)"
+                     : (appSettings.preferredAutonamingModel == nil
+                        ? "Autoname disabled (set a model in settings)"
+                        : "Autoname chat with \(appSettings.preferredAutonamingModel!.humanId)")
+                )
+            }
+            .disabled(appSettings.preferredAutonamingModel == nil)
 
-        Button {
-            self.isRenaming.append(sequence)
-        } label: {
-            Text("Rename (experimental)...")
-                .font(.system(size: 18))
+            Button {
+                self.isRenaming.append(sequence)
+            } label: {
+                Text("Rename (experimental)...")
+            }
         }
     }
 
