@@ -196,7 +196,7 @@ extension DefaultChatSyncService {
         }
         let params = Parameters(
             humanDesc: humanDesc.isEmpty ? nil : humanDesc,
-            userPinned: true,
+            userPinned: false,
             currentMessage: messageId,
             generatedAt: Date.now,
             generationComplete: true

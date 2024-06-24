@@ -70,7 +70,7 @@ def do_capture_chat_messages(
                      f" because {sequence_in=} and {prior_sequence=}")
 
         sequence_in = ChatSequenceOrm(
-            user_pinned=index == len(chat_messages) - 1,
+            user_pinned=False,
             current_message=message_in_orm.id,
             generated_at=datetime.now(tz=timezone.utc),
             generation_complete=True,
