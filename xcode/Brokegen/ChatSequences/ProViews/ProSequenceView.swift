@@ -496,6 +496,7 @@ struct ProSequenceView: View {
                                             }
                                         }, showMessageHeaders: settings.showMessageHeaders)
                                             .padding(.leading, indentMessage ? 24.0 : 0.0)
+                                            .id(message.id)
                                     }
 
                                     if viewModel.responseInEdit != nil {
@@ -503,6 +504,7 @@ struct ProSequenceView: View {
 
                                         ProMessageView(.legacy(viewModel.responseInEdit!), stillUpdating: true, showMessageHeaders: settings.showMessageHeaders)
                                             .padding(.leading, indentMessage ? 24.0 : 0.0)
+                                            .id(viewModel.responseInEdit)
                                     }
 
                                     if settings.showOIMPicker {
@@ -547,7 +549,7 @@ struct ProSequenceView: View {
                                 }
                             }
                             .onChange(of: viewModel.sequence.messages) {
-                                proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+                                proxy.scrollTo(viewModel.sequence.messages.last?.id, anchor: .bottom)
                             }
                             .onChange(of: viewModel.responseInEdit?.content) {
                                 // TODO: Replace this with a GeometryReader that merely nudges us, if we're already close to the bottom
