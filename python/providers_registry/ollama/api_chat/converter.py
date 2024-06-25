@@ -16,7 +16,6 @@ from inference.prompting.templating import apply_llm_template
 from providers.inference_models.orm import FoundationModelRecordOrm
 from .logging import OllamaRequestContentJSON
 from ..chat_rag_util import do_generate_nolog
-from ..chat_routes import lookup_model
 
 logger = logging.getLogger(__name__)
 
@@ -44,16 +43,12 @@ async def convert_chat_to_generate(
         history_db: HistoryDB,
         audit_db: AuditDB,
 ) -> tuple[TemplatedPromptText, JSONStreamingResponse]:
-    model, executor_record = await lookup_model(
-        chat_request_content['model'],
-        history_db,
-        audit_db,
-    )
+    used_assistant_response_seed: bool = False
 
     model_template = (
             inference_options.override_model_template
             or safe_get(chat_request_content, 'options', 'template')
-            or safe_get(model.combined_inference_parameters, 'template')
+            or safe_get(inference_model.combined_inference_parameters, 'template')
             or ''
     )
     if not model_template:
@@ -66,7 +61,7 @@ async def convert_chat_to_generate(
             # Or, actually, they should simply never overlap. Only one or the other should exist.
             or inference_options.override_system_prompt
             or safe_get(chat_request_content, 'options', 'system')
-            or safe_get(model.combined_inference_parameters, 'system')
+            or safe_get(inference_model.combined_inference_parameters, 'system')
             or ''
     )
 
@@ -86,13 +81,38 @@ async def convert_chat_to_generate(
                 and prompt_override is None
         )
 
+        user_prompt_str: PromptText | None = None
+        if hasattr(message, "role") and message.role == "user":
+            user_prompt_str = message.content
+        elif safe_get(message, "role") == "user":
+            user_prompt_str = safe_get(message, "content")
+
+        assistant_response: PromptText | None = None
+        if hasattr(message, "role") and message.role == "assistant":
+            assistant_response = message.content
+        elif safe_get(message, "role") == "assistant":
+            assistant_response = safe_get(message, "content")
+        elif is_last_message:
+            assistant_response = inference_options.seed_assistant_response
+            used_assistant_response_seed = True
+
         converted = await apply_llm_template(
             model_template,
             system_message if is_first_message else None,
-            message["content"] if message["role"] == 'user' else None,
-            message["content"] if message["role"] == 'assistant'
-            else (inference_options.seed_assistant_response if is_last_message else None),
-            is_last_message,
+            user_prompt_str,
+            assistant_response,
+            is_last_message and used_assistant_response_seed,
+        )
+        templated_messages.append(converted)
+
+    # NB The "last" message might still be an assistant response, in which case we append the message now.
+    if not used_assistant_response_seed:
+        converted = await apply_llm_template(
+            model_template,
+            None,
+            None,
+            inference_options.seed_assistant_response,
+            True,
         )
         templated_messages.append(converted)
 
