@@ -104,7 +104,7 @@ async def construct_new_sequence_from(
 
 def ollama_log_indexer(
         chunk_json: OllamaResponseChunk,
-) -> str:
+) -> PromptText:
     # /api/generate returns in the first form
     # /api/chat returns the second form, with 'role': 'user'
     return safe_get(chunk_json, 'response') \

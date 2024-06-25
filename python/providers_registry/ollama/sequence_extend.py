@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 from typing import AsyncIterator
 
 import fastapi.routing
-import orjson
 import sqlalchemy
 import starlette.datastructures
 import starlette.requests
@@ -25,7 +24,7 @@ from client.sequence_add import do_extend_sequence
 from client.sequence_get import fetch_messages_for_sequence
 from inference.continuation import ContinueRequest, ExtendRequest, select_continuation_model, InferenceOptions, \
     AutonamingOptions
-from inference.iterators import consolidate_and_yield, tee_to_console_output
+from inference.iterators import consolidate_and_yield, tee_to_console_output, decode_from_bytes, stream_str_to_json
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.orm import FoundationModelRecordOrm, InferenceEventOrm, InferenceReason
 from providers.orm import ProviderLabel
@@ -62,7 +61,7 @@ async def do_autoname_sequence(
         assistant_response=assistant_response,
         break_early_on_response=True)
 
-    response0 = await do_generate_raw_templated(
+    response0: starlette.responses.StreamingResponse = await do_generate_raw_templated(
         request_content={
             'model': inference_model.human_id,
             'prompt': templated_query,
@@ -76,12 +75,12 @@ async def do_autoname_sequence(
         inference_reason=inference_reason,
     )
 
-    content_chunks = []
-    async for chunk in response0.body_iterator:
-        content_chunks.append(chunk)
+    iter0: AsyncIterator[bytes] = response0.body_iterator
+    iter1: AsyncIterator[str] = decode_from_bytes(iter0)
+    iter2: AsyncIterator[JSONDict] = stream_str_to_json(iter1)
 
-    response0_json = orjson.loads(b''.join(content_chunks))
-    return response0_json['response']
+    response0_json = await anext(iter2)
+    return ollama_log_indexer(response0_json)
 
 
 async def autoname_sequence(

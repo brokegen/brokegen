@@ -17,7 +17,7 @@ from inference.prompting.templating import apply_llm_template
 from providers.inference_models.orm import InferenceReason, FoundationModelRecordOrm
 from providers_registry.ollama.api_chat.converter import convert_chat_to_generate
 from providers_registry.ollama.api_chat.intercept import do_capture_chat_messages
-from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON
+from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON, ollama_log_indexer
 from providers_registry.ollama.chat_rag_util import do_generate_raw_templated
 from retrieval.faiss.knowledge import get_knowledge
 from retrieval.faiss.retrieval import RetrievalPolicy, RetrievalLabel, SimpleRetrievalPolicy, \
@@ -101,7 +101,7 @@ async def do_proxy_chat_rag(
         iter2: AsyncIterator[JSONDict] = stream_str_to_json(iter1)
 
         response0_json = await anext(iter2)
-        return safe_get(response0_json, "response")
+        return ollama_log_indexer(response0_json)
 
     prompt_override: PromptText | None = None
     with StatusContext(f"Retrieving documents with {retrieval_label=}", status_holder):
