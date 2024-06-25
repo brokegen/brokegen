@@ -50,6 +50,11 @@ class CSCSettingsService: Observable, ObservableObject {
             set { override.showMessageHeaders = newValue }
         }
 
+        var scrollToBottomOnNew: Bool {
+            get { override.scrollToBottomOnNew ?? defaults.scrollToBottomOnNew }
+            set { override.scrollToBottomOnNew = newValue }
+        }
+
         var showOIMPicker: Bool {
             get { override.showOIMPicker ?? defaults.showOIMPicker }
             set { override.showOIMPicker = newValue }

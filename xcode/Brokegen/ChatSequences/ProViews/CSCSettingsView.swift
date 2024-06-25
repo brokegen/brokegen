@@ -70,6 +70,8 @@ struct CSCSettingsView: View {
 
                 WideToggle(isOn: $settings.defaults.showMessageHeaders,
                            labelText: "Show ChatMessage headers in the UI")
+                WideToggle(isOn: $settings.defaults.scrollToBottomOnNew,
+                           labelText: "Scroll to bottom of window on new messages")
                 WideToggle(isOn: $settings.defaults.showOIMPicker,
                            labelText: "Show InferenceModel override picker in ChatSequence Views")
                 WideToggle(isOn: $settings.defaults.allowNewlineSubmit,
@@ -119,6 +121,10 @@ struct CSCSettingsView: View {
                 WidePicker(defaultIsOn: settings.defaults.showMessageHeaders,
                            overrideIsOn: $settings.override.showMessageHeaders,
                            labelText: "Show ChatMessage headers in the UI", trueText: "show headers", falseText: "don't show headers")
+
+                WidePicker(defaultIsOn: settings.defaults.scrollToBottomOnNew,
+                           overrideIsOn: $settings.override.scrollToBottomOnNew,
+                           labelText: "Scroll to bottom of window on new messages", trueText: "scroll", falseText: "don't scroll")
 
                 WidePicker(defaultIsOn: settings.defaults.showOIMPicker,
                            overrideIsOn: $settings.override.showOIMPicker,

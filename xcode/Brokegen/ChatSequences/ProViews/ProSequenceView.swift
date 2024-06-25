@@ -15,6 +15,9 @@ struct ProSequenceView: View {
     @FocusState private var focusModelTemplateOverride: Bool
     @FocusState private var focusAssistantResponseSeed: Bool
 
+    @State private var statusBarHeight: CGFloat = 0
+    @State private var lowerVStackHeight: CGFloat = 0
+
     init(_ viewModel: OneSequenceViewModel) {
         self.viewModel = viewModel
         self.settings = viewModel.settings
@@ -416,6 +419,10 @@ struct ProSequenceView: View {
                 Text("Show message headers in the UI")
             }
 
+            Toggle(isOn: $settings.scrollToBottomOnNew) {
+                Text("Scroll to bottom of window on new messages")
+            }
+
             Toggle(isOn: $settings.showOIMPicker) {
                 Text("Show InferenceModel override picker")
             }
@@ -446,9 +453,6 @@ struct ProSequenceView: View {
             .disabled(viewModel.appSettings.preferredAutonamingModel == nil)
         }
     }
-
-    @State private var statusBarHeight: CGFloat = 0
-    @State private var lowerVStackHeight: CGFloat = 0
 
     var body: some View {
         GeometryReader { geometry in
@@ -496,7 +500,7 @@ struct ProSequenceView: View {
                                             }
                                         }, showMessageHeaders: settings.showMessageHeaders)
                                             .padding(.leading, indentMessage ? 24.0 : 0.0)
-                                            .id(message.id)
+                                            .id(message)
                                     }
 
                                     if viewModel.responseInEdit != nil {
@@ -504,7 +508,7 @@ struct ProSequenceView: View {
 
                                         ProMessageView(.legacy(viewModel.responseInEdit!), stillUpdating: true, showMessageHeaders: settings.showMessageHeaders)
                                             .padding(.leading, indentMessage ? 24.0 : 0.0)
-                                            .id(viewModel.responseInEdit)
+                                            .id(MessageLike.legacy(viewModel.responseInEdit!))
                                     }
 
                                     if settings.showOIMPicker {
@@ -537,9 +541,9 @@ struct ProSequenceView: View {
                                             
                                             Spacer()
                                         }
-                                    }
-                                }
-                            }
+                                    } // if showOIMPicker
+                                } // LazyVStack
+                            } // ScrollView
                             .defaultScrollAnchor(.bottom)
                             .onAppear {
                                 proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
@@ -549,11 +553,19 @@ struct ProSequenceView: View {
                                 }
                             }
                             .onChange(of: viewModel.sequence.messages) {
-                                proxy.scrollTo(viewModel.sequence.messages.last?.id, anchor: .bottom)
+                                if settings.scrollToBottomOnNew {
+                                    proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+                                }
                             }
                             .onChange(of: viewModel.responseInEdit?.content) {
-                                // TODO: Replace this with a GeometryReader that merely nudges us, if we're already close to the bottom
-                                proxy.scrollTo(viewModel.responseInEdit, anchor: .bottom)
+                                if settings.scrollToBottomOnNew {
+                                    if viewModel.responseInEdit != nil {
+                                        withAnimation { proxy.scrollTo(MessageLike.legacy(viewModel.responseInEdit!), anchor: .bottom) }
+                                    }
+                                    else {
+                                        withAnimation { proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom) }
+                                    }
+                                }
                             }
                             .contextMenu {
                                 contextMenuItems

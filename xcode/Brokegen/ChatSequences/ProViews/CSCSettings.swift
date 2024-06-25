@@ -16,6 +16,9 @@ struct PersistentDefaultCSUISettings {
     @AppStorage("defaultUiSettings.showMessageHeaders")
     var showMessageHeaders: Bool = true
 
+    @AppStorage("defaultUiSettings.scrollToBottomOnNew")
+    var scrollToBottomOnNew: Bool = true
+
     @AppStorage("defaultUiSettings.showOIMPicker")
     var showOIMPicker: Bool = false
 
@@ -33,6 +36,7 @@ struct OverrideCSUISettings {
 
     var pinChatSequenceDesc: Bool? = nil
     var showMessageHeaders: Bool? = nil
+    var scrollToBottomOnNew: Bool? = nil
 
     var showOIMPicker: Bool? = nil
     var allowNewlineSubmit: Bool? = nil
