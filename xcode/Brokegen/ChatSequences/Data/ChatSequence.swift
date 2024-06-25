@@ -28,15 +28,26 @@ class ChatSequence: Identifiable {
     static func fromJsonDict(serverId: ChatSequenceServerID? = nil, json sequenceJson: JSON) throws -> ChatSequence {
         var messageBuilder: [MessageLike] = []
         for messageJson in sequenceJson["messages"].arrayValue {
-            let message: ChatMessage = ChatMessage(
-                serverId: messageJson["message_id"].intValue,
-                hostSequenceId: messageJson["sequence_id"].intValue,
-                role: messageJson["role"].stringValue,
-                content: messageJson["content"].stringValue,
-                createdAt: messageJson["created_at"].isoDateValue
-            )
+            if messageJson["message_id"].int == nil {
+                let message: TemporaryChatMessage = TemporaryChatMessage(
+                    role: messageJson["role"].stringValue,
+                    content: messageJson["content"].stringValue,
+                    createdAt: messageJson["created_at"].isoDateValue
+                )
 
-            messageBuilder.append(.stored(message))
+                messageBuilder.append(.temporary(message))
+            }
+            else {
+                let message: ChatMessage = ChatMessage(
+                    serverId: messageJson["message_id"].intValue,
+                    hostSequenceId: messageJson["sequence_id"].intValue,
+                    role: messageJson["role"].stringValue,
+                    content: messageJson["content"].stringValue,
+                    createdAt: messageJson["created_at"].isoDateValue
+                )
+                
+                messageBuilder.append(.stored(message))
+            }
         }
 
         return ChatSequence(

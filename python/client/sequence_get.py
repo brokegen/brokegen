@@ -11,34 +11,21 @@ import starlette.requests
 import starlette.responses
 import starlette.status
 from fastapi import Depends, Query
-from pydantic import BaseModel
 from sqlalchemy import select, or_, and_
 from starlette.background import BackgroundTask
 
 from _util.json import JSONDict
 from _util.json_streaming import emit_keepalive_chunks
 from _util.status import ServerStatusHolder
-from _util.typing import ChatSequenceID, RoleName, PromptText, FoundationModelRecordID
+from _util.typing import ChatSequenceID, PromptText, FoundationModelRecordID
 from inference.routes_langchain import JSONStreamingResponse
 from providers.inference_models.orm import FoundationModelRecordOrm, lookup_inference_model_for_event_id
 from providers.registry import ProviderRegistry
 from .chat_message import ChatMessageOrm, ChatMessage, ChatMessageResponse
-from .chat_sequence import ChatSequenceOrm, lookup_sequence_parents, ChatSequenceResponse, ChatSequence
+from .chat_sequence import ChatSequenceOrm, lookup_sequence_parents, ChatSequenceResponse, ChatSequence, InfoMessageOut
 from .database import HistoryDB, get_db as get_history_db
 
 logger = logging.getLogger(__name__)
-
-
-class InfoMessageOut(BaseModel):
-    """
-    This class is a bridge between "real" user/assistant messages,
-    and ModelConfigRecord changes.
-
-    TODO: Once we've written client support to render config changes,
-          remove this and replace with a real config change.
-    """
-    role: RoleName = 'model info'
-    content: PromptText
 
 
 def translate_model_info(model0: FoundationModelRecordOrm | None) -> InfoMessageOut:

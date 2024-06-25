@@ -59,7 +59,7 @@ enum MessageLike: Equatable, Hashable {
                 m.serverId == nil ? "[unknown ChatMessage]" : "ChatMessage#\(m.serverId!)"
             case .stored(let m):
                 "ChatMessage#\(m.serverId)"
-            case .temporary(let m):
+            case .temporary(_):
                 "TemporaryChatMessage"
             }
         }

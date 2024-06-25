@@ -3,6 +3,7 @@ import SwiftUI
 let tabBarHeight: CGFloat = 48
 
 struct ProSequenceView: View {
+    @Environment(PathHost.self) private var pathHost
     @ObservedObject var viewModel: OneSequenceViewModel
     @ObservedObject var settings: CSCSettingsService.SettingsProxy
 
@@ -478,7 +479,22 @@ struct ProSequenceView: View {
                                     ForEach(viewModel.sequence.messages) { message in
                                         let indentMessage = !settings.showMessageHeaders && message.role != "user"
 
-                                        ProMessageView(message, showMessageHeaders: settings.showMessageHeaders)
+                                        ProMessageView(message, branchAction: {
+                                            if case .stored(let message) = message {
+                                                if let sequence_id = message.hostSequenceId {
+                                                    Task {
+                                                        if let sequence = try? await viewModel.chatService.fetchChatSequenceDetails(sequence_id) {
+                                                            pathHost.push(
+                                                                viewModel.chatService.clientModel(
+                                                                    for: sequence,
+                                                                    appSettings: viewModel.appSettings,
+                                                                    chatSettingsService: viewModel.chatSettingsService)
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }, showMessageHeaders: settings.showMessageHeaders)
                                             .padding(.leading, indentMessage ? 24.0 : 0.0)
                                     }
 

@@ -4,8 +4,8 @@ from typing import Iterator, Optional, Union
 from pydantic import BaseModel, ConfigDict, PositiveInt
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, select
 
-from _util.typing import ChatSequenceID, ChatMessageID, FoundationModelRecordID
-from .chat_message import ChatMessage
+from _util.typing import ChatSequenceID, ChatMessageID, FoundationModelRecordID, RoleName, PromptText
+from .chat_message import ChatMessage, ChatMessageResponse
 from .database import Base, HistoryDB
 
 
@@ -28,8 +28,20 @@ class ChatSequence(BaseModel):
     )
 
 
+class InfoMessageOut(BaseModel):
+    """
+    This class is a bridge between "real" user/assistant messages,
+    and ModelConfigRecord changes.
+
+    TODO: Once we've written client support to render config changes,
+          remove this and replace with a real config change.
+    """
+    role: RoleName = 'model info'
+    content: PromptText
+
+
 class ChatSequenceResponse(ChatSequence):
-    messages: list[Union[ChatMessage]]  # TODO: This includes bridge responses, as well
+    messages: list[Union[ChatMessage, ChatMessageResponse, InfoMessageOut]]
     inference_model_id: Optional[FoundationModelRecordID] = None
 
     is_leaf_sequence: Optional[bool]

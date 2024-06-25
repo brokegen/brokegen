@@ -3,6 +3,7 @@ import SwiftUI
 struct ProMessageView: View {
     let message: MessageLike
     let sequence: ChatSequence?
+    let branchAction: (() -> Void)?
     let stillExpectingUpdate: Bool
     let showMessageHeaders: Bool
 
@@ -12,11 +13,13 @@ struct ProMessageView: View {
     init(
         _ message: MessageLike,
         sequence: ChatSequence? = nil,
+        branchAction: (() -> Void)? = nil,
         stillUpdating stillExpectingUpdate: Bool = false,
         showMessageHeaders: Bool
     ) {
         self.message = message
         self.sequence = sequence
+        self.branchAction = branchAction
         self.stillExpectingUpdate = stillExpectingUpdate
         self.showMessageHeaders = showMessageHeaders
 
@@ -74,11 +77,18 @@ struct ProMessageView: View {
                     Image(systemName: "clipboard")
                 })
 
-                Button(action: {
-                }, label: {
-                    Image(systemName: "arrow.triangle.branch")
-                })
-                .disabled(true)
+                if case .stored(let message) = message {
+                    Button(action: { self.branchAction?() }, label: {
+                        Image(systemName: "arrow.triangle.branch")
+                    })
+                    .disabled(self.branchAction == nil)
+                }
+                else {
+                    Button(action: {}, label: {
+                        Image(systemName: "arrow.triangle.branch")
+                    })
+                    .disabled(true)
+                }
 
                 Button(action: {}, label: {
                     Image(systemName: "info.circle")
@@ -122,6 +132,7 @@ struct ProMessageView: View {
                     )
             }
         }
+        .contentShape(Rectangle())
         // TODO: Checking this gets really slow
         .onHover { isHovered in
             // TODO: Animating this gets really slow
@@ -158,7 +169,8 @@ Your input will help me generate more targeted and valuable responses. Let's col
             showMessageHeaders: showMessageHeaders)
 
         ProMessageView(
-            .temporary(TemporaryChatMessage(role: "clown", content: "Hello! How can I help you today with your prompt? Please provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now)), showMessageHeaders: showMessageHeaders)
+            .temporary(TemporaryChatMessage(role: "clown", content: "Hello! How can I help you today with your prompt? Please provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now)),
+            showMessageHeaders: showMessageHeaders)
 
         ProMessageView(.temporary(message3), showMessageHeaders: showMessageHeaders)
 
