@@ -12,7 +12,7 @@ struct BlankProSequenceView: View {
         let sequence = ChatSequence(
             serverId: nil,
             messages: [
-                Message(role: "placeholder", content: "", createdAt: nil),
+                .legacy(Message(role: "placeholder", content: "", createdAt: nil)),
             ]
         )
 

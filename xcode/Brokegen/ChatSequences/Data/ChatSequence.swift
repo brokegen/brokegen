@@ -19,23 +19,24 @@ class ChatSequence: Identifiable {
     ///
     /// Put a different way, this list is entirely a client-side construction/interpretation of messages returned to us.
     ///
-    var messages: [Message] = []
+    var messages: [MessageLike] = []
     let inferenceModelId: FoundationModelRecordID?
 
     let isLeafSequence: Bool?
     let parentSequences: [ChatSequenceServerID]?
 
     static func fromJsonDict(serverId: ChatSequenceServerID? = nil, json sequenceJson: JSON) throws -> ChatSequence {
-        var messageBuilder: [Message] = []
+        var messageBuilder: [MessageLike] = []
         for messageJson in sequenceJson["messages"].arrayValue {
-            let message = Message(
+            let message: ChatMessage = ChatMessage(
+                serverId: messageJson["message_id"].intValue,
+                hostSequenceId: messageJson["sequence_id"].intValue,
                 role: messageJson["role"].stringValue,
                 content: messageJson["content"].stringValue,
                 createdAt: messageJson["created_at"].isoDateValue
             )
-            message.serverId = messageJson["id"].int
 
-            messageBuilder.append(message)
+            messageBuilder.append(.stored(message))
         }
 
         return ChatSequence(
@@ -56,7 +57,7 @@ class ChatSequence: Identifiable {
         humanDesc: String? = nil,
         userPinned: Bool = false,
         generatedAt: Date? = nil,
-        messages: [Message],
+        messages: [MessageLike],
         inferenceModelId: FoundationModelRecordID? = nil,
         isLeafSequence: Bool? = nil,
         parentSequences: [ChatSequenceServerID]? = nil

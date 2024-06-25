@@ -89,8 +89,8 @@ async def convert_chat_to_generate(
         converted = await apply_llm_template(
             model_template,
             system_message if is_first_message else None,
-            message['content'] if message['role'] == 'user' else None,
-            message['content'] if message['role'] == 'assistant'
+            message.content if message.role == 'user' else None,
+            message.content if message.role == 'assistant'
             else (inference_options.seed_assistant_response if is_last_message else None),
             is_last_message,
         )

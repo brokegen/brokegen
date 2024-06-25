@@ -22,7 +22,7 @@ from _util.typing import ChatSequenceID, RoleName, PromptText, FoundationModelRe
 from inference.routes_langchain import JSONStreamingResponse
 from providers.inference_models.orm import FoundationModelRecordOrm, lookup_inference_model_for_event_id
 from providers.registry import ProviderRegistry
-from .chat_message import ChatMessageOrm, ChatMessage
+from .chat_message import ChatMessageOrm, ChatMessage, ChatMessageResponse
 from .chat_sequence import ChatSequenceOrm, lookup_sequence_parents, ChatSequenceResponse, ChatSequence
 from .database import HistoryDB, get_db as get_history_db
 
@@ -80,19 +80,29 @@ def fetch_messages_for_sequence(
         id: ChatSequenceID,
         history_db: HistoryDB,
         include_model_info_diffs: bool = False,
-) -> list[ChatMessage | InfoMessageOut]:
+        include_sequence_info: bool = False,
+) -> list[ChatMessage | ChatMessageResponse | InfoMessageOut]:
     messages_list: list[ChatMessage | InfoMessageOut] = []
     last_seen_model: FoundationModelRecordOrm | None = None
 
     sequence: ChatSequenceOrm
     for sequence in lookup_sequence_parents(id, history_db):
+        message: ChatMessageOrm | None
         message = history_db.execute(
             select(ChatMessageOrm)
             .where(ChatMessageOrm.id == sequence.current_message)
         ).scalar_one_or_none()
         if message is not None:
-            message_out = ChatMessage.from_orm(message)
-            messages_list.append(message_out)
+            if include_sequence_info:
+                augmented_message = ChatMessageResponse(
+                    **ChatMessage.from_orm(message).model_dump(),
+                    message_id=message.id,
+                    sequence_id=sequence.id,
+                )
+                messages_list.append(augmented_message)
+            else:
+                message_out = ChatMessage.from_orm(message)
+                messages_list.append(message_out)
 
         # For "debug" purposes, compute the diffs even if we don't render them
         if sequence.inference_job_id is not None:
@@ -118,7 +128,12 @@ def emit_sequence_details(
         history_db: HistoryDB,
 ) -> ChatSequenceResponse:
     response_data: dict = ChatSequence.from_orm(sequence_orm).model_dump()
-    response_data["messages"] = fetch_messages_for_sequence(sequence_orm.id, history_db, include_model_info_diffs=True)
+    response_data["messages"] = fetch_messages_for_sequence(
+        sequence_orm.id,
+        history_db,
+        include_model_info_diffs=True,
+        include_sequence_info=True,
+    )
 
     # Stick latest model name onto SequenceID, for client ease-of-display
     for sequence_node in lookup_sequence_parents(sequence_orm.id, history_db):

@@ -151,7 +151,11 @@ Your input will help me generate more targeted and valuable responses. Let's col
 
     return VStack(alignment: .leading, spacing: 0) {
         ProMessageView(
-            .stored(ChatMessage(serverId: -3, role: "user", content: "Hello this is a prompt", createdAt: Date(timeIntervalSinceNow: -604_800))), showMessageHeaders: showMessageHeaders)
+            .temporary(TemporaryChatMessage(
+                role: "user",
+                content: "Hello this is a prompt",
+                createdAt: Date(timeIntervalSinceNow: -604_800))),
+            showMessageHeaders: showMessageHeaders)
 
         ProMessageView(
             .temporary(TemporaryChatMessage(role: "clown", content: "Hello! How can I help you today with your prompt? Please provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now)), showMessageHeaders: showMessageHeaders)

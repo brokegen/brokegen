@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct OneMessageView: View {
-    let message: Message
+    let message: MessageLike
     let sequence: ChatSequence?
     let stillExpectingUpdate: Bool
 
@@ -9,7 +9,7 @@ struct OneMessageView: View {
     @State var isHovered: Bool = false
 
     init(
-        _ message: Message,
+        _ message: MessageLike,
         sequence: ChatSequence? = nil,
         stillUpdating: Bool = false
     ) {
@@ -49,15 +49,7 @@ struct OneMessageView: View {
                     .id("progress view")
             }
 
-            let dateStr = {
-                if message.createdAt != nil {
-                    String(describing: message.createdAt!)
-                }
-                else {
-                    ""
-                }
-            }()
-            Text(dateStr)
+            Text(message.createdAtString)
                 .foregroundStyle(Color(.disabledControlTextColor))
                 .padding(.leading, 18)
                 .padding(.trailing, 18)
@@ -117,12 +109,12 @@ struct OneMessageView: View {
                 }
 
                 OneMessageView(
-                    Message(role: "assistant 1", content: "This is a response continuation, 1 2 3-", createdAt: Date.distantFuture),
+                    .legacy(Message(role: "assistant 1", content: "This is a response continuation, 1 2 3-", createdAt: Date.distantFuture)),
                     stillUpdating: true
                 )
 
                 OneMessageView(
-                    updatingMessage,
+                    .legacy(updatingMessage),
                     stillUpdating: true
                 )
 
@@ -151,12 +143,12 @@ Your input will help me generate more targeted and valuable responses. Let's col
 
     return VStack {
         OneMessageView(
-            Message(role: "user", content: "Hello this is a prompt", createdAt: Date(timeIntervalSinceNow: -604_800)))
+            .legacy(Message(role: "user", content: "Hello this is a prompt", createdAt: Date(timeIntervalSinceNow: -604_800))))
 
         OneMessageView(
-            Message(role: "clown", content: "Hello! How can I help you today with your prompt? Please provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now))
+            .legacy(Message(role: "clown", content: "Hello! How can I help you today with your prompt? Please provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now)))
 
-        OneMessageView(message3)
+        OneMessageView(.legacy(message3))
 
         Spacer()
     }

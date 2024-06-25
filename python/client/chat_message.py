@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import Column, String, DateTime, Integer, select
 
 from _util.json import JSONDict
-from _util.typing import ChatMessageID, PromptText, RoleName
+from _util.typing import ChatMessageID, PromptText, RoleName, ChatSequenceID
 from client.database import Base, HistoryDB
 
 
@@ -20,6 +20,11 @@ class ChatMessage(BaseModel):
         from_attributes=True,
         frozen=True,
     )
+
+
+class ChatMessageResponse(ChatMessage):
+    message_id: ChatMessageID
+    sequence_id: ChatSequenceID
 
 
 class ChatMessageOrm(Base):

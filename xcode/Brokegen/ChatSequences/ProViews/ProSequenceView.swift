@@ -478,7 +478,7 @@ struct ProSequenceView: View {
                                     ForEach(viewModel.sequence.messages) { message in
                                         let indentMessage = !settings.showMessageHeaders && message.role != "user"
 
-                                        ProMessageView(.legacy(message), showMessageHeaders: settings.showMessageHeaders)
+                                        ProMessageView(message, showMessageHeaders: settings.showMessageHeaders)
                                             .padding(.leading, indentMessage ? 24.0 : 0.0)
                                     }
 
@@ -495,7 +495,7 @@ struct ProSequenceView: View {
                                                 .progressViewStyle(.linear)
                                                 .frame(maxWidth: 800)
                                         }
-                                        
+
                                         HStack(spacing: 0) {
                                             Spacer()
                                             
@@ -644,11 +644,11 @@ struct ProSequenceView: View {
 }
 
 #Preview(traits: .fixedLayout(width: 800, height: 800)) {
-    let messages: [Message] = [
-        Message(role: "user", content: "First message", createdAt: Date.distantPast),
-        Message(role: "clown", content: "Second message", createdAt: Date.distantPast),
-        Message(role: "user", content: "Third message", createdAt: Date.now),
-        Message(role: "user", content: "Fourth message", createdAt: Date(timeIntervalSinceNow: +5))
+    let messages: [MessageLike] = [
+        .legacy(Message(role: "user", content: "First message", createdAt: Date.distantPast)),
+        .legacy(Message(role: "clown", content: "Second message", createdAt: Date.distantPast)),
+        .legacy(Message(role: "user", content: "Third message", createdAt: Date.now)),
+        .legacy(Message(role: "user", content: "Fourth message", createdAt: Date(timeIntervalSinceNow: +5)))
     ]
 
     do {

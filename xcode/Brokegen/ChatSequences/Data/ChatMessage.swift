@@ -4,23 +4,24 @@ import Foundation
 import SwiftUI
 import SwiftyJSON
 
-struct ChatMessage: Equatable, Hashable {
+struct ChatMessage: Equatable {
     let serverId: ChatMessageServerID
+    let hostSequenceId: ChatSequenceServerID?
 
     let role: String
     let content: String
     let createdAt: Date
 }
 
-extension ChatMessage: Identifiable {
-    var id: ChatMessageServerID {
-        serverId
+extension ChatMessage: Hashable, Identifiable {
+    var id: Self {
+        self
     }
 }
 
 extension ChatMessage: Decodable {
     private enum CodingKeys: String, CodingKey {
-        case serverId = "id", role, content, createdAt
+        case serverId = "message_id", hostSequenceId = "sequence_id", role, content, createdAt
     }
 
     static func fromData(_ data: Data) throws -> ChatMessage {
@@ -121,6 +122,12 @@ enum MessageLike: Equatable, Hashable {
                 String(describing: m.createdAt)
             }
         }
+    }
+}
+
+extension MessageLike: Identifiable {
+    var id: Self {
+        self
     }
 }
 

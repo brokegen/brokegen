@@ -88,7 +88,7 @@ class OneSequenceViewModel: ObservableObject {
                     print("[ERROR] \(callerName) completed without any response data")
                 }
                 else {
-                    sequence.messages.append(responseInEdit!)
+                    sequence.messages.append(.legacy(responseInEdit!))
                     responseInEdit = nil
                 }
                 stopSubmitAndReceive()
@@ -102,12 +102,12 @@ class OneSequenceViewModel: ObservableObject {
                 )
                 serverStatus = "[\(Date.now)] \(endpoint) failure: " + errorDesc
 
-                let errorMessage = Message(
+                let errorMessage = TemporaryChatMessage(
                     role: "[ERROR] \(callerName): \(errorAndData.localizedDescription)",
                     content: responseInEdit?.content ?? errorDesc,
                     createdAt: Date.now
                 )
-                sequence.messages.append(errorMessage)
+                sequence.messages.append(.temporary(errorMessage))
             }
         }
     }
@@ -121,7 +121,7 @@ class OneSequenceViewModel: ObservableObject {
             // On first data received, end "submitting" phase
             if submitting {
                 if maybeNextMessage != nil {
-                    sequence.messages.append(maybeNextMessage!)
+                    sequence.messages.append(.legacy(maybeNextMessage!))
                 }
 
                 promptInEdit = ""
@@ -206,11 +206,11 @@ class OneSequenceViewModel: ObservableObject {
             // Manually (re)construct server data, rather than fetching the same data back.
             sequence.serverId = sequenceId
             sequence.messages = [
-                Message(
+                .temporary(TemporaryChatMessage(
                     role: "user",
                     content: promptInEdit,
                     createdAt: Date.now
-                )
+                ))
             ]
 
             receivingStreamer = await chatService.sequenceContinue(
@@ -358,7 +358,7 @@ class OneSequenceViewModel: ObservableObject {
         if responseInEdit != nil {
             // TODO: There's all sort of error conditions we could/should actually check for.
             if !responseInEdit!.content.isEmpty {
-                sequence.messages.append(responseInEdit!)
+                sequence.messages.append(.legacy(responseInEdit!))
             }
             responseInEdit = nil
 

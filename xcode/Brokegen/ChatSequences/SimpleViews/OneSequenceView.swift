@@ -198,7 +198,7 @@ struct OneSequenceView: View {
                             }
 
                             if viewModel.responseInEdit != nil {
-                                OneMessageView(viewModel.responseInEdit!, stillUpdating: true)
+                                OneMessageView(.legacy(viewModel.responseInEdit!), stillUpdating: true)
                             }
                         }
                     }
@@ -266,13 +266,13 @@ struct OneSequenceView: View {
 }
 
 #Preview(traits: .fixedLayout(width: 800, height: 1200)) {
-    let messages: [Message] = [
-        Message(role: "user", content: "First message", createdAt: Date.distantPast),
-        Message(role: "clown", content: "Second message", createdAt: Date.distantPast),
-        Message(role: "user", content: "Third message", createdAt: Date.now),
-        Message(role: "user", content: "Fourth message", createdAt: Date(timeIntervalSinceNow: +5))
+    let messages: [MessageLike] = [
+        .legacy(Message(role: "user", content: "First message", createdAt: Date.distantPast)),
+        .legacy(Message(role: "clown", content: "Second message", createdAt: Date.distantPast)),
+        .legacy(Message(role: "user", content: "Third message", createdAt: Date.now)),
+        .legacy(Message(role: "user", content: "Fourth message", createdAt: Date(timeIntervalSinceNow: +5)))
     ]
-
+    
     do {
         let chatService = ChatSyncService()
         let sequence = try ChatSequence(

@@ -89,7 +89,9 @@ async def autoname_sequence(
         inference_model: FoundationModelRecordOrm,
         status_holder: ServerStatusHolder,
 ) -> PromptText:
-    with StatusContext(f"Autonaming ChatSequence with {len(messages_list)} messages => ollama {inference_model.human_id}", status_holder):
+    with StatusContext(
+            f"Autonaming ChatSequence with {len(messages_list)} messages => ollama {inference_model.human_id}",
+            status_holder):
         name: str = await do_autoname_sequence(
             inference_model,
             inference_reason=f"ChatSequence autoname",
@@ -212,7 +214,7 @@ async def do_continuation(
             logger.warning(f"ollama /api/chat: Finished streaming response without hitting `done=True`")
 
     constructed_ollama_request_content_json = {
-        "messages": [m.model_dump() for m in messages_list],
+        "messages": messages_list,
         "model": inference_model.human_id,
     }
 
@@ -265,7 +267,8 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         ).scalar_one()
 
         messages_list: list[ChatMessage] = \
-            fetch_messages_for_sequence(sequence_id, history_db, include_model_info_diffs=False)
+            fetch_messages_for_sequence(sequence_id, history_db, include_model_info_diffs=False,
+                                        include_sequence_info=True)
 
         # Decide how to continue inference for this sequence
         inference_model: FoundationModelRecordOrm = \
@@ -320,7 +323,8 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
     ) -> JSONStreamingResponse | RedirectResponse:
         # Manually fetch the message + model config history from our requests
         messages_list: list[ChatMessage] = \
-            fetch_messages_for_sequence(sequence_id, history_db, include_model_info_diffs=False)
+            fetch_messages_for_sequence(sequence_id, history_db, include_model_info_diffs=False,
+                                        include_sequence_info=True)
 
         # First, store the message that was painstakingly generated for us.
         original_sequence = history_db.execute(
