@@ -9,19 +9,47 @@ DSPy-focused test suite for inducting new inference models
 import json
 import logging
 from contextlib import contextmanager, asynccontextmanager
-from typing import Any
+from datetime import timezone, datetime
+from typing import Any, Iterable, TypeAlias
 
 import dspy
 from dspy import Example
 from dspy.datasets import HotPotQA
 from dspy.teleprompt import BootstrapFewShot
+from pydantic import BaseModel
 
 from providers.inference_models.orm import FoundationModelRecordOrm, FoundationModelRecord, FoundationModelResponse
 from providers.orm import ProviderType
-from providers.registry import ProviderRegistry
 from providers_registry.echo.registry import EchoProvider
 
 logger = logging.getLogger(__name__)
+
+Reference: TypeAlias = dspy.OllamaLocal
+
+
+class OllamaRequestMetadata(BaseModel):
+    timestamp: float = datetime.now(tz=timezone.utc).timestamp()
+    # id_string: str = str(timestamp) + model_name + prompt
+    # hashlib.sha1().update(id_string.encode('utf-8'))
+    # id_hash = hashlib.sha1().hexdigest()
+    #
+    # id: str = f"chatcmpl-{id_hash}"
+    # object: str = "chat.completion"
+    # created: int = int(timestamp)
+    # model: str = model_name
+
+
+class InferenceOptions(BaseModel):
+    temperature: float
+    max_tokens: int
+    """Ollama calls these num_predict"""
+    top_p: int
+    """Out of 100"""
+    top_k: int
+    frequency_penalty: float
+    presence_penalty: float
+    n: int
+    num_ctx: int
 
 
 class DSPyLMProxy(dspy.LM):
@@ -30,7 +58,7 @@ class DSPyLMProxy(dspy.LM):
             inference_model: FoundationModelRecord | FoundationModelResponse,
             use_chat_endpoint: bool = True,
     ):
-        super().__init__(model)
+        super().__init__(inference_model.as_name())
         pass
 
     def basic_request(self, prompt, **kwargs):
@@ -53,21 +81,21 @@ class DSPyLMProxy(dspy.LM):
         Returns:
             list[dict[str, Any]]: list of completion choices
         """
+        if only_completed is not True:
+            logger.warning("DSPy requested incomplete responses, ignoring")
+        if return_sorted is not False:
+            logger.warning("DSPy requested sorted completion choices, ignoring")
 
-        assert only_completed, "for now"
-        assert return_sorted is False, "for now"
-
-        response = self.request(prompt, **kwargs)
-
-        choices = response["choices"]
+        response: dict = self.request(prompt, **kwargs)
+        choices: Iterable = response["choices"]
 
         completed_choices = [c for c in choices if c["finish_reason"] != "length"]
 
         if only_completed and len(completed_choices):
             choices = completed_choices
 
-        completions = [self._get_choice_text(c) for c in choices]
-
+        # completions = [safe_get(c, "message", "content") for c in choices]
+        completions = []
         return completions
 
 
@@ -90,7 +118,7 @@ def xtest_providers():
     pass
 
     lm = dspy.OllamaLocal
-    with dspy_proxy():
+    with dspy_proxy:
         pass
 
 

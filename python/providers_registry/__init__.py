@@ -1,1 +1,1 @@
-from . import echo, llamafile, ollama, openai
+from . import echo, lcp, llamafile, ollama, openai

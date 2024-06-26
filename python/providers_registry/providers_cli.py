@@ -4,6 +4,7 @@ if __name__ == '__main__':
     # https://github.com/encode/uvicorn/issues/939
     # https://pyinstaller.org/en/latest/common-issues-and-pitfalls.html
     import multiprocessing
+
     multiprocessing.freeze_support()
 
 import json
@@ -140,6 +141,7 @@ async def amain(
         .register_factory(providers_registry.openai.lm_studio.LMStudioFactory())
         .register_factory(providers_registry.llamafile.registry.LlamafileFactory(['dist']))
         .register_factory(providers_registry.ollama.registry.ExternalOllamaFactory())
+        .register_factory(providers_registry.lcp.factory.LlamaCppProviderFactory())
     )
 
     print(json.dumps(
@@ -158,6 +160,7 @@ async def amain(
         indent=4,
         cls=DatetimeEncoder,
     ))
+    print(f"{await provider.available()=}")
 
 
 @click.command()

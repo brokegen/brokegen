@@ -32,6 +32,11 @@ endif
 		&& cd python \
 		&& python -m pip \
 			install --editable ".[inference,ingest,testing]"
+	xcode-select --print-path
+	source "$@"/bin/activate \
+		&& CMAKE_ARGS="-DLLAMA_METAL=on" \
+			pip install --upgrade llama-cpp-python --no-cache-dir
+
 
 data%/:
 	[ -d $@/ ] || mkdir $@/

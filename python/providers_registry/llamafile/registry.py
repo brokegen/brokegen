@@ -241,8 +241,8 @@ class LlamafileProvider(BaseProvider):
 class LlamafileFactory(ProviderFactory):
     search_dirs: list[str]
 
-    def __init__(self, search_dirs: list[str]):
-        self.search_dirs = search_dirs
+    def __init__(self, search_dirs: list[str] | None = None):
+        self.search_dirs = search_dirs or []
 
     async def try_make(self, label: ProviderLabel) -> LlamafileProvider | None:
         if label.type != 'llamafile':
@@ -259,7 +259,7 @@ class LlamafileFactory(ProviderFactory):
 
         def _generate_filenames():
             for rootpath in self.search_dirs:
-                logger.debug(f"LlamafileProvider: checking dir {os.path.abspath(rootpath)}")
+                logger.debug(f"LlamafileFactory: checking dir {os.path.abspath(rootpath)}")
                 for dirpath, _, filenames in os.walk(rootpath):
                     for file in filenames:
                         if file[-10:] != '.llamafile':
