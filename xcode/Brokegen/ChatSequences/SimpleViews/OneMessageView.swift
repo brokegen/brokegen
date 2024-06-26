@@ -16,7 +16,9 @@ struct OneMessageView: View {
         self.message = message
         self.sequence = sequence
         self.stillExpectingUpdate = stillUpdating
-        self._expandContent = State(initialValue: message.role != "model config")
+        self._expandContent = State(
+            initialValue: message.role != "user" && message.role != "assistant"
+        )
     }
 
     var headerSection: some View {

@@ -11,6 +11,7 @@ license = {text = '0BSD'}
 # More specifically, pyinstaller gets a bit complex, so give each build target its own dependencies + venv.
 dependencies = [
     'click',
+    'jsondiff',
     'pyinstaller',
     'importlib-metadata; python_version>="3.11"',
 ]

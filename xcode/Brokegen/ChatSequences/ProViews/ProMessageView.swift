@@ -23,7 +23,9 @@ struct ProMessageView: View {
         self.stillExpectingUpdate = stillExpectingUpdate
         self.showMessageHeaders = showMessageHeaders
 
-        self._expandContent = State(initialValue: message.role != "model config")
+        self._expandContent = State(
+            initialValue: message.role != "user" && message.role != "assistant"
+        )
     }
 
     var headerSection: some View {

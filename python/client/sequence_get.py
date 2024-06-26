@@ -5,6 +5,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Annotated, AsyncIterator, AsyncGenerator, Awaitable, Iterable
 
 import fastapi.routing
+import jsondiff
 import sqlalchemy
 import starlette.requests
 import starlette.responses
@@ -14,7 +15,7 @@ from sqlalchemy import select, or_, and_
 from starlette.background import BackgroundTask
 from starlette.exceptions import HTTPException
 
-from _util.json import JSONDict, DatetimeEncoder
+from _util.json import JSONDict, DatetimeEncoder, CatchAllEncoder
 from _util.json_streaming import emit_keepalive_chunks
 from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, PromptText, FoundationModelRecordID
@@ -36,8 +37,8 @@ def translate_model_info(model0: FoundationModelRecordOrm | None) -> InfoMessage
         )
 
     return InfoMessageOut(
-        role='model config',
-        content=f"ModelConfigRecord: {json.dumps(model0.model_dump(), indent=2, cls=DatetimeEncoder)}"
+        role=f"[INFO] FoundationModelRecord for {model0.human_id}",
+        content=json.dumps(dict(model0.model_dump()), indent=2, cls=DatetimeEncoder),
     )
 
 
@@ -51,15 +52,22 @@ def translate_model_info_diff(
     if model0 == model1:
         return None
 
-    if model0.model_dump() == model1.model_dump():
+    if model0.human_id != model1.human_id:
+        return InfoMessageOut(
+            role=f"[INFO] Switched FoundationModel to {model1.human_id}",
+            content=json.dumps(dict(model1.model_dump()), indent=2, cls=DatetimeEncoder),
+        )
+
+    m0_dict = dict(model0.model_dump())
+    m1_dict = dict(model1.model_dump())
+    if m0_dict == m1_dict:
         return None
 
     return InfoMessageOut(
-        role='model config',
-        # TODO: pip install jsondiff would make this simpler, and also dumber
-        content=f"ModelRecordConfigs changed:\n"
-                f"{json.dumps(model0.model_dump(), indent=2, cls=DatetimeEncoder)}\n"
-                f"{json.dumps(model1.model_dump(), indent=2, cls=DatetimeEncoder)}"
+        role='[INFO] FoundationModelRecords modified',
+        content=json.dumps(
+            jsondiff.diff(m0_dict, m1_dict), indent=2, cls=CatchAllEncoder,
+        ),
     )
 
 
