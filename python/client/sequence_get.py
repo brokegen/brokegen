@@ -14,7 +14,7 @@ from sqlalchemy import select, or_, and_
 from starlette.background import BackgroundTask
 from starlette.exceptions import HTTPException
 
-from _util.json import JSONDict
+from _util.json import JSONDict, DatetimeEncoder
 from _util.json_streaming import emit_keepalive_chunks
 from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, PromptText, FoundationModelRecordID
@@ -37,7 +37,7 @@ def translate_model_info(model0: FoundationModelRecordOrm | None) -> InfoMessage
 
     return InfoMessageOut(
         role='model config',
-        content=f"ModelConfigRecord: {json.dumps(model0.as_json(), indent=2)}"
+        content=f"ModelConfigRecord: {json.dumps(model0.model_dump(), indent=2, cls=DatetimeEncoder)}"
     )
 
 
@@ -51,15 +51,15 @@ def translate_model_info_diff(
     if model0 == model1:
         return None
 
-    if model0.as_json() == model1.as_json():
+    if model0.model_dump() == model1.model_dump():
         return None
 
     return InfoMessageOut(
         role='model config',
         # TODO: pip install jsondiff would make this simpler, and also dumber
         content=f"ModelRecordConfigs changed:\n"
-                f"{json.dumps(model0.as_json(), indent=2)}\n"
-                f"{json.dumps(model1.as_json(), indent=2)}"
+                f"{json.dumps(model0.model_dump(), indent=2, cls=DatetimeEncoder)}\n"
+                f"{json.dumps(model1.model_dump(), indent=2, cls=DatetimeEncoder)}"
     )
 
 

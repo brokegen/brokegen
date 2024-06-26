@@ -1,3 +1,5 @@
+import json
+from datetime import datetime
 from typing import TypeAlias, Any, AnyStr, Dict, List
 
 # These types aren't strictly defined because they get weirdly recursive
@@ -52,3 +54,18 @@ def safe_get_arrayed(
             return None
 
     return next_json_ish
+
+
+class DatetimeEncoder(json.JSONEncoder):
+    """
+    Convenience class that can be used with `json.dumps` to handle non-basic types.
+
+    Usage:
+
+        print(json.dumps(optimized_program.dump_state(), indent=2, cls=DatetimeEncoder))
+    """
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        else:
+            return json.JSONEncoder.default(self, obj)

@@ -154,16 +154,6 @@ class FoundationModelRecordOrm(Base):
         for column in FoundationModelRecordOrm.__mapper__.columns:
             yield column.name, getattr(self, column.name)
 
-    def as_json(self):
-        result_dict = {}
-        for name, value in self.model_dump():
-            if isinstance(value, datetime):
-                result_dict[name] = value.isoformat()
-            else:
-                result_dict[name] = value
-
-        return result_dict
-
 
 def lookup_inference_model(
         human_id: FoundationModelHumanID,
