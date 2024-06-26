@@ -114,7 +114,7 @@ async def lifespan_generic(app):
 async def run_ingest(import_files_dir, import_suffix_filter, files_offset, files_count, data_dir):
     async with lifespan_generic(None):
         def _generate_filenames(rootpath: str):
-            for dirpath, _, filenames in os.walk(rootpath):
+            for dirpath, _, filenames in os.walk(rootpath, followlinks=True):
                 for file in filenames:
                     full_filepath = os.path.join(dirpath, file)
                     if import_suffix_filter:

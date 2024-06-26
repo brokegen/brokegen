@@ -42,12 +42,12 @@ class LlamaCppProviderFactory(ProviderFactory):
         def _generate_filenames():
             for rootpath in self.search_dirs:
                 logger.debug(f"LlamaCppProviderFactory: checking dir {os.path.abspath(rootpath)}")
-                for dirpath, _, filenames in os.walk(rootpath):
+                for dirpath, _, filenames in os.walk(rootpath, followlinks=True):
                     for file in filenames:
                         if file[-5:] != '.gguf':
                             continue
 
-                        yield os.path.abspath(os.path.join(rootpath, file))
+                        yield os.path.abspath(os.path.join(dirpath, file))
 
         for file in _generate_filenames():
             label = ProviderLabel(type="lcp", id=file)
