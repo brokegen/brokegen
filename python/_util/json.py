@@ -2,6 +2,8 @@ import json
 from datetime import datetime
 from typing import TypeAlias, Any, AnyStr, Dict, List
 
+from pydantic import BaseModel
+
 # These types aren't strictly defined because they get weirdly recursive
 # (can contain themselves/each other/JSONObject).
 JSONObject: TypeAlias = Any
@@ -69,3 +71,11 @@ class DatetimeEncoder(json.JSONEncoder):
             return obj.isoformat()
         else:
             return json.JSONEncoder.default(self, obj)
+
+
+class CatchAllEncoder(DatetimeEncoder):
+    def default(self, obj):
+        if isinstance(obj, BaseModel):
+            return obj.model_dump()
+        else:
+            return DatetimeEncoder.default(self, obj)

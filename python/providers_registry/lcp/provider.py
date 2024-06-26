@@ -59,7 +59,7 @@ class LlamaCppProvider(BaseProvider):
     ):
         access_time = datetime.now(tz=timezone.utc)
         model_in = FoundationModelAddRequest(
-            human_id=f"lcp-{self.model_path}",
+            human_id=self.model_path,
             first_seen_at=access_time,
             last_seen=access_time,
             provider_identifiers=(await self.make_record()).identifiers,
@@ -71,18 +71,13 @@ class LlamaCppProvider(BaseProvider):
 
         maybe_model = lookup_foundation_model_detailed(model_in, history_db)
         if maybe_model is not None:
-            maybe_model.merge_in_updates(model_in)
-            history_db.add(maybe_model)
-            history_db.commit()
-
             yield FoundationModelRecord.from_orm(maybe_model)
 
         else:
-            new_model = FoundationModelRecordOrm(**model_in.model_dump())
-            history_db.add(new_model)
-            history_db.commit()
-
-            yield FoundationModelRecord.from_orm(new_model)
+            yield FoundationModelRecord(
+                id=31337,
+                **model_in.model_dump(),
+            )
 
     def chat(
             self,

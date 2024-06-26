@@ -19,7 +19,7 @@ from fastapi import Depends, FastAPI, Request
 import audit
 import client
 import providers_registry
-from _util.json import DatetimeEncoder
+from _util.json import DatetimeEncoder, CatchAllEncoder
 from audit.http import AuditDB, get_db as get_audit_db
 from audit.http_raw import SqlLoggingMiddleware
 from client_ollama.forward import forward_request, forward_request_nodetails
@@ -119,8 +119,7 @@ async def lifespan_logging(app: FastAPI):
 
 
 async def amain(
-        provider_type: str,
-        provider_id_or_endpoint: str,
+        label: ProviderLabel,
         registry: ProviderRegistry,
         data_dir: str = "data/",
 ):
@@ -144,39 +143,47 @@ async def amain(
         .register_factory(providers_registry.lcp.factory.LlamaCppProviderFactory())
     )
 
-    print(json.dumps(
+    print("Registered ProviderFactories: " + json.dumps(
         [repr(f) for f in registry.factories],
-        indent=4,
+        indent=2,
     ))
+    print()
 
-    label = ProviderLabel(type=provider_type, id=provider_id_or_endpoint)
     provider: BaseProvider | None = await registry.try_make(label)
     if provider is None:
         return
 
     provider_record: ProviderRecord = await provider.make_record()
-    print(json.dumps(
+    print(f".available(): {await provider.available()}\n")
+
+    print(".make_record(): " + json.dumps(
         provider_record.model_dump(),
-        indent=4,
+        indent=2,
         cls=DatetimeEncoder,
     ))
-    print(f"{await provider.available()=}")
+    print()
+
+    print(f".list_models(): (only showing human_id field)")
+    print(json.dumps(
+        [m.human_id async for m in provider.list_models()],
+        indent=2,
+        cls=CatchAllEncoder,
+    ))
 
 
 @click.command()
 @click.argument('provider-type', type=click.STRING)
-@click.argument('provider-id-or-endpoint', type=click.STRING)
+@click.argument('provider-id', type=click.STRING)
 def main(
         provider_type: str,
-        provider_id_or_endpoint: str,
+        provider_id: str,
 ):
     import asyncio
 
     try:
         asyncio.run(amain(
-            provider_type,
-            provider_id_or_endpoint,
-            ProviderRegistry()
+            ProviderLabel(type=provider_type, id=provider_id),
+            ProviderRegistry(),
         ))
     except KeyboardInterrupt:
         pass
