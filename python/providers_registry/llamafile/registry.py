@@ -12,6 +12,7 @@ import orjson
 from sqlalchemy import select
 
 from _util.json import safe_get, JSONDict
+from _util.typing import FoundationModelRecordID
 from providers._util import local_provider_identifiers, local_fetch_machine_info
 from client.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import FoundationModelRecord, FoundationModelAddRequest, \
@@ -180,7 +181,7 @@ class LlamafileProvider(BaseProvider):
 
         history_db: HistoryDB = next(get_history_db())
 
-        maybe_model = lookup_foundation_model_detailed(model_in, history_db)
+        maybe_model: FoundationModelRecordID | None = lookup_foundation_model_detailed(model_in, history_db)
         if maybe_model is not None:
             maybe_model.merge_in_updates(model_in)
             history_db.add(maybe_model)

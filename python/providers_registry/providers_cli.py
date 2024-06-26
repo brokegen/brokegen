@@ -122,6 +122,7 @@ async def amain(
         label: ProviderLabel,
         registry: ProviderRegistry,
         data_dir: str = "data/",
+        dump_full_models: bool = False,
 ):
     try:
         audit.http.init_db(f"{data_dir}/audit.db")
@@ -163,12 +164,20 @@ async def amain(
     ))
     print()
 
-    print(f".list_models(): (only showing human_id field)")
-    print(json.dumps(
-        [m.human_id async for m in provider.list_models()],
-        indent=2,
-        cls=CatchAllEncoder,
-    ))
+    if dump_full_models:
+        print(f".list_models():")
+        print(json.dumps(
+            [m async for m in provider.list_models()],
+            indent=2,
+            cls=CatchAllEncoder,
+        ))
+    else:
+        print(f".list_models(): (only showing human_id field)")
+        print(json.dumps(
+            [m.human_id async for m in provider.list_models()],
+            indent=2,
+            cls=CatchAllEncoder,
+        ))
 
 
 @click.command()
