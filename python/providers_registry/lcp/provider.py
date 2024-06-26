@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime, timezone
 from typing import AsyncIterable, AsyncGenerator, AsyncIterator, Awaitable
 
@@ -28,13 +29,14 @@ class LlamaCppProvider(BaseProvider):
     def __init__(self, model_path: str):
         self.model_path = model_path
 
-    def _launch(
+    async def _launch(
             self,
             verbose: bool = False,
     ):
         if self.underlying_model is not None:
             return
 
+        logger.info(f"Loading llama_cpp model: {self.model_path}")
         self.underlying_model = llama_cpp.Llama(
             model_path=self.model_path,
             n_gpu_layers=-1,
@@ -94,28 +96,44 @@ class LlamaCppProvider(BaseProvider):
             AsyncGenerator[FoundationModelRecord | FoundationModelResponse, None]
             | AsyncIterable[FoundationModelRecord | FoundationModelResponse]
     ):
-        self._launch()
+        info_only: llama_cpp.Llama
+        try:
+            info_only = llama_cpp.Llama(
+                model_path=self.model_path,
+                verbose=False,
+                vocab_only=True,
+                logits_all=True,
+            )
+        except ValueError:
+            # Set verbose=True + check its output to see where the errors are
+            logger.warning(f"Failed to load file, ignoring: {self.model_path}")
+            return
+
         inference_params = dict([
-            (field, getattr(self.underlying_model.model_params, field))
-            for field, _ in self.underlying_model.model_params._fields_
+            (field, getattr(info_only.model_params, field))
+            for field, _ in info_only.model_params._fields_
         ])
         for k, v in list(inference_params.items()):
             if isinstance(v, (bool, int)):
                 inference_params[k] = v
             elif k in ("kv_overrides", "tensor_split"):
-                inference_params[k] = getattr(self.underlying_model, k)
+                inference_params[k] = getattr(info_only, k)
             elif k in ("progress_callback", "progress_callback_user_data"):
                 del inference_params[k]
             else:
                 inference_params[k] = str(v)
 
+        model_name = os.path.basename(self.model_path)
+        if model_name[-5:] == '.gguf':
+            model_name = model_name[:-5]
+
         access_time = datetime.now(tz=timezone.utc)
         model_in = FoundationModelAddRequest(
-            human_id=self.model_path,
+            human_id=model_name,
             first_seen_at=access_time,
             last_seen=access_time,
             provider_identifiers=(await self.make_record()).identifiers,
-            model_identifiers=self.underlying_model.metadata,
+            model_identifiers=info_only.metadata,
             combined_inference_parameters=inference_params,
         )
 

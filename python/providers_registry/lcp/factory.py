@@ -26,7 +26,11 @@ class LlamaCppProviderFactory(ProviderFactory):
             import llama_cpp
             from .provider import LlamaCppProvider
 
-            return LlamaCppProvider(model_path=label.id)
+            new_provider: BaseProvider = LlamaCppProvider(model_path=label.id)
+            if new_provider.available():
+                return new_provider
+            else:
+                return None
 
         except ImportError:
             return None
