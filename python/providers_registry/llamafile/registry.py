@@ -106,6 +106,8 @@ class LlamafileProvider(BaseProvider):
 
         provider_identifiers_dict = {
             "name": "llamafile",
+            # TODO: We should not be including per-file info; BaseProviders should support multiple models.
+            # But, we need to rewrite this provider to do so.
             "endpoint": self.filename,
         }
         version_info = LlamafileProvider._version_info(self.filename)

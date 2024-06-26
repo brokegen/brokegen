@@ -40,7 +40,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             request.url_for('list_any_providers')
         )
 
-    @router_ish.get("/providers/{provider_type:str}/any/.discover")
+    @router_ish.get("/providers/{provider_type:str}/.discover")
     async def discover_specific_providers(
             provider_type: ProviderType,
             registry: ProviderRegistry = Depends(ProviderRegistry),
@@ -50,7 +50,8 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 await factory.discover(provider_type, registry=registry)
 
             for label, provider in registry.by_label.items():
-                yield get_provider(label.type, label.id, registry)
+                if label.type == provider_type:
+                    yield get_provider(label.type, label.id, registry)
 
         return [(pt[0], pt[1]) async for pt in do_load()]
 

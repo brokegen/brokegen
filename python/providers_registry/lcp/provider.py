@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from typing import AsyncIterable, AsyncGenerator, AsyncIterator, Awaitable
 
 import llama_cpp
+import orjson
+from sqlalchemy import select
 
 from _util.json import JSONDict
 from _util.status import ServerStatusHolder
@@ -10,9 +12,10 @@ from _util.typing import ChatSequenceID, PromptText, FoundationModelRecordID
 from audit.http import AuditDB
 from client.database import HistoryDB, get_db as get_history_db
 from inference.continuation import InferenceOptions
+from providers._util import local_provider_identifiers, local_fetch_machine_info
 from providers.inference_models.orm import FoundationModelRecord, FoundationModelResponse, FoundationModelAddRequest, \
     lookup_foundation_model_detailed, FoundationModelRecordOrm
-from providers.orm import ProviderRecord
+from providers.orm import ProviderRecord, ProviderRecordOrm
 from providers.registry import BaseProvider
 
 logger = logging.getLogger(__name__)
@@ -56,9 +59,36 @@ class LlamaCppProvider(BaseProvider):
         return sample_text == detokenized
 
     async def make_record(self) -> ProviderRecord:
-        return ProviderRecord(
-            identifiers="lcp",
+        history_db: HistoryDB = next(get_history_db())
+
+        provider_identifiers_dict = {
+            "name": "lcp",
+            # TODO: We should not be including per-file info; BaseProviders should support multiple models.
+            # But, we need to rewrite this provider to do so.
+            "endpoint": self.model_path,
+            "version_info": llama_cpp.__version__,
+        }
+
+        provider_identifiers_dict.update(local_provider_identifiers())
+        provider_identifiers = orjson.dumps(provider_identifiers_dict, option=orjson.OPT_SORT_KEYS)
+
+        # Check for existing matches
+        maybe_provider = history_db.execute(
+            select(ProviderRecordOrm)
+            .where(ProviderRecordOrm.identifiers == provider_identifiers)
+        ).scalar_one_or_none()
+        if maybe_provider is not None:
+            return ProviderRecord.from_orm(maybe_provider)
+
+        new_provider = ProviderRecordOrm(
+            identifiers=provider_identifiers,
+            created_at=datetime.now(tz=timezone.utc),
+            machine_info=await local_fetch_machine_info(),
         )
+        history_db.add(new_provider)
+        history_db.commit()
+
+        return ProviderRecord.from_orm(new_provider)
 
     async def list_models(self) -> (
             AsyncGenerator[FoundationModelRecord | FoundationModelResponse, None]
