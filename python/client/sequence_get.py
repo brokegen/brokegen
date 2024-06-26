@@ -2,7 +2,6 @@ import itertools
 import json
 import logging
 from datetime import datetime, timezone, timedelta
-from http.client import HTTPException
 from typing import Annotated, AsyncIterator, AsyncGenerator, Awaitable, Iterable
 
 import fastapi.routing
@@ -13,6 +12,7 @@ import starlette.status
 from fastapi import Depends, Query
 from sqlalchemy import select, or_, and_
 from starlette.background import BackgroundTask
+from starlette.exceptions import HTTPException
 
 from _util.json import JSONDict
 from _util.json_streaming import emit_keepalive_chunks
@@ -369,13 +369,19 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             # TODO: circular import
             from inference.autonaming import autoname_sequence
 
-            autoname: PromptText | None = await autoname_sequence(
-                sequence,
-                preferred_autonaming_model,
-                status_holder,
-                history_db,
-                registry,
-            )
+            autoname: PromptText | None
+
+            try:
+                autoname = await autoname_sequence(
+                    sequence,
+                    preferred_autonaming_model,
+                    status_holder,
+                    history_db,
+                    registry,
+                )
+            except (RuntimeError, ValueError, HTTPException):
+                autoname = None
+
             if autoname is not None:
                 sequence.human_desc = autoname
                 history_db.add(sequence)

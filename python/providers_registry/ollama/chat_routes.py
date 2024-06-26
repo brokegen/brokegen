@@ -26,15 +26,15 @@ async def lookup_model_offline(
 ) -> Tuple[FoundationModelRecordOrm, ProviderRecord]:
     provider = await ProviderRegistry().try_make(ProviderLabel(type="ollama", id="http://localhost:11434"))
     if provider is None:
-        raise HTTPException(500, "No Provider loaded")
+        raise RuntimeError("No Provider loaded")
 
     provider_record = await provider.make_record()
     model = lookup_inference_model(model_name, provider_record.identifiers, history_db)
     if not model:
-        raise HTTPException(400, "Trying to look up model that doesn't exist, you should create it first")
+        raise ValueError("Trying to look up model that doesn't exist, you should create it first")
     if not safe_get(model.combined_inference_parameters, 'template'):
-        logger.error(f"No Ollama template info for {model.human_id}, fill it in with an /api/show proxy call")
-        raise HTTPException(500, "No model template available, confirm that FoundationModelRecords are complete")
+        logger.error(f"No ollama template info for {model.human_id}, call /api/show to populate it")
+        raise RuntimeError(f"No model template available for {model_name}, confirm that FoundationModelRecords are complete")
 
     return model, provider_record
 
@@ -46,7 +46,7 @@ async def lookup_model(
 ) -> Tuple[FoundationModelRecordOrm, ProviderRecord]:
     try:
         return await lookup_model_offline(model_name, history_db)
-    except (ValueError, HTTPException):
+    except (RuntimeError, ValueError, HTTPException):
         provider = ProviderRegistry().by_label[ProviderLabel(type="ollama", id=str(_real_ollama_client.base_url))]
         return await do_api_show(model_name, history_db, audit_db), await provider.make_record()
 

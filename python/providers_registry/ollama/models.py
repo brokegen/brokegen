@@ -81,7 +81,7 @@ def build_model_from_api_show(
         provider_identifiers: str,
         response_json: OllamaResponseContentJSON,
         history_db: HistoryDB,
-) -> FoundationModelRecordOrm:
+) -> FoundationModelRecord:
     sorted_response_json = orjson.loads(
         orjson.dumps(response_json, option=orjson.OPT_SORT_KEYS)
     )
@@ -156,7 +156,7 @@ def build_model_from_api_show(
         history_db.add(exact_match)
         history_db.commit()
 
-        return exact_match
+        return FoundationModelRecord.from_orm(exact_match)
 
     # Scan for /api/tags-created entries one-at-a-time and figure out how to merge in data.
     # This merge is only feasible when /api/tags response and /api/show's 'details' sections are identical,
@@ -180,7 +180,7 @@ def build_model_from_api_show(
         history_db.add(api_tags_match)
         history_db.commit()
 
-        return api_tags_match
+        return FoundationModelRecord.from_orm(api_tags_match)
 
-    raise NotImplementedError(
+    raise RuntimeError(
         f"Could not process {human_id}, try calling /api/tags first before populating its inference parameters")

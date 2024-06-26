@@ -134,9 +134,9 @@ async def do_api_show(
         model_name: FoundationModelHumanID,
         history_db: HistoryDB,
         audit_db: AuditDB,
-) -> FoundationModelRecordOrm:
+) -> FoundationModelRecord:
     intercept = OllamaEventBuilder("ollama:/api/show", audit_db)
-    logger.debug(f"ollama proxy: start handler for POST /api/show")
+    logger.debug(f"ollama-proxy: start handler for POST /api/show")
 
     provider: BaseProvider = ProviderRegistry().by_label[
         ProviderLabel(type="ollama", id=str(_real_ollama_client.base_url))]
@@ -153,6 +153,8 @@ async def do_api_show(
         headers=[('Connection', 'close')],
     )
     response: httpx.Response = await provider.client.send(upstream_request)
+    if response.status_code != 200:
+        logger.error(f"ollama-proxy/api/show: failed with HTTP {response.status_code}")
     response: starlette.responses.Response = await intercept.wrap_response(response)
 
     return build_model_from_api_show(
