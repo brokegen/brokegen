@@ -26,7 +26,7 @@ class LlamaCppProviderFactory(ProviderFactory):
             import llama_cpp
             from .provider import LlamaCppProvider
 
-            new_provider: BaseProvider = LlamaCppProvider(model_path=label.id)
+            new_provider: BaseProvider = LlamaCppProvider(search_dir=label.id)
             if new_provider.available():
                 return new_provider
             else:
@@ -43,16 +43,6 @@ class LlamaCppProviderFactory(ProviderFactory):
         if provider_type is not None and provider_type != 'lcp':
             return
 
-        def _generate_filenames():
-            for rootpath in self.search_dirs:
-                logger.debug(f"LlamaCppProviderFactory: checking dir {os.path.abspath(rootpath)}")
-                for dirpath, _, filenames in os.walk(rootpath, followlinks=True):
-                    for file in filenames:
-                        if file[-5:] != '.gguf':
-                            continue
-
-                        yield os.path.abspath(os.path.join(dirpath, file))
-
-        for file in _generate_filenames():
-            label = ProviderLabel(type="lcp", id=file)
+        for search_dir in self.search_dirs:
+            label = ProviderLabel(type="lcp", id=search_dir)
             await registry.try_make(label)

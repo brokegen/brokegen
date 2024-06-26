@@ -53,16 +53,18 @@ struct ProvidersSidebar: View {
 
                 Divider()
 
-                VStack(spacing: 24) {
-                    ForEach(providers) { provider in
-                        NavigationLink(destination: {
-                            Text(provider.label.type)
-                            Text(provider.label.id)
-                        }, label: {
-                            RefreshingRow(providerType: provider.label.type, providerId: provider.label.id)
-                        })
-                    }
-                } // end of VStack
+                ScrollView {
+                    LazyVStack(spacing: 24) {
+                        ForEach(providers) { provider in
+                            NavigationLink(destination: {
+                                Text(provider.label.type)
+                                Text(provider.label.id)
+                            }, label: {
+                                RefreshingRow(providerType: provider.label.type, providerId: provider.label.id)
+                            })
+                        }
+                    } // end of VStack
+                }
             }
 
             Text("End of loaded Providers")
