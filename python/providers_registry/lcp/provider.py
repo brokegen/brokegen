@@ -135,7 +135,7 @@ class LlamaCppProvider(BaseProvider):
             history_db.add(new_model)
             history_db.commit()
 
-            yield FoundationModelRecord.from_orm(**model_in.model_dump())
+            yield FoundationModelRecord.from_orm(new_model)
 
     def chat(
             self,
