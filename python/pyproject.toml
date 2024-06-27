@@ -23,6 +23,9 @@ inference = [
     'httpx[http2]==0.27.0',
     'langchain',
     'langchain_experimental',
+    # This is included in the top-level Makefile, because it needs to be _built_, like with _options_.
+    # But also optional (Python code checks for ImportError), in case we can't build it.
+    # 'llama-cpp-python',
     'orjson',
     'simsimd==3.7.7',
     'SQLAlchemy',

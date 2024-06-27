@@ -6,6 +6,7 @@ socks_proxy_wheel := $(wildcard $(HOME)/Documents/PySocks-1.7.1-py3-none-any.whl
 
 
 .PHONY: server
+build: server
 dist: server
 server: $(pyinstaller_inference_venv)
 	source "$(pyinstaller_inference_venv)"/bin/activate \
@@ -14,13 +15,13 @@ server: $(pyinstaller_inference_venv)
 			--noupx --console \
 			--noconfirm \
 			--paths $(python_root) \
+			--hidden-import llama_cpp \
 			--specpath dist \
 			--onefile --name "brokegen-server" \
 			$(python_root)_apps/server.py
 	# TODO: Check that the size of the target file hasn't dropped by too much
 
 .PHONY: server-onedir
-dist: server-onedir
 server-onedir: $(pyinstaller_inference_venv)
 	source "$(pyinstaller_inference_venv)"/bin/activate \
 		&& arch -x86_64 pyinstaller \
@@ -29,6 +30,7 @@ server-onedir: $(pyinstaller_inference_venv)
 			--noconfirm \
 			--debug noarchive \
 			--paths $(python_root) \
+			--hidden-import llama_cpp \
 			--specpath dist \
 			--onedir --name "brokegen-server-onedir" \
 			$(python_root)_apps/server.py

@@ -9,14 +9,13 @@ pyinstaller_inference_venv := $(python_root)venv-inference-amd64
 
 # Leave these a permanent .PHONY because pyinstaller will take care of rebuild checks.
 .PHONY: ollama-proxy
-dist: ollama-proxy
+build: ollama-proxy
 ollama-proxy: $(pyinstaller_inference_venv)
 	source "$(pyinstaller_inference_venv)"/bin/activate \
 		&& arch -x86_64 pyinstaller \
 			--target-architecture x86_64 \
 			--noupx --console \
 			--noconfirm \
-			--hidden-import colorlog \
 			--paths $(python_root) \
 			--specpath dist \
 			--onefile --name "brokegen-ollama-proxy" \
@@ -30,14 +29,13 @@ run-ollama-proxy: data/
 
 
 .PHONY: ollama-rag-proxy
-dist: ollama-rag-proxy
+build: ollama-rag-proxy
 ollama-rag-proxy: $(pyinstaller_inference_venv)
 	source "$(pyinstaller_inference_venv)"/bin/activate \
 		&& arch -x86_64 pyinstaller \
 			--target-architecture x86_64 \
 			--console \
 			--noconfirm \
-			--hidden-import colorlog \
 			--paths $(python_root) \
 			--specpath dist \
 			--onefile --name "brokegen-rag-proxy" \
@@ -55,13 +53,20 @@ $(pyinstaller_inference_venv):
 	arch -x86_64 $(python_amd64) -m venv "$@"
 ifneq (,$(socks_proxy_wheel))
 	source "$@"/bin/activate \
-		&& pip install --no-deps $(socks_proxy_wheel) \
-		&& pip install "httpx[socks]"
+		&& arch -x86_64 python -m pip install --no-deps $(socks_proxy_wheel) \
+		&& arch -x86_64 python -m pip install "httpx[socks]"
 endif
 	source "$@"/bin/activate \
 		&& cd "$(python_root)" \
 		&& arch -x86_64 python -m pip \
 			install --editable ".[inference]"
+	xcode-select --print-path
+	# These llama.cpp flags are labeled "~2013 CPU Dynamic library" in ollama.
+	# Probably the important baseline is AVX2, but the UI app already indicates macOS 14, which is even more limitng.
+	source "$@"/bin/activate \
+		&& CMAKE_ARGS="-DLLAMA_METAL=on -DLLAMA_ACCELERATE=on -DLLAMA_AVX=on -DLLAMA_AVX2=on -DLLAMA_AVX512=off -DLLAMA_FMA=on -DLLAMA_F16C=on" \
+			arch -x86_64 python -m pip \
+			install --upgrade llama-cpp-python --no-cache-dir
 
 .PHONY: clean-inference
 clean: clean-inference

@@ -126,7 +126,7 @@ class ProviderRegistry(_Borg):
                     return result
 
             except Exception:
-                logger.exception(f"{factory.__class__} could not load {label}")
+                logger.info(f"{factory.__class__} could not load {label}")
 
         return None
 

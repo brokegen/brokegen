@@ -1,5 +1,5 @@
 .PHONY: dist
-dist: build
+dist:
 	@:
 
 .PHONY: build
@@ -19,7 +19,7 @@ test:
 
 -include python/_apps/targets.mk
 -include python/_apps/server.mk
--include python/ingest/targets.mk
+-include python/retrieval/targets.mk
 
 venv:
 	python3 -m venv "$@"
@@ -34,7 +34,7 @@ endif
 			install --editable ".[inference,ingest,testing]"
 	xcode-select --print-path
 	source "$@"/bin/activate \
-		&& CMAKE_ARGS="-DLLAMA_METAL=on" \
+		&& CMAKE_ARGS="-DLLAMA_METAL=on -DLLAMA_ACCELERATE=on" \
 			pip install --upgrade llama-cpp-python --no-cache-dir
 
 
@@ -92,4 +92,3 @@ dist/ollama-darwin:
 	cd "$(dir $@)" \
 		&& curl -L -O https://github.com/ollama/ollama/releases/download/v0.1.44/ollama-darwin
 	chmod +x "$@"
-

@@ -7,7 +7,7 @@ pyinstaller_ingest_venv := $(python_root)venv-ingest-amd64
 
 
 .PHONY: ingest-cli
-dist: ingest-cli
+build: ingest-cli
 ingest-cli: $(pyinstaller_ingest_venv)
 	source "$(pyinstaller_ingest_venv)"/bin/activate \
 		&& arch -x86_64 pyinstaller \
@@ -29,8 +29,8 @@ $(pyinstaller_ingest_venv):
 	arch -x86_64 $(python_amd64) -m venv "$@"
 ifneq (,$(socks_proxy_wheel))
 	source "$@"/bin/activate \
-		&& pip install --no-deps $(socks_proxy_wheel) \
-		&& pip install "httpx[socks]"
+		&& arch -x86_64 python -m pip install --no-deps $(socks_proxy_wheel) \
+		&& arch -x86_64 python -m pip install "httpx[socks]"
 endif
 	source "$@"/bin/activate \
 		&& cd "$(python_root)" \

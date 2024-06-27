@@ -28,10 +28,6 @@ build-xcode:
 		-archivePath build/"macOS App.xcarchive" \
 		-derivedDataPath build/xcode-derived-data/
 
-.PHONY: run-xcode
-run-xcode:
-	@:
-
 .PHONY: clean-xcode
 clean: clean-xcode
 clean-xcode:
