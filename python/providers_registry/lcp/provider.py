@@ -1,13 +1,14 @@
 import logging
+import logging
 import os
 from datetime import datetime, timezone
-from typing import AsyncGenerator, AsyncIterator
+from typing import AsyncGenerator, AsyncIterator, Iterator
 
 import llama_cpp
 import orjson
 from sqlalchemy import select
 
-from _util.json import JSONDict, safe_get
+from _util.json import JSONDict, safe_get, safe_get_arrayed
 from _util.status import ServerStatusHolder
 from _util.typing import FoundationModelRecordID
 from audit.http import AuditDB
@@ -248,11 +249,32 @@ class LlamaCppProvider(BaseProvider):
         await self.loaded_models[inference_model.id].launch()
         underlying_model: llama_cpp.Llama = self.loaded_models[inference_model.id].underlying_model
 
-        response = underlying_model.create_chat_completion(
-                messages=[m.model_dump() for m in messages_list],
+        iterator_or_completion: (
+                llama_cpp.CreateChatCompletionResponse | Iterator[llama_cpp.CreateChatCompletionStreamResponse])
+        iterator_or_completion = underlying_model.create_chat_completion(
+            messages=[m.model_dump() for m in messages_list],
+            stream=True,
         )
-        response_choices = safe_get(response, "choices")
-        if len(response_choices) > 1:
-            logger.warning(f"Received {len(response_choices)=}, ignoring all but the first")
 
-        yield response_choices[0]
+        if isinstance(iterator_or_completion, Iterator):
+            for chunk in iterator_or_completion:
+                response_choices = safe_get(chunk, "choices")
+                if len(response_choices) > 1:
+                    logger.warning(f"Received {len(response_choices)=}, ignoring all but the first")
+
+                # Duplicate the output into the field we expected.
+                # TODO: Confirm that this is just an "OpenAI-compatible" output.
+                extracted_content: str = safe_get_arrayed(response_choices, 0, 'delta', 'content')
+                chunk['message'] = {
+                    "role": "assistant",
+                    "content": extracted_content,
+                }
+
+                yield chunk
+
+        else:
+            response_choices = safe_get(iterator_or_completion, "choices")
+            if len(response_choices) > 1:
+                logger.warning(f"Received {len(response_choices)=}, ignoring all but the first")
+
+            yield response_choices[0]
