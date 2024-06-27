@@ -66,7 +66,7 @@ class SimpleRetrievalPolicy(RetrievalPolicy):
         with StatusContext("Loading retrieval databases…", status_holder):
             await get_knowledge().load_queued_data_dirs(status_holder)
 
-        latest_message_content = messages[-1]['content']
+        latest_message_content = messages[-1].content
         retrieval_str = latest_message_content
 
         matching_docs: List[Document] = await self.retriever.ainvoke(retrieval_str)
@@ -110,7 +110,7 @@ class SummarizingRetrievalPolicy(RetrievalPolicy):
         with StatusContext("Loading retrieval databases…", status_holder):
             await get_knowledge().load_queued_data_dirs(status_holder)
 
-        latest_message_content = messages[-1]['content']
+        latest_message_content = messages[-1].content
 
         async def summarize_query():
             retrieval_str: PromptText = latest_message_content
