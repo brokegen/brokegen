@@ -20,7 +20,7 @@ from _util.json_streaming import emit_keepalive_chunks
 from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, PromptText, FoundationModelRecordID
 from inference.routes_langchain import JSONStreamingResponse
-from providers.inference_models.orm import FoundationModelRecordOrm, lookup_inference_model_for_event_id
+from providers.inference_models.orm import FoundationModelRecordOrm, lookup_foundation_model_for_event_id
 from providers.registry import ProviderRegistry
 from .chat_message import ChatMessageOrm, ChatMessage, ChatMessageResponse
 from .chat_sequence import ChatSequenceOrm, lookup_sequence_parents, ChatSequenceResponse, ChatSequence, InfoMessageOut
@@ -101,7 +101,7 @@ def fetch_messages_for_sequence(
 
         # For "debug" purposes, compute the diffs even if we don't render them
         if sequence.inference_job_id is not None:
-            this_model = lookup_inference_model_for_event_id(sequence.inference_job_id, history_db)
+            this_model = lookup_foundation_model_for_event_id(sequence.inference_job_id, history_db)
             if last_seen_model is not None:
                 # Since we're iterating in child-to-parent order, dump diffs backwards if something changed.
                 mdiff = translate_model_info_diff(last_seen_model, this_model)
@@ -132,7 +132,7 @@ def emit_sequence_details(
 
     # Stick latest model name onto SequenceID, for client ease-of-display
     for sequence_node in lookup_sequence_parents(sequence_orm.id, history_db):
-        model = lookup_inference_model_for_event_id(sequence_node.inference_job_id, history_db)
+        model = lookup_foundation_model_for_event_id(sequence_node.inference_job_id, history_db)
         if model is not None:
             response_data["inference_model_id"] = model.id
             break

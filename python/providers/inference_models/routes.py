@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from _util.typing import FoundationModelRecordID
 from client.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import FoundationModelRecordOrm, lookup_inference_model, \
+from providers.inference_models.orm import FoundationModelRecordOrm, lookup_foundation_model, \
     lookup_foundation_model_detailed, FoundationModelAddRequest
 from providers.orm import ProviderRecordOrm, ProviderRecord, ProviderAddRequest
 
@@ -75,7 +75,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         # Replace the model_in's provider_identifiers with a sorted one
         model_in.provider_identifiers = provider_record.identifiers
 
-        maybe_model = lookup_inference_model(model_in.human_id, provider_record.identifiers, history_db)
+        maybe_model = lookup_foundation_model(model_in.human_id, provider_record.identifiers, history_db)
         if maybe_model is not None:
             # Check in-depth to see if we have anything actually-identical
             maybe_model1 = lookup_foundation_model_detailed(model_in, history_db)

@@ -165,7 +165,7 @@ class FoundationModelRecordOrm(Base):
             yield column.name, getattr(self, column.name)
 
 
-def lookup_inference_model(
+def lookup_foundation_model(
         human_id: FoundationModelHumanID,
         provider_identifiers: str,
         history_db: HistoryDB,
@@ -262,7 +262,7 @@ class InferenceEventOrm(Base):
     )
 
 
-def lookup_inference_model_for_event_id(
+def lookup_foundation_model_for_event_id(
         inference_id: InferenceEventID,
         history_db: HistoryDB,
 ) -> FoundationModelRecordOrm | None:
