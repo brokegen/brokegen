@@ -1,16 +1,17 @@
 import logging
 import os
 from datetime import datetime, timezone
-from typing import AsyncGenerator, AsyncIterator, Awaitable
+from typing import AsyncGenerator, AsyncIterator
 
 import llama_cpp
 import orjson
 from sqlalchemy import select
 
-from _util.json import JSONDict
+from _util.json import JSONDict, safe_get
 from _util.status import ServerStatusHolder
-from _util.typing import ChatSequenceID, PromptText, FoundationModelRecordID
+from _util.typing import FoundationModelRecordID
 from audit.http import AuditDB
+from client.chat_message import ChatMessage
 from client.database import HistoryDB, get_db as get_history_db
 from inference.continuation import InferenceOptions
 from providers._util import local_provider_identifiers, local_fetch_machine_info
@@ -29,7 +30,7 @@ class _OneModel:
     def __init__(self, model_path: str):
         self.model_path = model_path
 
-    async def _launch(
+    async def launch(
             self,
             verbose: bool = False,
     ):
@@ -141,6 +142,8 @@ class _OneModel:
 class LlamaCppProvider(BaseProvider):
     search_dir: str
     cached_model_infos: list[FoundationModelRecord] = []
+
+    loaded_models: dict[FoundationModelRecordID, _OneModel] = {}
     max_loaded_models: int
 
     def __init__(
@@ -219,3 +222,37 @@ class LlamaCppProvider(BaseProvider):
             async for model_info in self._check_and_list_models():
                 yield model_info
                 self.cached_model_infos.append(model_info)
+
+    async def chat_from(
+            self,
+            messages_list: list[ChatMessage],
+            inference_model: FoundationModelRecordOrm,
+            inference_options: InferenceOptions,
+            status_holder: ServerStatusHolder,
+            history_db: HistoryDB,
+            audit_db: AuditDB,
+    ) -> AsyncIterator[JSONDict]:
+        if inference_model.id not in self.loaded_models:
+            new_model: _OneModel = _OneModel(
+                os.path.abspath(os.path.join(self.search_dir,
+                                             safe_get(inference_model.model_identifiers, "path")))
+            )
+            while len(self.loaded_models) >= self.max_loaded_models:
+                # Use this elaborate syntax so we delete the _oldest_ item.
+                del self.loaded_models[
+                    next(iter(self.loaded_models))
+                ]
+
+            self.loaded_models[inference_model.id] = new_model
+
+        await self.loaded_models[inference_model.id].launch()
+        underlying_model: llama_cpp.Llama = self.loaded_models[inference_model.id].underlying_model
+
+        response = underlying_model.create_chat_completion(
+                messages=[m.model_dump() for m in messages_list],
+        )
+        response_choices = safe_get(response, "choices")
+        if len(response_choices) > 1:
+            logger.warning(f"Received {len(response_choices)=}, ignoring all but the first")
+
+        yield response_choices[0]
