@@ -65,8 +65,8 @@ struct MiniSequencePickerSidebar: View {
             
             if chatService.loadedChatSequences.isEmpty {
                 if navLimit <= 0 {
-                    NavigationLink(destination: SequencePickerView()) {
-                        ASRow("Browse Recent", showChevron: true)
+                    NavigationLink(destination: SequencePickerView(onlyUserPinned: true)) {
+                        ASRow("Browse Pinned", showChevron: true)
                     }
                 }
                 else {
@@ -75,7 +75,7 @@ struct MiniSequencePickerSidebar: View {
                         // do something with ProgressView and timeouts.
                         Button("Refresh Chats List", systemImage: "arrow.clockwise") {
                             timesRefreshClicked += 1
-                            Task { try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned :true) }
+                            Task { try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: true) }
                         }
                         .padding(.leading, -24)
                         .padding(.trailing, -24)
@@ -83,7 +83,10 @@ struct MiniSequencePickerSidebar: View {
                     else {
                         Button("Load Chats", systemImage: "arrow.clockwise") {
                             timesRefreshClicked += 1
-                            Task { try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: true) }
+                            Task {
+                                try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: true)
+                                try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: false)
+                            }
                         }
                         .foregroundStyle(Color.accentColor)
                         .padding(.leading, -24)
@@ -92,10 +95,13 @@ struct MiniSequencePickerSidebar: View {
                 }
             }
             else {
-                NavigationLink(destination: SequencePickerView()) {
-                    ASRow("Browse Recent", showChevron: true)
+                NavigationLink(destination: SequencePickerView(onlyUserPinned: true)) {
+                    ASRow("Browse Pinned", showChevron: true)
                 }
-                
+                NavigationLink(destination: SequencePickerView(onlyUserPinned: false)) {
+                    ASRow("Browse All", showChevron: true)
+                }
+
                 Divider()
                 
                 ForEach(someSectionedSequences(limit: navLimit), id: \.0) { pair in
