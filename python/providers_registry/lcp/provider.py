@@ -219,16 +219,3 @@ class LlamaCppProvider(BaseProvider):
             async for model_info in self._check_and_list_models():
                 yield model_info
                 self.cached_model_infos.append(model_info)
-
-    def chat(
-            self,
-            sequence_id: ChatSequenceID,
-            inference_model: FoundationModelRecordOrm,
-            inference_options: InferenceOptions,
-            retrieval_context: Awaitable[PromptText | None],
-            status_holder: ServerStatusHolder,
-            history_db: HistoryDB,
-            audit_db: AuditDB,
-    ) -> AsyncIterator[JSONDict]:
-        for _ in []:
-            yield {}

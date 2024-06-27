@@ -15,7 +15,9 @@ from _util.json import JSONDict
 from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, PromptText
 from audit.http import AuditDB
+from client.chat_message import ChatMessage
 from client.database import HistoryDB
+from client.sequence_get import fetch_messages_for_sequence
 from inference.continuation import InferenceOptions
 from providers.inference_models.orm import FoundationModelRecord, FoundationModelResponse, FoundationModelRecordOrm
 from providers.orm import ProviderLabel, ProviderRecord, ProviderType
@@ -42,12 +44,11 @@ class BaseProvider:
         raise NotImplementedError()
 
     @abstractmethod
-    async def chat(
+    async def chat_from(
             self,
-            sequence_id: ChatSequenceID,
+            messages_list: list[ChatMessage],
             inference_model: FoundationModelRecordOrm,
             inference_options: InferenceOptions,
-            retrieval_context: Awaitable[PromptText | None],
             status_holder: ServerStatusHolder,
             history_db: HistoryDB,
             audit_db: AuditDB,
@@ -65,6 +66,27 @@ class BaseProvider:
         However, autonaming and context retrieval can happen separately.
         """
         raise NotImplementedError()
+
+    async def chat(
+            self,
+            sequence_id: ChatSequenceID,
+            inference_model: FoundationModelRecordOrm,
+            inference_options: InferenceOptions,
+            retrieval_context: Awaitable[PromptText | None],
+            status_holder: ServerStatusHolder,
+            history_db: HistoryDB,
+            audit_db: AuditDB,
+    ) -> AsyncIterator[JSONDict]:
+        messages_list: list[ChatMessage] = fetch_messages_for_sequence(sequence_id, history_db)
+
+        return await self.chat_from(
+            messages_list,
+            inference_model,
+            inference_options,
+            status_holder,
+            history_db,
+            audit_db,
+        )
 
 
 class ProviderFactory:

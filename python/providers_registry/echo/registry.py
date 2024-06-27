@@ -1,30 +1,27 @@
 import asyncio
 import functools
 from datetime import datetime, timezone
-from typing import AsyncIterable, AsyncGenerator, AsyncIterator, Awaitable
+from typing import AsyncGenerator, AsyncIterator, Awaitable
 
 from _util.json import JSONDict, safe_get
 from _util.status import ServerStatusHolder
-from _util.typing import ChatSequenceID, PromptText
+from _util.typing import PromptText
 from audit.http import AuditDB
 from client.chat_message import ChatMessage
 from client.database import HistoryDB, get_db as get_history_db
-from client.sequence_get import fetch_messages_for_sequence
 from inference.continuation import InferenceOptions
 from inference.iterators import tee_to_console_output, consolidate_and_call
-from inference.logging import inference_event_logger, construct_new_sequence_from
-from providers.inference_models.orm import FoundationModelRecord, FoundationModelResponse, FoundationModelAddRequest, \
+from inference.logging import construct_new_sequence_from, inference_event_logger
+from providers.inference_models.orm import FoundationModelRecord, FoundationModelAddRequest, \
     lookup_foundation_model_detailed, FoundationModelRecordOrm
 from providers.orm import ProviderType, ProviderLabel, ProviderRecord, ProviderID
 from providers.registry import BaseProvider, ProviderRegistry, ProviderFactory
 
 
 async def _chat_bare(
-        sequence_id: ChatSequenceID,
-        history_db: HistoryDB,
+        messages_list: list[ChatMessage],
         max_length: int = 120 * 4,
 ) -> AsyncIterator[str]:
-    messages_list: list[ChatMessage] = fetch_messages_for_sequence(sequence_id, history_db)
     message = messages_list[-1]
 
     character: str
@@ -115,17 +112,16 @@ class EchoProvider(BaseProvider):
 
             yield FoundationModelRecord.from_orm(new_model)
 
-    def chat(
+    def chat_from(
             self,
-            sequence_id: ChatSequenceID,
+            messages_list: list[ChatMessage],
             inference_model: FoundationModelRecordOrm,
             inference_options: InferenceOptions,
-            retrieval_context: Awaitable[PromptText | None],
             status_holder: ServerStatusHolder,
             history_db: HistoryDB,
             audit_db: AuditDB,
     ) -> AsyncIterator[JSONDict]:
-        iter0: AsyncIterator[str] = _chat_bare(sequence_id, history_db)
+        iter0: AsyncIterator[str] = _chat_bare(messages_list)
         iter1: AsyncIterator[str] = tee_to_console_output(iter0, lambda s: s)
         iter2: AsyncIterator[JSONDict] = _chat_slowed_down(iter1, status_holder)
         iter3: AsyncIterator[JSONDict] = consolidate_and_call(
