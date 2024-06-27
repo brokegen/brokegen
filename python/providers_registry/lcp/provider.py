@@ -51,12 +51,17 @@ class _OneModel:
         sample_text_str = "✎👍 ｃｏｍｐｌｅｘ UTF-8 𝓉𝑒𝓍𝓉, but mostly em🍪jis  🎀  🐔 ⋆ 🐞"
         sample_text: bytes = sample_text_str.encode('utf-8')
 
-        just_tokens: llama_cpp.Llama = llama_cpp.Llama(
-            model_path=self.model_path,
-            verbose=False,
-            vocab_only=True,
-            logits_all=True,
-        )
+        try:
+            just_tokens: llama_cpp.Llama = llama_cpp.Llama(
+                model_path=self.model_path,
+                verbose=False,
+                vocab_only=True,
+                logits_all=True,
+            )
+        except ValueError as e:
+            logger.error(f"LlamaCppProvider.available: Failed to load file, ignoring: {self.model_path}")
+            logger.debug(e)
+            return False
 
         tokenized: list[int] = just_tokens.tokenize(sample_text)
         detokenized: bytes = just_tokens.detokenize(tokenized)
@@ -76,9 +81,9 @@ class _OneModel:
                 vocab_only=True,
                 logits_all=True,
             )
-        except ValueError:
-            # Set verbose=True + check its output to see where the errors are
-            logger.warning(f"Failed to load file, ignoring: {self.model_path}")
+        except ValueError as e:
+            logger.error(f"LlamaCppProvider.as_info: Failed to load file, ignoring: {self.model_path}")
+            logger.debug(e)
             return None
 
         model_name = os.path.basename(self.model_path)
