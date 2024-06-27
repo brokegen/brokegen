@@ -17,6 +17,7 @@ PromptDB: TypeAlias = Session
 
 
 class TrainingExample(Base):
+    __tablename__ = 'TrainingExamples'
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
 
     category = Column(String, nullable=False)
@@ -30,7 +31,8 @@ class TrainingExample(Base):
     """
 
 
-class StoredPrograms(Base):
+class StoredProgram(Base):
+    __tablename__ = 'StoredPrograms'
     id = Column(Integer, primary_key=True, autoincrement=True, nullable=False)
 
     model_record_id: FoundationModelRecordID = Column(Integer, nullable=False)

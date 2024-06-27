@@ -3,8 +3,6 @@ import json
 import logging
 from datetime import timezone, datetime
 
-import dspy
-from dspy.teleprompt import BootstrapFewShot
 from sqlalchemy import select
 
 from _util.status import ServerStatusHolder
@@ -60,10 +58,21 @@ def train_autonaming():
     NB DSPy may only work well with English.
 
     - `pip install "dspy-ai[chromadb]"`
+    - Also need to disable `openai` loading by patching the dspy package, since we don't need to go online, like at all
     - Behind a proxy, the `pystemmer==2.2.0.1` package tries to download a file.
       In its working directory, run: `curl -L -O https://snowballstem.org/dist/libstemmer_c-2.2.0.tar.gz`
     - The training dataset is also always downloaded, so: HF_DATASETS_OFFLINE=1
     """
+    try:
+        import dspy
+        import openai
+        from dspy.teleprompt import BootstrapFewShot
+    except ImportError:
+        logger.error(f"Couldn't load DSPy")
+        return
+    except openai.OpenAIError:
+        logger.fatal(f"Must disable openai loading in DSPy source")
+        return
 
     class SequenceToName(dspy.Signature):
         """
@@ -160,6 +169,8 @@ print(list(sliced_iterable))  # [4, 5]
 
 
 if __name__ == '__main__':
+    import dspy
+
     ollama_lm = dspy.OllamaLocal(model='llama3-8b-instruct:bpefix-Q8_0-8k', max_tokens=256)
     dspy.settings.configure(lm=ollama_lm)
 
