@@ -23,34 +23,6 @@ from retrieval.faiss.knowledge import KnowledgeSingleton
 logger = logging.getLogger(__name__)
 
 
-class JSONStreamingResponse(StreamingResponse, JSONResponse):
-    def __init__(
-            self,
-            content: Iterable | AsyncIterable,
-            status_code: int = 200,
-            headers: dict[str, str] | None = None,
-            media_type: str | None = None,
-            background: BackgroundTask | None = None,
-    ) -> None:
-        if isinstance(content, AsyncIterable):
-            self._content_iterable: AsyncIterable = content
-        else:
-            self._content_iterable = iterate_in_threadpool(content)
-
-        async def body_iterator() -> AsyncIterable[bytes]:
-            async for content_ in self._content_iterable:
-                if isinstance(content_, BaseModel):
-                    content_ = content_.model_dump()
-                yield self.render(content_)
-
-        self.body_iterator = body_iterator()
-        self.status_code = status_code
-        if media_type is not None:
-            self.media_type = media_type
-        self.background = background
-        self.init_headers(headers)
-
-
 def document_encoder(obj):
     if isinstance(obj, langchain_core.documents.Document):
         return obj.to_json()

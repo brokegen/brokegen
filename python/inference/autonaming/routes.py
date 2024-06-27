@@ -12,12 +12,12 @@ from starlette.background import BackgroundTask
 from starlette.exceptions import HTTPException
 
 from _util.json import JSONDict
+from _util.json_streaming import JSONStreamingResponse
 from _util.json_streaming import emit_keepalive_chunks
 from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, PromptText, FoundationModelRecordID
 from client.chat_sequence import ChatSequenceOrm
 from client.database import HistoryDB, get_db as get_history_db
-from inference.routes_langchain import JSONStreamingResponse
 from providers.registry import ProviderRegistry
 from .bridge import autoname_sequence
 
