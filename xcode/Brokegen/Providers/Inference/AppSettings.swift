@@ -72,6 +72,14 @@ class AppSettings: ObservableObject {
     }
 
     // MARK: - misc properties
+    @AppStorage("showDebugSidebarItems")
+    @ObservationIgnored var _showDebugSidebarItems: Bool = true
+
+    var showDebugSidebarItems: Bool {
+        get { _showDebugSidebarItems }
+        set { _showDebugSidebarItems = newValue }
+    }
+
     @AppStorage("startServicesImmediately")
     @ObservationIgnored var _startServicesImmediately: Bool = true
 
@@ -88,11 +96,11 @@ class AppSettings: ObservableObject {
         set { _allowExternalTraffic = newValue }
     }
 
-    @AppStorage("showDebugSidebarItems")
-    @ObservationIgnored var _showDebugSidebarItems: Bool = true
+    @AppStorage("hideNeverUsedModels")
+    @ObservationIgnored var _hideNeverUsedModels: Bool = false
 
-    var showDebugSidebarItems: Bool {
-        get { _showDebugSidebarItems }
-        set { _showDebugSidebarItems = newValue }
+    var hideNeverUsedModels: Bool {
+        get { _hideNeverUsedModels }
+        set { _hideNeverUsedModels = newValue }
     }
 }

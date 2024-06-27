@@ -4,6 +4,7 @@ fileprivate let INVALID_MODEL_ID: FoundationModelRecordID = -4
 
 struct ModelPickerView: View {
     @Environment(ProviderService.self) private var providerService
+    @EnvironmentObject public var appSettings: AppSettings
     @Environment(\.dismiss) var dismiss
 
     @Binding private var modelSelection: FoundationModel?
@@ -80,7 +81,7 @@ struct ModelPickerView: View {
                                 OneFoundationModelView(
                                     model: model,
                                     modelAvailable: isModelAvailable(model),
-                                    expandContent: true,
+                                    expandContent: appSettings.hideNeverUsedModels || usedModels.count < 6,
                                     modelSelection: $modelSelection,
                                     enableModelSelection: enableModelSelection
                                 )
@@ -91,14 +92,16 @@ struct ModelPickerView: View {
                             .padding(24)
                     }
 
-                    VFlowLayout(spacing: 24) {
-                        ForEach(neverUsedModels) { model in
-                            OneFoundationModelView(
-                                model: model,
-                                modelAvailable: isModelAvailable(model),
-                                modelSelection: $modelSelection,
-                                enableModelSelection: enableModelSelection
-                            )
+                    if !appSettings.hideNeverUsedModels {
+                        VFlowLayout(spacing: 24) {
+                            ForEach(neverUsedModels) { model in
+                                OneFoundationModelView(
+                                    model: model,
+                                    modelAvailable: isModelAvailable(model),
+                                    modelSelection: $modelSelection,
+                                    enableModelSelection: enableModelSelection
+                                )
+                            }
                         }
                     }
 
@@ -115,7 +118,7 @@ struct ModelPickerView: View {
                             OneFoundationModelView(
                                 model: model,
                                 modelAvailable: isModelAvailable(model),
-                                expandContent: true,
+                                expandContent: appSettings.hideNeverUsedModels || usedModels.count < 6,
                                 modelSelection: $modelSelection,
                                 enableModelSelection: enableModelSelection
                             )
@@ -127,16 +130,17 @@ struct ModelPickerView: View {
                             .padding(24)
                     }
 
-                    ForEach(neverUsedModels) { model in
-                        OneFoundationModelView(
-                            model: model,
-                            modelAvailable: isModelAvailable(model),
-                            expandContent: false,
-                            modelSelection: $modelSelection,
-                            enableModelSelection: enableModelSelection
-                        )
-                        .padding(24)
-                        .padding(.bottom, 0)
+                    if !appSettings.hideNeverUsedModels {
+                        ForEach(neverUsedModels) { model in
+                            OneFoundationModelView(
+                                model: model,
+                                modelAvailable: isModelAvailable(model),
+                                modelSelection: $modelSelection,
+                                enableModelSelection: enableModelSelection
+                            )
+                            .padding(24)
+                            .padding(.bottom, 0)
+                        }
                     }
 
                     Text("End of loaded FoundationModels")
