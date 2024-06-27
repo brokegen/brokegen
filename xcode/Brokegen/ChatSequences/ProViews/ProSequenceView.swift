@@ -305,10 +305,13 @@ struct ProSequenceView: View {
                 viewModel.showSystemPromptOverride.toggle()
             }, label: {
                 HStack(spacing: 0) {
-                    Image(systemName: "person.badge.shield.checkmark")
-                        .foregroundStyle(viewModel.showSystemPromptOverride ? .red : Color(.controlTextColor))
+                    Image(systemName: settings.overrideSystemPrompt.isEmpty ? "shield" : "shield.fill")
+                        .foregroundStyle(
+                            viewModel.showSystemPromptOverride
+                            ? .red
+                            : Color(.controlTextColor))
                         .padding(.leading, 12)
-                        .padding(.trailing, -12)
+                        .padding(.trailing, -4)
 
                     Text("System Prompt")
                         .lineLimit(1...3)
@@ -329,7 +332,7 @@ struct ProSequenceView: View {
                     Image(systemName: settings.seedAssistantResponse.isEmpty ? "bubble.right" : "bubble.right.fill")
                         .foregroundStyle(viewModel.showAssistantResponseSeed ? .blue : Color(.controlTextColor))
                         .padding(.leading, 12)
-                        .padding(.trailing, -12)
+                        .padding(.trailing, -4)
 
                     Text("Response Seed")
                         .lineLimit(1...3)
