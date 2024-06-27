@@ -30,19 +30,41 @@ struct ModelPickerView: View {
         }
     }
 
-    var sortedModels: [FoundationModel] {
+    var usedModels: [FoundationModel] {
         get {
             providerService.allModels
-            .sorted {
-                if $0.firstSeenAt == nil {
-                    return false
+                .filter { $0.latestInferenceEvent != nil }
+                .sorted {
+                    $0.recentTokensPerSecond > $1.recentTokensPerSecond
                 }
-                if $1.firstSeenAt == nil {
-                    return false
+                .sorted {
+                    $0.latestInferenceEvent ?? Date.distantPast
+                    > $1.latestInferenceEvent ?? Date.distantPast
                 }
-                return $0.firstSeenAt! > $1.firstSeenAt!
-            }
         }
+    }
+
+    var neverUsedModels: [FoundationModel] {
+        get {
+            providerService.allModels
+                .filter { $0.latestInferenceEvent == nil }
+                .sorted {
+                    if $0.firstSeenAt == nil {
+                        return false
+                    }
+                    if $1.firstSeenAt == nil {
+                        return false
+                    }
+                    return $0.firstSeenAt! > $1.firstSeenAt!
+                }
+        }
+    }
+
+    func isModelAvailable(_ model: FoundationModel) -> Binding<Bool> {
+        return Binding(
+            get: { return self.providerService.availableModels.contains { $0.serverId == model.serverId } },
+            set: { _ in }
+        )
     }
 
     var body: some View {
@@ -52,13 +74,28 @@ struct ModelPickerView: View {
                 // Which makes it very hard to track items in a particular spot,
                 // especially since sorting is virtually random.
                 ScrollView {
+                    if !usedModels.isEmpty {
+                        VFlowLayout(spacing: 24) {
+                            ForEach(usedModels) { model in
+                                OneFoundationModelView(
+                                    model: model,
+                                    modelAvailable: isModelAvailable(model),
+                                    expandContent: true,
+                                    modelSelection: $modelSelection,
+                                    enableModelSelection: enableModelSelection
+                                )
+                            }
+                        }
+
+                        Divider()
+                            .padding(24)
+                    }
+
                     VFlowLayout(spacing: 24) {
-                        ForEach(sortedModels) { model in
+                        ForEach(neverUsedModels) { model in
                             OneFoundationModelView(
                                 model: model,
-                                modelAvailable: providerService.availableModels.contains {
-                                    $0.serverId == model.serverId
-                                },
+                                modelAvailable: isModelAvailable(model),
                                 modelSelection: $modelSelection,
                                 enableModelSelection: enableModelSelection
                             )
@@ -73,25 +110,41 @@ struct ModelPickerView: View {
                 .padding(24)
 
                 List {
-                    ForEach(sortedModels) { model in
+                    if !usedModels.isEmpty {
+                        ForEach(usedModels) { model in
+                            OneFoundationModelView(
+                                model: model,
+                                modelAvailable: isModelAvailable(model),
+                                expandContent: true,
+                                modelSelection: $modelSelection,
+                                enableModelSelection: enableModelSelection
+                            )
+                            .padding(24)
+                            .padding(.bottom, 0)
+                        }
+
+                        Divider()
+                            .padding(24)
+                    }
+
+                    ForEach(neverUsedModels) { model in
                         OneFoundationModelView(
                             model: model,
-                            modelAvailable: providerService.availableModels.contains {
-                                $0.serverId == model.serverId
-                            },
+                            modelAvailable: isModelAvailable(model),
+                            expandContent: false,
                             modelSelection: $modelSelection,
                             enableModelSelection: enableModelSelection
                         )
-                        .expandContent(true)
                         .padding(24)
                         .padding(.bottom, 0)
                     }
-                }
 
-                Text("End of loaded FoundationModels")
-                    .foregroundStyle(Color(.disabledControlTextColor))
-                    .frame(height: 400)
-                    .frame(maxWidth: .infinity)
+                    Text("End of loaded FoundationModels")
+                        .foregroundStyle(Color(.disabledControlTextColor))
+                        .frame(height: 400)
+                        .frame(maxWidth: .infinity)
+                }
+                .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
             }
 
             if !hideDismissButton {
@@ -111,6 +164,7 @@ struct ModelPickerView: View {
                 .padding(24)
             }
         }
+        .background(BackgroundEffectView().ignoresSafeArea())
         .onAppear {
             if providerService.availableModels.isEmpty {
                 Task {
@@ -136,10 +190,15 @@ fileprivate func makeFakeModel() -> FoundationModel {
         firstSeenAt: Date.now,
         lastSeen: Date.now,
         providerIdentifiers: "xcode preview",
-        modelIdentifiers: [:],
+        modelIdentifiers: nil,
         combinedInferenceParameters: "98.6ºC",
-        stats: [:],
-        label: [:]
+        displayStats: nil,
+        allStats: nil,
+        label: nil,
+        available: true,
+        latestInferenceEvent: nil,
+        recentInferenceEvents: 0,
+        recentTokensPerSecond: 0.0
     )
 }
 

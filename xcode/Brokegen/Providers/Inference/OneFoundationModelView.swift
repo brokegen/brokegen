@@ -1,9 +1,14 @@
 import SwiftUI
+import SwiftyJSON
 
-func formatJson(_ jsonDict: [String : Any], indent: Int = 0) -> String {
+func formatJson(_ jsonDict: JSON?, prefix: String? = nil) -> String {
+    let sortedDict = (jsonDict?.dictionaryValue ?? [:])
+        .sorted { $0 < $1 }
+
     var stringMaker = ""
-    for (k, v) in jsonDict {
-        stringMaker += String(repeating: " ", count: indent)
+
+    for (k, v) in sortedDict {
+        stringMaker += prefix ?? ""
         stringMaker += "\(k): \(v)\n"
     }
 
@@ -11,10 +16,12 @@ func formatJson(_ jsonDict: [String : Any], indent: Int = 0) -> String {
 }
 
 struct OneFoundationModelView: View {
+    public static let preferredMaxWidth: CGFloat = 800
+
     private var model: FoundationModel
 
-    @State private var modelAvailable: Bool
-    @State private var expandContent = false
+    @Binding private var modelAvailable: Bool
+    @State private var expandContent: Bool
     @State private var isHovered = false
 
     @Binding private var modelSelection: FoundationModel?
@@ -22,19 +29,17 @@ struct OneFoundationModelView: View {
 
     init(
         model: FoundationModel,
-        modelAvailable: Bool,
+        modelAvailable: Binding<Bool>,
+        expandContent: Bool = false,
         modelSelection: Binding<FoundationModel?>,
         enableModelSelection: Bool = true
     ) {
         self.model = model
-        self.enableModelSelection = enableModelSelection
-        self._modelAvailable = State(initialValue: modelAvailable)
-        self._modelSelection = modelSelection
-    }
+        self._modelAvailable = modelAvailable
+        self._expandContent = State(initialValue: expandContent)
 
-    func expandContent(_ shouldExpandContent: Bool) -> Self {
-        self.expandContent = shouldExpandContent
-        return self
+        self._modelSelection = modelSelection
+        self.enableModelSelection = enableModelSelection
     }
 
     var body: some View {
@@ -50,7 +55,7 @@ struct OneFoundationModelView: View {
                                     .foregroundStyle(Color.purple)
                             }
                         }
-                        
+
                         Text(model.humanId)
                             .font(.system(size: 36))
                             .monospaced()
@@ -61,12 +66,6 @@ struct OneFoundationModelView: View {
 
                     if model.label != nil {
                         Text("\(model.label!["type"]?.string ?? "[ProviderType]") -- \(model.label!["id"]?.string ?? "[ProviderLabel]")")
-                            .font(.system(size: 24))
-                            .foregroundStyle(Color(.disabledControlTextColor))
-                    }
-
-                    if let firstSeenAt = model.firstSeenAt {
-                        Text("First seen: " + String(describing: firstSeenAt))
                             .font(.system(size: 24))
                             .foregroundStyle(Color(.disabledControlTextColor))
                     }
@@ -90,15 +89,44 @@ struct OneFoundationModelView: View {
             if expandContent {
                 Divider()
 
+                if model.latestInferenceEvent != nil {
+                    Grid {
+                        GridRow {
+                            Text("Tokens per second:")
+                                .gridColumnAlignment(.leading)
+                            Text(String(format: "%.3f", model.recentTokensPerSecond))
+                                .gridColumnAlignment(.trailing)
+                        }
+                        .foregroundStyle(Color(.controlTextColor))
+                        
+                        GridRow {
+                            Text("Recent inference event count:")
+                            Text("\(model.recentInferenceEvents)")
+                        }
+                        .foregroundStyle(Color(.controlTextColor))
+                        
+                        Divider()
+                        
+                        GridRow {
+                            Text("Latest inference event:")
+                            Text(model.latestInferenceEvent!.ISO8601Format())
+                        }
+                    }
+                    .frame(alignment: .leading)
+                    .font(.system(size: 24))
+
+                    Divider()
+                }
+
                 Group {
-                    if model.stats != nil {
-                        Text("stats: \n" + formatJson(model.stats!, indent: 2))
+                    if !(model.displayStats?.dictionary?.isEmpty ?? true) {
+                        Text("stats: \n" + formatJson(model.displayStats, prefix: "  "))
                             .lineLimit(1...)
                             .monospaced()
                             .padding(4)
                     }
 
-                    Text(formatJson(model.modelIdentifiers ?? [:]))
+                    Text(formatJson(model.modelIdentifiers))
                         .lineLimit(1...)
                         .monospaced()
                         .padding(4)
@@ -108,14 +136,13 @@ struct OneFoundationModelView: View {
         }
         .listRowSeparator(.hidden)
         .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(isHovered ? Color(.controlHighlightColor) : Color.clear)
-                .border(Color(.controlTextColor))
-        )
         .onHover { isHovered in
             self.isHovered = isHovered
         }
+        .background(
+            Rectangle()
+                .fill(isHovered ? Color(.controlHighlightColor) : Color.clear)
+        )
     }
 }
 
@@ -135,7 +162,7 @@ struct OFMPicker: View {
                 if let model = selectedModelBinding {
                     OneFoundationModelView(
                         model: model,
-                        modelAvailable: true,
+                        modelAvailable: .constant(true),
                         modelSelection: $selectedModelBinding,
                         enableModelSelection: true)
 

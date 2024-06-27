@@ -1,7 +1,7 @@
 import logging
 import os.path
 from datetime import datetime, timezone
-from typing import AsyncIterable
+from typing import AsyncGenerator
 
 import fastapi
 import httpx
@@ -9,8 +9,8 @@ import orjson
 from sqlalchemy import select
 
 from _util.json import JSONDict, safe_get
-from providers._util import local_provider_identifiers, local_fetch_machine_info
 from client.database import HistoryDB, get_db as get_history_db
+from providers._util import local_provider_identifiers, local_fetch_machine_info
 from providers.inference_models.orm import FoundationModelRecord
 from providers.inference_models.orm import lookup_foundation_model_detailed, \
     FoundationModelAddRequest, FoundationModelRecordOrm
@@ -94,7 +94,9 @@ class LMStudioProvider(BaseProvider):
 
         return ProviderRecord.from_orm(new_provider)
 
-    async def list_models(self) -> AsyncIterable[FoundationModelRecord]:
+    async def list_models(
+            self,
+    ) -> AsyncGenerator[FoundationModelRecord, None]:
         request = self.server_comms.build_request(
             method='GET',
             url='/v1/models',

@@ -1,20 +1,20 @@
 import logging
 import os
 from datetime import datetime, timezone
-from typing import AsyncIterable, AsyncGenerator, AsyncIterator, Awaitable
+from typing import AsyncGenerator, AsyncIterator, Awaitable
 
 import llama_cpp
 import orjson
 from sqlalchemy import select
 
-from _util.json import JSONDict, JSONObject, JSONArray
+from _util.json import JSONDict
 from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, PromptText, FoundationModelRecordID
 from audit.http import AuditDB
 from client.database import HistoryDB, get_db as get_history_db
 from inference.continuation import InferenceOptions
 from providers._util import local_provider_identifiers, local_fetch_machine_info
-from providers.inference_models.orm import FoundationModelRecord, FoundationModelResponse, FoundationModelAddRequest, \
+from providers.inference_models.orm import FoundationModelRecord, FoundationModelAddRequest, \
     lookup_foundation_model_detailed, FoundationModelRecordOrm
 from providers.orm import ProviderRecord, ProviderRecordOrm
 from providers.registry import BaseProvider
@@ -64,7 +64,7 @@ class _OneModel:
             self,
             provider_record: ProviderRecord,
             path_prefix: str,
-    ) -> FoundationModelResponse | None:
+    ) -> FoundationModelRecord | None:
         info_only: llama_cpp.Llama
         try:
             info_only = llama_cpp.Llama(
@@ -127,7 +127,7 @@ class _OneModel:
             history_db.add(maybe_model)
             history_db.commit()
 
-            return FoundationModelResponse.from_orm(maybe_model)
+            return FoundationModelRecord.from_orm(maybe_model)
 
         else:
             logger.info(f"lcp constructed a new FoundationModelRecord: {model_in.model_dump_json()}")
@@ -135,12 +135,12 @@ class _OneModel:
             history_db.add(new_model)
             history_db.commit()
 
-            return FoundationModelResponse.from_orm(new_model)
+            return FoundationModelRecord.from_orm(new_model)
 
 
 class LlamaCppProvider(BaseProvider):
     search_dir: str
-    cached_model_infos: JSONArray = []
+    cached_model_infos: list[FoundationModelRecord] = []
     max_loaded_models: int
 
     def __init__(
@@ -184,17 +184,16 @@ class LlamaCppProvider(BaseProvider):
 
         return ProviderRecord.from_orm(new_provider)
 
-    async def _check_and_list_models(self) -> (
-            AsyncGenerator[FoundationModelRecord | FoundationModelResponse, None]
-            | AsyncIterable[FoundationModelRecord | FoundationModelResponse]
-    ):
+    async def _check_and_list_models(
+            self,
+    ) -> AsyncGenerator[FoundationModelRecord, None]:
         def _generate_filenames(rootpath):
-                for dirpath, _, filenames in os.walk(rootpath, followlinks=True):
-                    for file in filenames:
-                        if file[-5:] != '.gguf':
-                            continue
+            for dirpath, _, filenames in os.walk(rootpath, followlinks=True):
+                for file in filenames:
+                    if file[-5:] != '.gguf':
+                        continue
 
-                        yield os.path.abspath(os.path.join(dirpath, file))
+                    yield os.path.abspath(os.path.join(dirpath, file))
 
         provider_record: ProviderRecord = await self.make_record()
 
@@ -203,15 +202,14 @@ class LlamaCppProvider(BaseProvider):
             if not temp_model.available():
                 continue
 
-            temp_model_response: FoundationModelResponse | None
+            temp_model_response: FoundationModelRecord | None
             temp_model_response = await temp_model.as_info(provider_record, os.path.abspath(self.search_dir))
             if temp_model_response is not None:
                 yield temp_model_response
 
-    async def list_models(self) -> (
-            AsyncGenerator[FoundationModelRecord | FoundationModelResponse, None]
-            | AsyncIterable[FoundationModelRecord | FoundationModelResponse]
-    ):
+    async def list_models(
+            self,
+    ) -> AsyncGenerator[FoundationModelRecord, None]:
         """Caching version."""
         if self.cached_model_infos:
             for model_info in self.cached_model_infos:

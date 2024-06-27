@@ -43,7 +43,7 @@ struct BlankOneSequenceView: View {
                         geometry: geometry,
                         allowClear: modelSelection != nil)
                     .disabled(appSettings.stillPopulating)
-                    .frame(maxWidth: 800)
+                    .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
                     .layoutPriority(0.2)
 
                     Spacer()

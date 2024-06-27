@@ -1,4 +1,5 @@
-from datetime import datetime
+import logging
+from datetime import datetime, timezone, timedelta
 from typing import TypeAlias, Optional, Self, Iterable, Any
 
 from pydantic import PositiveInt, BaseModel, ConfigDict
@@ -11,6 +12,8 @@ from providers.orm import ProviderLabel, ProviderType, ProviderID
 InferenceEventID: TypeAlias = PositiveInt
 InferenceReason: TypeAlias = str
 """TODO: Should be an enum, but enums for SQLAlchemy take some work"""
+
+logger = logging.getLogger(__name__)
 
 
 class FoundationModelLabel(BaseModel):
@@ -52,8 +55,15 @@ class FoundationModelRecord(BaseModel):
 
 
 class FoundationModelResponse(FoundationModelRecord):
-    stats: Optional[dict] = None
-    label: Optional[ProviderLabel] = None
+    display_stats: Optional[dict] = None
+    all_stats: Optional[dict[str, float]] = None
+
+    label: ProviderLabel
+    available: Optional[bool] = None
+
+    latest_inference_event: Optional[datetime] = None
+    recent_inference_events: int = 0
+    recent_tokens_per_second: float = 0.0
 
     model_config = ConfigDict(
         extra='allow',
@@ -264,71 +274,79 @@ def lookup_inference_model_for_event_id(
 
 
 def inject_inference_stats(
-        models: Iterable[FoundationModelRecord],
+        inference_model: FoundationModelRecord,
+        label_to_inject: ProviderLabel,
         history_db: HistoryDB,
-        include_all: bool = False
-) -> Iterable[tuple[FoundationModelResponse, tuple]]:
-    for inference_model in models:
-        query = (
-            select(
-                func.count(InferenceEventOrm.id),
-                func.sum(InferenceEventOrm.prompt_tokens),
-                func.sum(InferenceEventOrm.prompt_eval_time),
-                func.sum(InferenceEventOrm.response_tokens),
-                func.sum(InferenceEventOrm.response_eval_time),
-            )
-            .where(
-                InferenceEventOrm.model_record_id == inference_model.id,
-                or_(
-                    InferenceEventOrm.response_error.is_(None),
-                    InferenceEventOrm.response_error.is_("null")
-                ),
-            )
+        lookback: float | None = 90 * 24 * 60 * 60,
+) -> FoundationModelResponse:
+    where_clauses = [
+        InferenceEventOrm.model_record_id == inference_model.id,
+        or_(
+            InferenceEventOrm.response_error.is_(None),
+            InferenceEventOrm.response_error.is_("null")
+        ),
+    ]
+    if lookback is not None:
+        cutoff_time = datetime.now(tz=timezone.utc) - timedelta(seconds=lookback)
+        where_clauses.append(InferenceEventOrm.response_created_at > cutoff_time)
+
+    # First, check if there's any stats at all
+    has_stats = history_db.execute(
+        select(func.count(InferenceEventOrm.id))
+        .where(*where_clauses)
+    ).scalar_one_or_none()
+    if has_stats is None:
+        logger.error(f"Received invalid inference stats for {inference_model.human_id}")
+        raise NotImplementedError(f"Received invalid inference stats for {inference_model.human_id}")
+
+    # Otherwise, start summarizing stats
+    injected_model = FoundationModelResponse(
+        **inference_model.model_dump(),
+        label=label_to_inject,
+    )
+
+    query = (
+        select(
+            func.count(InferenceEventOrm.id),
+            func.sum(InferenceEventOrm.prompt_tokens),
+            func.sum(InferenceEventOrm.prompt_eval_time),
+            func.sum(InferenceEventOrm.response_tokens),
+            func.sum(InferenceEventOrm.response_eval_time),
+            func.max(InferenceEventOrm.response_created_at),
         )
-        query_result = history_db.execute(query).one()
+        .where(*where_clauses)
+    )
+    query_result = history_db.execute(query).one_or_none()
+    if query_result is None:
+        return injected_model
 
-        stats_dict = {}
-        if query_result is not None:
-            stats_dict = {
-                "inference events count": query_result[0],
-            }
+    injected_model.latest_inference_event = query_result[5]
+    display_stats = {}
+    all_stats = {}
 
-            if include_all:
-                if query_result[1] is not None:
-                    stats_dict["prompt tokens evaluated"] = query_result[1]
-                if query_result[2] is not None:
-                    stats_dict["prompt evaluation time"] = query_result[2]
-                if query_result[1] and query_result[2]:
-                    stats_dict["prompt sec/token"] = query_result[2] / query_result[1]
-                    stats_dict["prompt token/sec"] = query_result[1] / query_result[2]
+    display_stats["recent inference events"] = query_result[0]
+    injected_model.recent_inference_events = query_result[0]
 
-                if query_result[3] is not None:
-                    stats_dict["response tokens returned"] = query_result[3]
-                if query_result[4] is not None:
-                    stats_dict["response inference time"] = query_result[4]
-                if query_result[3] and query_result[4]:
-                    stats_dict["response sec/token"] = query_result[4] / query_result[3]
-                    stats_dict["response token/sec"] = query_result[3] / query_result[4]
+    if query_result[1] is not None:
+        all_stats["prompt tokens evaluated"] = query_result[1]
+    if query_result[2] is not None:
+        all_stats["prompt evaluation time"] = query_result[2]
+    if query_result[1] and query_result[2]:
+        all_stats["prompt sec/token"] = query_result[2] / query_result[1]
+        all_stats["prompt token/sec"] = query_result[1] / query_result[2]
 
-                if query_result[1] is not None and query_result[3] is not None:
-                    stats_dict["total tokens"] = query_result[1] + query_result[3]
+    if query_result[3] is not None:
+        all_stats["response tokens returned"] = query_result[3]
+        display_stats["response tokens returned"] = query_result[3]
+    if query_result[4] is not None:
+        all_stats["response inference time"] = query_result[4]
+    if query_result[3] and query_result[4]:
+        all_stats["response sec/token"] = query_result[4] / query_result[3]
+        all_stats["response token/sec"] = query_result[3] / query_result[4]
+        display_stats["response token/sec"] = query_result[3] / query_result[4]
+        injected_model.recent_tokens_per_second = query_result[3] / query_result[4]
 
-            else:
-                if query_result[3] is not None:
-                    stats_dict["response tokens returned"] = query_result[3]
-                if query_result[3] and query_result[4]:
-                    stats_dict["response token/sec"] = query_result[3] / query_result[4]
+    injected_model.stats = display_stats
+    injected_model.all_stats = all_stats
 
-        statsed = FoundationModelResponse(**inference_model.model_dump())
-        statsed.stats = stats_dict
-
-        sort_keys = (
-            # Sort by number of tokens, if we can
-            query_result[1] + query_result[3] if (query_result and query_result[1] and query_result[3]) else -1,
-            # Then sort by number of jobs
-            query_result[0] if query_result else -1,
-            # Finally-ish, by last_seen
-            inference_model.last_seen.timestamp() if inference_model.last_seen else 0,
-        )
-
-        yield statsed, sort_keys
+    return injected_model

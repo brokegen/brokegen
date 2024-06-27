@@ -9,14 +9,14 @@ Current known providers generally have two things to look for: Type, and ID.
 """
 import logging
 from abc import abstractmethod
-from typing import AsyncGenerator, AsyncIterable, Self, AsyncIterator, Awaitable
+from typing import AsyncGenerator, Self, AsyncIterator, Awaitable
 
 from _util.json import JSONDict
 from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, PromptText
 from audit.http import AuditDB
-from inference.continuation import InferenceOptions
 from client.database import HistoryDB
+from inference.continuation import InferenceOptions
 from providers.inference_models.orm import FoundationModelRecord, FoundationModelResponse, FoundationModelRecordOrm
 from providers.orm import ProviderLabel, ProviderRecord, ProviderType
 
@@ -33,9 +33,9 @@ class BaseProvider:
         raise NotImplementedError()
 
     @abstractmethod
-    def list_models(self) -> (
-            AsyncGenerator[FoundationModelRecord | FoundationModelResponse, None]
-            | AsyncIterable[FoundationModelRecord | FoundationModelResponse]):
+    async def list_models(
+            self,
+    ) -> AsyncGenerator[FoundationModelRecord, None]:
         """
         Method not marked async because it returns AsyncGenerator
         """

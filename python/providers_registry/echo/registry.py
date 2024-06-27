@@ -85,10 +85,9 @@ class EchoProvider(BaseProvider):
             identifiers="echo",
         )
 
-    async def list_models(self) -> (
-            AsyncGenerator[FoundationModelRecord | FoundationModelResponse, None]
-            | AsyncIterable[FoundationModelRecord | FoundationModelResponse]
-    ):
+    async def list_models(
+            self,
+    ) -> AsyncGenerator[FoundationModelRecord, None]:
         access_time = datetime.now(tz=timezone.utc)
         model_in = FoundationModelAddRequest(
             human_id=f"echo-{self.provider_id}",

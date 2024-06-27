@@ -5,7 +5,8 @@ import fastapi
 from fastapi import Depends
 from starlette.responses import RedirectResponse
 
-from providers.inference_models.orm import FoundationModelResponse, FoundationModelRecord
+from client.database import HistoryDB, get_db as get_history_db
+from providers.inference_models.orm import FoundationModelResponse, FoundationModelRecord, inject_inference_stats
 from providers.orm import ProviderType, ProviderID, ProviderLabel, ProviderRecord
 from providers.registry import ProviderRegistry, BaseProvider
 
@@ -71,32 +72,32 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
     @router_ish.get("/providers/any/any/models")
     async def get_all_provider_models(
+            history_db: HistoryDB = Depends(get_history_db),
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ) -> list[FoundationModelResponse]:
         """
         This returns a set of ordered pairs, to reflect how the models should be ranked to the user.
-
         TODO:  client doesn't check the ordering anymore, and neither should we.
+
+        NB This sorting is basically useless, because we don't have a way to sort models across providers.
+        NB Swift JSON decode does not preserve order, because JSON dict spec does not preserve order.
         """
 
         async def generator_to_awaitable(
                 label: ProviderLabel,
                 provider: BaseProvider,
-        ) -> list[FoundationModelResponse]:
-            def to_response(model: FoundationModelRecord | FoundationModelResponse):
-                if isinstance(model, FoundationModelResponse):
-                    return model
-                else:
-                    new_imr = FoundationModelResponse(**model.model_dump())
-                    if new_imr.label is None:
-                        new_imr.label = label
+        ) -> list[tuple[FoundationModelRecord, ProviderLabel]]:
+            list_maker: AsyncIterable[FoundationModelRecord] = provider.list_models()
+            return [(model, label) async for model in list_maker]
 
-                    return new_imr
+        async def list_models_per_provider() -> AsyncIterable[
+            list[tuple[FoundationModelRecord, ProviderLabel]]
+        ]:
+            model_listers: list[Awaitable[
+                list[tuple[FoundationModelRecord, ProviderLabel]]
+            ]]
 
-            return [to_response(model) async for model in provider.list_models()]
-
-        async def list_models_per_provider() -> AsyncIterable[list[FoundationModelResponse]]:
-            model_listers: list[Awaitable[list[FoundationModelResponse]]] = [
+            model_listers = [
                 generator_to_awaitable(label, provider)
                 for label, provider in registry.by_label.items()
             ]
@@ -105,44 +106,50 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 yield await done_list
 
         # Flatten the list of lists that we got
-        return [model
-                async for model_list in list_models_per_provider()
-                for model in model_list]
+        all_models = [
+            inject_inference_stats(model, label, history_db)
+            async for model_list in list_models_per_provider()
+            for model, label in model_list
+        ]
+
+        return all_models
 
     @router_ish.get("/providers/{provider_type:str}/any/models")
     async def get_all_provider_models(
             provider_type: ProviderType,
+            history_db: HistoryDB = Depends(get_history_db),
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ):
-        async def list_models() -> AsyncGenerator[FoundationModelResponse, None]:
+        async def generator_to_awaitable(
+                label: ProviderLabel,
+                provider: BaseProvider,
+        ) -> list[tuple[FoundationModelRecord, ProviderLabel]]:
+            list_maker: AsyncIterable[FoundationModelRecord] = provider.list_models()
+            return [(model, label) async for model in list_maker]
+
+        async def list_models() -> AsyncIterable[FoundationModelRecord]:
             for label, provider in registry.by_label.items():
                 if label.type != provider_type:
                     continue
 
-                async for model in provider.list_models():
-                    new_imr = FoundationModelResponse(**model.model_dump())
-                    if new_imr.label is None:
-                        new_imr.label = label
+                for model, label in await generator_to_awaitable(label, provider):
+                    yield inject_inference_stats(model, label, history_db)
 
-                    yield new_imr
-
-        return enumerate([m async for m in list_models()])
+        return [m async for m in list_models()]
 
     @router_ish.get("/providers/{provider_type:str}/{provider_id:path}/models")
     async def get_provider_models(
             provider_type: ProviderType,
             provider_id: ProviderID,
+            history_db: HistoryDB = Depends(get_history_db),
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ):
-        async def list_models() -> AsyncGenerator[FoundationModelResponse, None]:
+        async def list_models() -> AsyncIterable[FoundationModelRecord]:
             label = ProviderLabel(type=provider_type, id=provider_id)
             provider = registry.by_label[label]
 
-            async for model in provider.list_models():
-                new_imr = FoundationModelResponse(**model.model_dump())
-                if new_imr.label is None:
-                    new_imr.label = label
+            list_maker: AsyncIterable[FoundationModelRecord] = provider.list_models()
+            for model in await list_maker:
+                yield inject_inference_stats(model, label, history_db)
 
-                yield new_imr
-
-        return enumerate([m async for m in list_models()])
+        return [m async for m in list_models()]

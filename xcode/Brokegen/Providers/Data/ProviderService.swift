@@ -22,7 +22,7 @@ class ProviderService: Observable, ObservableObject {
                 let predicate = #Predicate<FoundationModel> {
                     $0.humanId.contains("instruct")
                     // This relies on the way our stats field is implemented, but, fine.
-                    || $0.stats?.count ?? 0 > 1
+                    || $0.displayStats?.count ?? 0 > 1
                 }
                 return try allModels.filter(predicate)
             }

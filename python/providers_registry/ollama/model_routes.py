@@ -1,5 +1,5 @@
 import logging
-from typing import cast, Generator, Iterable, AsyncGenerator
+from typing import cast, Generator, AsyncGenerator
 
 import httpx
 import orjson
@@ -15,8 +15,7 @@ from _util.json import safe_get
 from _util.typing import FoundationModelHumanID
 from audit.http import AuditDB
 from client.database import HistoryDB
-from providers.inference_models.orm import FoundationModelRecord, FoundationModelRecordOrm, inject_inference_stats, \
-    FoundationModelResponse
+from providers.inference_models.orm import FoundationModelRecord
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry, BaseProvider
 from providers_registry.ollama.json import OllamaEventBuilder
@@ -40,7 +39,7 @@ async def do_list_available_models(
         provider: "providers.ollama.ExternalOllamaProvider",
         history_db: HistoryDB,
         audit_db: AuditDB,
-) -> AsyncGenerator[FoundationModelResponse, None]:
+) -> AsyncGenerator[FoundationModelRecord, None]:
     intercept = OllamaEventBuilder("ollama:/api/tags", audit_db)
     cached_accessed_at = intercept.wrapped_event.accessed_at
 
@@ -72,19 +71,10 @@ async def do_list_available_models(
     ) -> Generator[FoundationModelRecord, None, None]:
         inference_model: FoundationModelRecord
         for inference_model in inference_models:
-            inference_model_orm: FoundationModelRecordOrm
-            inference_model_orm = await do_api_show(inference_model.human_id, history_db, audit_db)
-            yield FoundationModelRecord.from_orm(inference_model_orm)
+            yield await do_api_show(inference_model.human_id, history_db, audit_db)
 
-    # NB This sorting is basically useless, because we don't have a way to sort models across providers.
-    # NB Swift JSON decode does not preserve order, because JSON dict spec does not preserve order.
-    models_and_sort_keys: Iterable[tuple[FoundationModelResponse, tuple]] = \
-        inject_inference_stats(
-            [amodel async for amodel in api_show_injector(available_models_generator)],
-            history_db)
-
-    for mask in models_and_sort_keys:
-        yield mask[0]
+    async for amodel in api_show_injector(available_models_generator):
+        yield amodel
 
 
 async def do_api_tags(

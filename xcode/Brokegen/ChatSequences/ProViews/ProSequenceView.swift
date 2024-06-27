@@ -515,7 +515,7 @@ struct ProSequenceView: View {
                                         if viewModel.appSettings.stillPopulating {
                                             ProgressView()
                                                 .progressViewStyle(.linear)
-                                                .frame(maxWidth: 800)
+                                                .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
                                         }
 
                                         HStack(spacing: 0) {
@@ -528,7 +528,7 @@ struct ProSequenceView: View {
                                                 geometry: geometry,
                                                 allowClear: true)
                                             .disabled(viewModel.appSettings.stillPopulating)
-                                            .frame(maxWidth: 800)
+                                            .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
                                             .foregroundStyle(Color(.disabledControlTextColor))
                                             // TODO: We can eventually make this something like pull-to-refresh, putting it relatively far below the fold.
                                             .padding(.bottom, 120)

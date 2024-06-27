@@ -184,8 +184,8 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             .order_by(ChatSequenceOrm.generated_at.desc())
         )
         if lookback is not None:
-            reference_time = datetime.now(tz=timezone.utc) - timedelta(seconds=lookback)
-            query = query.where(ChatSequenceOrm.generated_at > reference_time)
+            cutoff_time = datetime.now(tz=timezone.utc) - timedelta(seconds=lookback)
+            query = query.where(ChatSequenceOrm.generated_at > cutoff_time)
         if limit is not None:
             query = query.limit(limit)
         if only_user_pinned:
@@ -213,8 +213,8 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             .order_by(ChatSequenceOrm.generated_at.desc())
         )
         if lookback is not None:
-            reference_time = datetime.now(tz=timezone.utc) - timedelta(seconds=lookback)
-            query = query.where(ChatSequenceOrm.generated_at > reference_time)
+            cutoff_time = datetime.now(tz=timezone.utc) - timedelta(seconds=lookback)
+            query = query.where(ChatSequenceOrm.generated_at > cutoff_time)
         if limit is not None:
             query = query.limit(limit)
 
