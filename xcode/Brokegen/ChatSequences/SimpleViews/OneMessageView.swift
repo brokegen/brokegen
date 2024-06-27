@@ -17,7 +17,7 @@ struct OneMessageView: View {
         self.sequence = sequence
         self.stillExpectingUpdate = stillUpdating
         self._expandContent = State(
-            initialValue: message.role != "user" && message.role != "assistant"
+            initialValue: message.role == "user" || message.role == "assistant"
         )
     }
 

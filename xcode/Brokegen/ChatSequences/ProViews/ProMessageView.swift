@@ -24,7 +24,7 @@ struct ProMessageView: View {
         self.showMessageHeaders = showMessageHeaders
 
         self._expandContent = State(
-            initialValue: message.role != "user" && message.role != "assistant"
+            initialValue: message.role == "user" || message.role == "assistant"
         )
     }
 
