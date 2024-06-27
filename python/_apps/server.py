@@ -245,6 +245,7 @@ def run_proxy(
     # brokegen-specific endpoints
     providers.routes.install_routes(app)
     providers.inference_models.routes.install_routes(app)
+    inference.autonaming.routes.install_routes(app)
     inference.continuation_routes.install_routes(app)
     client.install_routes(app)
 

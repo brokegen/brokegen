@@ -19,6 +19,7 @@ from client.chat_sequence import ChatSequenceOrm
 from client.database import HistoryDB, get_db as get_history_db
 from inference.routes_langchain import JSONStreamingResponse
 from providers.registry import ProviderRegistry
+from .bridge import autoname_sequence
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +48,6 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 sequence: ChatSequenceOrm,
                 history_db: HistoryDB,
         ) -> PromptText | None:
-            # TODO: circular import
-            from inference.autonaming import autoname_sequence
-
             autoname: PromptText | None
 
             try:
