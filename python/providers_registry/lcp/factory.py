@@ -27,7 +27,7 @@ class LlamaCppProviderFactory(ProviderFactory):
             from .provider import LlamaCppProvider
 
             new_provider: BaseProvider = LlamaCppProvider(search_dir=label.id)
-            if new_provider.available():
+            if await new_provider.available():
                 return new_provider
             else:
                 return None

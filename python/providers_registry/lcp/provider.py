@@ -199,7 +199,7 @@ class LlamaCppProvider(BaseProvider):
 
         for model_path in _generate_filenames(self.search_dir):
             temp_model: _OneModel = _OneModel(model_path)
-            if not temp_model.available():
+            if not await temp_model.available():
                 continue
 
             temp_model_response: FoundationModelRecord | None
