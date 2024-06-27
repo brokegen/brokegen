@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import AsyncGenerator, Iterable, Awaitable, AsyncIterable
 
 import fastapi
@@ -9,6 +10,8 @@ from client.database import HistoryDB, get_db as get_history_db
 from .inference_models.orm import FoundationModelResponse, FoundationModelRecord, inject_inference_stats
 from .orm import ProviderType, ProviderID, ProviderLabel, ProviderRecord
 from .registry import ProviderRegistry, BaseProvider
+
+logger = logging.getLogger(__name__)
 
 
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:
@@ -88,6 +91,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 provider: BaseProvider,
         ) -> list[tuple[FoundationModelRecord, ProviderLabel]]:
             list_maker: AsyncIterable[FoundationModelRecord] = provider.list_models()
+            logger.info(f"Enumerating FoundationModels for {label}")
             return [(model, label) async for model in list_maker]
 
         async def list_models_per_provider() -> AsyncIterable[

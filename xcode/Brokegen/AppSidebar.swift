@@ -180,7 +180,7 @@ struct AppSidebar: View {
                         }
 
                         NavigationLink(destination: {
-                            ModelPickerView()
+                            RefreshableModelPickerView()
                         }) {
                             ASRow("Foundation Models")
                         }

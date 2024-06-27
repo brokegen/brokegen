@@ -111,6 +111,7 @@ struct ModelPickerView: View {
                                 .font(.system(size: 24))
                         }
                         .toggleStyle(.button)
+                        .disabled(neverUsedModels.isEmpty)
                     }
 
                     Text("End of loaded FoundationModels")
@@ -152,6 +153,26 @@ struct ModelPickerView: View {
         }
         .onChange(of: modelSelection) {
             dismiss.callAsFunction()
+        }
+    }
+}
+
+struct RefreshableModelPickerView: View {
+    @Environment(ProviderService.self) private var providerService
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 24) {
+                Button("Refresh", systemImage: "arrow.clockwise") {
+                    Task { try? await providerService.fetchAvailableModels() }
+                }
+                .buttonStyle(.accessoryBar)
+                .padding(12)
+                .layoutPriority(0.2)
+
+                Spacer()
+            }
+            ModelPickerView()
         }
     }
 }

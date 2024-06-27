@@ -192,6 +192,7 @@ struct SequencePickerView: View {
                 Task { try? await chatService.fetchRecents(lookback: 1_209_600, onlyUserPinned: onlyUserPinned) }
             }
             .buttonStyle(.accessoryBar)
+            .lineLimit(1...3)
             .padding(12)
             .layoutPriority(0.2)
 
