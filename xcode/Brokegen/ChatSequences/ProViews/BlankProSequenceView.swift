@@ -38,12 +38,13 @@ struct BlankProSequenceView: View {
         // commit the ViewModel to ChatSyncService.
             .onChange(of: viewModel.sequence.serverId) {
                 chatService.updateSequence(withSameId: viewModel.sequence)
+                let maybeNewViewModel: OneSequenceViewModel = chatService.addClientModel(viewModel)
 
                 // Manually reach into CSCSettingsService and update it with the Settings we'd created in createBlank()
-                self.chatSettingsService.perSequenceUiSettings[viewModel.sequence] = viewModel.settings.override
-                self.chatSettingsService.perSequenceInferenceSettings[viewModel.sequence] = viewModel.settings.inference
+                self.chatSettingsService.perSequenceUiSettings[maybeNewViewModel.sequence] = maybeNewViewModel.settings.override
+                self.chatSettingsService.perSequenceInferenceSettings[maybeNewViewModel.sequence] = maybeNewViewModel.settings.inference
 
-                pathHost.push(viewModel)
+                pathHost.push(maybeNewViewModel)
             }
     }
 }

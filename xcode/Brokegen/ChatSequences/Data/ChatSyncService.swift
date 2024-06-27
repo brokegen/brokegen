@@ -44,6 +44,24 @@ class ChatSyncService: Observable, ObservableObject {
         }
     }
 
+    func addClientModel(_ clientModel: OneSequenceViewModel) -> OneSequenceViewModel {
+        if let dupe = chatSequenceClientModels.first(where: { $0 == clientModel }) {
+            return clientModel
+        }
+        if let dupe = chatSequenceClientModels.first(where: { $0.sequence == clientModel.sequence }) {
+            print("[ERROR] ChatSyncService already contains another ViewModel for ChatSequence \(dupe.sequence.displayRecognizableDesc())")
+            return dupe
+        }
+        if let dupe = chatSequenceClientModels.first(where: { $0.sequence.serverId == clientModel.sequence.serverId }) {
+            print("[ERROR] ChatSyncService already contains another ViewModel for ChatSequenceID \(dupe.sequence.serverId)")
+            return dupe
+        }
+
+        // After some duplicate-checking, we're good to go ahead and add the model.
+        chatSequenceClientModels.append(clientModel)
+        return clientModel
+    }
+
     // MARK: - ChatSequence construction
     @Published var loadedChatSequences: [ChatSequence] = []
 

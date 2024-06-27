@@ -6,6 +6,13 @@ import SwiftyJSON
 
 let maxPinChatSequenceDesc = 140
 
+/// This class is usually owned by ChatSyncService.
+/// Interesting side cases:
+///
+/// - on constructing a new Sequence, there's no ChatSequenceID from the server yet
+/// - when constructing a response / having one sent down from the server, the ChatSequenceID is not created until the response is done sending.
+///   as you might imagine, this gets _weird_.
+///
 @Observable
 class OneSequenceViewModel: ObservableObject {
     var sequence: ChatSequence
@@ -203,14 +210,16 @@ class OneSequenceViewModel: ObservableObject {
             }
 
             // Manually (re)construct server data, rather than fetching the same data back.
-            sequence.serverId = sequenceId
-            sequence.messages = [
-                .temporary(TemporaryChatMessage(
-                    role: "user",
-                    content: promptInEdit,
-                    createdAt: Date.now
-                ))
-            ]
+            DispatchQueue.main.async {
+                self.sequence.serverId = sequenceId
+                self.sequence.messages = [
+                    .temporary(TemporaryChatMessage(
+                        role: "user",
+                        content: self.promptInEdit,
+                        createdAt: Date.now
+                    ))
+                ]
+            }
 
             receivingStreamer = await chatService.sequenceContinue(
                 ChatSequenceParameters(
@@ -226,15 +235,15 @@ class OneSequenceViewModel: ObservableObject {
                     preferredEmbeddingModel: withRetrieval ? appSettings.preferredEmbeddingModel?.serverId : nil,
                     autonamingPolicy: settings.autonamingPolicy.rawValue,
                     preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId,
-                    sequenceId: sequence.serverId!
+                    sequenceId: sequenceId!
                 )
             )
                 .sink(receiveCompletion: completionHandler(
                     caller: "ChatSyncService.sequenceContinue",
-                    endpoint: "/sequences/\(sequence.serverId!)/continue"
+                    endpoint: "/sequences/\(sequenceId!)/continue"
                 ), receiveValue: receiveHandler(
                     caller: "OneSequenceViewModel.requestStart(withRetrieval: \(withRetrieval))",
-                    endpoint: "/sequences/\(sequence.serverId!)/continue"
+                    endpoint: "/sequences/\(sequenceId!)/continue"
                 ))
         }
 
