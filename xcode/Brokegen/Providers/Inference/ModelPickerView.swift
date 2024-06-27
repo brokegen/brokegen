@@ -4,11 +4,11 @@ fileprivate let INVALID_MODEL_ID: FoundationModelRecordID = -4
 
 struct ModelPickerView: View {
     @Environment(ProviderService.self) private var providerService
-    @EnvironmentObject public var appSettings: AppSettings
     @Environment(\.dismiss) var dismiss
 
     @Binding private var modelSelection: FoundationModel?
     private var enableModelSelection: Bool
+    @State private var expandNeverUsedModels: Bool = false
     private var hideDismissButton: Bool
     @State private var isDismissButtonHovered: Bool = false
 
@@ -81,7 +81,7 @@ struct ModelPickerView: View {
                                 OneFoundationModelView(
                                     model: model,
                                     modelAvailable: isModelAvailable(model),
-                                    expandContent: appSettings.hideNeverUsedModels || usedModels.count < 6,
+                                    expandContent: expandNeverUsedModels || usedModels.count < 6,
                                     modelSelection: $modelSelection,
                                     enableModelSelection: enableModelSelection
                                 )
@@ -92,7 +92,7 @@ struct ModelPickerView: View {
                             .padding(24)
                     }
 
-                    if !appSettings.hideNeverUsedModels {
+                    if expandNeverUsedModels {
                         VFlowLayout(spacing: 24) {
                             ForEach(neverUsedModels) { model in
                                 OneFoundationModelView(
@@ -103,6 +103,14 @@ struct ModelPickerView: View {
                                 )
                             }
                         }
+                    }
+                    else {
+                        Toggle(isOn: $expandNeverUsedModels) {
+                            Label("Show never-used models", systemImage: "chevron.down")
+                                .padding(24)
+                                .font(.system(size: 24))
+                        }
+                        .toggleStyle(.button)
                     }
 
                     Text("End of loaded FoundationModels")
@@ -118,7 +126,7 @@ struct ModelPickerView: View {
                             OneFoundationModelView(
                                 model: model,
                                 modelAvailable: isModelAvailable(model),
-                                expandContent: appSettings.hideNeverUsedModels || usedModels.count < 6,
+                                expandContent: expandNeverUsedModels || usedModels.count < 6,
                                 modelSelection: $modelSelection,
                                 enableModelSelection: enableModelSelection
                             )
@@ -130,7 +138,7 @@ struct ModelPickerView: View {
                             .padding(24)
                     }
 
-                    if !appSettings.hideNeverUsedModels {
+                    if expandNeverUsedModels {
                         ForEach(neverUsedModels) { model in
                             OneFoundationModelView(
                                 model: model,

@@ -95,12 +95,4 @@ class AppSettings: ObservableObject {
         get { _allowExternalTraffic }
         set { _allowExternalTraffic = newValue }
     }
-
-    @AppStorage("hideNeverUsedModels")
-    @ObservationIgnored var _hideNeverUsedModels: Bool = false
-
-    var hideNeverUsedModels: Bool {
-        get { _hideNeverUsedModels }
-        set { _hideNeverUsedModels = newValue }
-    }
 }

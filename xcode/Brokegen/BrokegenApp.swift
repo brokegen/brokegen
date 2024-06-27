@@ -125,10 +125,6 @@ struct BrokegenApp: App {
                     Text("Allow non-localhost traffic\n(applies at next service launch)")
                 })
 
-                Toggle(isOn: $appSettings.hideNeverUsedModels, label: {
-                    Text("Hide foundation models without recent inference events")
-                })
-
                 Toggle(isOn: $chatSettingsService.useSimplifiedSequenceViews) {
                     Text("Use simplified chat interface")
                 }
