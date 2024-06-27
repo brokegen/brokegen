@@ -1,6 +1,4 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
-from _util.status import ServerStatusHolder
-
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
@@ -22,15 +20,15 @@ import audit
 import client
 import providers_registry
 from _util.json import DatetimeEncoder, CatchAllEncoder, JSONDict, safe_get
+from _util.status import ServerStatusHolder
 from _util.typing import FoundationModelRecordID
 from audit.http import AuditDB, get_db as get_audit_db
 from client.chat_message import ChatMessage
 from client.database import HistoryDB, get_db as get_history_db
-from inference.continuation import InferenceOptions
 from inference.iterators import tee_to_console_output
 from providers.inference_models.orm import FoundationModelRecordOrm
 from providers.orm import ProviderLabel, ProviderRecord
-from providers.registry import ProviderRegistry, BaseProvider
+from providers.registry import ProviderRegistry, BaseProvider, InferenceOptions
 
 logger = logging.getLogger(__name__)
 

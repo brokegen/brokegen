@@ -11,7 +11,7 @@ from _util.json import safe_get_arrayed
 logger = logging.getLogger(__name__)
 
 
-@functools.lru_cache(maxsize=1)
+@functools.lru_cache
 def local_provider_identifiers() -> dict:
     provider_identifiers_dict = {
         'platform': platform.platform(),

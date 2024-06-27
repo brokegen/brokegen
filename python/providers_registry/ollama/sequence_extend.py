@@ -22,13 +22,12 @@ from client.chat_sequence import ChatSequenceOrm
 from client.database import HistoryDB, get_db as get_history_db
 from client.sequence_add import do_extend_sequence
 from client.sequence_get import fetch_messages_for_sequence
-from inference.continuation import ContinueRequest, ExtendRequest, select_continuation_model, InferenceOptions, \
-    AutonamingOptions
+from inference.continuation import ContinueRequest, ExtendRequest, select_continuation_model, AutonamingOptions
 from inference.iterators import consolidate_and_yield, tee_to_console_output, decode_from_bytes, stream_str_to_json
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.orm import FoundationModelRecordOrm, InferenceEventOrm, InferenceReason
 from providers.orm import ProviderLabel
-from providers.registry import ProviderRegistry
+from providers.registry import ProviderRegistry, InferenceOptions
 from providers_registry.ollama.api_chat.inject_rag import do_proxy_chat_rag
 from providers_registry.ollama.api_chat.logging import ollama_response_consolidator, construct_new_sequence_from, \
     OllamaResponseContentJSON, finalize_inference_job, ollama_log_indexer

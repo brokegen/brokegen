@@ -4,19 +4,12 @@ from fastapi import HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from _util.typing import FoundationModelRecordID, ChatSequenceID, PromptText
+from _util.typing import FoundationModelRecordID, ChatSequenceID
 from client.chat_message import ChatMessage
 from client.database import HistoryDB
 from providers.inference_models.orm import InferenceEventOrm, FoundationModelRecordOrm
+from providers.registry import InferenceOptions
 from retrieval.faiss.retrieval import RetrievalLabel
-
-
-class InferenceOptions(BaseModel):
-    # TODO: Convert this back into JSON, somehow
-    inference_options: Optional[str] = None
-    override_model_template: Optional[str] = None
-    override_system_prompt: Optional[PromptText] = None
-    seed_assistant_response: Optional[PromptText] = None
 
 
 class AutonamingOptions(BaseModel):

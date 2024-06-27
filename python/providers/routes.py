@@ -6,9 +6,9 @@ from fastapi import Depends
 from starlette.responses import RedirectResponse
 
 from client.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import FoundationModelResponse, FoundationModelRecord, inject_inference_stats
-from providers.orm import ProviderType, ProviderID, ProviderLabel, ProviderRecord
-from providers.registry import ProviderRegistry, BaseProvider
+from .inference_models.orm import FoundationModelResponse, FoundationModelRecord, inject_inference_stats
+from .orm import ProviderType, ProviderID, ProviderLabel, ProviderRecord
+from .registry import ProviderRegistry, BaseProvider
 
 
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:

@@ -15,10 +15,10 @@ from _util.status import ServerStatusHolder
 from audit.http import AuditDB, get_db as get_audit_db
 from client.database import HistoryDB, get_db as get_history_db
 from client_ollama.forward import forward_request_nolog, forward_request
-from inference.continuation import InferenceOptions, AutonamingOptions
+from inference.continuation import AutonamingOptions
 from inference.iterators import consolidate_and_call, tee_to_console_output
 from providers.inference_models.orm import InferenceReason, InferenceEventOrm
-from providers.registry import ProviderRegistry
+from providers.registry import ProviderRegistry, InferenceOptions
 from providers_registry.ollama.api_chat.inject_rag import do_proxy_chat_rag
 from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON, OllamaResponseContentJSON, \
     finalize_inference_job, ollama_response_consolidator, ollama_log_indexer

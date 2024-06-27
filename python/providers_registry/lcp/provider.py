@@ -14,12 +14,11 @@ from _util.typing import FoundationModelRecordID
 from audit.http import AuditDB
 from client.chat_message import ChatMessage
 from client.database import HistoryDB, get_db as get_history_db
-from inference.continuation import InferenceOptions
 from providers._util import local_provider_identifiers, local_fetch_machine_info
 from providers.inference_models.orm import FoundationModelRecord, FoundationModelAddRequest, \
     lookup_foundation_model_detailed, FoundationModelRecordOrm
 from providers.orm import ProviderRecord, ProviderRecordOrm
-from providers.registry import BaseProvider
+from providers.registry import BaseProvider, InferenceOptions
 
 logger = logging.getLogger(__name__)
 

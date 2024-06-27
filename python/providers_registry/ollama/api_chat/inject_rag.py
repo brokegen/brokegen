@@ -11,7 +11,8 @@ from _util.typing import PromptText, TemplatedPromptText
 from audit.http import AuditDB
 from client.chat_sequence import ChatSequenceOrm
 from client.database import HistoryDB
-from inference.continuation import InferenceOptions, AutonamingOptions
+from inference.continuation import AutonamingOptions
+from providers.registry import InferenceOptions
 from inference.iterators import decode_from_bytes, stream_str_to_json
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.orm import InferenceReason, FoundationModelRecordOrm

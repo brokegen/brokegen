@@ -1,15 +1,8 @@
-"""
-Providers register themselves and handle any setup that matches.
-
-For… complexity's sake, this is done as a JSON dict.
-Current known providers generally have two things to look for: Type, and ID.
-
-1. type: ollama / id: http://localhost:11434
-2. type: llamafile / id: ~/Downloads/llava-v1.5-7b-q4.llamafile
-"""
 import logging
 from abc import abstractmethod
-from typing import AsyncGenerator, Self, AsyncIterator, Awaitable
+from typing import AsyncGenerator, Self, AsyncIterator, Awaitable, Optional
+
+from pydantic import BaseModel
 
 from _util.json import JSONDict
 from _util.status import ServerStatusHolder
@@ -18,11 +11,17 @@ from audit.http import AuditDB
 from client.chat_message import ChatMessage
 from client.database import HistoryDB
 from client.sequence_get import fetch_messages_for_sequence
-from inference.continuation import InferenceOptions
-from providers.inference_models.orm import FoundationModelRecord, FoundationModelResponse, FoundationModelRecordOrm
-from providers.orm import ProviderLabel, ProviderRecord, ProviderType
+from .inference_models.orm import FoundationModelRecord, FoundationModelResponse, FoundationModelRecordOrm
+from .orm import ProviderLabel, ProviderRecord, ProviderType
 
 logger = logging.getLogger(__name__)
+
+
+class InferenceOptions(BaseModel):
+    inference_options: Optional[str] = None
+    override_model_template: Optional[str] = None
+    override_system_prompt: Optional[PromptText] = None
+    seed_assistant_response: Optional[PromptText] = None
 
 
 class BaseProvider:
