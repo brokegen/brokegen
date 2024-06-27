@@ -37,8 +37,8 @@ struct BlankProSequenceView: View {
         // As soon as we have a committed ChatSequenceServerID,
         // commit the ViewModel to ChatSyncService.
             .onChange(of: viewModel.sequence.serverId) {
-                chatService.updateSequence(withSameId: viewModel.sequence)
                 let maybeNewViewModel: OneSequenceViewModel = chatService.addClientModel(viewModel)
+                chatService.updateSequence(withSameId: viewModel.sequence)
 
                 // Manually reach into CSCSettingsService and update it with the Settings we'd created in createBlank()
                 self.chatSettingsService.perSequenceUiSettings[maybeNewViewModel.sequence] = maybeNewViewModel.settings.override

@@ -43,6 +43,8 @@ class _OneModel:
             model_path=self.model_path,
             n_gpu_layers=-1,
             verbose=verbose,
+            # TODO: Figure out a more elegant way to decide the max.
+            n_ctx=32_768,
         )
 
     async def available(self) -> bool:
@@ -249,11 +251,18 @@ class LlamaCppProvider(BaseProvider):
         await self.loaded_models[inference_model.id].launch()
         underlying_model: llama_cpp.Llama = self.loaded_models[inference_model.id].underlying_model
 
+        maybe_inference_options: dict = {}
+        if inference_options.inference_options:
+            maybe_inference_options.update(
+                orjson.loads(inference_options.inference_options)
+            )
+
         iterator_or_completion: (
                 llama_cpp.CreateChatCompletionResponse | Iterator[llama_cpp.CreateChatCompletionStreamResponse])
         iterator_or_completion = underlying_model.create_chat_completion(
             messages=[m.model_dump() for m in messages_list],
             stream=True,
+            **maybe_inference_options,
         )
 
         if isinstance(iterator_or_completion, Iterator):

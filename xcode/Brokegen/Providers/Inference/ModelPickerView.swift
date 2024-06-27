@@ -119,44 +119,6 @@ struct ModelPickerView: View {
                         .frame(maxWidth: .infinity)
                 }
                 .padding(24)
-
-                List {
-                    if !usedModels.isEmpty {
-                        ForEach(usedModels) { model in
-                            OneFoundationModelView(
-                                model: model,
-                                modelAvailable: isModelAvailable(model),
-                                expandContent: expandNeverUsedModels || usedModels.count < 6,
-                                modelSelection: $modelSelection,
-                                enableModelSelection: enableModelSelection
-                            )
-                            .padding(24)
-                            .padding(.bottom, 0)
-                        }
-
-                        Divider()
-                            .padding(24)
-                    }
-
-                    if expandNeverUsedModels {
-                        ForEach(neverUsedModels) { model in
-                            OneFoundationModelView(
-                                model: model,
-                                modelAvailable: isModelAvailable(model),
-                                modelSelection: $modelSelection,
-                                enableModelSelection: enableModelSelection
-                            )
-                            .padding(24)
-                            .padding(.bottom, 0)
-                        }
-                    }
-
-                    Text("End of loaded FoundationModels")
-                        .foregroundStyle(Color(.disabledControlTextColor))
-                        .frame(height: 400)
-                        .frame(maxWidth: .infinity)
-                }
-                .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
             }
 
             if !hideDismissButton {
