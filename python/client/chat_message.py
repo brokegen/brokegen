@@ -6,7 +6,7 @@ from sqlalchemy import Column, String, DateTime, Integer, select
 
 from _util.json import JSONDict
 from _util.typing import ChatMessageID, PromptText, RoleName, ChatSequenceID
-from client.database import Base, HistoryDB
+from .database import Base, HistoryDB
 
 
 class ChatMessage(BaseModel):

@@ -7,122 +7,39 @@ if __name__ == '__main__':
 
     multiprocessing.freeze_support()
 
+import asyncio
 import json
 import logging
 import os
 import sqlite3
-from contextlib import asynccontextmanager
 
 import click
-from fastapi import Depends, FastAPI, Request
 
 import audit
 import client
 import providers_registry
 from _util.json import DatetimeEncoder, CatchAllEncoder
-from audit.http import AuditDB, get_db as get_audit_db
-from audit.http_raw import SqlLoggingMiddleware
-from client_ollama.forward import forward_request, forward_request_nodetails
+from _util.typing import FoundationModelRecordID
 from providers.orm import ProviderLabel, ProviderRecord
 from providers.registry import ProviderRegistry, BaseProvider
 
 logger = logging.getLogger(__name__)
 
 
-def install_proxy_routes(app: FastAPI, install_logging_middleware: bool):
-    proxy_app = FastAPI()
-    if install_logging_middleware:
-        proxy_app.add_middleware(
-            SqlLoggingMiddleware,
-            audit_db=next(get_audit_db()),
-        )
-
-    @proxy_app.get("/{path:path}")
-    @proxy_app.head("/{path:path}")
-    @proxy_app.post("/{path:path}")
-    async def do_proxy_all(
-            request: Request,
-            audit_db: AuditDB = Depends(get_audit_db),
-    ):
-        if request.method == 'HEAD':
-            return await forward_request_nodetails(request, audit_db)
-
-        if request.url.path == "/api/show":
-            return await forward_request_nodetails(request, audit_db)
-
-        return await forward_request(request, audit_db)
-
-    app.mount("/ollama-proxy", proxy_app)
-
-
-def try_install_timing_middleware(app: FastAPI):
-    try:
-        from timing_asgi import TimingMiddleware, TimingClient
-        from timing_asgi.integrations import StarletteScopeToName
-    except ImportError:
-        print("Failed to import timing-asgi")
-        return
-
-    class PrintTimings(TimingClient):
-        def timing(self, metric_name, timing, tags):
-            print(metric_name, f"{timing * 1000:.3f} msec", tags)
-
-    app.add_middleware(
-        TimingMiddleware,
-        client=PrintTimings(),
-        metric_namer=StarletteScopeToName(prefix="simple-proxy", starlette_app=app)
-    )
-
-
-def try_install_logging_middleware(app: FastAPI):
-    app.add_middleware(
-        SqlLoggingMiddleware,
-        audit_db=next(get_audit_db()),
-    )
-
-
-@asynccontextmanager
-async def lifespan_logging(app: FastAPI):
-    root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)
-
-    try:
-        import colorlog
-        from colorlog import ColoredFormatter
-
-        LOGFORMAT = "  %(log_color)s%(levelname)-8s%(reset)s | %(log_color)s%(message)s%(reset)s"
-        formatter = ColoredFormatter(LOGFORMAT)
-
-        colorlog_stdout = logging.StreamHandler()
-        colorlog_stdout.setLevel(logging.DEBUG)
-        colorlog_stdout.setFormatter(formatter)
-        root_logger.addHandler(colorlog_stdout)
-
-        # https://github.com/tiangolo/fastapi/discussions/7457
-        # Convert uvicorn logging to this format also
-        logging.getLogger("uvicorn.access").handlers = [colorlog_stdout]
-
-    except ImportError:
-        logging.basicConfig()
-
-    # Silence the very annoying logs
-    logging.getLogger("httpcore.http11").setLevel(logging.INFO)
-    logging.getLogger("httpcore.connection").setLevel(logging.INFO)
-    logging.getLogger("httpx").setLevel(logging.INFO)
-    logging.getLogger("urllib3").setLevel(logging.WARNING)
-    logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
-
-    yield
-
-    root_logger.setLevel(logging.WARNING)
-    root_logger.handlers = []
+async def chat(
+        start_chat_with: FoundationModelRecordID | None,
+):
+    pass
 
 
 async def amain(
         label: ProviderLabel,
         registry: ProviderRegistry,
+        dump_full_models: bool,
+        start_chat: bool,
+        start_chat_with: FoundationModelRecordID | None,
         data_dir: str = "data/",
-        dump_full_models: bool = False,
+        dump_provider_record: bool = False,
 ):
     try:
         audit.http.init_db(f"{data_dir}/audit.db")
@@ -154,15 +71,17 @@ async def amain(
     if provider is None:
         return
 
-    provider_record: ProviderRecord = await provider.make_record()
-    print(f".available(): {await provider.available()}\n")
-
-    print(".make_record(): " + json.dumps(
-        provider_record.model_dump(),
-        indent=2,
-        cls=DatetimeEncoder,
-    ))
+    print(f".available(): {await provider.available()}")
     print()
+
+    if dump_provider_record:
+        provider_record: ProviderRecord = await provider.make_record()
+        print(".make_record(): " + json.dumps(
+            provider_record.model_dump(),
+            indent=2,
+            cls=DatetimeEncoder,
+        ))
+        print()
 
     if dump_full_models:
         print(f".list_models():")
@@ -171,28 +90,45 @@ async def amain(
             indent=2,
             cls=CatchAllEncoder,
         ))
+        print()
     else:
-        print(f".list_models(): (only showing human_id field)")
+        print(f".list_models():")
         print(json.dumps(
-            [m.human_id async for m in provider.list_models()],
+            dict([(m.id, m.human_id) async for m in provider.list_models()]),
             indent=2,
             cls=CatchAllEncoder,
         ))
+        print()
+
+    if start_chat:
+        if start_chat_with is None:
+            start_chat_with = input("Start chat with model ID: ")
+
+        await chat(start_chat_with)
 
 
 @click.command()
 @click.argument('provider-type', type=click.STRING)
 @click.argument('provider-id', type=click.STRING)
+@click.option('--dump-full-models', default=False, type=click.BOOL)
+@click.option('--start-chat', is_flag=True, type=click.BOOL)
+@click.option('--start-chat-with',
+              prompt=True, prompt_required=False,
+              default=None, type=click.IntRange(1))
 def main(
         provider_type: str,
         provider_id: str,
+        dump_full_models: bool,
+        start_chat: bool,
+        start_chat_with: FoundationModelRecordID | None,
 ):
-    import asyncio
-
     try:
         asyncio.run(amain(
             ProviderLabel(type=provider_type, id=provider_id),
             ProviderRegistry(),
+            dump_full_models=dump_full_models,
+            start_chat=start_chat,
+            start_chat_with=start_chat_with,
         ))
     except KeyboardInterrupt:
         pass
