@@ -51,22 +51,9 @@ extension DefaultChatSyncService {
 
         let subject = PassthroughSubject<Data, AFErrorAndData>()
 
-        let encoder = JSONEncoder()
-        encoder.keyEncodingStrategy = .convertToSnakeCase
-
-        /// TODO: Confirm that ChatMessages get uploaded with a non-1993 date!
-        encoder.dateEncodingStrategy = .custom { date, encoder in
-            let dateFormatter = ISO8601DateFormatter()
-            dateFormatter.formatOptions.insert(.withFractionalSeconds)
-
-            var container = encoder.singleValueContainer()
-            try container.encode(dateFormatter.string(from: date))
-        }
-
         var encodedParams: Data? = nil
         do {
-            // TODO: Replace with jsonEncoder
-            encodedParams = try encoder.encode(params)
+            encodedParams = try jsonEncoder.encode(params)
         }
         catch {
             print("[ERROR] /sequences/\(params.sequenceId!)/continue failed, probably encoding error: \(String(describing: params))")
@@ -127,21 +114,9 @@ extension DefaultChatSyncService {
 
         let subject = PassthroughSubject<Data, AFErrorAndData>()
 
-        let encoder = JSONEncoder()
-        encoder.keyEncodingStrategy = .convertToSnakeCase
-
-        /// TODO: Confirm that ChatMessages get uploaded with a non-1993 date!
-        encoder.dateEncodingStrategy = .custom { date, encoder in
-            let dateFormatter = ISO8601DateFormatter()
-            dateFormatter.formatOptions.insert(.withFractionalSeconds)
-
-            var container = encoder.singleValueContainer()
-            try container.encode(dateFormatter.string(from: date))
-        }
-
         var encodedParams: Data? = nil
         do {
-            encodedParams = try encoder.encode(params)
+            encodedParams = try jsonEncoder.encode(params)
         }
         catch {
             print("[ERROR] /sequences/\(params.sequenceId!)/extend failed, probably encoding error: \(String(describing: params))")

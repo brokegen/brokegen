@@ -154,7 +154,6 @@ class OneSequenceViewModel: ObservableObject {
 
             if jsonData["done"].boolValue {
                 if let newSequenceId: ChatSequenceServerID = jsonData["new_sequence_id"].int {
-
                     Task {
                         print("[DEBUG] Attempting to update OneSequenceViewModel to new_sequence_id: \(newSequenceId)")
                         _ = await self.chatService.updateSequence(self.sequence.serverId, withNewSequence: newSequenceId)
