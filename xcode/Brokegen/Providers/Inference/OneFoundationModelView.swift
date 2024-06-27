@@ -71,20 +71,6 @@ struct OneFoundationModelView: View {
                     }
                 }
             }
-            .contentShape(Rectangle())
-            .onTapGesture {
-                if !self.expandContent {
-                    self.expandContent = true
-                }
-                else {
-                    if enableModelSelection {
-                        modelSelection = model
-                    }
-                    else {
-                        self.expandContent = false
-                    }
-                }
-            }
 
             if expandContent {
                 Divider()
@@ -98,15 +84,15 @@ struct OneFoundationModelView: View {
                                 .gridColumnAlignment(.trailing)
                         }
                         .foregroundStyle(Color(.controlTextColor))
-                        
+
                         GridRow {
                             Text("Recent inference event count:")
                             Text("\(model.recentInferenceEvents)")
                         }
                         .foregroundStyle(Color(.controlTextColor))
-                        
+
                         Divider()
-                        
+
                         GridRow {
                             Text("Latest inference event:")
                             Text(model.latestInferenceEvent!.ISO8601Format())
@@ -134,8 +120,24 @@ struct OneFoundationModelView: View {
                 .padding(.bottom, 48)
             }
         }
-        .listRowSeparator(.hidden)
         .padding(24)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            // TODO: This is a very awkward tri-state click, do something clearer.
+            if !self.expandContent {
+                self.expandContent = true
+            }
+            else {
+                if enableModelSelection {
+                    // TODO: There's a long delay as SwiftUI does a render pass or two,
+                    // consider having the dialog dismiss itself here.
+                    modelSelection = model
+                }
+                else {
+                    self.expandContent = false
+                }
+            }
+        }
         .onHover { isHovered in
             self.isHovered = isHovered
         }
@@ -215,4 +217,42 @@ struct OFMPicker: View {
         }
         .frame(minHeight: 160)
     }
+}
+
+#Preview {
+    struct ViewHolder: View {
+        let mockFoundationModel = FoundationModel(
+            id: UUID(),
+            serverId: 1337,
+            humanId: "never-used-405b",
+            firstSeenAt: nil,
+            lastSeen: nil,
+            providerIdentifiers: "xcode preview [\"ok\"]",
+            modelIdentifiers: ["moniker": "first", "nickname": "premier", "alias": "oneth"],
+            combinedInferenceParameters: [:],
+            displayStats: nil,
+            allStats: nil,
+            label: [:],
+            available: false,
+            latestInferenceEvent: nil,
+            recentInferenceEvents: 0,
+            recentTokensPerSecond: 0.0)
+        let busyFoundationModel = FoundationModel(
+            id: UUID(), serverId: 1337, humanId: "busy-405b:FP32", firstSeenAt: nil, lastSeen: nil, providerIdentifiers: "xcode preview [\"ok\"]", modelIdentifiers: nil, combinedInferenceParameters: [:], displayStats: nil, allStats: nil,
+            label: ["type": "typa provider", "id": "2"],
+            available: false,
+            latestInferenceEvent: Date.now,
+            recentInferenceEvents: 42,
+            recentTokensPerSecond: 733.0)
+
+        var body: some View {
+            VStack(spacing: 24) {
+                OneFoundationModelView(model: mockFoundationModel, modelAvailable: .constant(false), modelSelection: .constant(nil), enableModelSelection: false)
+                OneFoundationModelView(model: busyFoundationModel, modelAvailable: .constant(true), expandContent: true, modelSelection: .constant(nil), enableModelSelection: false)
+            }
+        }
+    }
+
+    return ViewHolder()
+        .frame(width: 960, height: 720)
 }
