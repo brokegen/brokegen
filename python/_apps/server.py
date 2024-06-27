@@ -155,6 +155,7 @@ def run_proxy(
     try:
         audit.http.init_db(f"{data_dir}/audit.db")
         client.database.load_db_models(f"{data_dir}/requests-history.db")
+        inference.dspy.database.load_db_models(f"{data_dir}/prompting.db")
 
     except sqlite3.OperationalError:
         if not os.path.exists(data_dir):

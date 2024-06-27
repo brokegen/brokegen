@@ -18,6 +18,8 @@ dependencies = [
 
 [project.optional-dependencies]
 inference = [
+    'colorlog',
+    'dspy-ai[chromadb]',
     'faiss-cpu',
     'fastapi',
     'httpx[http2]==0.27.0',
@@ -32,7 +34,6 @@ inference = [
     'tqdm',
     'uvicorn',
     # "Optional" dependencies
-    'colorlog',
     'timing-asgi',
 ]
 ingest = [
@@ -45,8 +46,5 @@ testing = [
     'pytest-asyncio',
 ]
 
-[tool.setuptools]
-packages = [
-    'inference',
-    'ingest',
-]
+[tool.setuptools.packages]
+find = {}
