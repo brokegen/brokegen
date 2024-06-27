@@ -560,6 +560,7 @@ struct ProSequenceView: View {
                             .onChange(of: viewModel.responseInEdit?.content) {
                                 if settings.scrollToBottomOnNew {
                                     if viewModel.responseInEdit != nil {
+                                        // TODO: This makes scrolling at the same time impossible, probably due to constant updates
                                         withAnimation { proxy.scrollTo(MessageLike.legacy(viewModel.responseInEdit!), anchor: .bottom) }
                                     }
                                     else {
