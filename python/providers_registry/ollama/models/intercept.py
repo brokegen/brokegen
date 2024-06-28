@@ -42,7 +42,7 @@ def build_models_from_api_tags(
     """
     /api/tags fills in the `model_identifiers`, but `combined_inference_parameters` must be from /api/show
     """
-    for model0 in safe_get(response_json, 'models'):
+    for model0 in safe_get(response_json, ''):
         sorted_model_json = orjson.loads(
             orjson.dumps(model0, option=orjson.OPT_SORT_KEYS)
         )
