@@ -4,7 +4,7 @@ from typing import TypeAlias, Union
 
 from _util.json import JSONDict, safe_get
 from _util.typing import PromptText
-from client.chat_message import ChatMessageOrm
+from client.message import ChatMessageOrm
 from client.chat_sequence import ChatSequenceOrm
 from client.database import HistoryDB
 from providers.inference_models.orm import InferenceEventOrm

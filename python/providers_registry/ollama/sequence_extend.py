@@ -17,7 +17,7 @@ from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, TemplatedPromptText
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
-from client.chat_message import ChatMessageOrm, lookup_chat_message, ChatMessage
+from client.message import ChatMessageOrm, lookup_chat_message, ChatMessage
 from client.chat_sequence import ChatSequenceOrm
 from client.database import HistoryDB, get_db as get_history_db
 from client.sequence_add import do_extend_sequence

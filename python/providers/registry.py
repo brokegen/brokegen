@@ -8,7 +8,7 @@ from _util.json import JSONDict
 from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, PromptText, TemplatedPromptText
 from audit.http import AuditDB
-from client.chat_message import ChatMessage
+from client.message import ChatMessage
 from client.database import HistoryDB
 from client.sequence_get import fetch_messages_for_sequence
 from .inference_models.orm import FoundationModelRecord, FoundationModelResponse, FoundationModelRecordOrm

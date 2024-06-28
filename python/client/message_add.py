@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from _util.typing import ChatMessageID
-from .chat_message import ChatMessageOrm, ChatMessage, lookup_chat_message
+from .message import ChatMessageOrm, ChatMessage, lookup_chat_message
 from .database import HistoryDB, get_db as get_history_db
 
 logger = logging.getLogger(__name__)

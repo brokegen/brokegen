@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from _util.typing import FoundationModelRecordID, ChatSequenceID
-from client.chat_message import ChatMessage
+from client.message import ChatMessage
 from client.database import HistoryDB
 from providers.inference_models.orm import InferenceEventOrm, FoundationModelRecordOrm
 from providers.registry import InferenceOptions

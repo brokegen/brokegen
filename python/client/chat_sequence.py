@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, PositiveInt
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, select
 
 from _util.typing import ChatSequenceID, ChatMessageID, FoundationModelRecordID, RoleName, PromptText
-from .chat_message import ChatMessage, ChatMessageResponse
+from .message import ChatMessage, ChatMessageResponse
 from .database import Base, HistoryDB
 
 

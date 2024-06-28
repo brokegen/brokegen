@@ -12,7 +12,7 @@ from _util.json import JSONDict, safe_get, safe_get_arrayed
 from _util.status import ServerStatusHolder
 from _util.typing import FoundationModelRecordID
 from audit.http import AuditDB
-from client.chat_message import ChatMessage
+from client.message import ChatMessage
 from client.database import HistoryDB, get_db as get_history_db
 from providers._util import local_provider_identifiers, local_fetch_machine_info
 from providers.inference_models.orm import FoundationModelRecord, FoundationModelAddRequest, \

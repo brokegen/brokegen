@@ -23,7 +23,7 @@ from _util.json import DatetimeEncoder, CatchAllEncoder, JSONDict, safe_get
 from _util.status import ServerStatusHolder
 from _util.typing import FoundationModelRecordID
 from audit.http import AuditDB, get_db as get_audit_db
-from client.chat_message import ChatMessage
+from client.message import ChatMessage
 from client.database import HistoryDB, get_db as get_history_db
 from inference.iterators import tee_to_console_output
 from providers.inference_models.orm import FoundationModelRecordOrm

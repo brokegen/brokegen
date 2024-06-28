@@ -7,7 +7,7 @@ from _util.json import JSONDict, safe_get
 from _util.status import ServerStatusHolder
 from _util.typing import PromptText, TemplatedPromptText
 from audit.http import AuditDB
-from client.chat_message import ChatMessage
+from client.message import ChatMessage
 from client.database import HistoryDB, get_db as get_history_db
 from inference.iterators import tee_to_console_output, consolidate_and_call
 from inference.logging import construct_new_sequence_from, inference_event_logger
