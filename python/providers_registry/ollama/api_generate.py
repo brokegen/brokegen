@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import TypeAlias, Callable, Awaitable, Any, AsyncIterator
+from typing import TypeAlias, AsyncIterator
 
 import httpx
 import orjson
@@ -13,10 +13,10 @@ from client.database import HistoryDB
 from inference.iterators import stream_bytes_to_json, consolidate_and_call, dump_to_bytes
 from providers.inference_models.orm import InferenceEventOrm, InferenceReason
 from providers_registry.ollama.api_chat.logging import finalize_inference_job, OllamaRequestContentJSON, \
-    OllamaResponseContentJSON, ollama_log_indexer, ollama_response_consolidator
+    OllamaResponseContentJSON, ollama_response_consolidator
 from providers_registry.ollama.chat_routes import lookup_model_offline
 from providers_registry.ollama.json import OllamaHttpEventBuilder
-from providers_registry.ollama.model_routes import _real_ollama_client
+from providers_registry.ollama.models.list import _real_ollama_client
 from audit.http import get_db as get_audit_db
 
 OllamaModelName: TypeAlias = str

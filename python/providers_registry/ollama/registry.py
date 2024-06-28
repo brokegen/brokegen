@@ -12,7 +12,7 @@ from providers._util import local_provider_identifiers, local_fetch_machine_info
 from providers.inference_models.orm import FoundationModelRecord
 from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord, ProviderType
 from providers.registry import ProviderRegistry, BaseProvider, ProviderFactory
-from providers_registry.ollama.model_routes import do_list_available_models
+from providers_registry.ollama.models.list import do_list_available_models
 
 logger = logging.getLogger(__name__)
 

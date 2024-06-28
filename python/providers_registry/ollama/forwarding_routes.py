@@ -27,7 +27,7 @@ from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON,
 from providers_registry.ollama.api_generate import do_generate_raw_templated
 from providers_registry.ollama.chat_routes import lookup_model_offline
 from providers_registry.ollama.json import keepalive_wrapper
-from providers_registry.ollama.model_routes import do_api_tags, do_api_show
+from providers_registry.ollama.models.list import do_api_tags, do_api_show
 from providers_registry.ollama.registry import ExternalOllamaFactory
 from retrieval.faiss.retrieval import RetrievalLabel
 

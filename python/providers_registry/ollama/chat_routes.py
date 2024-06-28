@@ -10,7 +10,7 @@ from client.database import HistoryDB
 from providers.inference_models.orm import FoundationModelRecordOrm, lookup_foundation_model
 from providers.orm import ProviderLabel, ProviderRecord
 from providers.registry import ProviderRegistry
-from providers_registry.ollama.model_routes import do_api_show, _real_ollama_client
+from providers_registry.ollama.models.list import do_api_show, _real_ollama_client
 
 logger = logging.getLogger(__name__)
 

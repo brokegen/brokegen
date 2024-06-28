@@ -204,7 +204,7 @@ def install_forwards(router_ish: FastAPI):
         if ollama_post_path == "api/show":
             request_content_json: dict = orjson.loads(await original_request.body())
 
-            from providers_registry.ollama.model_routes import do_api_show
+            from providers_registry.ollama.models.list import do_api_show
             return await do_api_show(request_content_json['name'], history_db, audit_db)
 
         return await forward_request(original_request, audit_db)
