@@ -5,6 +5,7 @@ from datetime import timezone, datetime
 
 from sqlalchemy import select
 
+import providers_registry.ollama.sequence_autoname
 from _util.status import ServerStatusHolder
 from _util.typing import PromptText, FoundationModelRecordID
 from client.chat_message import ChatMessage
@@ -41,7 +42,7 @@ async def autoname_sequence(
 
         messages_list: list[ChatMessage] = \
             fetch_messages_for_sequence(sequence.id, history_db, include_model_info_diffs=False)
-        return await providers_registry.ollama.sequence_extend.autoname_sequence(
+        return await providers_registry.ollama.sequence_autoname.autoname_sequence(
             messages_list,
             autonaming_model,
             status_holder,
