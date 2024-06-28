@@ -11,26 +11,10 @@ from _util.typing import FoundationModelHumanID
 from client.database import HistoryDB
 from providers.inference_models.orm import FoundationModelRecordOrm, FoundationModelRecord, FoundationModelAddRequest, \
     lookup_foundation_model_detailed
-from providers.orm import ProviderRecordOrm, ProviderRecord
+from providers.orm import ProviderRecord
 from providers_registry.ollama.api_chat.logging import OllamaResponseContentJSON
 
 logger = logging.getLogger(__name__)
-
-
-def fetch_model_record(
-        executor_record: ProviderRecordOrm,
-        model_name: str,
-        history_db: HistoryDB,
-) -> FoundationModelRecordOrm | None:
-    sorted_executor_info = dict(sorted(executor_record.identifiers.items()))
-
-    return history_db.execute(
-        select(FoundationModelRecordOrm)
-        .where(FoundationModelRecordOrm.provider_identifiers == sorted_executor_info,
-               FoundationModelRecordOrm.human_id == model_name)
-        .order_by(FoundationModelRecordOrm.last_seen)
-        .limit(1)
-    ).scalar_one_or_none()
 
 
 def build_models_from_api_tags(

@@ -2,15 +2,16 @@ import logging
 from typing import Tuple
 
 from fastapi import HTTPException
+from sqlalchemy import select
 
 from _util.json import safe_get
 from _util.typing import FoundationModelHumanID
 from audit.http import AuditDB
 from client.database import HistoryDB
 from providers.inference_models.orm import FoundationModelRecordOrm, lookup_foundation_model
-from providers.orm import ProviderLabel, ProviderRecord
+from providers.orm import ProviderLabel, ProviderRecord, ProviderRecordOrm
 from providers.registry import ProviderRegistry
-from providers_registry.ollama.models.list import do_api_show, _real_ollama_client
+from .list import do_api_show, _real_ollama_client
 
 logger = logging.getLogger(__name__)
 
@@ -45,3 +46,19 @@ async def lookup_model(
     except (RuntimeError, ValueError, HTTPException):
         provider = ProviderRegistry().by_label[ProviderLabel(type="ollama", id=str(_real_ollama_client.base_url))]
         return await do_api_show(model_name, history_db, audit_db), await provider.make_record()
+
+
+def fetch_model_record(
+        executor_record: ProviderRecordOrm,
+        model_name: FoundationModelHumanID,
+        history_db: HistoryDB,
+) -> FoundationModelRecordOrm | None:
+    sorted_executor_info = dict(sorted(executor_record.identifiers.items()))
+
+    return history_db.execute(
+        select(FoundationModelRecordOrm)
+        .where(FoundationModelRecordOrm.provider_identifiers == sorted_executor_info,
+               FoundationModelRecordOrm.human_id == model_name)
+        .order_by(FoundationModelRecordOrm.last_seen)
+        .limit(1)
+    ).scalar_one_or_none()

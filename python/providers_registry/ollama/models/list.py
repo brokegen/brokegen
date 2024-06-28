@@ -19,7 +19,7 @@ from providers.inference_models.orm import FoundationModelRecord
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry, BaseProvider
 from providers_registry.ollama.json import OllamaHttpEventBuilder
-from providers_registry.ollama.models.intercept import build_model_from_api_show, build_models_from_api_tags
+from .intercept import build_model_from_api_show, build_models_from_api_tags
 
 _real_ollama_client = httpx.AsyncClient(
     base_url="http://localhost:11434",
