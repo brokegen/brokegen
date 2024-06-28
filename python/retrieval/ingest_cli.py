@@ -12,7 +12,6 @@ Output:
 
 The updated contents can then be used by the main FastAPI endpoint to serve embeddings.
 """
-
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
 if __name__ == '__main__':
     import multiprocessing
@@ -28,7 +27,7 @@ from pprint import pprint
 import click
 import pypandoc
 
-import ingest.filesystem
+import retrieval.faiss.filesystem
 from retrieval.faiss.knowledge import get_knowledge
 
 logger = logging.getLogger(__name__)
@@ -139,7 +138,7 @@ async def run_ingest(import_files_dir, import_suffix_filter, files_offset, files
 
         # TODO: We don't actually need to load anything, do we?
         knowledge = get_knowledge().load_shards_from(data_dir)
-        return await ingest.filesystem.bulk_loader(
+        return await retrieval.faiss.filesystem.bulk_loader(
             sliced_filenames(import_files_dir),
             knowledge)
 
