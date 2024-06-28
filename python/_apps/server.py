@@ -241,7 +241,6 @@ def run_proxy(
     client_ollama.emulate.install_forwards(app)
 
     # Direct test points, only used in Swagger test UI
-    providers_registry.ollama.direct_routes.install_test_points(app)
     providers_registry.llamafile.direct_routes.install_test_points(app)
     inference.prompting.superprompting.install_routes(app, data_dir)
 
