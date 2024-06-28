@@ -25,6 +25,7 @@ class RestartableProcess: Job {
         }
     }
 
+    /// TODO: This causes 10% CPU for a short-running process, gotta figure out why.
     override func launch() -> Self {
         guard processes.isEmpty else {
             return self
