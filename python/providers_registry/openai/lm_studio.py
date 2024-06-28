@@ -10,7 +10,7 @@ from sqlalchemy import select
 
 from _util.json import JSONDict, safe_get
 from client.database import HistoryDB, get_db as get_history_db
-from providers._util import local_provider_identifiers, local_fetch_machine_info
+from providers_registry._util import local_provider_identifiers, local_fetch_machine_info
 from providers.inference_models.orm import FoundationModelRecord
 from providers.inference_models.orm import lookup_foundation_model_detailed, \
     FoundationModelAddRequest, FoundationModelRecordOrm

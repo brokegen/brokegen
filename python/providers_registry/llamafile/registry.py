@@ -13,7 +13,7 @@ from sqlalchemy import select
 
 from _util.json import safe_get, JSONDict
 from _util.typing import FoundationModelRecordID
-from providers._util import local_provider_identifiers, local_fetch_machine_info
+from providers_registry._util import local_provider_identifiers, local_fetch_machine_info
 from client.database import HistoryDB, get_db as get_history_db
 from providers.inference_models.orm import FoundationModelRecord, FoundationModelAddRequest, \
     lookup_foundation_model_detailed, FoundationModelRecordOrm

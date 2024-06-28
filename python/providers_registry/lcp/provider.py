@@ -1,5 +1,4 @@
 import logging
-import logging
 import os
 from datetime import datetime, timezone
 from typing import AsyncGenerator, AsyncIterator, Iterator
@@ -14,7 +13,7 @@ from _util.typing import FoundationModelRecordID
 from audit.http import AuditDB
 from client.message import ChatMessage
 from client.database import HistoryDB, get_db as get_history_db
-from providers._util import local_provider_identifiers, local_fetch_machine_info
+from providers_registry._util import local_provider_identifiers, local_fetch_machine_info
 from providers.inference_models.orm import FoundationModelRecord, FoundationModelAddRequest, \
     lookup_foundation_model_detailed, FoundationModelRecordOrm
 from providers.orm import ProviderRecord, ProviderRecordOrm
