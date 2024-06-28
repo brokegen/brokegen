@@ -72,7 +72,7 @@ async def keepalive_wrapper(
     )
 
 
-class OllamaEventBuilder:
+class OllamaHttpEventBuilder:
     wrapped_event: HttpEvent
     audit_db: AuditDB
 

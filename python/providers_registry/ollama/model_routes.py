@@ -18,7 +18,7 @@ from client.database import HistoryDB
 from providers.inference_models.orm import FoundationModelRecord
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry, BaseProvider
-from providers_registry.ollama.json import OllamaEventBuilder
+from providers_registry.ollama.json import OllamaHttpEventBuilder
 from providers_registry.ollama.orm import build_model_from_api_show, build_models_from_api_tags
 
 _real_ollama_client = httpx.AsyncClient(
@@ -40,7 +40,7 @@ async def do_list_available_models(
         history_db: HistoryDB,
         audit_db: AuditDB,
 ) -> AsyncGenerator[FoundationModelRecord, None]:
-    intercept = OllamaEventBuilder("ollama:/api/tags", audit_db)
+    intercept = OllamaHttpEventBuilder("ollama:/api/tags", audit_db)
     cached_accessed_at = intercept.wrapped_event.accessed_at
 
     upstream_request = provider.client.build_request(
@@ -83,7 +83,7 @@ async def do_api_tags(
         audit_db: AuditDB,
 ):
     logger.debug(f"ollama proxy: start handler for GET /api/tags")
-    intercept = OllamaEventBuilder("ollama:/api/tags", audit_db)
+    intercept = OllamaHttpEventBuilder("ollama:/api/tags", audit_db)
     cached_accessed_at = intercept.wrapped_event.accessed_at
 
     upstream_request = _real_ollama_client.build_request(
@@ -125,7 +125,7 @@ async def do_api_show(
         history_db: HistoryDB,
         audit_db: AuditDB,
 ) -> FoundationModelRecord:
-    intercept = OllamaEventBuilder("ollama:/api/show", audit_db)
+    intercept = OllamaHttpEventBuilder("ollama:/api/show", audit_db)
     logger.debug(f"ollama-proxy: start handler for POST /api/show")
 
     provider: BaseProvider = ProviderRegistry().by_label[
@@ -160,7 +160,7 @@ async def do_api_show_streaming(
         history_db: HistoryDB,
         audit_db: AuditDB,
 ) -> starlette.responses.Response:
-    intercept = OllamaEventBuilder("ollama:/api/show", audit_db)
+    intercept = OllamaHttpEventBuilder("ollama:/api/show", audit_db)
     logger.debug(f"ollama proxy: start legacy streaming handler for POST /api/show")
 
     provider: BaseProvider = ProviderRegistry().by_label[
