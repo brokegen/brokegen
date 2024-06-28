@@ -5,7 +5,7 @@ import fastapi
 import pytest
 from starlette.testclient import TestClient
 
-import client.add_message
+import client.message_add
 import client.database
 import providers_registry
 from client.database import HistoryDB
