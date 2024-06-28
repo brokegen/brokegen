@@ -9,7 +9,7 @@ import providers_registry.ollama.sequence_autoname
 from _util.status import ServerStatusHolder
 from _util.typing import PromptText, FoundationModelRecordID
 from client.message import ChatMessage
-from client.chat_sequence import ChatSequenceOrm
+from client.sequence import ChatSequenceOrm
 from client.database import HistoryDB
 from providers.inference_models.orm import FoundationModelRecordOrm
 from providers.orm import ProviderLabel

@@ -10,7 +10,7 @@ from sqlalchemy import select
 
 from _util.typing import ChatMessageID
 from _util.typing import ChatSequenceID
-from .chat_sequence import ChatSequenceOrm
+from .sequence import ChatSequenceOrm
 from .database import HistoryDB, get_db as get_history_db
 
 logger = logging.getLogger(__name__)

@@ -45,7 +45,7 @@ def select_continuation_model(
     # (ChatSequences can be missing inference_job_ids if they're user prompts, or errored out)
     #
     # TODO: circular import
-    from client.chat_sequence import lookup_sequence_parents
+    from client.sequence import lookup_sequence_parents
 
     for sequence in lookup_sequence_parents(sequence_id, history_db):
         if sequence.inference_job_id is None:

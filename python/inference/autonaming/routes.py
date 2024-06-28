@@ -16,7 +16,7 @@ from _util.json_streaming import JSONStreamingResponse
 from _util.json_streaming import emit_keepalive_chunks
 from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, PromptText, FoundationModelRecordID
-from client.chat_sequence import ChatSequenceOrm
+from client.sequence import ChatSequenceOrm
 from client.database import HistoryDB, get_db as get_history_db
 from providers.registry import ProviderRegistry
 from .bridge import autoname_sequence

@@ -9,7 +9,7 @@ from _util.json_streaming import JSONStreamingResponse
 from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import PromptText, TemplatedPromptText
 from audit.http import AuditDB
-from client.chat_sequence import ChatSequenceOrm
+from client.sequence import ChatSequenceOrm
 from client.database import HistoryDB
 from inference.continuation import AutonamingOptions
 from providers.registry import InferenceOptions
