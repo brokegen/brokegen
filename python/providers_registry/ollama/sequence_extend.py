@@ -31,7 +31,7 @@ from providers.registry import ProviderRegistry, InferenceOptions
 from providers_registry.ollama.api_chat.inject_rag import do_proxy_chat_rag
 from providers_registry.ollama.api_chat.logging import ollama_response_consolidator, construct_new_sequence_from, \
     OllamaResponseContentJSON, finalize_inference_job, ollama_log_indexer
-from providers_registry.ollama.chat_rag_util import do_generate_raw_templated
+from providers_registry.ollama.api_generate import do_generate_raw_templated
 from providers_registry.ollama.json import keepalive_wrapper
 from retrieval.faiss.retrieval import RetrievalLabel
 
