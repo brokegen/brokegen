@@ -67,8 +67,6 @@ async def do_autoname_sequence(
             'raw': False,
             'stream': False,
         },
-        request_headers=starlette.datastructures.Headers(),
-        request_cookies=None,
         history_db=next(get_history_db()),
         audit_db=next(get_audit_db()),
         inference_reason=inference_reason,

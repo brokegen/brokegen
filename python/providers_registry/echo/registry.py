@@ -86,7 +86,7 @@ class EchoProvider(BaseProvider):
     ) -> AsyncGenerator[FoundationModelRecord, None]:
         access_time = datetime.now(tz=timezone.utc)
         model_in = FoundationModelAddRequest(
-            human_id=f"echo-{self.provider_id}",
+            human_id=f"echo-model",
             first_seen_at=access_time,
             last_seen=access_time,
             provider_identifiers=(await self.make_record()).identifiers,
@@ -147,5 +147,5 @@ class EchoProviderFactory(ProviderFactory):
         if provider_type is not None and provider_type != 'echo':
             return
 
-        label = ProviderLabel(type="echo", id="epzhbwmjdtoexgstvtfkrnus")
+        label = ProviderLabel(type="echo", id="[singleton]]")
         await registry.try_make(label)

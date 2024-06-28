@@ -11,6 +11,13 @@ Key differentiator is a focus on data retention; text and inference stats are st
 
 Tested and developed on macOS 14.2+, M1 MBP + 2019 Intel MBP
 
+To get started with Ollama, follow these steps:
+
+1. Download from ollama.ai and open the application
+2. Open a terminal and run `ollama run <MODEL_NAME>`.
+   Example model names are `codellama:7b-instruct` or `llama2:7b-text`. You can find the full list at <https://ollama.ai/library>.
+3. Once the model has finished downloading, you can start using it.
+
 ## Special Features
 
 - Chats are auto-named by the AI

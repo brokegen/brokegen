@@ -61,8 +61,6 @@ Note that these will override anything set in the model templates!
 
         streaming_response = await do_generate_raw_templated(
             content,
-            headers,
-            None,
             history_db,
             audit_db,
         )
@@ -130,8 +128,6 @@ which bypasses censoring for tested models.""")
 
         return await do_generate_raw_templated(
             content,
-            headers,
-            None,
             history_db,
             audit_db,
             inference_reason="[endpoint: /generate.raw]",

@@ -90,8 +90,6 @@ async def do_proxy_chat_rag(
                 'raw': False,
                 'stream': False,
             },
-            request_headers=starlette.datastructures.Headers(),
-            request_cookies=None,
             history_db=history_db,
             audit_db=audit_db,
             inference_reason=inference_reason,

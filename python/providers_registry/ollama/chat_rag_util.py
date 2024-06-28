@@ -42,8 +42,6 @@ async def do_generate_nolog(
 
 async def do_generate_raw_templated(
         request_content: OllamaRequestContentJSON,
-        request_headers: starlette.datastructures.Headers,
-        request_cookies: httpx.Cookies | None,
         history_db: HistoryDB,
         audit_db: AuditDB,
         inference_reason: InferenceReason | None = None,
@@ -52,14 +50,14 @@ async def do_generate_raw_templated(
 
     model, executor_record = await lookup_model_offline(request_content['model'], history_db)
 
-    inference_job = InferenceEventOrm(
+    inference_event = InferenceEventOrm(
         model_record_id=model.id,
         prompt_with_templating=request_content['prompt'],
         response_created_at=datetime.now(tz=timezone.utc),
         response_error="[haven't received/finalized response info yet]",
         reason=inference_reason,
     )
-    history_db.add(inference_job)
+    history_db.add(inference_event)
     history_db.commit()
 
     upstream_request = _real_ollama_client.build_request(
@@ -69,11 +67,10 @@ async def do_generate_raw_templated(
         # https://github.com/encode/httpx/discussions/2959
         # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
         headers=[('Connection', 'close')],
-        cookies=request_cookies,
     )
 
     async def do_finalize_inference_job(response_content_json: OllamaResponseContentJSON):
-        merged_job = history_db.merge(inference_job)
+        merged_job = history_db.merge(inference_event)
         finalize_inference_job(merged_job, response_content_json)
         merged_job.response_info = dict(response_content_json)
 

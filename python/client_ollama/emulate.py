@@ -68,7 +68,7 @@ def install_forwards(router_ish: FastAPI):
         raise HTTPException(501, "\"any\" provider_id not implemented")
 
     @router_ish.get("/providers/{provider_type:str}/{provider_id:path}/ollama-emulate/{ollama_get_path:path}")
-    @router_ish.get("/providers/{provider_type:str}/{provider_id:path}/ollama-emulate/{ollama_post_path:path}")
+    @router_ish.post("/providers/{provider_type:str}/{provider_id:path}/ollama-emulate/{ollama_post_path:path}")
     async def ollama_get_or_post(
             original_request: Request,
             provider_type: ProviderType,

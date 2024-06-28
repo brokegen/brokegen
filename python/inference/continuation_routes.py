@@ -122,6 +122,9 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 else:
                     yield chunk
 
+                if await request.is_disconnected():
+                    logger.fatal(f"Detected client disconnection! Ignoring, because we want inference to continue.")
+
         awaitable: Awaitable[AsyncIterator[JSONDict]] = real_response_maker()
         iter0: AsyncIterator[JSONDict] = nonblocking_response_maker(awaitable)
         iter1: AsyncIterator[JSONDict] = do_keepalive(iter0)
