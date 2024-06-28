@@ -14,7 +14,7 @@ from inference.iterators import stream_bytes_to_json, consolidate_and_call, dump
 from providers.inference_models.orm import InferenceEventOrm, InferenceReason
 from providers_registry.ollama.api_chat.logging import finalize_inference_job, OllamaRequestContentJSON, \
     OllamaResponseContentJSON, ollama_response_consolidator
-from providers_registry.ollama.chat_routes import lookup_model_offline
+from providers_registry.ollama.models.lookup import lookup_model_offline
 from providers_registry.ollama.json import OllamaHttpEventBuilder
 from providers_registry.ollama.models.list import _real_ollama_client
 from audit.http import get_db as get_audit_db
