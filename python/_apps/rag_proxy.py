@@ -14,8 +14,8 @@ from fastapi import APIRouter, Depends, FastAPI, Request
 
 from audit.http import init_db as init_audit_db, AuditDB, get_db as get_audit_db
 from client_ollama.forward import forward_request, forward_request_nodetails
-from inference.routes_langchain import do_transparent_rag
 from retrieval.faiss.knowledge import get_knowledge, KnowledgeSingleton, get_knowledge_dependency
+from .rag_proxy_helper import do_transparent_rag
 
 
 def reconfigure_loglevels():

@@ -1,23 +1,15 @@
-try:
-    import orjson as fast_json
-except ImportError:
-    import json as fast_json
-
 import json
 import logging
-from collections.abc import AsyncIterable, Iterable
 
 import langchain_core.documents
+import orjson
 from fastapi import Request
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain_community.llms.ollama import Ollama
 from langchain_core.prompts import PromptTemplate
-from pydantic import BaseModel
-from starlette.background import BackgroundTask
-from starlette.concurrency import iterate_in_threadpool
-from starlette.responses import JSONResponse, StreamingResponse
 
+from _util.json_streaming import JSONStreamingResponse
 from retrieval.faiss.knowledge import KnowledgeSingleton
 
 logger = logging.getLogger(__name__)
@@ -51,7 +43,7 @@ Question: {input}""",
 
     TODO: Figure out how to plug in to/modify langchain so we can cache the raw request/response info.
     """
-    request_content_json = fast_json.loads(await request.body())
+    request_content_json = orjson.loads(await request.body())
     llm = Ollama(
         model=request_content_json['model'],
     )
