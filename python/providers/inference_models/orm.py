@@ -47,12 +47,6 @@ class FoundationModelRecord(BaseModel):
         protected_namespaces=(),
     )
 
-    def as_name(self, override_label: ProviderLabel | None = None) -> str:
-        if override_label is not None:
-            return f"{override_label.type}::{override_label.id}::{self.human_id}"
-
-        return f"{self.provider_type}::{self.provider_id}::{self.human_id}"
-
 
 class FoundationModelResponse(FoundationModelRecord):
     display_stats: Optional[dict] = None

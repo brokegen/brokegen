@@ -70,11 +70,10 @@ async def do_generate_raw_templated(
     )
 
     async def do_finalize_inference_job(response_content_json: OllamaResponseContentJSON):
-        merged_job = history_db.merge(inference_event)
-        finalize_inference_job(merged_job, response_content_json)
-        merged_job.response_info = dict(response_content_json)
+        merged_inference_event = history_db.merge(inference_event)
+        finalize_inference_job(merged_inference_event, response_content_json)
 
-        history_db.add(merged_job)
+        history_db.add(merged_inference_event)
         history_db.commit()
 
     with HttpxLogger(_real_ollama_client, audit_db):

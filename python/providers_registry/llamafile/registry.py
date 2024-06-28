@@ -153,8 +153,8 @@ class LlamafileProvider(BaseProvider):
             "name": model_name,
             "size": os.path.getsize(self.filename),
             "hash-sha256": self.compute_hash(),
-            "file-ctime": datetime.fromtimestamp(os.path.getctime(self.filename)).isoformat(),
-            "file-mtime": datetime.fromtimestamp(os.path.getmtime(self.filename)).isoformat(),
+            "file-ctime": datetime.fromtimestamp(os.path.getctime(self.filename)).isoformat() + "Z",
+            "file-mtime": datetime.fromtimestamp(os.path.getmtime(self.filename)).isoformat() + "Z",
         }
 
         # Read the parameters from the server

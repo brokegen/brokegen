@@ -15,9 +15,9 @@ OllamaRequestContentJSON: TypeAlias = JSONDict
 OllamaResponseContentJSON: TypeAlias = JSONDict
 
 OllamaChatResponse: TypeAlias = JSONDict
-"""Result of /api/chat, expected to store its message content in $0.response"""
+"""Result of /api/chat, expected to store its message content in $0.message.content"""
 OllamaGenerateResponse: TypeAlias = JSONDict
-"""Result of /api/generate, content will be in $0.message.content"""
+"""Result of /api/generate, content will be in $0.response"""
 
 OllamaResponseChunk: TypeAlias = Union[OllamaChatResponse, OllamaGenerateResponse]
 

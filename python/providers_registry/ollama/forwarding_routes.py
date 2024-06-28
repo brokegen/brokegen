@@ -43,11 +43,7 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
     ):
-        request_content_bytes: bytes = await request.body()
-        request_content: OllamaRequestContentJSON = orjson.loads(request_content_bytes)
-
-        inference_model_human_id = safe_get(request_content, "model")
-        status_holder = ServerStatusHolder(f"Received /api/generate request for {inference_model_human_id}, processing")
+        request_content: OllamaRequestContentJSON = orjson.loads(await request.body())
 
         async def real_response_maker() -> AsyncIterator[JSONDict]:
             generate_response: starlette.responses.StreamingResponse = \
@@ -61,11 +57,6 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
             iter0: AsyncIterator[bytes] = generate_response.body_iterator
             iter1: AsyncIterator[str] = decode_from_bytes(iter0)
             iter2: AsyncIterator[JSONDict] = stream_str_to_json(iter1)
-
-            converted_response_headers = dict(generate_response.headers)
-            for unsupported_field in ['content-length']:
-                if unsupported_field in converted_response_headers:
-                    del converted_response_headers[unsupported_field]
 
             return iter2
 
@@ -81,7 +72,7 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
             async for chunk in emit_keepalive_chunks_with_log(primordial, 3.0, None, logger.debug):
                 if chunk is None:
                     yield {
-                        "model": inference_model_human_id,
+                        "model": safe_get(request_content, "model"),
                         "created_at": datetime.now(tz=timezone.utc).isoformat() + "Z",
                         "done": False,
                         "response": "",

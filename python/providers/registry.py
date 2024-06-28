@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from _util.json import JSONDict
 from _util.status import ServerStatusHolder
-from _util.typing import ChatSequenceID, PromptText
+from _util.typing import ChatSequenceID, PromptText, TemplatedPromptText
 from audit.http import AuditDB
 from client.chat_message import ChatMessage
 from client.database import HistoryDB
@@ -86,6 +86,18 @@ class BaseProvider:
             history_db,
             audit_db,
         )
+
+    @abstractmethod
+    async def generate(
+            self,
+            prompt: TemplatedPromptText,
+            inference_model: FoundationModelRecordOrm,
+            inference_options: InferenceOptions,
+            status_holder: ServerStatusHolder,
+            history_db: HistoryDB,
+            audit_db: AuditDB,
+    ) -> AsyncGenerator[JSONDict, None]:
+        raise NotImplementedError()
 
 
 class ProviderFactory:

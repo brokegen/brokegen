@@ -1,11 +1,11 @@
 import asyncio
 import functools
 from datetime import datetime, timezone
-from typing import AsyncGenerator, AsyncIterator, Awaitable
+from typing import AsyncGenerator, AsyncIterator
 
 from _util.json import JSONDict, safe_get
 from _util.status import ServerStatusHolder
-from _util.typing import PromptText
+from _util.typing import PromptText, TemplatedPromptText
 from audit.http import AuditDB
 from client.chat_message import ChatMessage
 from client.database import HistoryDB, get_db as get_history_db
@@ -18,17 +18,15 @@ from providers.registry import BaseProvider, ProviderRegistry, ProviderFactory, 
 
 
 async def _chat_bare(
-        messages_list: list[ChatMessage],
+        message_text: PromptText | TemplatedPromptText,
         max_length: int = 120 * 4,
 ) -> AsyncIterator[str]:
-    message = messages_list[-1]
-
     character: str
-    for character in message.content[:max_length]:
+    for character in message_text[:max_length]:
         yield character
 
-    if len(message.content) > max_length:
-        yield f"… [truncated, {len(message.content) - max_length} chars remaining]"
+    if len(message_text) > max_length:
+        yield f"… [truncated, {len(message_text) - max_length} chars remaining]"
 
 
 async def _chat_slowed_down(
@@ -120,7 +118,29 @@ class EchoProvider(BaseProvider):
             history_db: HistoryDB,
             audit_db: AuditDB,
     ) -> AsyncIterator[JSONDict]:
-        iter0: AsyncIterator[str] = _chat_bare(messages_list)
+        message_text: PromptText = messages_list[-1].content
+
+        iter0: AsyncIterator[str] = _chat_bare(message_text)
+        iter1: AsyncIterator[str] = tee_to_console_output(iter0, lambda s: s)
+        iter2: AsyncIterator[JSONDict] = _chat_slowed_down(iter1, status_holder)
+        iter3: AsyncIterator[JSONDict] = consolidate_and_call(
+            iter2, echo_consolidator, {},
+            functools.partial(inference_event_logger, history_db=history_db),
+            functools.partial(construct_new_sequence_from, history_db=history_db),
+        )
+
+        return iter3
+
+    def generate(
+            self,
+            prompt: TemplatedPromptText,
+            inference_model: FoundationModelRecordOrm,
+            inference_options: InferenceOptions,
+            status_holder: ServerStatusHolder,
+            history_db: HistoryDB,
+            audit_db: AuditDB,
+    ) -> AsyncGenerator[JSONDict, None]:
+        iter0: AsyncIterator[str] = _chat_bare(prompt)
         iter1: AsyncIterator[str] = tee_to_console_output(iter0, lambda s: s)
         iter2: AsyncIterator[JSONDict] = _chat_slowed_down(iter1, status_holder)
         iter3: AsyncIterator[JSONDict] = consolidate_and_call(
@@ -147,5 +167,5 @@ class EchoProviderFactory(ProviderFactory):
         if provider_type is not None and provider_type != 'echo':
             return
 
-        label = ProviderLabel(type="echo", id="[singleton]]")
+        label = ProviderLabel(type="echo", id="[singleton]")
         await registry.try_make(label)

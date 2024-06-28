@@ -219,7 +219,7 @@ def run_proxy(
             return starlette.responses.JSONResponse(
                 {
                     "status": f"exiting in {delay} seconds",
-                    "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+                    "timestamp": datetime.now(tz=timezone.utc).isoformat() + "Z",
                 },
                 background=BackgroundTask(exit_task),
             )
