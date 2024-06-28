@@ -76,7 +76,7 @@ class ExternalOllamaProvider(BaseProvider):
 
         return ProviderRecord.from_orm(new_provider)
 
-    async def list_models(self) -> AsyncGenerator[FoundationModelRecord, None]:
+    async def list_models_nocache(self) -> AsyncGenerator[FoundationModelRecord, None]:
         history_db: HistoryDB = next(get_history_db())
         audit_db: AuditDB = next(get_audit_db())
 

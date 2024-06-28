@@ -39,7 +39,7 @@ async def emulate_api_tags(
         provider: BaseProvider,
 ) -> AsyncIterable[JSONDict]:
     model: FoundationModelRecord
-    async for model in provider.list_models():
+    async for model in provider.list_models_nocache():
         def compute_hash() -> str:
             sha256_hasher = hashlib.sha256()
             sha256_hasher.update(model.provider_identifiers.encode())

@@ -106,7 +106,7 @@ struct ModelPickerView: View {
                     }
                     else {
                         Toggle(isOn: $expandNeverUsedModels) {
-                            Label("Show never-used models", systemImage: "chevron.down")
+                            Label("Show \(neverUsedModels.count) never-used models", systemImage: "chevron.down")
                                 .padding(24)
                                 .font(.system(size: 24))
                         }

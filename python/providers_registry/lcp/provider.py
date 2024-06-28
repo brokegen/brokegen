@@ -147,7 +147,6 @@ class _OneModel:
 
 class LlamaCppProvider(BaseProvider):
     search_dir: str
-    cached_model_infos: list[FoundationModelRecord] = []
 
     loaded_models: dict[FoundationModelRecordID, _OneModel] = {}
     max_loaded_models: int
@@ -216,7 +215,7 @@ class LlamaCppProvider(BaseProvider):
             if temp_model_response is not None:
                 yield temp_model_response
 
-    async def list_models(
+    async def list_models_nocache(
             self,
     ) -> AsyncGenerator[FoundationModelRecord, None]:
         """Caching version."""

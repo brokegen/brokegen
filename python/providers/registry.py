@@ -8,8 +8,8 @@ from _util.json import JSONDict
 from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, PromptText, TemplatedPromptText
 from audit.http import AuditDB
-from client.message import ChatMessage
 from client.database import HistoryDB
+from client.message import ChatMessage
 from client.sequence_get import fetch_messages_for_sequence
 from .inference_models.orm import FoundationModelRecord, FoundationModelResponse, FoundationModelRecordOrm
 from .orm import ProviderLabel, ProviderRecord, ProviderType
@@ -25,6 +25,8 @@ class InferenceOptions(BaseModel):
 
 
 class BaseProvider:
+    cached_model_infos: list[FoundationModelRecord] = []
+
     @abstractmethod
     async def available(self) -> bool:
         raise NotImplementedError()
@@ -34,13 +36,23 @@ class BaseProvider:
         raise NotImplementedError()
 
     @abstractmethod
+    async def list_models_nocache(
+            self,
+    ) -> AsyncGenerator[FoundationModelRecord, None]:
+        raise NotImplementedError()
+
     async def list_models(
             self,
     ) -> AsyncGenerator[FoundationModelRecord, None]:
-        """
-        Method not marked async because it returns AsyncGenerator
-        """
-        raise NotImplementedError()
+        """Caching version."""
+        if self.cached_model_infos:
+            for model_info in self.cached_model_infos:
+                yield model_info
+
+        else:
+            async for model_info in self.list_models_nocache():
+                yield model_info
+                self.cached_model_infos.append(model_info)
 
     @abstractmethod
     async def chat_from(

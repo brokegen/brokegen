@@ -94,7 +94,7 @@ class LMStudioProvider(BaseProvider):
 
         return ProviderRecord.from_orm(new_provider)
 
-    async def list_models(
+    async def list_models_nocache(
             self,
     ) -> AsyncGenerator[FoundationModelRecord, None]:
         request = self.server_comms.build_request(

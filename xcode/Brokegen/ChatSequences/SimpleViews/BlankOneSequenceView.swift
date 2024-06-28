@@ -29,7 +29,8 @@ struct BlankOneSequenceView: View {
                     if appSettings.stillPopulating {
                         ProgressView()
                             .progressViewStyle(.linear)
-                            .frame(maxWidth: 800)
+                            .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
+                            .layoutPriority(0.2)
                     }
 
                     OFMPicker(

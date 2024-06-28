@@ -68,7 +68,7 @@ async def do_list_available_models(
 
     async def api_show_injector(
             inference_models: Generator[FoundationModelRecord, None, None]
-    ) -> Generator[FoundationModelRecord, None, None]:
+    ) -> AsyncGenerator[FoundationModelRecord, None]:
         inference_model: FoundationModelRecord
         for inference_model in inference_models:
             yield await do_api_show(inference_model.human_id, history_db, audit_db)

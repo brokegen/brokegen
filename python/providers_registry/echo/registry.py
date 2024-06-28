@@ -79,7 +79,7 @@ class EchoProvider(BaseProvider):
             identifiers="echo",
         )
 
-    async def list_models(
+    async def list_models_nocache(
             self,
     ) -> AsyncGenerator[FoundationModelRecord, None]:
         access_time = datetime.now(tz=timezone.utc)

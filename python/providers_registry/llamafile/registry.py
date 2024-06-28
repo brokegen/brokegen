@@ -144,7 +144,7 @@ class LlamafileProvider(BaseProvider):
 
         return sha256_hasher.hexdigest()
 
-    async def list_models(self) -> AsyncGenerator[FoundationModelRecord, None]:
+    async def list_models_nocache(self) -> AsyncGenerator[FoundationModelRecord, None]:
         model_name = os.path.basename(self.filename)
         if model_name[-10:] == '.llamafile':
             model_name = model_name[:-10]

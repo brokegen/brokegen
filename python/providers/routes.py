@@ -90,9 +90,13 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 label: ProviderLabel,
                 provider: BaseProvider,
         ) -> list[tuple[FoundationModelRecord, ProviderLabel]]:
-            list_maker: AsyncIterable[FoundationModelRecord] = provider.list_models()
-            logger.info(f"Enumerating FoundationModels for {label}")
-            return [(model, label) async for model in list_maker]
+            logger.debug(f"Enumerating FoundationModels for {label}")
+
+            list_maker: AsyncIterable[FoundationModelRecord] = provider.list_models_nocache()
+            available_models = [(model, label) async for model in list_maker]
+
+            logger.info(f"{len(available_models)} available FoundationModels <= from {label}")
+            return available_models
 
         async def list_models_per_provider() -> AsyncIterable[
             list[tuple[FoundationModelRecord, ProviderLabel]]
@@ -128,7 +132,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 label: ProviderLabel,
                 provider: BaseProvider,
         ) -> list[tuple[FoundationModelRecord, ProviderLabel]]:
-            list_maker: AsyncIterable[FoundationModelRecord] = provider.list_models()
+            list_maker: AsyncGenerator[FoundationModelRecord] = provider.list_models_nocache()
             return [(model, label) async for model in list_maker]
 
         async def list_models() -> AsyncIterable[FoundationModelRecord]:
@@ -152,7 +156,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             label = ProviderLabel(type=provider_type, id=provider_id)
             provider = registry.by_label[label]
 
-            list_maker: AsyncIterable[FoundationModelRecord] = provider.list_models()
+            list_maker: AsyncIterable[FoundationModelRecord] = provider.list_models_nocache()
             for model in await list_maker:
                 yield inject_inference_stats(model, label, history_db)
 

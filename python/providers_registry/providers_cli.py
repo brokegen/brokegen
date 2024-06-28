@@ -139,7 +139,7 @@ async def amain(
     if dump_full_models:
         print(f".list_models():")
         print(json.dumps(
-            [m async for m in provider.list_models()],
+            [m async for m in provider.list_models_nocache()],
             indent=2,
             cls=CatchAllEncoder,
         ))
@@ -147,7 +147,7 @@ async def amain(
     else:
         print(f".list_models():")
         print(json.dumps(
-            dict([(m.id, m.human_id) async for m in provider.list_models()]),
+            dict([(m.id, m.human_id) async for m in provider.list_models_nocache()]),
             indent=2,
             cls=CatchAllEncoder,
         ))
