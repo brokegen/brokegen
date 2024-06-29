@@ -15,13 +15,13 @@ let configuration: URLSessionConfiguration = { slowTimeouts in
 
 @main
 struct BrokegenApp: App {
-    @StateObject private var chatService: ChatSyncService = DefaultChatSyncService(serverBaseURL, configuration: configuration)
+    @ObservedObject private var chatService: ChatSyncService = DefaultChatSyncService(serverBaseURL, configuration: configuration)
     @ObservedObject private var jobsService: JobsManagerService
     @ObservedObject private var providerService: ProviderService
 
     @ObservedObject private var appSettings: AppSettings
     @State private var inferenceSettingsUpdater: AnyCancellable? = nil
-    @StateObject private var chatSettingsService = CSCSettingsService()
+    @ObservedObject private var chatSettingsService = CSCSettingsService()
 
     @Environment(\.openWindow) var openWindow
 

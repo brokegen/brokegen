@@ -24,7 +24,7 @@ class OneSequenceViewModel: ObservableObject {
     var promptInEdit: String = ""
     var submitting: Bool = false
 
-    var responseInEdit: Message? = nil
+    var responseInEdit: TemporaryChatMessage? = nil
     var receiving: Bool {
         /// This field does double duty to indicate whether we are currently receiving data.
         /// `nil` before first data, and then reset to `nil` once we're done receiving.
@@ -95,7 +95,7 @@ class OneSequenceViewModel: ObservableObject {
                     print("[ERROR] \(callerName) completed without any response data")
                 }
                 else {
-                    sequence.messages.append(.legacy(responseInEdit!))
+                    sequence.messages.append(.temporary(responseInEdit!))
                     responseInEdit = nil
                 }
                 stopSubmitAndReceive()
@@ -134,7 +134,7 @@ class OneSequenceViewModel: ObservableObject {
                 promptInEdit = ""
                 submitting = false
 
-                responseInEdit = Message(
+                responseInEdit = TemporaryChatMessage(
                     role: "assistant",
                     content: submittedAssistantResponseSeed ?? "",
                     createdAt: Date.now
@@ -143,7 +143,7 @@ class OneSequenceViewModel: ObservableObject {
                 submittedAssistantResponseSeed = nil
             }
 
-            serverStatus = "\(endpoint) response: (\(responseInEdit!.content.count) characters so far)"
+            serverStatus = "\(endpoint) response: (\((responseInEdit!.content ?? "").count) characters so far)"
 
             let jsonData: JSON = JSON(data)
 
@@ -154,8 +154,7 @@ class OneSequenceViewModel: ObservableObject {
             let messageFragment = jsonData["message"]["content"].stringValue
             if !messageFragment.isEmpty {
                 DispatchQueue.main.async {
-                    self.responseInEdit = self.responseInEdit!.appendContent(messageFragment)
-                    self.objectWillChange.send()
+                    self.responseInEdit!.content?.append(messageFragment)
                 }
             }
 
@@ -365,8 +364,8 @@ class OneSequenceViewModel: ObservableObject {
 
         if responseInEdit != nil {
             // TODO: There's all sort of error conditions we could/should actually check for.
-            if !responseInEdit!.content.isEmpty {
-                sequence.messages.append(.legacy(responseInEdit!))
+            if !(responseInEdit!.content ?? "").isEmpty {
+                sequence.messages.append(.temporary(responseInEdit!))
             }
             responseInEdit = nil
 

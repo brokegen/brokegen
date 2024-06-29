@@ -1,3 +1,4 @@
+import MarkdownUI
 import SwiftUI
 
 struct ProMessageView: View {
@@ -7,8 +8,9 @@ struct ProMessageView: View {
     let stillExpectingUpdate: Bool
     let showMessageHeaders: Bool
 
-    @State var expandContent: Bool
-    @State var isHovered: Bool = false
+    @State private var expandContent: Bool
+    @State private var isHovered: Bool = false
+    @State private var renderAsMarkdown: Bool = true
 
     init(
         _ message: MessageLike,
@@ -71,6 +73,12 @@ struct ProMessageView: View {
 
                 HStack(spacing: 24) {
                     Button(action: {
+                        renderAsMarkdown.toggle()
+                    }, label: {
+                        Image(systemName: renderAsMarkdown ? "doc.richtext.fill" : "doc.richtext")
+                    })
+
+                    Button(action: {
                         let pasteboard = NSPasteboard.general
                         // https://stackoverflow.com/questions/49211910/s
                         pasteboard.clearContents()
@@ -91,11 +99,6 @@ struct ProMessageView: View {
                         })
                         .disabled(true)
                     }
-
-                    Button(action: {}, label: {
-                        Image(systemName: "info.circle")
-                    })
-                    .disabled(true)
                 }
                 .font(.system(size: 24))
                 .buttonStyle(.borderless)
@@ -121,15 +124,31 @@ struct ProMessageView: View {
             }
 
             if expandContent && !message.content.isEmpty {
-                Text(message.content)
-                    .font(.system(size: 18))
-                    .lineSpacing(6)
-                    .textSelection(.enabled)
-                    .padding(16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(Color(.controlBackgroundColor))
-                    )
+                if renderAsMarkdown {
+                    Markdown(message.content)
+                        .markdownTextStyle {
+                            FontSize(18)
+                        }
+                        .font(.system(size: 18))
+                        .lineSpacing(6)
+                        .textSelection(.enabled)
+                        .padding(16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color(.controlBackgroundColor))
+                        )
+                }
+                else {
+                    Text(message.content)
+                        .font(.system(size: 18))
+                        .lineSpacing(6)
+                        .textSelection(.enabled)
+                        .padding(16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color(.controlBackgroundColor))
+                        )
+                }
             }
         }
         .contentShape(Rectangle())

@@ -518,9 +518,9 @@ struct ProSequenceView: View {
                                     if viewModel.responseInEdit != nil {
                                         let indentMessage = !settings.showMessageHeaders
 
-                                        ProMessageView(.legacy(viewModel.responseInEdit!), stillUpdating: true, showMessageHeaders: settings.showMessageHeaders)
+                                        ProMessageView(.temporary(viewModel.responseInEdit!), stillUpdating: true, showMessageHeaders: settings.showMessageHeaders)
                                             .padding(.leading, indentMessage ? 24.0 : 0.0)
-                                            .id(MessageLike.legacy(viewModel.responseInEdit!))
+                                            .id(-1)
                                     }
 
                                     if settings.showOIMPicker {
@@ -573,7 +573,7 @@ struct ProSequenceView: View {
                                 if settings.scrollToBottomOnNew {
                                     if viewModel.responseInEdit != nil {
                                         // TODO: This makes scrolling at the same time impossible, probably due to constant updates
-                                        withAnimation { proxy.scrollTo(MessageLike.legacy(viewModel.responseInEdit!), anchor: .bottom) }
+                                        withAnimation { proxy.scrollTo(-1, anchor: .bottom) }
                                     }
                                     else {
                                         withAnimation { proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom) }

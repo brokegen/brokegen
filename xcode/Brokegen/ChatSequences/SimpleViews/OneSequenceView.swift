@@ -198,7 +198,7 @@ struct OneSequenceView: View {
                             }
 
                             if viewModel.responseInEdit != nil {
-                                OneMessageView(.legacy(viewModel.responseInEdit!), stillUpdating: true)
+                                OneMessageView(.temporary(viewModel.responseInEdit!), stillUpdating: true)
                             }
                         }
                     }

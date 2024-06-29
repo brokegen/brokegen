@@ -41,6 +41,7 @@
 		CE9867632BF41954008D6C41 /* BrokegenAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867622BF41954008D6C41 /* BrokegenAppView.swift */; };
 		CEA410FF2C1E3B9A00FA3111 /* ManagedService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEA410FE2C1E3B9A00FA3111 /* ManagedService.swift */; };
 		CEA8E2422C2F8DB000757DA8 /* BlankSequenceViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEA8E2412C2F8DB000757DA8 /* BlankSequenceViewModel.swift */; };
+		CEA8E2482C2FD14000757DA8 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = CEA8E2472C2FD14000757DA8 /* MarkdownUI */; };
 		CEAA2B702C070AE3002BEB26 /* ChatSequence+Extend.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA2B6F2C070AE3002BEB26 /* ChatSequence+Extend.swift */; };
 		CEAA2B722C070B2E002BEB26 /* ChatSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA2B712C070B2E002BEB26 /* ChatSequence.swift */; };
 		CEB773232C0160530051F41C /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = CEB773222C0160530051F41C /* Alamofire */; };
@@ -159,6 +160,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CEA8E2482C2FD14000757DA8 /* MarkdownUI in Frameworks */,
 				CEB773232C0160530051F41C /* Alamofire in Frameworks */,
 				CE66FAFC2C1679C700BD8745 /* SwiftyJSON in Frameworks */,
 			);
@@ -419,6 +421,7 @@
 			packageProductDependencies = (
 				CEB773222C0160530051F41C /* Alamofire */,
 				CE66FAFB2C1679C700BD8745 /* SwiftyJSON */,
+				CEA8E2472C2FD14000757DA8 /* MarkdownUI */,
 			);
 			productName = Brokegen;
 			productReference = CE98674D2BF4047C008D6C41 /* Brokegen.app */;
@@ -455,6 +458,7 @@
 			packageReferences = (
 				CEFEB4792BFDAABC00334522 /* XCRemoteSwiftPackageReference "Alamofire" */,
 				CE66FAFA2C1679C700BD8745 /* XCRemoteSwiftPackageReference "SwiftyJSON" */,
+				CEA8E2462C2FD14000757DA8 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
 			);
 			productRefGroup = CE98674E2BF4047C008D6C41 /* Products */;
 			projectDirPath = "";
@@ -834,6 +838,14 @@
 				minimumVersion = 5.0.2;
 			};
 		};
+		CEA8E2462C2FD14000757DA8 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui/";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.3.1;
+			};
+		};
 		CEFEB4792BFDAABC00334522 /* XCRemoteSwiftPackageReference "Alamofire" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Alamofire/Alamofire.git";
@@ -849,6 +861,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = CE66FAFA2C1679C700BD8745 /* XCRemoteSwiftPackageReference "SwiftyJSON" */;
 			productName = SwiftyJSON;
+		};
+		CEA8E2472C2FD14000757DA8 /* MarkdownUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CEA8E2462C2FD14000757DA8 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
+			productName = MarkdownUI;
 		};
 		CEB773222C0160530051F41C /* Alamofire */ = {
 			isa = XCSwiftPackageProductDependency;
