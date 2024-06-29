@@ -231,9 +231,9 @@ def run_proxy(
         ProviderRegistry()
         .register_factory(providers_registry.echo.registry.EchoProviderFactory())
         .register_factory(providers_registry.openai.lm_studio.LMStudioFactory())
-        .register_factory(providers_registry.llamafile.registry.LlamafileFactory(['dist']))
+        .register_factory(providers_registry.llamafile.registry.LlamafileFactory([data_dir]))
         .register_factory(providers_registry.ollama.registry.ExternalOllamaFactory())
-        .register_factory(providers_registry.lcp.factory.LlamaCppProviderFactory(['dist']))
+        .register_factory(providers_registry.lcp.factory.LlamaCppProviderFactory([data_dir]))
     )
 
     # Ollama proxy & emulation
