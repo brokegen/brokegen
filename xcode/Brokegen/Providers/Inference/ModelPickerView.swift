@@ -93,7 +93,7 @@ struct ModelPickerView: View {
                     }
 
                     if expandNeverUsedModels {
-                        LazyVStack(spacing: 24) {
+                        VStack(spacing: 24) {
                             ForEach(neverUsedModels) { model in
                                 OneFoundationModelView(
                                     model: model,
