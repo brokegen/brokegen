@@ -518,7 +518,14 @@ struct ProSequenceView: View {
                                     if viewModel.responseInEdit != nil {
                                         let indentMessage = !settings.showMessageHeaders
 
-                                        ProMessageView(.temporary(viewModel.responseInEdit!), stillUpdating: true, showMessageHeaders: settings.showMessageHeaders)
+                                        // We re-construct a new model object, because it makes rendering much faster.
+                                        // TODO: Why is this working? Are we doing something extremely strange? Are `if let` statements more performant?
+                                        let constructedRIE = TemporaryChatMessage(
+                                            role: viewModel.responseInEdit!.role,
+                                            content: String(viewModel.responseInEdit?.content ?? ""),
+                                            createdAt: viewModel.responseInEdit!.createdAt)
+
+                                        ProMessageView(.temporary(constructedRIE), stillUpdating: true, showMessageHeaders: settings.showMessageHeaders)
                                             .padding(.leading, indentMessage ? 24.0 : 0.0)
                                             .id(-1)
                                     }
