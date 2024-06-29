@@ -26,7 +26,12 @@ struct BlankProSequenceView: View {
                 InlineTextInput($viewModel.promptInEdit, allowNewlineSubmit: viewModel.settings.allowNewlineSubmit, isFocused: $focusTextInput) {
                     // If we have no continuation models chosen, show the picker and don't submit nothing.
                     if noInferenceModelSelected {
-                        showContinuationModelPicker = true
+                        if !viewModel.settings.showOIMPicker {
+                            withAnimation { viewModel.settings.showOIMPicker = true }
+                        }
+                        else {
+                            withAnimation { showContinuationModelPicker = true }
+                        }
                         return
                     }
 
@@ -51,15 +56,17 @@ struct BlankProSequenceView: View {
                             return true
                         }
 
-                        if noInferenceModelSelected {
-                            return true
-                        }
-
                         return viewModel.promptInEdit.isEmpty && !viewModel.settings.allowContinuation
                     }()
 
                     Button(action: {
                         if noInferenceModelSelected {
+                            if !viewModel.settings.showOIMPicker {
+                                withAnimation { viewModel.settings.showOIMPicker = true }
+                            }
+                            else {
+                                withAnimation { showContinuationModelPicker = true }
+                            }
                             return
                         }
 
@@ -92,10 +99,6 @@ struct BlankProSequenceView: View {
                         return false
                     }
                     else {
-                        if noInferenceModelSelected {
-                            return true
-                        }
-
                         return viewModel.promptInEdit.isEmpty && !viewModel.settings.allowContinuation
                     }
                 }()
@@ -106,7 +109,12 @@ struct BlankProSequenceView: View {
                     }
                     else {
                         if noInferenceModelSelected {
-                            showContinuationModelPicker = true
+                            if !viewModel.settings.showOIMPicker {
+                                withAnimation { viewModel.settings.showOIMPicker = true }
+                            }
+                            else {
+                                withAnimation { showContinuationModelPicker = true }
+                            }
                             return
                         }
 
@@ -468,7 +476,6 @@ struct BlankProSequenceView: View {
                                             .disabled(viewModel.appSettings.stillPopulating)
                                             .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
                                             .foregroundStyle(Color(.disabledControlTextColor))
-                                            // TODO: We can eventually make this something like pull-to-refresh, putting it relatively far below the fold.
                                             .padding(.bottom, 120)
                                             .padding(.top, max(
                                                 120,
@@ -564,8 +571,10 @@ struct BlankProSequenceView: View {
                 }
             }
             .onAppear {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    self.showContinuationModelPicker = noInferenceModelSelected
+                if noInferenceModelSelected {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        withAnimation { viewModel.settings.showOIMPicker = true }
+                    }
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
