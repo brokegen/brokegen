@@ -82,8 +82,8 @@ async def forward_request(
     urlpath_noprefix = original_request.url.path.removeprefix("/ollama-proxy")
     logger.debug(f"ollama proxy: start handler for {original_request.method} {urlpath_noprefix}")
 
-    from providers_registry.ollama.json import OllamaHttpEventBuilder
-    intercept = OllamaHttpEventBuilder(f"ollama:{urlpath_noprefix}", audit_db)
+    from providers_registry.ollama.json import OllamaEgressEventBuilder
+    intercept = OllamaEgressEventBuilder(f"ollama:{urlpath_noprefix}", audit_db)
     if original_request.url.query:
         raise NotImplementedError(f"Haven't implemented anything to handle query args in {original_request}")
 

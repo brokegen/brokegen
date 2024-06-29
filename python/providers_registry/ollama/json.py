@@ -14,7 +14,7 @@ from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks_wi
 from _util.status import ServerStatusHolder
 from _util.typing import FoundationModelHumanID
 from audit.content_scrubber import scrub_json
-from audit.http import AuditDB, get_db, HttpEvent
+from audit.http import AuditDB, get_db, EgressHttpEvent
 from inference.iterators import stream_bytes_to_json, tee_to_console_output, dump_to_bytes, consolidate_and_call
 from .api_chat.logging import ollama_log_indexer, ollama_response_consolidator, OllamaResponseContentJSON
 
@@ -72,8 +72,8 @@ async def keepalive_wrapper(
     )
 
 
-class OllamaHttpEventBuilder:
-    wrapped_event: HttpEvent
+class OllamaEgressEventBuilder:
+    wrapped_event: EgressHttpEvent
     audit_db: AuditDB
 
     response_content_json: JSONDict | None
@@ -83,7 +83,7 @@ class OllamaHttpEventBuilder:
             api_bucket: str,
             audit_db: AuditDB | None = None,
     ):
-        self.wrapped_event = HttpEvent(
+        self.wrapped_event = EgressHttpEvent(
             api_bucket=api_bucket,
             accessed_at=datetime.now(tz=timezone.utc),
         )
@@ -181,7 +181,7 @@ class OllamaHttpEventBuilder:
             upstream_response: httpx.Response,
             enable_logging: bool = False,
     ) -> starlette.responses.StreamingResponse:
-        async def http_event_recorder(
+        async def egress_event_recorder(
                 consolidated_response: OllamaResponseContentJSON,
         ) -> None:
             if upstream_response.is_success and self.response_content_json:
@@ -213,7 +213,7 @@ class OllamaHttpEventBuilder:
 
         iter3: AsyncIterator[JSONDict] = consolidate_and_call(
             iter2, ollama_response_consolidator, {},
-            http_event_recorder,
+            egress_event_recorder,
         )
         iter4: AsyncIterator[bytes] = dump_to_bytes(iter3)
 

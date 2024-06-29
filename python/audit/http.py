@@ -34,7 +34,7 @@ def get_db() -> Generator[AuditDB]:
         db.close()
 
 
-class HttpEvent(Base):
+class EgressHttpEvent(Base):
     """
     Reduced version of RawHttpEvent, intended to be human-readable
     """
