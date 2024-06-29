@@ -107,9 +107,11 @@ async def do_continuation(
             history_db.add(response_pair[0])
             history_db.commit()
 
+        # Return fields that the client probably cares about
         yield {
             "new_message_id": response_pair[1].id,
             "new_sequence_id": response_pair[0].id,
+            "autoname": response_pair[0].human_desc,
             "done": True,
         }
 

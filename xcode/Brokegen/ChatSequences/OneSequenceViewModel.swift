@@ -186,6 +186,12 @@ class OneSequenceViewModel: ObservableObject {
                     responseInEdit = nil
                 }
             }
+
+            let autoname: String = jsonData["autoname"].stringValue
+            if !autoname.isEmpty && autoname != sequence.humanDesc {
+                let renamedSequence = sequence.replaceHumanDesc(desc: autoname)
+                chatService.updateSequence(withSameId: renamedSequence)
+            }
         }
     }
 
