@@ -10,7 +10,7 @@ struct ProMessageView: View {
 
     @State private var expandContent: Bool
     @State private var isHovered: Bool = false
-    @State private var renderAsMarkdown: Bool = true
+    @State private var renderAsMarkdown: Bool = false
 
     init(
         _ message: MessageLike,
@@ -126,11 +126,17 @@ struct ProMessageView: View {
             if expandContent && !message.content.isEmpty {
                 if renderAsMarkdown {
                     Markdown(message.content)
+                        // TODO: Re-enable the theme once we figure out how to tweak it
+                        // .markdownTheme(.gitHub)
                         .markdownTextStyle {
                             FontSize(18)
+                            BackgroundColor(nil)
                         }
-                        .font(.system(size: 18))
-                        .lineSpacing(6)
+                        .markdownBlockStyle(\.paragraph) { configuration in
+                            configuration.label
+                                .lineSpacing(6)
+                                .markdownMargin(top: 6)
+                        }
                         .textSelection(.enabled)
                         .padding(16)
                         .background(
