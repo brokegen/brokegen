@@ -23,30 +23,42 @@ OllamaResponseChunk: TypeAlias = Union[OllamaChatResponse, OllamaGenerateRespons
 
 
 def finalize_inference_job(
-        inference_job: InferenceEventOrm,
-        response_content_json: OllamaResponseChunk,
+        inference_event: InferenceEventOrm,
+        response_content: OllamaResponseChunk,
 ) -> None:
-    if safe_get(response_content_json, 'prompt_eval_count'):
-        inference_job.prompt_tokens = safe_get(response_content_json, 'prompt_eval_count')
-    if safe_get(response_content_json, 'prompt_eval_duration'):
-        inference_job.prompt_eval_time = safe_get(response_content_json, 'prompt_eval_duration') / 1e9
+    logger.debug(f"Finalizing InferenceEvent {inference_event.id} with {response_content.keys()=}")
 
-    if safe_get(response_content_json, 'created_at'):
-        inference_job.response_created_at = \
-            datetime.fromisoformat(safe_get(response_content_json, 'created_at')) \
+    if safe_get(response_content, 'prompt_eval_count'):
+        inference_event.prompt_tokens = safe_get(response_content, 'prompt_eval_count')
+    if safe_get(response_content, 'prompt_eval_duration'):
+        inference_event.prompt_eval_time = safe_get(response_content, 'prompt_eval_duration') / 1e9
+
+    if safe_get(response_content, 'created_at'):
+        inference_event.response_created_at = \
+            datetime.fromisoformat(safe_get(response_content, 'created_at')) \
             or datetime.now(tz=timezone.utc)
-    if safe_get(response_content_json, 'eval_count'):
-        inference_job.response_tokens = safe_get(response_content_json, 'eval_count')
-    if safe_get(response_content_json, 'eval_duration'):
-        inference_job.response_eval_time = safe_get(response_content_json, 'eval_duration') / 1e9
+    if safe_get(response_content, 'eval_count'):
+        inference_event.response_tokens = safe_get(response_content, 'eval_count')
+    if safe_get(response_content, 'eval_duration'):
+        inference_event.response_eval_time = safe_get(response_content, 'eval_duration') / 1e9
 
     # TODO: I'm not sure this is even the actual field to check
-    if safe_get(response_content_json, 'error'):
-        inference_job.response_error = safe_get(response_content_json, 'error')
+    if safe_get(response_content, 'error'):
+        inference_event.response_error = safe_get(response_content, 'error')
     else:
-        inference_job.response_error = None
+        inference_event.response_error = None
 
-    inference_job.response_info = dict(response_content_json)
+    inference_event.response_info = dict(response_content)
+
+
+def ollama_log_indexer(
+        chunk_json: OllamaResponseChunk,
+) -> PromptText:
+    # /api/generate returns in the first form
+    # /api/chat returns the second form, with 'role': 'user'
+    return safe_get(chunk_json, 'response') \
+        or safe_get(chunk_json, 'message', 'content') \
+        or ""
 
 
 async def construct_new_sequence_from(
@@ -55,13 +67,10 @@ async def construct_new_sequence_from(
         consolidated_response: OllamaResponseContentJSON,
         inference_event: InferenceEventOrm,
         history_db: HistoryDB,
-) -> ChatSequenceOrm | None:
+) -> tuple[ChatSequenceOrm, ChatMessageOrm] | None:
     assistant_response = ChatMessageOrm(
         role="assistant",
-        content=(assistant_response_seed or "") + (
-                safe_get(consolidated_response, "response")
-                or safe_get(consolidated_response, "message", "content")
-        ),
+        content=(assistant_response_seed or "") + ollama_log_indexer(consolidated_response),
         created_at=inference_event.response_created_at,
     )
     if not assistant_response.content:
@@ -99,17 +108,7 @@ async def construct_new_sequence_from(
     history_db.add(inference_job)
     history_db.commit()
 
-    return response_sequence
-
-
-def ollama_log_indexer(
-        chunk_json: OllamaResponseChunk,
-) -> PromptText:
-    # /api/generate returns in the first form
-    # /api/chat returns the second form, with 'role': 'user'
-    return safe_get(chunk_json, 'response') \
-        or safe_get(chunk_json, 'message', 'content') \
-        or ""
+    return response_sequence, assistant_response
 
 
 def ollama_response_consolidator(

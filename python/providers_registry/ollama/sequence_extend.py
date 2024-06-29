@@ -74,9 +74,9 @@ async def do_continuation(
             history_db.rollback()
 
         # And now, construct the ChatSequence (which references the InferenceEvent, actually)
-        response_sequence: ChatSequenceOrm | None = None
+        response_pair: tuple[ChatSequenceOrm, ChatMessageOrm] | None = None
         try:
-            response_sequence = await construct_new_sequence_from(
+            response_pair = await construct_new_sequence_from(
                 original_sequence,
                 inference_options.seed_assistant_response,
                 consolidated_response,
@@ -84,10 +84,10 @@ async def do_continuation(
                 history_db,
             )
         except sqlalchemy.exc.SQLAlchemyError:
-            logger.exception(f"Failed to create add-on ChatSequence {response_sequence}")
+            logger.exception(f"Failed to create add-on ChatSequence from {consolidated_response}")
             history_db.rollback()
 
-        if response_sequence is None:
+        if response_pair is None:
             status_holder.set("Failed to construct a new ChatSequence")
             yield {
                 "error": "Failed to construct a new ChatSequence",
@@ -96,16 +96,19 @@ async def do_continuation(
             return
 
         # Lastly (after inference), do auto-naming
-        if response_sequence is not None and not response_sequence.human_desc:
+        if not response_pair[0].human_desc:
+            consolidated_messages = list(messages_list)
+            consolidated_messages.append(ChatMessage.model_validate(response_pair[1]))
+
             name = await autoname_sequence(messages_list, inference_model, status_holder)
             logger.info(f"Auto-generated chat title is {len(name)} chars: {name=}")
-            response_sequence.human_desc = name
+            response_pair[0].human_desc = name
 
-            history_db.add(response_sequence)
+            history_db.add(response_pair[0])
             history_db.commit()
 
         yield {
-            "new_sequence_id": response_sequence.id,
+            "new_sequence_id": response_pair[0].id,
             "done": True,
         }
 

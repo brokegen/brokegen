@@ -11,7 +11,7 @@ from client.database import get_db as get_history_db
 from inference.iterators import decode_from_bytes, stream_str_to_json
 from inference.prompting.templating import apply_llm_template
 from providers.inference_models.orm import FoundationModelRecordOrm, InferenceReason
-from .api_chat.logging import ollama_log_indexer
+from .api_chat.logging import ollama_log_indexer, ollama_response_consolidator
 from .api_generate import do_generate_raw_templated
 
 
@@ -20,7 +20,7 @@ async def do_autoname_sequence(
         inference_reason: InferenceReason,
         system_message: PromptText | None,
         user_prompt: PromptText | None,
-        assistant_response: PromptText | None = None,
+        assistant_response: PromptText | None,
 ) -> PromptText:
     model_template = safe_get(inference_model.combined_inference_parameters, 'template')
 
@@ -42,7 +42,7 @@ async def do_autoname_sequence(
             'model': inference_model.human_id,
             'prompt': templated_query,
             'raw': False,
-            'stream': False,
+            'stream': True,
         },
         history_db=next(get_history_db()),
         audit_db=next(get_audit_db()),
@@ -53,8 +53,11 @@ async def do_autoname_sequence(
     iter1: AsyncIterator[str] = decode_from_bytes(iter0)
     iter2: AsyncIterator[JSONDict] = stream_str_to_json(iter1)
 
-    response0_json = await anext(iter2)
-    return ollama_log_indexer(response0_json)
+    consolidated_response = {}
+    async for chunk in iter2:
+        consolidated_response = ollama_response_consolidator(chunk, consolidated_response)
+
+    return ollama_log_indexer(consolidated_response)
 
 
 async def autoname_sequence(
@@ -68,13 +71,11 @@ async def autoname_sequence(
         name: str = await do_autoname_sequence(
             inference_model,
             inference_reason=f"ChatSequence autoname",
-            # NB This only works as a system message on models that respect that.
-            #    So, append it to both.
-            system_message="You are a concise summarizer, seizing on easily identifiable + distinguishing factors of the text.",
-            user_prompt="Provide a summary of the provided text, suitable as a short description for a tab title. " +
-                        "Answer with that title only, do not provide additional information. Reply with at most one sentence.\n\n" +
+            system_message=None,
+            user_prompt="Summarize the provided messages, suitable as a short description for a tab title. " +
+                        "Answer with that title only, do not provide additional information. Reply with exactly one title.\n\n" +
                         '\n'.join([m.content for m in messages_list]),
-            assistant_response="Tab title: "
+            assistant_response="Tab title: ",
         )
 
     # Only strip when both leading and trailing, otherwise we're probably just dropping half of a set.
