@@ -25,6 +25,7 @@ class OneSequenceViewModel: ObservableObject {
     var submitting: Bool = false
 
     var responseInEdit: TemporaryChatMessage? = nil
+    private var receivedDone: Int = 0
     var receiving: Bool {
         /// This field does double duty to indicate whether we are currently receiving data.
         /// `nil` before first data, and then reset to `nil` once we're done receiving.
@@ -91,7 +92,10 @@ class OneSequenceViewModel: ObservableObject {
 
             switch completion {
             case .finished:
-                if responseInEdit == nil {
+                if receivedDone != 1 {
+                    print("[ERROR] \(callerName) completed, but received \(receivedDone) \"done\" chunks")
+                }
+                if !receiving {
                     print("[ERROR] \(callerName) completed without any response data")
                 }
                 else {
@@ -134,6 +138,7 @@ class OneSequenceViewModel: ObservableObject {
                 promptInEdit = ""
                 submitting = false
 
+                receivedDone = 0
                 responseInEdit = TemporaryChatMessage(
                     role: "assistant",
                     content: submittedAssistantResponseSeed ?? "",
@@ -159,12 +164,14 @@ class OneSequenceViewModel: ObservableObject {
             }
 
             if jsonData["done"].boolValue {
-                if let newSequenceId: ChatSequenceServerID = jsonData["new_sequence_id"].int {
-                    Task {
-                        print("[DEBUG] Attempting to update OneSequenceViewModel to new_sequence_id: \(newSequenceId)")
-                        _ = await self.chatService.updateSequence(self.sequence.serverId, withNewSequence: newSequenceId)
-                    }
-                }
+                receivedDone += 1
+            }
+
+            if let newSequenceId: ChatSequenceServerID = jsonData["new_sequence_id"].int {
+                let formerServerId: ChatSequenceServerID = sequence.serverId!
+
+                sequence.serverId = newSequenceId
+                chatService.updateSequenceOffline(formerServerId, withReplacement: sequence)
             }
         }
     }

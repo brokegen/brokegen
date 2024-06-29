@@ -176,6 +176,27 @@ class ChatSyncService: Observable, ObservableObject {
         return nil
     }
 
+    func updateSequenceOffline(_ originalSequenceID: ChatSequenceServerID?, withReplacement updatedSequence: ChatSequence) {
+        print("[DEBUG] Attempting to update \(originalSequenceID) to new_sequence_id: \(updatedSequence.serverId)")
+
+        // Remove all matching ChatSequences
+        loadedChatSequences.removeAll(where: {
+            $0.serverId == originalSequenceID
+        })
+
+        // Add the replacement
+        loadedChatSequences.insert(updatedSequence, at: 0)
+
+        // Update any clientModels that might hold it
+        let matchingClientModels: [OneSequenceViewModel] = chatSequenceClientModels.filter {
+            $0.sequence.serverId == originalSequenceID
+        }
+
+        for clientModel in matchingClientModels {
+            clientModel.sequence = updatedSequence
+        }
+    }
+
     // MARK: - ChatSequence extend/continue
     public func sequenceContinue(_ params: ChatSequenceParameters) async -> AnyPublisher<Data, AFErrorAndData> {
         let error: AFError = AFError.sessionTaskFailed(error: ChatSyncServiceError.callingAbstractBaseMethod)
