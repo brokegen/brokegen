@@ -4,9 +4,9 @@ from typing import TypeAlias, Union
 
 from _util.json import JSONDict, safe_get
 from _util.typing import PromptText
+from client.database import HistoryDB
 from client.message import ChatMessageOrm
 from client.sequence import ChatSequenceOrm
-from client.database import HistoryDB
 from providers.inference_models.orm import InferenceEventOrm
 
 logger = logging.getLogger(__name__)
@@ -68,20 +68,21 @@ async def construct_new_sequence_from(
         inference_event: InferenceEventOrm,
         history_db: HistoryDB,
 ) -> tuple[ChatSequenceOrm, ChatMessageOrm] | None:
-    assistant_response = ChatMessageOrm(
+    assistant_message = ChatMessageOrm(
         role="assistant",
         content=(assistant_response_seed or "") + ollama_log_indexer(consolidated_response),
         created_at=inference_event.response_created_at,
     )
-    if not assistant_response.content:
+    if not assistant_message.content:
         return None
 
-    history_db.add(assistant_response)
+    history_db.add(assistant_message)
     history_db.commit()
 
     # Add what we need for response_sequence
     response_sequence = ChatSequenceOrm(
         human_desc=original_sequence.human_desc,
+        current_message=assistant_message.id,
         parent_sequence=original_sequence.id,
     )
 
@@ -91,10 +92,8 @@ async def construct_new_sequence_from(
     history_db.add(original_sequence)
     history_db.add(response_sequence)
 
-    response_sequence.current_message = assistant_response.id
-
     response_sequence.generated_at = inference_event.response_created_at
-    response_sequence.generation_complete = safe_get(consolidated_response, 'done')
+    response_sequence.generation_complete = True
     response_sequence.inference_job_id = inference_event.id
     if inference_event.response_error:
         response_sequence.inference_error = inference_event.response_error
@@ -108,7 +107,10 @@ async def construct_new_sequence_from(
     history_db.add(inference_job)
     history_db.commit()
 
-    return response_sequence, assistant_response
+    if not safe_get(consolidated_response, 'done'):
+        logger.debug(f"Generated ChatSequence#{response_sequence.id}, but response was marked not-done")
+
+    return response_sequence, assistant_message
 
 
 def ollama_response_consolidator(
