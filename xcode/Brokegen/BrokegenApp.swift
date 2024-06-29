@@ -76,7 +76,7 @@ struct BrokegenApp: App {
 
             BrokegenAppView(blankViewModel: blankViewModel)
                 .environment(chatService)
-                .environment(jobsService)
+                .environmentObject(jobsService)
                 .environmentObject(providerService)
                 .environmentObject(appSettings)
                 .environmentObject(chatSettingsService)

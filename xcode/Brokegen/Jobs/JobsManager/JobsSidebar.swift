@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct MiniJobsSidebar: View {
-    @Environment(JobsManagerService.self) private var jobsService: JobsManagerService
+    @EnvironmentObject private var jobsService: JobsManagerService
     let navLimit: Int
 
     init(navLimit: Int = 10) {
@@ -45,7 +45,7 @@ struct MiniJobsSidebar: View {
 }
 
 struct TallJobsSidebar: View {
-    @Environment(JobsManagerService.self) private var jobsService: JobsManagerService
+    @EnvironmentObject private var jobsService: JobsManagerService
 
     var body: some View {
         AppSidebarSection(label: {
