@@ -21,7 +21,7 @@ class PathHost {
 
 struct BrokegenAppView: View {
     @Environment(ChatSyncService.self) private var chatService
-    @Environment(ProviderService.self) private var providerService
+    @EnvironmentObject private var providerService: ProviderService
     // This is the only one that really belongs here, because multiple windows
     @State private var pathHost: PathHost = PathHost()
     @EnvironmentObject public var chatSettingsService: CSCSettingsService

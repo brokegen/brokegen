@@ -96,7 +96,7 @@ struct ASRow: View {
 }
 
 struct AppSidebar: View {
-    @Environment(ProviderService.self) private var providerService
+    @EnvironmentObject private var providerService: ProviderService
     @EnvironmentObject public var appSettings: AppSettings
 
     private let useSimplifiedSequenceViews: Binding<Bool>
