@@ -16,8 +16,8 @@ from _util.json_streaming import JSONStreamingResponse
 from _util.json_streaming import emit_keepalive_chunks
 from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, PromptText, FoundationModelRecordID
-from client.sequence import ChatSequenceOrm
 from client.database import HistoryDB, get_db as get_history_db
+from client.sequence import ChatSequenceOrm
 from providers.registry import ProviderRegistry
 from .bridge import autoname_sequence
 
@@ -31,6 +31,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             preferred_autonaming_model: Annotated[FoundationModelRecordID | None, Query(
                 description="Requested foundation model to use for autonaming"
             )] = None,
+            stream: bool = False,
             wait_for_response: bool = False,
             history_db: HistoryDB = Depends(get_history_db),
             registry: ProviderRegistry = Depends(ProviderRegistry),
@@ -98,13 +99,19 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                     yield chunk
 
         if wait_for_response:
-            awaitable: Awaitable[PromptText | None] = do_autoname(match_object, history_db)
-            iter0: AsyncIterator[JSONDict] = nonblocking_response_maker(awaitable)
-            iter1: AsyncIterator[JSONDict] = do_keepalive(iter0)
-            return JSONStreamingResponse(
-                content=iter1,
-                status_code=218,
-            )
+            if stream:
+                awaitable: Awaitable[PromptText | None] = do_autoname(match_object, history_db)
+                iter0: AsyncIterator[JSONDict] = nonblocking_response_maker(awaitable)
+                iter1: AsyncIterator[JSONDict] = do_keepalive(iter0)
+                return JSONStreamingResponse(
+                    content=iter1,
+                    status_code=218,
+                )
+            else:
+                return {
+                    "autoname": await do_autoname(match_object, history_db),
+                    "done": True,
+                }
 
         else:
             return starlette.responses.Response(
