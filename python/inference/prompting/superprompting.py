@@ -1,112 +1,129 @@
+try:
+    import torch
+    from transformers import T5Tokenizer, T5ForConditionalGeneration
+except ImportError:
+    _has_torch_etc = False
+else:
+    _has_torch_etc = True
+
 import logging
 import random
-import types
 
 import fastapi
-from transformers import T5Tokenizer, T5ForConditionalGeneration
 
 from _util.typing import TemplatedPromptText
 
 logger = logging.getLogger(__name__)
 
+if _has_torch_etc:
+    class ModelManager:
+        model_data_dir: str
 
-class ModelManager:
-    torch_module: types.ModuleType | None = None
-    model_data_dir: str
+        tokenizer: T5Tokenizer | None = None
+        model: T5ForConditionalGeneration | None = None
 
-    tokenizer: T5Tokenizer | None = None
-    model: T5ForConditionalGeneration | None = None
+        def __init__(self, data_dir: str):
+            self.model_data_dir = data_dir
 
-    def __init__(self, data_dir: str):
-        self.model_data_dir = data_dir
+        @staticmethod
+        def download_model(
+                data_dir: str,
+                hf_model_name: str = "roborovski/superprompt-v1",
+        ):
+            try:
+                import torch
+            except ImportError:
+                logger.error(f"Couldn't find pytorch, superprompting inference will fail")
+                return
 
-        try:
-            import torch
-            self.torch_module = torch
-        except ImportError:
-            pass
+            tokenizer = T5Tokenizer.from_pretrained(hf_model_name)
+            tokenizer.save_pretrained(data_dir)
 
-    @staticmethod
-    def download_model(
-            data_dir: str,
-            hf_model_name: str = "roborovski/superprompt-v1",
-    ):
-        try:
-            import torch
-        except ImportError:
-            logger.error(f"Couldn't find pytorch, superprompting inference will fail")
-            return
+            model = T5ForConditionalGeneration.from_pretrained(hf_model_name, torch_dtype=torch.float16)
+            model.save_pretrained(data_dir)
 
-        tokenizer = T5Tokenizer.from_pretrained(hf_model_name)
-        tokenizer.save_pretrained(data_dir)
+        def load(self):
+            if self.tokenizer is None:
+                self.tokenizer = T5Tokenizer.from_pretrained(self.model_data_dir)
 
-        model = T5ForConditionalGeneration.from_pretrained(hf_model_name, torch_dtype=torch.float16)
-        model.save_pretrained(data_dir)
+            if self.model is None:
+                self.model = T5ForConditionalGeneration.from_pretrained(
+                    self.model_data_dir,
+                    torch_dtype=torch.float32
+                )
 
-    def load(self):
-        if self.torch_module is None:
-            return
+        def unload(self):
+            self.tokenizer = None
+            self.model = None
 
-        if self.tokenizer is None:
-            self.tokenizer = T5Tokenizer.from_pretrained(self.model_data_dir)
+        def __call__(
+                self,
+                input_text: TemplatedPromptText,
+                max_new_tokens: int = 100,
+                repetition_penalty: float = 2,
+                temperature: float = 0.5,
+                top_p: float = 0.9,
+                top_k: int = 1,
+                seed: int | None = None,
+        ) -> str | None:
+            torch.manual_seed(seed or random.randint(1, 1000000))
+            if seed is None:
+                if temperature == 1:
+                    temperature = 0.95
+                if top_p == 1:
+                    top_p = 0.95
 
-        if self.model is None:
-            self.model = T5ForConditionalGeneration.from_pretrained(
-                self.model_data_dir,
-                torch_dtype=self.torch_module.float32
+            if torch.cuda.is_available():
+                device = 'cuda'
+            else:
+                device = 'cpu'
+
+            input_ids = self.tokenizer(input_text, return_tensors="pt").input_ids.to(device)
+            if torch.cuda.is_available():
+                self.model.to('cuda')
+
+            # TODO: Add InferenceEvent
+            outputs = self.model.generate(
+                input_ids,
+                max_new_tokens=max_new_tokens,
+                repetition_penalty=repetition_penalty,
+                do_sample=True,
+                emperature=temperature,
+                top_p=top_p,
+                top_k=top_k,
             )
 
-    def unload(self):
-        self.tokenizer = None
-        self.model = None
+            return (
+                self.tokenizer.decode(outputs[0])
+                .replace("<pad>", "")
+                .replace("</s>", "")
+                .strip()
+            )
 
-    def __call__(
-            self,
-            input_text: TemplatedPromptText,
-            max_new_tokens: int = 100,
-            repetition_penalty: float = 2,
-            temperature: float = 0.5,
-            top_p: float = 0.9,
-            top_k: int = 1,
-            seed: int | None = None,
-    ) -> str | None:
-        if self.torch_module is None:
+else:
+    class ModelManager:
+        def __init__(self, data_dir: str):
+            pass
+
+        @staticmethod
+        def download_model(
+                data_dir: str,
+                hf_model_name: str = "roborovski/superprompt-v1",
+        ):
+            logger.error(f"Couldn't find pytorch, superprompting inference will fail")
+
+        def load(self):
+            pass
+
+        def unload(self):
+            pass
+
+        def __call__(
+                self,
+                input_text: TemplatedPromptText,
+                **kwargs,
+        ) -> str | None:
             return None
-
-        self.torch_module.manual_seed(seed or random.randint(1, 1000000))
-        if seed is None:
-            if temperature == 1:
-                temperature = 0.95
-            if top_p == 1:
-                top_p = 0.95
-
-        if self.torch_module.cuda.is_available():
-            device = 'cuda'
-        else:
-            device = 'cpu'
-
-        input_ids = self.tokenizer(input_text, return_tensors="pt").input_ids.to(device)
-        if self.torch_module.cuda.is_available():
-            self.model.to('cuda')
-
-        # TODO: Add InferenceEvent
-        outputs = self.model.generate(
-            input_ids,
-            max_new_tokens=max_new_tokens,
-            repetition_penalty=repetition_penalty,
-            do_sample=True,
-            emperature=temperature,
-            top_p=top_p,
-            top_k=top_k,
-        )
-
-        return (
-            self.tokenizer.decode(outputs[0])
-            .replace("<pad>", "")
-            .replace("</s>", "")
-            .strip()
-        )
-
 
 loaded_mm: ModelManager | None = None
 
