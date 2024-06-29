@@ -56,6 +56,15 @@ struct BrokegenAppView: View {
             }
         }
         .environment(pathHost)
+        .environmentObject(BlankSequenceViewModel(
+            chatService: chatService,
+            settings: CSCSettingsService.SettingsProxy(
+                defaults: chatSettingsService.defaults,
+                override: OverrideCSUISettings(),
+                inference: CSInferenceSettings()),
+            chatSettingsService: chatSettingsService,
+            appSettings: appSettings
+        ))
     }
 }
 

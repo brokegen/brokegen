@@ -62,6 +62,41 @@ class ChatSyncService: Observable, ObservableObject {
         return clientModel
     }
 
+    func addClientModel(
+        fromBlank blankModel: BlankSequenceViewModel,
+        for sequence: ChatSequence,
+        withRetrieval: Bool
+    ) -> OneSequenceViewModel {
+        let model: OneSequenceViewModel = OneSequenceViewModel(sequence, chatService: blankModel.chatService, appSettings: blankModel.appSettings, chatSettingsService: blankModel.chatSettingsService)
+        model.submitting = blankModel.submitting
+        model.submittedAssistantResponseSeed = blankModel.submittedAssistantResponseSeed
+        model.serverStatus = blankModel.serverStatus
+
+        model.showTextEntryView = blankModel.showTextEntryView
+        model.showUiOptions = blankModel.showUiOptions
+        model.showInferenceOptions = blankModel.showInferenceOptions
+        model.showRetrievalOptions = blankModel.showRetrievalOptions
+        model.continuationInferenceModel = blankModel.continuationInferenceModel
+        model.showAssistantResponseSeed = blankModel.showAssistantResponseSeed
+        model.showSystemPromptOverride = blankModel.showSystemPromptOverride
+
+        if let dupe = chatSequenceClientModels.first(where: { $0 == model }) {
+            return model
+        }
+        if let dupe = chatSequenceClientModels.first(where: { $0.sequence == model.sequence }) {
+            print("[ERROR] ChatSyncService already contains another ViewModel for ChatSequence \(dupe.sequence.displayRecognizableDesc())")
+            return dupe
+        }
+        if let dupe = chatSequenceClientModels.first(where: { $0.sequence.serverId == model.sequence.serverId }) {
+            print("[ERROR] ChatSyncService already contains another ViewModel for ChatSequenceID \(dupe.sequence.serverId)")
+            return dupe
+        }
+
+        // After some duplicate-checking, we're good to go ahead and add the model.
+        chatSequenceClientModels.append(model)
+        return model
+    }
+
     // MARK: - ChatSequence construction
     @Published var loadedChatSequences: [ChatSequence] = []
 

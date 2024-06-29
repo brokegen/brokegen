@@ -204,7 +204,7 @@ struct SequencePickerView: View {
                         BlankOneSequenceView()
                     }
                     else {
-                        BlankProSequenceView(chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
+                        BlankProSequenceView()
                     }
                 }) {
                     Label("New Chat...", systemImage: "plus")

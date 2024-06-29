@@ -122,4 +122,9 @@ class CSCSettingsService: Observable, ObservableObject {
 
         return SettingsProxy(defaults: defaults, override: uiSettings!, inference: inferenceSettings!)
     }
+
+    public func registerSettings(_ settings: SettingsProxy, for sequence: ChatSequence) {
+        perSequenceUiSettings[sequence] = settings.override
+        perSequenceInferenceSettings[sequence] = settings.inference
+    }
 }

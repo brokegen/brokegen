@@ -47,15 +47,15 @@ struct WidePicker: View {
 }
 
 struct CSCSettingsView: View {
-    @ObservedObject var viewModel: OneSequenceViewModel
     @ObservedObject var settings: CSCSettingsService.SettingsProxy
+    let sequenceDesc: String
 
     init(
-        _ viewModel: OneSequenceViewModel,
-        settings: CSCSettingsService.SettingsProxy
+        _ settings: CSCSettingsService.SettingsProxy,
+        sequenceDesc: String = " for ChatSequence"
     ) {
-        self.viewModel = viewModel
         self.settings = settings
+        self.sequenceDesc = sequenceDesc
     }
 
     var body: some View {
@@ -141,16 +141,7 @@ struct CSCSettingsView: View {
             .pickerStyle(.inline)
             .padding(24)
         }, label: {
-            let chatLabel: String = {
-                if viewModel.sequence.serverId != nil {
-                    " for ChatSequence#\(viewModel.sequence.serverId!)"
-                }
-                else {
-                    ""
-                }
-            }()
-
-            Text("Override Settings\(chatLabel)")
+            Text("Override Settings\(sequenceDesc)")
         })
 
         GroupBox(content: {

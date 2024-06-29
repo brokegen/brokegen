@@ -44,7 +44,7 @@ struct MiniSequencePickerSidebar: View {
                     BlankOneSequenceView()
                 }
                 else {
-                    BlankProSequenceView(chatService: chatService, appSettings: appSettings, chatSettingsService: chatSettingsService)
+                    BlankProSequenceView()
                 }
             }) {
                 HStack {
