@@ -52,7 +52,9 @@ class ExternalOllamaProvider(BaseProvider):
         history_db: HistoryDB = next(get_history_db())
 
         provider_identifiers_dict = {
-            "name": "ollama",
+            # TODO: Sometime between 0.1.41 and 0.1.47, the /api/show endpoint started listing way more detail
+            # We need to be able to figure out the ollama server version from some endpoint. But for now, bump version for everyone.
+            "name": "ollama v0.1.47+",
             "endpoint": self.base_url,
         }
         provider_identifiers_dict.update(local_provider_identifiers())
