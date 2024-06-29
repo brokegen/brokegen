@@ -71,7 +71,11 @@ async def do_list_available_models(
     ) -> AsyncGenerator[FoundationModelRecord, None]:
         inference_model: FoundationModelRecord
         for inference_model in inference_models:
-            yield await do_api_show(inference_model.human_id, history_db, audit_db)
+            try:
+                yield await do_api_show(inference_model.human_id, history_db, audit_db)
+            except RuntimeError as e:
+                logger.warning(f"Skipping {inference_model} in listing, {e}")
+                yield inference_model
 
     async for amodel in api_show_injector(available_models_generator):
         yield amodel
