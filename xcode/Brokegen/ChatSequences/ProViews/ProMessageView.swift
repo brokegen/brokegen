@@ -60,52 +60,50 @@ struct ProMessageView: View {
 
             Spacer()
 
-            VStack(alignment: .trailing, spacing: 0) {
-                Text(message.createdAtString)
-                Text(message.serverIdStr)
-            }
-            .foregroundStyle(Color(.disabledControlTextColor))
-            .opacity(isHovered ? 1.0 : 0.0)
-            .padding(.leading, 24)
-            .padding(.trailing, 24)
-
-            HStack(spacing: 24) {
-                Button(action: {
-                    let pasteboard = NSPasteboard.general
-                    // https://stackoverflow.com/questions/49211910/s
-                    pasteboard.clearContents()
-                    pasteboard.setString(message.content, forType: .string)
-                }, label: {
-                    Image(systemName: "clipboard")
-                })
-
-                if case .stored(let message) = message {
-                    Button(action: { self.branchAction?() }, label: {
-                        Image(systemName: "arrow.triangle.branch")
-                    })
-                    .disabled(self.branchAction == nil)
+            if isHovered {
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text(message.createdAtString)
+                    Text(message.sequenceIdString ?? message.messageIdString)
                 }
-                else {
+                .foregroundStyle(Color(.disabledControlTextColor))
+                .padding(.leading, 24)
+                .padding(.trailing, 24)
+
+                HStack(spacing: 24) {
+                    Button(action: {
+                        let pasteboard = NSPasteboard.general
+                        // https://stackoverflow.com/questions/49211910/s
+                        pasteboard.clearContents()
+                        pasteboard.setString(message.content, forType: .string)
+                    }, label: {
+                        Image(systemName: "clipboard")
+                    })
+
+                    if case .stored(let message) = message {
+                        Button(action: { self.branchAction?() }, label: {
+                            Image(systemName: "arrow.triangle.branch")
+                        })
+                        .disabled(self.branchAction == nil)
+                    }
+                    else {
+                        Button(action: {}, label: {
+                            Image(systemName: "arrow.triangle.branch")
+                        })
+                        .disabled(true)
+                    }
+
                     Button(action: {}, label: {
-                        Image(systemName: "arrow.triangle.branch")
+                        Image(systemName: "info.circle")
                     })
                     .disabled(true)
                 }
-
-                Button(action: {}, label: {
-                    Image(systemName: "info.circle")
-                })
-                .disabled(true)
+                .font(.system(size: 24))
+                .buttonStyle(.borderless)
+                .padding(.trailing, 18)
             }
-            .font(.system(size: 24))
-            .buttonStyle(.borderless)
-            .opacity(isHovered ? 1.0 : 0.0)
-            .disabled(!isHovered)
-            .padding(.trailing, 18)
         }
         .font(.system(size: 18))
         .padding(16)
-
     }
 
     var body: some View {
@@ -129,15 +127,13 @@ struct ProMessageView: View {
                     .textSelection(.enabled)
                     .padding(16)
                     .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .fill(Color(.controlBackgroundColor))
                     )
             }
         }
         .contentShape(Rectangle())
-        // TODO: Checking this gets really slow
         .onHover { isHovered in
-            // TODO: Animating this gets really slow
             withAnimation(.snappy) {
                 self.isHovered = isHovered
             }

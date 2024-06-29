@@ -52,7 +52,7 @@ enum MessageLike: Equatable, Hashable {
     case stored(ChatMessage)
     case temporary(TemporaryChatMessage)
 
-    var serverIdStr: String {
+    var messageIdString: String {
         get {
             switch(self) {
             case .legacy(let m):
@@ -61,6 +61,19 @@ enum MessageLike: Equatable, Hashable {
                 "ChatMessage#\(m.serverId)"
             case .temporary(_):
                 "TemporaryChatMessage"
+            }
+        }
+    }
+
+    var sequenceIdString: String? {
+        get {
+            switch(self) {
+            case .stored(let m):
+                m.hostSequenceId != nil
+                ? "ChatSequence#\(m.hostSequenceId!)"
+                : nil
+            case _:
+                nil
             }
         }
     }
