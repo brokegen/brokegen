@@ -53,7 +53,7 @@ struct SequenceRow: View {
                     }
 
                     Text(sequence.displayHumanDesc())
-                        .lineLimit(1...)
+                        .lineLimit(1...4)
                         .multilineTextAlignment(.leading)
                 }
                 .font(.title)
@@ -150,6 +150,7 @@ struct RenameableSequenceRow: View {
 
                 HStack(spacing: 0) {
                     TextField("", text: $newSequenceName)
+                        .lineLimit(1...4)
                         .multilineTextAlignment(.leading)
                         .padding(12)
                         .background(
