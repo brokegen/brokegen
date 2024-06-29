@@ -16,6 +16,7 @@ server: $(pyinstaller_inference_venv)
 			--noconfirm \
 			--paths $(python_root) \
 			--hidden-import llama_cpp \
+			--collect-all llama_cpp \
 			--specpath dist \
 			--onefile --name "brokegen-server" \
 			$(python_root)_apps/server.py
@@ -31,6 +32,7 @@ server-onedir: $(pyinstaller_inference_venv)
 			--debug noarchive \
 			--paths $(python_root) \
 			--hidden-import llama_cpp \
+			--collect-all llama_cpp \
 			--specpath dist \
 			--onedir --name "brokegen-server-onedir" \
 			$(python_root)_apps/server.py
