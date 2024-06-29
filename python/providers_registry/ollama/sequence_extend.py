@@ -108,6 +108,7 @@ async def do_continuation(
             history_db.commit()
 
         yield {
+            "new_message_id": response_pair[1].id,
             "new_sequence_id": response_pair[0].id,
             "done": True,
         }

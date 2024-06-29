@@ -95,10 +95,8 @@ class OneSequenceViewModel: ObservableObject {
                 if receivedDone != 1 {
                     print("[ERROR] \(callerName) completed, but received \(receivedDone) \"done\" chunks")
                 }
-                if !receiving {
-                    print("[ERROR] \(callerName) completed without any response data")
-                }
-                else {
+                if responseInEdit != nil {
+                    print("[ERROR] \(callerName) completed early, storing response message as temporary")
                     sequence.messages.append(.temporary(responseInEdit!))
                     responseInEdit = nil
                 }
@@ -172,6 +170,21 @@ class OneSequenceViewModel: ObservableObject {
 
                 sequence.serverId = newSequenceId
                 chatService.updateSequenceOffline(formerServerId, withReplacement: sequence)
+            }
+
+            if let newMessageId: ChatMessageServerID = jsonData["new_message_id"].int {
+                if responseInEdit != nil {
+                    let storedMessage = ChatMessage(
+                        serverId: newMessageId,
+                        hostSequenceId: sequence.serverId!,
+                        role: responseInEdit!.role,
+                        content: responseInEdit!.content ?? "",
+                        createdAt: responseInEdit!.createdAt
+                    )
+
+                    sequence.messages.append(.stored(storedMessage))
+                    responseInEdit = nil
+                }
             }
         }
     }
