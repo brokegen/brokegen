@@ -2,7 +2,7 @@ import SwiftUI
 
 struct FoundationModelSettingsView: View {
     @ObservedObject var appSettings: AppSettings
-    
+
     @State private var showDefaultInferenceModelPicker = false
     @State private var showFallbackInferenceModelPicker = false
     @State private var showPreferredAutonamingModelPicker = false

@@ -2,7 +2,7 @@ import SwiftUI
 
 /// TODO: Class is busted. Every time you send a follow-up message, it's based on the original sequenceId.
 struct BlankProSequenceView: View {
-    @Environment(PathHost.self) private var pathHost
+    @EnvironmentObject private var pathHost: PathHost
     @EnvironmentObject var viewModel: BlankSequenceViewModel
 
     @FocusState private var focusTextInput: Bool

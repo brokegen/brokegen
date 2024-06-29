@@ -15,37 +15,36 @@ let configuration: URLSessionConfiguration = { slowTimeouts in
 
 @main
 struct BrokegenApp: App {
-    @State private var chatService: ChatSyncService = DefaultChatSyncService(serverBaseURL, configuration: configuration)
-    @State private var jobsService: JobsManagerService = DefaultJobsManagerService(
-        startServicesImmediately: UserDefaults.standard.bool(forKey: "startServicesImmediately"),
-        allowExternalTraffic: UserDefaults.standard.bool(forKey: "allowExternalTraffic"))
-    @State private var providerService: ProviderService = DefaultProviderService(serverBaseURL, configuration: configuration)
+    @StateObject private var chatService: ChatSyncService = DefaultChatSyncService(serverBaseURL, configuration: configuration)
+    @ObservedObject private var jobsService: JobsManagerService
+    @ObservedObject private var providerService: ProviderService
 
-    @ObservedObject private var appSettings = AppSettings()
+    @ObservedObject private var appSettings: AppSettings
     @State private var inferenceSettingsUpdater: AnyCancellable? = nil
-    @ObservedObject private var chatSettingsService = CSCSettingsService()
+    @StateObject private var chatSettingsService = CSCSettingsService()
 
     @Environment(\.openWindow) var openWindow
 
+    /// We have to make a bunch of "temporary" variables to do a non-automatic init
     init() {
-        // Do on-startup init, because otherwise we store no data and app is empty
-        callInitializers()
+        let providerService = DefaultProviderService(serverBaseURL, configuration: configuration)
+        self.providerService = providerService
+        Task { try? await providerService.fetchAllProviders() }
+        Task { try? await providerService.fetchAvailableModels() }
 
+        let appSettings = AppSettings()
+        self.appSettings = appSettings
         appSettings.link(to: providerService)
 
-        NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { [self] _ in
+        let jobsService = DefaultJobsManagerService(
+            startServicesImmediately: appSettings.startServicesImmediately,
+            allowExternalTraffic: appSettings.allowExternalTraffic
+        )
+        self.jobsService = jobsService
+
+        NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { _ in
             // Terminate Jobs on exit
             jobsService.terminateAll()
-        }
-    }
-
-    func callInitializers() {
-        Task {
-            do { _ = try await providerService.fetchAllProviders() }
-            catch { print("[ERROR] Failed to providerService.fetchAllProviders()") }
-
-            do { try await providerService.fetchAvailableModels() }
-            catch { print("[ERROR] Failed to providerService.fetchAvailableModels()") }
         }
     }
 
@@ -75,7 +74,7 @@ struct BrokegenApp: App {
             )
 
             BrokegenAppView(blankViewModel: blankViewModel)
-                .environment(chatService)
+                .environmentObject(chatService)
                 .environmentObject(jobsService)
                 .environmentObject(providerService)
                 .environmentObject(appSettings)

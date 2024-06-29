@@ -1,7 +1,7 @@
 import SwiftUI
 
 @Observable
-class PathHost {
+class PathHost: ObservableObject {
     var path: NavigationPath = NavigationPath()
 
     public func printIt(_ prefix: String = "") {
@@ -20,16 +20,16 @@ class PathHost {
 }
 
 struct BrokegenAppView: View {
-    @Environment(ChatSyncService.self) private var chatService
+    @EnvironmentObject private var chatService: ChatSyncService
     @EnvironmentObject private var providerService: ProviderService
     // This is the only one that really belongs here, because multiple windows
-    @State private var pathHost: PathHost = PathHost()
+    @StateObject private var pathHost: PathHost = PathHost()
     @EnvironmentObject public var chatSettingsService: CSCSettingsService
     @EnvironmentObject public var appSettings: AppSettings
-    @State private var blankViewModel: BlankSequenceViewModel
+    @StateObject private var blankViewModel: BlankSequenceViewModel
 
     init(blankViewModel: BlankSequenceViewModel) {
-        self.blankViewModel = blankViewModel
+        self._blankViewModel = StateObject(wrappedValue: blankViewModel)
     }
 
     var body: some View {
@@ -60,7 +60,7 @@ struct BrokegenAppView: View {
                 })
             }
         }
-        .environment(pathHost)
+        .environmentObject(pathHost)
         .environmentObject(self.blankViewModel)
     }
 }
@@ -77,5 +77,5 @@ struct BrokegenAppView: View {
     }
 
     return AppSidebar(useSimplifiedSequenceViews: Binding.constant(true), showDebugSidebarItems: .constant(true))
-        .environment(jobs)
+        .environmentObject(jobs)
 }

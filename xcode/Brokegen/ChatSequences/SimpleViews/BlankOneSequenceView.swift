@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct BlankOneSequenceView: View {
-    @Environment(ChatSyncService.self) private var chatService
-    @Environment(PathHost.self) private var pathHost
+    @EnvironmentObject private var chatService: ChatSyncService
+    @EnvironmentObject private var pathHost: PathHost
     @EnvironmentObject public var chatSettingsService: CSCSettingsService
     @EnvironmentObject public var appSettings: AppSettings
 

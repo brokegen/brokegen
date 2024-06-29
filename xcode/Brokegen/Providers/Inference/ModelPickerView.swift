@@ -209,7 +209,7 @@ fileprivate func makeFakeModel() -> FoundationModel {
 
         var body: some View {
             ModelPickerView(modelSelection: nil)
-                .environment(providerService)
+                .environmentObject(providerService)
                 .frame(width: 800, height: 600)
         }
     }
@@ -230,7 +230,7 @@ fileprivate func makeFakeModel() -> FoundationModel {
 
         var body: some View {
             ModelPickerView(modelSelection: $modelSelection)
-                .environment(providerService)
+                .environmentObject(providerService)
                 .frame(width: 800, height: 600)
         }
     }

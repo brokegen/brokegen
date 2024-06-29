@@ -87,7 +87,7 @@ extension ChatSequence: Comparable {
 
 struct SequencePickerView: View {
     @EnvironmentObject private var chatService: ChatSyncService
-    @Environment(PathHost.self) private var pathHost
+    @EnvironmentObject private var pathHost: PathHost
     @EnvironmentObject public var appSettings: AppSettings
     @EnvironmentObject public var chatSettingsService: CSCSettingsService
 

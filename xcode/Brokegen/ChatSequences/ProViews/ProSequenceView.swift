@@ -3,7 +3,7 @@ import SwiftUI
 let tabBarHeight: CGFloat = 48
 
 struct ProSequenceView: View {
-    @Environment(PathHost.self) private var pathHost
+    @EnvironmentObject private var pathHost: PathHost
     @ObservedObject var viewModel: OneSequenceViewModel
     @ObservedObject var settings: CSCSettingsService.SettingsProxy
 
