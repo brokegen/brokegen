@@ -64,7 +64,17 @@ struct BrokegenApp: App {
 
     var body: some Scene {
         WindowGroup(id: "8280", for: UUID.self) { _ in
-            BrokegenAppView()
+            let blankViewModel = BlankSequenceViewModel(
+                chatService: chatService,
+                settings: CSCSettingsService.SettingsProxy(
+                    defaults: chatSettingsService.defaults,
+                    override: OverrideCSUISettings(),
+                    inference: CSInferenceSettings()),
+                chatSettingsService: chatSettingsService,
+                appSettings: appSettings
+            )
+
+            BrokegenAppView(blankViewModel: blankViewModel)
                 .environment(chatService)
                 .environment(jobsService)
                 .environment(providerService)

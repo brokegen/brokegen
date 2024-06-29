@@ -26,6 +26,11 @@ struct BrokegenAppView: View {
     @State private var pathHost: PathHost = PathHost()
     @EnvironmentObject public var chatSettingsService: CSCSettingsService
     @EnvironmentObject public var appSettings: AppSettings
+    @State private var blankViewModel: BlankSequenceViewModel
+
+    init(blankViewModel: BlankSequenceViewModel) {
+        self.blankViewModel = blankViewModel
+    }
 
     var body: some View {
         // TODO: Should this be done a different way, somehow?
@@ -56,15 +61,7 @@ struct BrokegenAppView: View {
             }
         }
         .environment(pathHost)
-        .environmentObject(BlankSequenceViewModel(
-            chatService: chatService,
-            settings: CSCSettingsService.SettingsProxy(
-                defaults: chatSettingsService.defaults,
-                override: OverrideCSUISettings(),
-                inference: CSInferenceSettings()),
-            chatSettingsService: chatSettingsService,
-            appSettings: appSettings
-        ))
+        .environmentObject(self.blankViewModel)
     }
 }
 
@@ -81,8 +78,4 @@ struct BrokegenAppView: View {
 
     return AppSidebar(useSimplifiedSequenceViews: Binding.constant(true), showDebugSidebarItems: .constant(true))
         .environment(jobs)
-}
-
-#Preview(traits: .fixedLayout(width: 1024, height: 1024)) {
-    BrokegenAppView()
 }
