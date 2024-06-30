@@ -26,29 +26,32 @@ struct BlankOneSequenceView: View {
                     ChatNameInput($chatSequenceHumanDesc)
                         .padding(.bottom, 24)
 
-                    if appSettings.stillPopulating {
-                        ProgressView()
-                            .progressViewStyle(.linear)
-                            .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
-                            .layoutPriority(0.2)
+                    VStack(alignment: .center, spacing: 0) {
+                        if appSettings.stillPopulating {
+                            ProgressView()
+                                .progressViewStyle(.linear)
+                                .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
+                        }
+
+                        OFMPicker(
+                            boxLabel: modelSelection == nil && appSettings.defaultInferenceModel != nil
+                            ? "Default inference model:"
+                            : "Select an inference model:",
+                            selectedModelBinding: Binding(
+                                get: { modelSelection ?? appSettings.defaultInferenceModel },
+                                set: { modelSelection = $0 }),
+                            showModelPicker: $showModelPicker,
+                            geometry: geometry,
+                            allowClear: modelSelection != nil)
+                        .disabled(appSettings.stillPopulating)
+                        .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
                     }
-
-                    OFMPicker(
-                        boxLabel: modelSelection == nil && appSettings.defaultInferenceModel != nil
-                        ? "Default inference model"
-                        : "Inference model",
-                        selectedModelBinding: Binding(
-                            get: { modelSelection ?? appSettings.defaultInferenceModel },
-                            set: { modelSelection = $0 }),
-                        showModelPicker: $showModelPicker,
-                        geometry: geometry,
-                        allowClear: modelSelection != nil)
-                    .disabled(appSettings.stillPopulating)
-                    .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
-                    .layoutPriority(0.2)
-
-                    Spacer()
-                        .frame(minHeight: 0)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, max(
+                        120,
+                        geometry.size.height * 0.2
+                    ))
+                    .padding(.bottom, 120)
                 }
 
                 VStack(spacing: 0) {

@@ -252,7 +252,7 @@ struct ProSequenceView: View {
                 }
             }()
 
-            CSCSettingsView(viewModel.settings, sequenceDesc: sequenceDesc)
+            CSCSettingsView(settings, sequenceDesc: sequenceDesc)
         }
 
         // Tab.modelOptions
@@ -386,15 +386,15 @@ struct ProSequenceView: View {
             Spacer()
 
             Button(action: {
-                viewModel.settings.stayAwakeDuringInference.toggle()
+                settings.stayAwakeDuringInference.toggle()
             }, label: {
                 Image(systemName:
                         viewModel.currentlyAwakeDuringInference
-                      ? (viewModel.settings.stayAwakeDuringInference ? "bolt.fill" : "bolt.slash")
-                      : (viewModel.settings.stayAwakeDuringInference ? "bolt" : "bolt.slash"))
+                      ? (settings.stayAwakeDuringInference ? "bolt.fill" : "bolt.slash")
+                      : (settings.stayAwakeDuringInference ? "bolt" : "bolt.slash"))
                 .foregroundStyle(
                     viewModel.currentlyAwakeDuringInference ? .green :
-                        viewModel.settings.stayAwakeDuringInference ? Color(.controlTextColor) : .red)
+                        settings.stayAwakeDuringInference ? Color(.controlTextColor) : .red)
                 .padding(.leading, 12)
                 .padding(.trailing, 12)
                 .frame(height: 48)
@@ -538,6 +538,7 @@ struct ProSequenceView: View {
 
                                     if settings.showOIMPicker {
                                         oimPicker(geometry)
+                                            .frame(maxWidth: .infinity)
                                             .padding(.top, max(
                                                 120,
                                                 geometry.size.height * 0.2

@@ -1,6 +1,5 @@
 import SwiftUI
 
-/// TODO: Class is busted. Every time you send a follow-up message, it's based on the original sequenceId.
 struct BlankProSequenceView: View {
     @EnvironmentObject private var pathHost: PathHost
     @EnvironmentObject var viewModel: BlankSequenceViewModel
@@ -441,31 +440,20 @@ struct BlankProSequenceView: View {
             }
 
             OFMPicker(
-                boxLabel: "Select an inference model:",
-                selectedModelBinding: $viewModel.continuationInferenceModel,
+                boxLabel: viewModel.continuationInferenceModel == nil && viewModel.appSettings.defaultInferenceModel != nil
+                ? "Default inference model:"
+                : "Select an inference model:",
+                selectedModelBinding: Binding(
+                    get: { viewModel.continuationInferenceModel ?? viewModel.appSettings.defaultInferenceModel },
+                    set: { viewModel.continuationInferenceModel = $0 }),
                 showModelPicker: $showContinuationModelPicker,
                 geometry: geometry,
-                allowClear: true)
-            .disabled(false && viewModel.appSettings.stillPopulating)
+                allowClear: viewModel.continuationInferenceModel != nil)
+            .disabled(viewModel.appSettings.stillPopulating)
             .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
             .foregroundStyle(Color(.disabledControlTextColor))
             .contentShape(Rectangle())
-
-            if viewModel.appSettings.defaultInferenceModel != nil {
-                OFMPicker(
-                    boxLabel: "Default inference model:",
-                    selectedModelBinding: .constant(viewModel.appSettings.defaultInferenceModel),
-                    showModelPicker: .constant(false),
-                    geometry: geometry,
-                    allowClear: false)
-                .disabled(true)
-                .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
-                .foregroundStyle(Color(.disabledControlTextColor))
-                .contentShape(Rectangle())
-                .padding(.top, 36)
-            }
         }
-        .frame(maxWidth: .infinity)
     }
 
     var body: some View {
@@ -496,6 +484,7 @@ struct BlankProSequenceView: View {
 
                                     if viewModel.settings.showOIMPicker {
                                         oimPicker(geometry)
+                                            .frame(maxWidth: .infinity)
                                             .padding(.top, max(
                                                 120,
                                                 geometry.size.height * 0.2
