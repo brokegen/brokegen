@@ -50,6 +50,11 @@ class CSCSettingsService: Observable, ObservableObject {
             set { override.showMessageHeaders = newValue }
         }
 
+        var renderAsMarkdown: Bool {
+            get { override.renderAsMarkdown ?? defaults.renderAsMarkdown }
+            set { override.renderAsMarkdown = newValue }
+        }
+
         var scrollToBottomOnNew: Bool {
             get { override.scrollToBottomOnNew ?? defaults.scrollToBottomOnNew }
             set { override.scrollToBottomOnNew = newValue }

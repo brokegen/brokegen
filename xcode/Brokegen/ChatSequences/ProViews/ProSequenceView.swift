@@ -422,6 +422,10 @@ struct ProSequenceView: View {
                 Text("Show message headers in the UI")
             }
 
+            Toggle(isOn: $settings.renderAsMarkdown) {
+                Text("Render message content as markdown")
+            }
+
             Toggle(isOn: $settings.scrollToBottomOnNew) {
                 Text("Scroll to bottom of window on new messages")
             }
@@ -500,8 +504,7 @@ struct ProSequenceView: View {
 
                                     ForEach(viewModel.sequence.messages) { message in
                                         let indentMessage = !settings.showMessageHeaders && message.role != "user"
-
-                                        ProMessageView(message, branchAction: {
+                                        let branchAction = {
                                             if case .stored(let message) = message {
                                                 if let sequence_id = message.hostSequenceId {
                                                     Task {
@@ -516,9 +519,16 @@ struct ProSequenceView: View {
                                                     }
                                                 }
                                             }
-                                        }, showMessageHeaders: settings.showMessageHeaders)
-                                            .padding(.leading, indentMessage ? 24.0 : 0.0)
-                                            .id(message)
+                                        }
+
+                                        ProMessageView(
+                                            message,
+                                            branchAction: branchAction,
+                                            showMessageHeaders: settings.showMessageHeaders,
+                                            renderAsMarkdown: $settings.renderAsMarkdown
+                                        )
+                                        .padding(.leading, indentMessage ? 24.0 : 0.0)
+                                        .id(message)
                                     }
 
                                     if viewModel.responseInEdit != nil {
@@ -531,7 +541,7 @@ struct ProSequenceView: View {
                                             content: String(viewModel.responseInEdit?.content ?? ""),
                                             createdAt: viewModel.responseInEdit!.createdAt)
 
-                                        ProMessageView(.temporary(constructedRIE), stillUpdating: true, showMessageHeaders: settings.showMessageHeaders)
+                                        ProMessageView(.temporary(constructedRIE), stillUpdating: true, showMessageHeaders: settings.showMessageHeaders, renderAsMarkdown: $settings.renderAsMarkdown)
                                             .padding(.leading, indentMessage ? 24.0 : 0.0)
                                             .id(-1)
                                     }

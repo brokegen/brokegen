@@ -17,7 +17,8 @@ struct ProMessageView: View {
         sequence: ChatSequence? = nil,
         branchAction: (() -> Void)? = nil,
         stillUpdating stillExpectingUpdate: Bool = false,
-        showMessageHeaders: Bool
+        showMessageHeaders: Bool,
+        renderAsMarkdown: Binding<Bool>
     ) {
         self.message = message
         self.sequence = sequence
@@ -189,13 +190,13 @@ Your input will help me generate more targeted and valuable responses. Let's col
                 role: "user",
                 content: "Hello this is a prompt",
                 createdAt: Date(timeIntervalSinceNow: -604_800))),
-            showMessageHeaders: showMessageHeaders)
+            showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(false))
 
         ProMessageView(
             .temporary(TemporaryChatMessage(role: "clown", content: "Hello! How can I help you today with your prompt? Please provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now)),
-            showMessageHeaders: showMessageHeaders)
+            showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(false))
 
-        ProMessageView(.temporary(message3), showMessageHeaders: showMessageHeaders)
+        ProMessageView(.temporary(message3), showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(false))
 
         Spacer()
     }
