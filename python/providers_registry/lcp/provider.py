@@ -337,7 +337,6 @@ class LlamaCppProvider(BaseProvider):
                 prompt_with_templating=None,
                 reason="LlamaCppProvider.chat_from",
                 response_created_at=datetime.now(tz=timezone.utc),
-                response_error="[not implemented, no stats available]",
             )
 
             if safe_get(consolidated_response, "usage", "prompt_tokens"):

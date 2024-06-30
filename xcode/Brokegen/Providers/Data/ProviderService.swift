@@ -105,16 +105,15 @@ class DefaultProviderService: ProviderService {
     }
 
     override func fetchAvailableModels() async throws {
-        print("[TRACE] DefaultProviderService.fetchAvailableModels()")
-
         let allModelsData = await getDataBlocking("/providers/any/any/models")
         guard allModelsData != nil else { throw ProviderServiceError.noResponseContentReturned }
 
+        print("[TRACE] Received modelData for \(JSON(allModelsData!).arrayValue.count) models")
         for (_, modelData) in JSON(allModelsData!) {
-            print("[TRACE] Received modelData: \(modelData["human_id"])")
             let FoundationModel = FoundationModel(modelData.dictionaryValue)
             await self.replaceModelById(FoundationModel.serverId, with: FoundationModel)
         }
+        print("[TRACE] Updated modelData for \(JSON(allModelsData!).arrayValue.count) models")
     }
 
     override func fetchAllProviders() async throws -> [ProviderClientModel] {
