@@ -45,6 +45,9 @@ class _OneModel:
             n_ctx=32_768,
         )
 
+        # DEBUG: Check the contents of this, decide whether to put it in storage
+        print(llama_cpp.llama_print_system_info().decode("utf-8"))
+
     async def available(self) -> bool:
         # Do a quick tokenize/detokenize test run
         sample_text_str = "✎👍 ｃｏｍｐｌｅｘ UTF-8 𝓉𝑒𝓍𝓉, but mostly em🍪jis  🎀  🐔 ⋆ 🐞"
