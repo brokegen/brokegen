@@ -25,7 +25,7 @@ class OneSequenceViewModel: ObservableObject {
     var submitting: Bool = false
 
     var responseInEdit: TemporaryChatMessage? = nil
-    private var receivedDone: Int = 0
+    @ObservationIgnored private var receivedDone: Int = 0
     var receiving: Bool {
         /// This field does double duty to indicate whether we are currently receiving data.
         /// `nil` before first data, and then reset to `nil` once we're done receiving.

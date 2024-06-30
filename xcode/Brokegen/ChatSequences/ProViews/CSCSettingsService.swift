@@ -1,7 +1,7 @@
 import SwiftUI
 
 @Observable
-class CSCSettingsService: Observable, ObservableObject {
+class CSCSettingsService: ObservableObject {
     @AppStorage("useSimplifiedBlankOSV")
     @ObservationIgnored public var useSimplifiedBlankOSV: Bool = true
 

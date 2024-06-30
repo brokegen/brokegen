@@ -7,8 +7,9 @@ enum ProviderServiceError: Error {
     case invalidResponseContentReturned
 }
 
-class ProviderService: Observable, ObservableObject {
-    @Published var allModels: [FoundationModel] = []
+@Observable
+class ProviderService: ObservableObject {
+    var allModels: [FoundationModel] = []
 
     func fetchAvailableModels() async throws {}
 
@@ -72,8 +73,8 @@ class ProviderService: Observable, ObservableObject {
 }
 
 class DefaultProviderService: ProviderService {
-    var serverBaseURL: String
-    let session: Alamofire.Session
+    @ObservationIgnored var serverBaseURL: String
+    @ObservationIgnored let session: Alamofire.Session
 
     init(_ serverBaseURL: String, configuration: URLSessionConfiguration) {
         self.serverBaseURL = serverBaseURL

@@ -32,7 +32,6 @@
 		CE7FFE182C06772400DB7CFA /* BlankOneSequenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE172C06772400DB7CFA /* BlankOneSequenceView.swift */; };
 		CE8229AF2BF7306000029DC2 /* JobsManagerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8229AE2BF7306000029DC2 /* JobsManagerService.swift */; };
 		CE9065202C272960003593F1 /* SequencePickerSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE90651F2C272960003593F1 /* SequencePickerSidebar.swift */; };
-		CE9065222C272A6A003593F1 /* SPViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9065212C272A6A003593F1 /* SPViewModel.swift */; };
 		CE9065252C2751CD003593F1 /* BlankProSequenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9065242C2751CD003593F1 /* BlankProSequenceView.swift */; };
 		CE9065272C2A0824003593F1 /* SequenceRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9065262C2A0824003593F1 /* SequenceRow.swift */; };
 		CE9867512BF4047C008D6C41 /* BrokegenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867502BF4047C008D6C41 /* BrokegenApp.swift */; };
@@ -115,7 +114,6 @@
 		CE7FFE172C06772400DB7CFA /* BlankOneSequenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankOneSequenceView.swift; sourceTree = "<group>"; };
 		CE8229AE2BF7306000029DC2 /* JobsManagerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsManagerService.swift; sourceTree = "<group>"; };
 		CE90651F2C272960003593F1 /* SequencePickerSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequencePickerSidebar.swift; sourceTree = "<group>"; };
-		CE9065212C272A6A003593F1 /* SPViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPViewModel.swift; sourceTree = "<group>"; };
 		CE9065242C2751CD003593F1 /* BlankProSequenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankProSequenceView.swift; sourceTree = "<group>"; };
 		CE9065262C2A0824003593F1 /* SequenceRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequenceRow.swift; sourceTree = "<group>"; };
 		CE98674D2BF4047C008D6C41 /* Brokegen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Brokegen.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -252,7 +250,6 @@
 				CE9065262C2A0824003593F1 /* SequenceRow.swift */,
 				CE4634F12BFBB4730063142E /* SequencePickerView.swift */,
 				CE90651F2C272960003593F1 /* SequencePickerSidebar.swift */,
-				CE9065212C272A6A003593F1 /* SPViewModel.swift */,
 			);
 			path = SequencePicker;
 			sourceTree = "<group>";
@@ -514,7 +511,6 @@
 				CECA47AA2BF6D62E007A28F2 /* SystemInfoView.swift in Sources */,
 				CEFEB4762BFDA67400334522 /* SimplePing.swift in Sources */,
 				CEE99E6B2C1002F9008E1B07 /* AppSidebar.swift in Sources */,
-				CE9065222C272A6A003593F1 /* SPViewModel.swift in Sources */,
 				CEE99E592C0D85AD008E1B07 /* OneSequenceViewModel.swift in Sources */,
 				CE145DAD2C1A106A00577314 /* ProMessageView.swift in Sources */,
 				CE7FFE142C04435D00DB7CFA /* ProviderService.swift in Sources */,

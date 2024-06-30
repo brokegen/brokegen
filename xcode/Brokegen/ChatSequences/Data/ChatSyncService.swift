@@ -19,9 +19,8 @@ enum ChatSyncServiceError: Error {
     case callingAbstractBaseMethod
 }
 
-/// TODO: Limit scope of ObservableObject to the loadedChatSequences, and see if background refresh improves
-/// (right now the entire app gets choppy).
-class ChatSyncService: Observable, ObservableObject {
+@Observable
+class ChatSyncService: ObservableObject {
     /// Used to check when the @Environment was injected correctly;
     /// NavigationStack's Views aren't children of each other, so they have to be re-injected.
     public func ping() {
@@ -98,7 +97,7 @@ class ChatSyncService: Observable, ObservableObject {
     }
 
     // MARK: - ChatSequence construction
-    @Published var loadedChatSequences: [ChatSequence] = []
+    var loadedChatSequences: [ChatSequence] = []
 
     public func constructChatMessage(from tempMessage: TemporaryChatMessage) async throws -> ChatMessageServerID? {
         return nil
