@@ -264,14 +264,6 @@ class LlamaCppProvider(BaseProvider):
                 orjson.loads(inference_options.inference_options)
             )
 
-        iterator_or_completion: (
-                llama_cpp.CreateChatCompletionResponse | Iterator[llama_cpp.CreateChatCompletionStreamResponse])
-        iterator_or_completion = underlying_model.create_chat_completion(
-            messages=[m.model_dump() for m in messages_list],
-            stream=True,
-            **maybe_inference_options,
-        )
-
         def content_extractor(chunk: JSONDict) -> JSONDict:
             response_choices = safe_get(chunk, "choices")
             if len(response_choices) > 1:
@@ -280,16 +272,46 @@ class LlamaCppProvider(BaseProvider):
             return response_choices[0]
 
         def content_consolidator(chunk: JSONDict, response: JSONDict) -> JSONDict:
-            # TODO: Check the actual content of this packet, beyond the content field
             for k, v in chunk.items():
                 if k not in response:
                     response[k] = v
-                    continue
-
-                if k == 'delta':
-                    response['delta']['content'] += chunk['delta']['content']
-
-                logger.debug(f"Didn't handle duplicate field: {k}={v}")
+                elif k == 'choices':
+                    if len(v) > 1:
+                        logger.warning(f"Received {len(v)} choices, ignoring all but the first")
+                    for k3, v3 in v[0].items():
+                        if k3 not in response[k]:
+                            response[k][0][k3] = v3
+                        elif k3 == 'delta':
+                            for k4, v4 in v3.items():
+                                if k4 not in response[k][0][k3]:
+                                    response[k][0][k3][k4] = v4
+                                elif k4 == 'content':
+                                    if response[k][0][k3][k4] is None:
+                                        response[k][0][k3][k4] = safe_get_arrayed(chunk, k, 0, k3, k4)
+                                    else:
+                                        response[k][0][k3][k4] += safe_get_arrayed(chunk, k, 0, k3, k4) or ""
+                                else:
+                                    if response[k][0][k3][k4] != v4:
+                                        logger.debug(f"Didn't handle duplicate field: {k}[0].{k3}.{k4}={v4}")
+                        else:
+                            if response[k][k3] != v3:
+                                logger.debug(f"Didn't handle duplicate field: {k}.{k3}={v3}")
+                # TODO: Figure out why this field exists, shouldn't the order of calls prevent this?
+                elif k == 'message':
+                    for k2, v2 in v.items():
+                        if k2 not in response[k]:
+                            response[k][k2] = v2
+                        elif k2 == 'content':
+                            if response[k][k2] is None:
+                                response[k][k2] = safe_get(chunk, k, k2)
+                            else:
+                                response[k][k2] += safe_get(chunk, k, k2) or ""
+                        else:
+                            if response[k][k2] != v2:
+                                logger.debug(f"Didn't handle duplicate field: {k}.{k2}={v2}")
+                else:
+                    if response[k] != v:
+                        logger.debug(f"Didn't handle duplicate field: {k}={v}")
 
             return response
 
@@ -313,29 +335,15 @@ class LlamaCppProvider(BaseProvider):
             inference_event = InferenceEventOrm(
                 model_record_id=inference_model.id,
                 prompt_with_templating=None,
-                reason=__name__,
+                reason="LlamaCppProvider.chat_from",
                 response_created_at=datetime.now(tz=timezone.utc),
+                response_error="[not implemented, no stats available]",
             )
 
-            if safe_get(consolidated_response, 'prompt_eval_count'):
-                inference_event.prompt_tokens = safe_get(consolidated_response, 'prompt_eval_count')
-            if safe_get(consolidated_response, 'prompt_eval_duration'):
-                inference_event.prompt_eval_time = safe_get(consolidated_response, 'prompt_eval_duration') / 1e9
-
-            if safe_get(consolidated_response, 'created_at'):
-                inference_event.response_created_at = \
-                    datetime.fromisoformat(safe_get(consolidated_response, 'created_at')) \
-                    or datetime.now(tz=timezone.utc)
-            if safe_get(consolidated_response, 'eval_count'):
-                inference_event.response_tokens = safe_get(consolidated_response, 'eval_count')
-            if safe_get(consolidated_response, 'eval_duration'):
-                inference_event.response_eval_time = safe_get(consolidated_response, 'eval_duration') / 1e9
-
-            # TODO: I'm not sure this is even the actual field to check
-            if safe_get(consolidated_response, 'error'):
-                inference_event.response_error = safe_get(consolidated_response, 'error')
-            else:
-                inference_event.response_error = None
+            if safe_get(consolidated_response, "usage", "prompt_tokens"):
+                inference_event.prompt_tokens = safe_get(consolidated_response, "usage", "prompt_tokens")
+            if safe_get(consolidated_response, "usage", "completion_tokens"):
+                inference_event.response_tokens = safe_get(consolidated_response, "usage", "completion_tokens")
 
             try:
                 history_db.add(inference_event)
@@ -343,6 +351,15 @@ class LlamaCppProvider(BaseProvider):
             except sqlalchemy.exc.SQLAlchemyError:
                 logger.exception(f"Failed to commit {inference_event}")
                 history_db.rollback()
+
+        # Main function body: wrap up
+        iterator_or_completion: (
+                llama_cpp.CreateChatCompletionResponse | Iterator[llama_cpp.CreateChatCompletionStreamResponse])
+        iterator_or_completion = underlying_model.create_chat_completion(
+            messages=[m.model_dump() for m in messages_list],
+            stream=True,
+            **maybe_inference_options,
+        )
 
         if isinstance(iterator_or_completion, Iterator):
             iter0: Iterator[JSONDict] = iterator_or_completion
