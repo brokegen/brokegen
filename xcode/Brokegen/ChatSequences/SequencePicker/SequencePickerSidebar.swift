@@ -129,6 +129,12 @@ struct MiniSequencePickerSidebar: View {
                 .padding(.trailing, -24)
             }
         }
+        .onAppear {
+            Task {
+                try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: true)
+                try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: false)
+            }
+        }
     }
 
     func sidebarRow(_ sequence: ChatSequence) -> some View {
