@@ -5,19 +5,21 @@ from typing import AsyncGenerator, AsyncIterator, Iterator
 
 import llama_cpp
 import orjson
+import sqlalchemy
 from sqlalchemy import select
 
 from _util.json import JSONDict, safe_get, safe_get_arrayed
 from _util.status import ServerStatusHolder
 from _util.typing import FoundationModelRecordID
 from audit.http import AuditDB
-from client.message import ChatMessage
 from client.database import HistoryDB, get_db as get_history_db
-from providers_registry._util import local_provider_identifiers, local_fetch_machine_info
+from client.message import ChatMessage
+from inference.iterators import to_async, consolidate_and_call
 from providers.foundation_models.orm import FoundationModelRecord, FoundationModelAddRequest, \
-    lookup_foundation_model_detailed, FoundationModelRecordOrm
+    lookup_foundation_model_detailed, FoundationModelRecordOrm, InferenceEventOrm
 from providers.orm import ProviderRecord, ProviderRecordOrm
 from providers.registry import BaseProvider, InferenceOptions
+from providers_registry._util import local_provider_identifiers, local_fetch_machine_info
 
 logger = logging.getLogger(__name__)
 
@@ -270,8 +272,29 @@ class LlamaCppProvider(BaseProvider):
             **maybe_inference_options,
         )
 
-        if isinstance(iterator_or_completion, Iterator):
-            for chunk in iterator_or_completion:
+        def content_extractor(chunk: JSONDict) -> JSONDict:
+            response_choices = safe_get(chunk, "choices")
+            if len(response_choices) > 1:
+                logger.warning(f"Received {len(response_choices)=}, ignoring all but the first")
+
+            return response_choices[0]
+
+        def content_consolidator(chunk: JSONDict, response: JSONDict) -> JSONDict:
+            # TODO: Check the actual content of this packet, beyond the content field
+            for k, v in chunk.items():
+                if k not in response:
+                    response[k] = v
+                    continue
+
+                if k == 'delta':
+                    response['delta']['content'] += chunk['delta']['content']
+
+                logger.debug(f"Didn't handle duplicate field: {k}={v}")
+
+            return response
+
+        async def format_response(primordial: AsyncIterator[JSONDict]) -> AsyncIterator[JSONDict]:
+            async for chunk in primordial:
                 response_choices = safe_get(chunk, "choices")
                 if len(response_choices) > 1:
                     logger.warning(f"Received {len(response_choices)=}, ignoring all but the first")
@@ -286,9 +309,53 @@ class LlamaCppProvider(BaseProvider):
 
                 yield chunk
 
-        else:
-            response_choices = safe_get(iterator_or_completion, "choices")
-            if len(response_choices) > 1:
-                logger.warning(f"Received {len(response_choices)=}, ignoring all but the first")
+        async def record_inference_event(consolidated_response: JSONDict):
+            inference_event = InferenceEventOrm(
+                model_record_id=inference_model.id,
+                prompt_with_templating=None,
+                reason=__name__,
+                response_created_at=datetime.now(tz=timezone.utc),
+            )
 
-            yield response_choices[0]
+            if safe_get(consolidated_response, 'prompt_eval_count'):
+                inference_event.prompt_tokens = safe_get(consolidated_response, 'prompt_eval_count')
+            if safe_get(consolidated_response, 'prompt_eval_duration'):
+                inference_event.prompt_eval_time = safe_get(consolidated_response, 'prompt_eval_duration') / 1e9
+
+            if safe_get(consolidated_response, 'created_at'):
+                inference_event.response_created_at = \
+                    datetime.fromisoformat(safe_get(consolidated_response, 'created_at')) \
+                    or datetime.now(tz=timezone.utc)
+            if safe_get(consolidated_response, 'eval_count'):
+                inference_event.response_tokens = safe_get(consolidated_response, 'eval_count')
+            if safe_get(consolidated_response, 'eval_duration'):
+                inference_event.response_eval_time = safe_get(consolidated_response, 'eval_duration') / 1e9
+
+            # TODO: I'm not sure this is even the actual field to check
+            if safe_get(consolidated_response, 'error'):
+                inference_event.response_error = safe_get(consolidated_response, 'error')
+            else:
+                inference_event.response_error = None
+
+            try:
+                history_db.add(inference_event)
+                history_db.commit()
+            except sqlalchemy.exc.SQLAlchemyError:
+                logger.exception(f"Failed to commit {inference_event}")
+                history_db.rollback()
+
+        if isinstance(iterator_or_completion, Iterator):
+            iter0: Iterator[JSONDict] = iterator_or_completion
+            iter1: AsyncIterator[JSONDict] = to_async(iter0)
+        else:
+            async def async_wrapper() -> AsyncIterator[JSONDict]:
+                yield content_extractor(iterator_or_completion)
+
+            iter1: AsyncIterator[JSONDict] = async_wrapper()
+
+        iter2: AsyncIterator[JSONDict] = consolidate_and_call(
+            iter1, content_consolidator, {},
+            record_inference_event)
+        iter3: AsyncIterator[JSONDict] = format_response(iter2)
+
+        return iter3

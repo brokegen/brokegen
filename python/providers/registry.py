@@ -90,7 +90,10 @@ class BaseProvider:
     ) -> AsyncIterator[JSONDict]:
         messages_list: list[ChatMessage] = fetch_messages_for_sequence(sequence_id, history_db)
 
-        return self.chat_from(
+        # NB This isn't used anywhere, yet, so we don't care
+        await retrieval_context
+
+        return await self.chat_from(
             messages_list,
             inference_model,
             inference_options,

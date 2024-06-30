@@ -1,5 +1,5 @@
 import logging
-from typing import AsyncIterator, Callable, TypeVar, Awaitable, Any
+from typing import AsyncIterator, Callable, TypeVar, Awaitable, Any, Iterator
 
 from orjson import orjson
 
@@ -9,6 +9,11 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar('T')
 U = TypeVar('U')
+
+
+async def to_async(iter: Iterator[T]) -> AsyncIterator[T]:
+    for chunk in iter:
+        yield chunk
 
 
 async def encode_to_bytes(primordial: AsyncIterator[str]) -> AsyncIterator[bytes]:
