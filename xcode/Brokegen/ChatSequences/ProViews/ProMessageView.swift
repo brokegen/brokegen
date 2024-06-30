@@ -39,6 +39,40 @@ struct ProMessageView: View {
         get { return renderMessageAsMarkdown ?? defaultRenderAsMarkdown }
     }
 
+    var buttons: some View {
+        HStack(spacing: 24) {
+            Button(action: {
+                renderMessageAsMarkdown = !renderAsMarkdown
+            }, label: {
+                Image(systemName: renderAsMarkdown ? "doc.richtext.fill" : "doc.richtext")
+            })
+
+            Button(action: {
+                let pasteboard = NSPasteboard.general
+                // https://stackoverflow.com/questions/49211910/s
+                pasteboard.clearContents()
+                pasteboard.setString(message.content, forType: .string)
+            }, label: {
+                Image(systemName: "clipboard")
+            })
+
+            if case .stored(let message) = message {
+                Button(action: { self.branchAction?() }, label: {
+                    Image(systemName: "arrow.triangle.branch")
+                })
+                .disabled(self.branchAction == nil)
+            }
+            else {
+                Button(action: {}, label: {
+                    Image(systemName: "arrow.triangle.branch")
+                })
+                .disabled(true)
+            }
+        }
+        .font(.system(size: 24))
+        .buttonStyle(.borderless)
+    }
+
     var headerSection: some View {
         HStack(alignment: .bottom, spacing: 0) {
             Button(action: {
@@ -80,38 +114,8 @@ struct ProMessageView: View {
                 .padding(.leading, 24)
                 .padding(.trailing, 24)
 
-                HStack(spacing: 24) {
-                    Button(action: {
-                        renderMessageAsMarkdown = !renderAsMarkdown
-                    }, label: {
-                        Image(systemName: renderAsMarkdown ? "doc.richtext.fill" : "doc.richtext")
-                    })
-
-                    Button(action: {
-                        let pasteboard = NSPasteboard.general
-                        // https://stackoverflow.com/questions/49211910/s
-                        pasteboard.clearContents()
-                        pasteboard.setString(message.content, forType: .string)
-                    }, label: {
-                        Image(systemName: "clipboard")
-                    })
-
-                    if case .stored(let message) = message {
-                        Button(action: { self.branchAction?() }, label: {
-                            Image(systemName: "arrow.triangle.branch")
-                        })
-                        .disabled(self.branchAction == nil)
-                    }
-                    else {
-                        Button(action: {}, label: {
-                            Image(systemName: "arrow.triangle.branch")
-                        })
-                        .disabled(true)
-                    }
-                }
-                .font(.system(size: 24))
-                .buttonStyle(.borderless)
-                .padding(.trailing, 18)
+                buttons
+                    .padding(.trailing, 18)
             }
         }
         .font(.system(size: 18))
@@ -133,36 +137,49 @@ struct ProMessageView: View {
             }
 
             if expandContent && !message.content.isEmpty {
-                if renderAsMarkdown {
-                    Markdown(message.content)
+                ZStack(alignment: .topTrailing) {
+                    if renderAsMarkdown {
+                        Markdown(message.content)
                         // TODO: Re-enable the theme once we figure out how to tweak it
                         // .markdownTheme(.gitHub)
-                        .markdownTextStyle {
-                            FontSize(18)
-                            BackgroundColor(nil)
-                        }
-                        .markdownBlockStyle(\.paragraph) { configuration in
-                            configuration.label
-                                .lineSpacing(6)
-                                .markdownMargin(top: 6)
-                        }
-                        .textSelection(.enabled)
-                        .padding(16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(Color(.controlBackgroundColor))
-                        )
-                }
-                else {
-                    Text(message.content)
-                        .font(.system(size: 18))
-                        .lineSpacing(6)
-                        .textSelection(.enabled)
-                        .padding(16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(Color(.controlBackgroundColor))
-                        )
+                            .markdownTextStyle {
+                                FontSize(18)
+                                BackgroundColor(nil)
+                            }
+                            .markdownBlockStyle(\.paragraph) { configuration in
+                                configuration.label
+                                    .lineSpacing(6)
+                                    .markdownMargin(top: 6)
+                            }
+                            .textSelection(.enabled)
+                            .padding(16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(Color(.controlBackgroundColor))
+                            )
+                    }
+                    else {
+                        Text(message.content)
+                            .font(.system(size: 18))
+                            .lineSpacing(6)
+                            .textSelection(.enabled)
+                            .padding(16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(Color(.controlBackgroundColor))
+                            )
+                    }
+                    
+                    if !showMessageHeaders && isHovered {
+                        buttons
+                            .padding(16)
+                            .background(
+                                Rectangle()
+                                    .fill(Color(.controlBackgroundColor))
+                                    .opacity(0.8)
+                            )
+                            .padding(.trailing, 18)
+                    }
                 }
             }
         }
