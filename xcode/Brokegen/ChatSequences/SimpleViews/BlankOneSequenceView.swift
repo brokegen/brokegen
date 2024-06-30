@@ -142,7 +142,7 @@ struct BlankOneSequenceView: View {
     }
 
     func submit(withRetrieval: Bool = false) {
-        Task.init {
+        Task {
             submitting = true
 
             let messageId: ChatMessageServerID? = try? await chatService.constructChatMessage(from: TemporaryChatMessage(

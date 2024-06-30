@@ -83,6 +83,18 @@ class OneSequenceViewModel: ObservableObject {
         }
     }
 
+    func refreshSequenceData() {
+        Task {
+            guard sequence.serverId != nil else { return }
+
+            if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId!) {
+                DispatchQueue.main.async {
+                    self.chatService.updateSequence(withSameId: refreshedSequence)
+                }
+            }
+        }
+    }
+
     private func completionHandler(
         caller callerName: String,
         endpoint: String

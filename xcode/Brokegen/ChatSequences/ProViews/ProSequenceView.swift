@@ -458,6 +458,12 @@ struct ProSequenceView: View {
                 )
             }
             .disabled(viewModel.appSettings.preferredAutonamingModel == nil)
+
+            Button {
+                viewModel.refreshSequenceData()
+            } label: {
+                Text("Force ChatSequence data refresh...")
+            }
         }
     }
 
