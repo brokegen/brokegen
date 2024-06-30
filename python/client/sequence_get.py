@@ -16,7 +16,7 @@ from starlette.exceptions import HTTPException
 
 from _util.json import JSONDict, DatetimeEncoder, CatchAllEncoder
 from _util.typing import ChatSequenceID
-from providers.inference_models.orm import FoundationModelRecordOrm, lookup_foundation_model_for_event_id
+from providers.foundation_models.orm import FoundationModelRecordOrm, lookup_foundation_model_for_event_id
 from .message import ChatMessageOrm, ChatMessage, ChatMessageResponse
 from .sequence import ChatSequenceOrm, lookup_sequence_parents, ChatSequenceResponse, ChatSequence, InfoMessageOut
 from .database import HistoryDB, get_db as get_history_db

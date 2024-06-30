@@ -11,7 +11,7 @@ from _util.typing import PromptText, FoundationModelRecordID
 from client.message import ChatMessage
 from client.sequence import ChatSequenceOrm
 from client.database import HistoryDB
-from providers.inference_models.orm import FoundationModelRecordOrm
+from providers.foundation_models.orm import FoundationModelRecordOrm
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry
 

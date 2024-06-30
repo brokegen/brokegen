@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import PromptText, FoundationModelRecordID
 from retrieval.faiss.knowledge import KnowledgeSingleton, get_knowledge
-from providers.inference_models.orm import InferenceReason
+from providers.foundation_models.orm import InferenceReason
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

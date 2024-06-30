@@ -15,7 +15,7 @@ from _util.typing import FoundationModelHumanID, FoundationModelRecordID
 from audit.http import AuditDB, get_db as get_audit_db
 from client.database import HistoryDB, get_db as get_history_db
 from inference.iterators import dump_to_bytes
-from providers.inference_models.orm import FoundationModelRecord, FoundationModelRecordOrm
+from providers.foundation_models.orm import FoundationModelRecord, FoundationModelRecordOrm
 from providers.orm import ProviderID, ProviderType, ProviderLabel
 from providers.registry import ProviderRegistry, BaseProvider
 from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON, OllamaResponseContentJSON, \

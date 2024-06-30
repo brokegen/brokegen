@@ -20,7 +20,7 @@ class ChatSequence(BaseModel):
     generated_at: datetime
     generation_complete: bool
     inference_job_id: Optional[PositiveInt] = None
-    """Should be `providers.inference_models.orm.InferenceEventID`, but circular import, for now."""
+    """Should be `providers.foundation_models.orm.InferenceEventID`, but circular import, for now."""
     inference_error: Optional[str] = None
 
     model_config = ConfigDict(

@@ -14,7 +14,7 @@ from audit.http import AuditDB
 from client.message import ChatMessage
 from client.database import HistoryDB, get_db as get_history_db
 from providers_registry._util import local_provider_identifiers, local_fetch_machine_info
-from providers.inference_models.orm import FoundationModelRecord, FoundationModelAddRequest, \
+from providers.foundation_models.orm import FoundationModelRecord, FoundationModelAddRequest, \
     lookup_foundation_model_detailed, FoundationModelRecordOrm
 from providers.orm import ProviderRecord, ProviderRecordOrm
 from providers.registry import BaseProvider, InferenceOptions

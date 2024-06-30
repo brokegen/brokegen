@@ -8,7 +8,7 @@ from _util.json import safe_get
 from _util.typing import FoundationModelHumanID
 from audit.http import AuditDB
 from client.database import HistoryDB
-from providers.inference_models.orm import FoundationModelRecordOrm, lookup_foundation_model
+from providers.foundation_models.orm import FoundationModelRecordOrm, lookup_foundation_model
 from providers.orm import ProviderLabel, ProviderRecord, ProviderRecordOrm
 from providers.registry import ProviderRegistry
 from .list import do_api_show, _real_ollama_client

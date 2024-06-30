@@ -15,7 +15,7 @@ from _util.json import safe_get
 from _util.typing import FoundationModelHumanID
 from audit.http import AuditDB
 from client.database import HistoryDB
-from providers.inference_models.orm import FoundationModelRecord
+from providers.foundation_models.orm import FoundationModelRecord
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry, BaseProvider
 from providers_registry.ollama.json import OllamaEgressEventBuilder

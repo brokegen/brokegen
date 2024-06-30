@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from _util.typing import FoundationModelRecordID
 from client.database import HistoryDB, get_db as get_history_db
-from providers.inference_models.orm import FoundationModelRecordOrm, lookup_foundation_model, \
+from providers.foundation_models.orm import FoundationModelRecordOrm, lookup_foundation_model, \
     lookup_foundation_model_detailed, FoundationModelAddRequest
 from providers.orm import ProviderRecordOrm, ProviderRecord, ProviderAddRequest
 

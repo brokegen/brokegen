@@ -24,7 +24,7 @@ from client.sequence_add import do_extend_sequence
 from client.sequence_get import fetch_messages_for_sequence
 from inference.continuation import ContinueRequest, ExtendRequest, select_continuation_model, AutonamingOptions
 from inference.iterators import consolidate_and_yield, tee_to_console_output
-from providers.inference_models.orm import FoundationModelRecordOrm, InferenceEventOrm
+from providers.foundation_models.orm import FoundationModelRecordOrm, InferenceEventOrm
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry, InferenceOptions
 from retrieval.faiss.retrieval import RetrievalLabel

@@ -19,7 +19,7 @@ from client_ollama.forward import forward_request_nolog, forward_request
 from inference.continuation import AutonamingOptions
 from inference.iterators import consolidate_and_call, tee_to_console_output, decode_from_bytes, stream_str_to_json, \
     dump_to_bytes
-from providers.inference_models.orm import InferenceEventOrm
+from providers.foundation_models.orm import InferenceEventOrm
 from providers.registry import ProviderRegistry, InferenceOptions
 from providers_registry.ollama.api_chat.inject_rag import do_proxy_chat_rag
 from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON, OllamaResponseContentJSON, \

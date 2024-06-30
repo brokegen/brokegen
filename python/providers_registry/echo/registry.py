@@ -11,7 +11,7 @@ from client.message import ChatMessage
 from client.database import HistoryDB, get_db as get_history_db
 from inference.iterators import tee_to_console_output, consolidate_and_call
 from inference.logging import construct_new_sequence_from, inference_event_logger
-from providers.inference_models.orm import FoundationModelRecord, FoundationModelAddRequest, \
+from providers.foundation_models.orm import FoundationModelRecord, FoundationModelAddRequest, \
     lookup_foundation_model_detailed, FoundationModelRecordOrm
 from providers.orm import ProviderType, ProviderLabel, ProviderRecord, ProviderID
 from providers.registry import BaseProvider, ProviderRegistry, ProviderFactory, InferenceOptions

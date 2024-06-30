@@ -15,7 +15,7 @@ from inference.continuation import AutonamingOptions
 from providers.registry import InferenceOptions
 from inference.iterators import decode_from_bytes, stream_str_to_json
 from inference.prompting.templating import apply_llm_template
-from providers.inference_models.orm import InferenceReason, FoundationModelRecordOrm
+from providers.foundation_models.orm import InferenceReason, FoundationModelRecordOrm
 from providers_registry.ollama.api_chat.converter import convert_chat_to_generate
 from providers_registry.ollama.api_chat.intercept import do_capture_chat_messages
 from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON, ollama_log_indexer

@@ -11,7 +11,7 @@ from audit.http import AuditDB
 from audit.http_raw import HttpxLogger
 from client.database import HistoryDB
 from inference.iterators import stream_bytes_to_json, consolidate_and_call, dump_to_bytes
-from providers.inference_models.orm import InferenceEventOrm, InferenceReason
+from providers.foundation_models.orm import InferenceEventOrm, InferenceReason
 from providers_registry.ollama.api_chat.logging import finalize_inference_job, OllamaRequestContentJSON, \
     OllamaResponseContentJSON, ollama_response_consolidator
 from providers_registry.ollama.models.lookup import lookup_model_offline

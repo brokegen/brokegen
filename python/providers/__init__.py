@@ -1,1 +1,1 @@
-from . import inference_models, orm, registry, routes
+from . import foundation_models, orm, registry, routes

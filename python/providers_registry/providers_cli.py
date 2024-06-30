@@ -26,7 +26,7 @@ from audit.http import AuditDB, get_db as get_audit_db
 from client.message import ChatMessage
 from client.database import HistoryDB, get_db as get_history_db
 from inference.iterators import tee_to_console_output
-from providers.inference_models.orm import FoundationModelRecordOrm
+from providers.foundation_models.orm import FoundationModelRecordOrm
 from providers.orm import ProviderLabel, ProviderRecord
 from providers.registry import ProviderRegistry, BaseProvider, InferenceOptions
 

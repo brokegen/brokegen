@@ -9,7 +9,7 @@ from sqlalchemy import select
 from audit.http import get_db as get_audit_db, AuditDB
 from client.database import HistoryDB, get_db as get_history_db
 from providers_registry._util import local_provider_identifiers, local_fetch_machine_info
-from providers.inference_models.orm import FoundationModelRecord
+from providers.foundation_models.orm import FoundationModelRecord
 from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord, ProviderType
 from providers.registry import ProviderRegistry, BaseProvider, ProviderFactory
 from providers_registry.ollama.models.list import do_list_available_models

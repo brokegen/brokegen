@@ -27,7 +27,7 @@ import client.database
 import client_ollama
 import inference.continuation_routes
 import inference.prompting.superprompting
-import providers.inference_models
+import providers.foundation_models
 import providers.routes
 import providers_registry
 import providers_registry.ollama.forwarding_routes
@@ -246,7 +246,7 @@ def run_proxy(
 
     # brokegen-specific endpoints
     providers.routes.install_routes(app)
-    providers.inference_models.routes.install_routes(app)
+    providers.foundation_models.routes.install_routes(app)
     inference.autonaming.routes.install_routes(app)
     inference.continuation_routes.install_routes(app)
     client.install_routes(app)

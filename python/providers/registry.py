@@ -11,7 +11,7 @@ from audit.http import AuditDB
 from client.database import HistoryDB
 from client.message import ChatMessage
 from client.sequence_get import fetch_messages_for_sequence
-from .inference_models.orm import FoundationModelRecord, FoundationModelResponse, FoundationModelRecordOrm
+from .foundation_models.orm import FoundationModelRecord, FoundationModelResponse, FoundationModelRecordOrm
 from .orm import ProviderLabel, ProviderRecord, ProviderType
 
 logger = logging.getLogger(__name__)

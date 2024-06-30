@@ -9,7 +9,7 @@ from sqlalchemy import select, or_, func
 from _util.json import safe_get
 from _util.typing import FoundationModelHumanID
 from client.database import HistoryDB
-from providers.inference_models.orm import FoundationModelRecordOrm, FoundationModelRecord, FoundationModelAddRequest, \
+from providers.foundation_models.orm import FoundationModelRecordOrm, FoundationModelRecord, FoundationModelAddRequest, \
     lookup_foundation_model_detailed
 from providers.orm import ProviderRecord
 from providers_registry.ollama.api_chat.logging import OllamaResponseContentJSON

@@ -17,7 +17,7 @@ from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
 from client.database import HistoryDB, get_db as get_history_db
 from inference.continuation import ContinueRequest, select_continuation_model
-from providers.inference_models.orm import FoundationModelRecordOrm
+from providers.foundation_models.orm import FoundationModelRecordOrm
 from providers.registry import ProviderRegistry, BaseProvider
 from retrieval.faiss.knowledge import get_knowledge, KnowledgeSingleton
 from retrieval.faiss.retrieval import RetrievalLabel, RetrievalPolicy, SimpleRetrievalPolicy, SummarizingRetrievalPolicy

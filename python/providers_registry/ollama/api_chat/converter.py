@@ -13,7 +13,7 @@ from client.database import HistoryDB
 from providers.registry import InferenceOptions
 from inference.iterators import stream_str_to_json
 from inference.prompting.templating import apply_llm_template
-from providers.inference_models.orm import FoundationModelRecordOrm
+from providers.foundation_models.orm import FoundationModelRecordOrm
 from .logging import OllamaRequestContentJSON
 from ..api_generate import do_generate_nolog
 
