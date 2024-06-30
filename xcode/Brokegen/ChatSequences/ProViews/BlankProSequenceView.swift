@@ -450,7 +450,6 @@ struct BlankProSequenceView: View {
                 geometry: geometry,
                 allowClear: viewModel.continuationInferenceModel != nil)
             .disabled(viewModel.appSettings.stillPopulating)
-            .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
             .foregroundStyle(Color(.disabledControlTextColor))
             .contentShape(Rectangle())
         }

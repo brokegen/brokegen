@@ -44,7 +44,6 @@ struct BlankOneSequenceView: View {
                             geometry: geometry,
                             allowClear: modelSelection != nil)
                         .disabled(appSettings.stillPopulating)
-                        .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.top, max(

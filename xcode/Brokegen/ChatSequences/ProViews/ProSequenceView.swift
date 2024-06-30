@@ -476,7 +476,6 @@ struct ProSequenceView: View {
                 showModelPicker: $showContinuationModelPicker,
                 geometry: geometry,
                 allowClear: true)
-            .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
             .foregroundStyle(Color(.disabledControlTextColor))
             .contentShape(Rectangle())
         }

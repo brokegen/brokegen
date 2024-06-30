@@ -17,16 +17,16 @@ func formatJson(_ jsonDict: JSON?, prefix: String? = nil) -> String {
 
 struct OneFoundationModelView: View {
     public static let preferredMaxWidth: CGFloat = 800
-
+    
     private var model: FoundationModel
-
+    
     @Binding private var modelAvailable: Bool
     @State private var expandContent: Bool
     @State private var isHovered = false
-
+    
     @Binding private var modelSelection: FoundationModel?
     private let enableModelSelection: Bool
-
+    
     init(
         model: FoundationModel,
         modelAvailable: Binding<Bool>,
@@ -37,11 +37,11 @@ struct OneFoundationModelView: View {
         self.model = model
         self._modelAvailable = modelAvailable
         self._expandContent = State(initialValue: expandContent)
-
+        
         self._modelSelection = modelSelection
         self.enableModelSelection = enableModelSelection
     }
-
+    
     var body: some View {
         VStack(alignment: .leading) {
             HStack(alignment: .top) {
@@ -55,7 +55,7 @@ struct OneFoundationModelView: View {
                                     .foregroundStyle(Color.purple)
                             }
                         }
-
+                        
                         Text(model.humanId)
                             .font(.system(size: 36))
                             .monospaced()
@@ -63,7 +63,7 @@ struct OneFoundationModelView: View {
                             .lineLimit(1...3)
                             .padding(.bottom, 8)
                     }
-
+                    
                     if model.label != nil {
                         Text("\(model.label!["type"]?.string ?? "[ProviderType]") -- \(model.label!["id"]?.string ?? "[ProviderLabel]")")
                             .font(.system(size: 24))
@@ -71,10 +71,10 @@ struct OneFoundationModelView: View {
                     }
                 }
             }
-
+            
             if expandContent {
                 Divider()
-
+                
                 if model.latestInferenceEvent != nil {
                     Grid {
                         GridRow {
@@ -84,15 +84,15 @@ struct OneFoundationModelView: View {
                                 .gridColumnAlignment(.trailing)
                         }
                         .foregroundStyle(Color(.controlTextColor))
-
+                        
                         GridRow {
                             Text("Recent inference event count:")
                             Text("\(model.recentInferenceEvents)")
                         }
                         .foregroundStyle(Color(.controlTextColor))
-
+                        
                         Divider()
-
+                        
                         GridRow {
                             Text("Latest inference event:")
                             Text(model.latestInferenceEvent!.ISO8601Format())
@@ -100,10 +100,10 @@ struct OneFoundationModelView: View {
                     }
                     .frame(alignment: .leading)
                     .font(.system(size: 24))
-
+                    
                     Divider()
                 }
-
+                
                 Group {
                     if !(model.displayStats?.dictionary?.isEmpty ?? true) {
                         Text("stats: \n" + formatJson(model.displayStats, prefix: "  "))
@@ -111,7 +111,7 @@ struct OneFoundationModelView: View {
                             .monospaced()
                             .padding(4)
                     }
-
+                    
                     Text(formatJson(model.modelIdentifiers))
                         .lineLimit(1...)
                         .monospaced()
@@ -121,6 +121,8 @@ struct OneFoundationModelView: View {
             }
         }
         .padding(24)
+        // Set a max width, because FoundationModel template/license lines run really long
+        .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
         .contentShape(Rectangle())
         .onTapGesture {
             // TODO: This is a very awkward tri-state click, do something clearer.
@@ -178,7 +180,6 @@ struct OFMPicker: View {
                         }
 
                         Spacer()
-                            .frame(minWidth: 0)
 
                         Button(action: {
                             selectedModelBinding = nil
@@ -202,9 +203,7 @@ struct OFMPicker: View {
             }
             .padding(36)
             .frame(minHeight: 144)
-
-            Spacer()
-                .frame(maxWidth: .infinity, maxHeight: 0)
+            .frame(maxWidth: .infinity)
         }
         .sheet(isPresented: $showModelPicker) {
             ModelPickerView(modelSelection: $selectedModelBinding)
