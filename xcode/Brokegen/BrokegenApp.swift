@@ -24,6 +24,7 @@ struct BrokegenApp: App {
     @ObservedObject private var chatSettingsService = CSCSettingsService()
 
     @Environment(\.openWindow) var openWindow
+    @FocusedObject private var windowState: WindowViewModel?
 
     /// We have to make a bunch of "temporary" variables to do a non-automatic init
     init() {
@@ -95,12 +96,16 @@ struct BrokegenApp: App {
                 .keyboardShortcut("n", modifiers: [.command, .shift])
             }
             CommandGroup(after: .newItem) {
-                NavigationLink(destination: EmptyView()) {
+                Button(action: {
+                    windowState?.navigateToBlank()
+                }, label: {
                     Text("New Chat")
-                }
+                })
                 .keyboardShortcut("n", modifiers: [.command])
-                // Disabled, because can't figure out what View hierarchy would pass the @Environments
-                .disabled(true)
+                .disabled(
+                    windowState == nil
+                    // TODO: Also disable if the top-most controller is a BLANK_CHAT
+                )
             }
 
             CommandGroup(after: .toolbar) {

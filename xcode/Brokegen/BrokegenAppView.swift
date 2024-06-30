@@ -19,31 +19,47 @@ class PathHost: ObservableObject {
     }
 }
 
+class WindowViewModel: ObservableObject {
+    struct BLANK_CHAT: Hashable {
+        public func hash(into hasher: inout Hasher) {
+            hasher.combine(7)
+        }
+    }
+
+    var pathHost: PathHost = PathHost()
+    var blankViewModel: BlankSequenceViewModel
+
+    init(blankViewModel: BlankSequenceViewModel) {
+        self.blankViewModel = blankViewModel
+    }
+
+    func navigateToBlank() {
+        self.pathHost.push(BLANK_CHAT())
+    }
+}
+
 struct BrokegenAppView: View {
     @EnvironmentObject private var chatService: ChatSyncService
     @EnvironmentObject private var providerService: ProviderService
-    // This is the only one that really belongs here, because multiple windows
-    @StateObject private var pathHost: PathHost = PathHost()
     @EnvironmentObject public var chatSettingsService: CSCSettingsService
     @EnvironmentObject public var appSettings: AppSettings
-    @StateObject private var blankViewModel: BlankSequenceViewModel
+
+    @StateObject private var windowState: WindowViewModel
 
     init(blankViewModel: BlankSequenceViewModel) {
-        self._blankViewModel = StateObject(wrappedValue: blankViewModel)
+        self._windowState = StateObject(wrappedValue: WindowViewModel(blankViewModel: blankViewModel))
     }
 
     var body: some View {
-        // TODO: Should this be done a different way, somehow?
-        // How do I get these to share state and not "jump" during navigation?
         let sharedSidebar = AppSidebar(
             useSimplifiedSequenceViews: $chatSettingsService.useSimplifiedSequenceViews,
             showDebugSidebarItems: $appSettings.showDebugSidebarItems
         )
+            .navigationSplitViewColumnWidth(ideal: 360)
 
-        NavigationStack(path: $pathHost.path) {
+        NavigationStack(path: $windowState.pathHost.path) {
             NavigationSplitView(sidebar: {
                 sharedSidebar
-                    .navigationSplitViewColumnWidth(ideal: 360)
             }, detail: {
                 SequencePickerView(onlyUserPinned: true)
             })
@@ -59,9 +75,22 @@ struct BrokegenAppView: View {
                     }
                 })
             }
+            .navigationDestination(for: WindowViewModel.BLANK_CHAT.self) { _ in
+                NavigationSplitView(sidebar: {
+                    sharedSidebar
+                }, detail: {
+                    if chatSettingsService.useSimplifiedBlankOSV {
+                        BlankOneSequenceView()
+                    }
+                    else {
+                        BlankProSequenceView()
+                    }
+                })
+            }
         }
-        .environmentObject(pathHost)
-        .environmentObject(self.blankViewModel)
+        .environmentObject(windowState.pathHost)
+        .environmentObject(windowState.blankViewModel)
+        .focusedSceneObject(windowState)
     }
 }
 
