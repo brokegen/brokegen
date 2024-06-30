@@ -431,6 +431,43 @@ struct BlankProSequenceView: View {
         }
     }
 
+    @ViewBuilder
+    func oimPicker(_ geometry: GeometryProxy) -> some View {
+        VStack(alignment: .center, spacing: 0) {
+            if viewModel.appSettings.stillPopulating {
+                ProgressView()
+                    .progressViewStyle(.linear)
+                    .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
+            }
+
+            OFMPicker(
+                boxLabel: "Select an inference model:",
+                selectedModelBinding: $viewModel.continuationInferenceModel,
+                showModelPicker: $showContinuationModelPicker,
+                geometry: geometry,
+                allowClear: true)
+            .disabled(false && viewModel.appSettings.stillPopulating)
+            .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
+            .foregroundStyle(Color(.disabledControlTextColor))
+            .contentShape(Rectangle())
+
+            if viewModel.appSettings.defaultInferenceModel != nil {
+                OFMPicker(
+                    boxLabel: "Default inference model:",
+                    selectedModelBinding: .constant(viewModel.appSettings.defaultInferenceModel),
+                    showModelPicker: .constant(false),
+                    geometry: geometry,
+                    allowClear: false)
+                .disabled(true)
+                .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
+                .foregroundStyle(Color(.disabledControlTextColor))
+                .contentShape(Rectangle())
+                .padding(.top, 36)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
@@ -458,35 +495,13 @@ struct BlankProSequenceView: View {
                                     }
 
                                     if viewModel.settings.showOIMPicker {
-                                        if viewModel.appSettings.stillPopulating {
-                                            ProgressView()
-                                                .progressViewStyle(.linear)
-                                                .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
-                                        }
-
-                                        HStack(spacing: 0) {
-                                            Spacer()
-
-                                            OFMPicker(
-                                                boxLabel: "Select an inference model:",
-                                                selectedModelBinding: $viewModel.continuationInferenceModel,
-                                                showModelPicker: $showContinuationModelPicker,
-                                                geometry: geometry,
-                                                allowClear: true)
-                                            .disabled(viewModel.appSettings.stillPopulating)
-                                            .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
-                                            .foregroundStyle(Color(.disabledControlTextColor))
-                                            .padding(.bottom, 120)
+                                        oimPicker(geometry)
                                             .padding(.top, max(
                                                 120,
                                                 geometry.size.height * 0.2
                                             ))
-                                            .contentShape(Rectangle())
-                                            .layoutPriority(0.2)
-
-                                            Spacer()
-                                        }
-                                    } // if showOIMPicker
+                                            .padding(.bottom, 120)
+                                    }
                                 } // LazyVStack
                             } // ScrollView
                             .defaultScrollAnchor(.bottom)

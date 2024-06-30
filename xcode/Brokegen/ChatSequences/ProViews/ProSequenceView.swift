@@ -457,6 +457,21 @@ struct ProSequenceView: View {
         }
     }
 
+    @ViewBuilder
+    func oimPicker(_ geometry: GeometryProxy) -> some View {
+        VStack(alignment: .center, spacing: 0) {
+            OFMPicker(
+                boxLabel: "Select an override inference model for next message:",
+                selectedModelBinding: $viewModel.continuationInferenceModel,
+                showModelPicker: $showContinuationModelPicker,
+                geometry: geometry,
+                allowClear: true)
+            .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
+            .foregroundStyle(Color(.disabledControlTextColor))
+            .contentShape(Rectangle())
+        }
+    }
+
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
@@ -522,36 +537,13 @@ struct ProSequenceView: View {
                                     }
 
                                     if settings.showOIMPicker {
-                                        if viewModel.appSettings.stillPopulating {
-                                            ProgressView()
-                                                .progressViewStyle(.linear)
-                                                .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
-                                        }
-
-                                        HStack(spacing: 0) {
-                                            Spacer()
-                                            
-                                            OFMPicker(
-                                                boxLabel: "Select a different inference model for next message:",
-                                                selectedModelBinding: $viewModel.continuationInferenceModel,
-                                                showModelPicker: $showContinuationModelPicker,
-                                                geometry: geometry,
-                                                allowClear: true)
-                                            .disabled(viewModel.appSettings.stillPopulating)
-                                            .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
-                                            .foregroundStyle(Color(.disabledControlTextColor))
-                                            // TODO: We can eventually make this something like pull-to-refresh, putting it relatively far below the fold.
-                                            .padding(.bottom, 120)
+                                        oimPicker(geometry)
                                             .padding(.top, max(
                                                 120,
                                                 geometry.size.height * 0.2
                                             ))
-                                            .contentShape(Rectangle())
-                                            .layoutPriority(0.2)
-                                            
-                                            Spacer()
-                                        }
-                                    } // if showOIMPicker
+                                            .padding(.bottom, 120)
+                                    }
                                 } // LazyVStack
                             } // ScrollView
                             .defaultScrollAnchor(.bottom)
