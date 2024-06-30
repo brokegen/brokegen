@@ -10,7 +10,8 @@ struct ProMessageView: View {
 
     @State private var expandContent: Bool
     @State private var isHovered: Bool = false
-    @State private var renderAsMarkdown: Bool = false
+    @State private var renderMessageAsMarkdown: Bool?
+    @Binding private var defaultRenderAsMarkdown: Bool
 
     init(
         _ message: MessageLike,
@@ -18,7 +19,7 @@ struct ProMessageView: View {
         branchAction: (() -> Void)? = nil,
         stillUpdating stillExpectingUpdate: Bool = false,
         showMessageHeaders: Bool,
-        renderAsMarkdown: Binding<Bool>
+        renderAsMarkdown defaultRenderAsMarkdown: Binding<Bool>
     ) {
         self.message = message
         self.sequence = sequence
@@ -26,9 +27,16 @@ struct ProMessageView: View {
         self.stillExpectingUpdate = stillExpectingUpdate
         self.showMessageHeaders = showMessageHeaders
 
+        self._renderMessageAsMarkdown = State(initialValue: nil)
+        self._defaultRenderAsMarkdown = defaultRenderAsMarkdown
+
         self._expandContent = State(
             initialValue: message.role == "user" || message.role == "assistant"
         )
+    }
+
+    var renderAsMarkdown: Bool {
+        get { return renderMessageAsMarkdown ?? defaultRenderAsMarkdown }
     }
 
     var headerSection: some View {
@@ -74,7 +82,7 @@ struct ProMessageView: View {
 
                 HStack(spacing: 24) {
                     Button(action: {
-                        renderAsMarkdown.toggle()
+                        renderMessageAsMarkdown = !renderAsMarkdown
                     }, label: {
                         Image(systemName: renderAsMarkdown ? "doc.richtext.fill" : "doc.richtext")
                     })
