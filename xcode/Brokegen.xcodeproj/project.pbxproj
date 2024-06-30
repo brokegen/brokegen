@@ -38,7 +38,7 @@
 		CE9867512BF4047C008D6C41 /* BrokegenApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867502BF4047C008D6C41 /* BrokegenApp.swift */; };
 		CE9867552BF4047E008D6C41 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE9867542BF4047E008D6C41 /* Assets.xcassets */; };
 		CE9867592BF4047E008D6C41 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE9867582BF4047E008D6C41 /* Preview Assets.xcassets */; };
-		CE9867632BF41954008D6C41 /* BrokegenAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867622BF41954008D6C41 /* BrokegenAppView.swift */; };
+		CE9867632BF41954008D6C41 /* AppWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE9867622BF41954008D6C41 /* AppWindowView.swift */; };
 		CEA410FF2C1E3B9A00FA3111 /* ManagedService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEA410FE2C1E3B9A00FA3111 /* ManagedService.swift */; };
 		CEA8E2422C2F8DB000757DA8 /* BlankSequenceViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEA8E2412C2F8DB000757DA8 /* BlankSequenceViewModel.swift */; };
 		CEA8E2482C2FD14000757DA8 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = CEA8E2472C2FD14000757DA8 /* MarkdownUI */; };
@@ -122,7 +122,7 @@
 		CE9867502BF4047C008D6C41 /* BrokegenApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrokegenApp.swift; sourceTree = "<group>"; };
 		CE9867542BF4047E008D6C41 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CE9867582BF4047E008D6C41 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		CE9867622BF41954008D6C41 /* BrokegenAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrokegenAppView.swift; sourceTree = "<group>"; };
+		CE9867622BF41954008D6C41 /* AppWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppWindowView.swift; sourceTree = "<group>"; };
 		CEA410FE2C1E3B9A00FA3111 /* ManagedService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagedService.swift; sourceTree = "<group>"; };
 		CEA8E2412C2F8DB000757DA8 /* BlankSequenceViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankSequenceViewModel.swift; sourceTree = "<group>"; };
 		CEAA2B6F2C070AE3002BEB26 /* ChatSequence+Extend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChatSequence+Extend.swift"; sourceTree = "<group>"; };
@@ -285,7 +285,7 @@
 				CE4634F02BFBB4560063142E /* ChatSequences */,
 				CE98675F2BF4149F008D6C41 /* Jobs */,
 				CE9867502BF4047C008D6C41 /* BrokegenApp.swift */,
-				CE9867622BF41954008D6C41 /* BrokegenAppView.swift */,
+				CE9867622BF41954008D6C41 /* AppWindowView.swift */,
 				CEE99E6A2C1002F8008E1B07 /* AppSidebar.swift */,
 				CEFA69482C14C525007EEF8D /* VFlowLayout.swift */,
 				CE9867542BF4047E008D6C41 /* Assets.xcassets */,
@@ -523,7 +523,7 @@
 				CE4634DE2BF937320063142E /* JobsSidebar.swift in Sources */,
 				CEFA694B2C14C7BC007EEF8D /* CSCSettingsView.swift in Sources */,
 				CE4634F22BFBB4730063142E /* SequencePickerView.swift in Sources */,
-				CE9867632BF41954008D6C41 /* BrokegenAppView.swift in Sources */,
+				CE9867632BF41954008D6C41 /* AppWindowView.swift in Sources */,
 				CEAA2B702C070AE3002BEB26 /* ChatSequence+Extend.swift in Sources */,
 				CE9065202C272960003593F1 /* SequencePickerSidebar.swift in Sources */,
 				CEF73F332C1E19B500C46AA5 /* Provider.swift in Sources */,

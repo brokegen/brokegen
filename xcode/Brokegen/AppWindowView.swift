@@ -38,12 +38,8 @@ class WindowViewModel: ObservableObject {
     }
 }
 
-struct BrokegenAppView: View {
-    @EnvironmentObject private var chatService: ChatSyncService
-    @EnvironmentObject private var providerService: ProviderService
-    @EnvironmentObject public var chatSettingsService: CSCSettingsService
-    @EnvironmentObject public var appSettings: AppSettings
-
+struct AppWindowView: View {
+    @EnvironmentObject private var chatSettingsService: CSCSettingsService
     @StateObject private var windowState: WindowViewModel
 
     init(blankViewModel: BlankSequenceViewModel) {
@@ -51,10 +47,7 @@ struct BrokegenAppView: View {
     }
 
     var body: some View {
-        let sharedSidebar = AppSidebar(
-            useSimplifiedSequenceViews: $chatSettingsService.useSimplifiedSequenceViews,
-            showDebugSidebarItems: $appSettings.showDebugSidebarItems
-        )
+        let sharedSidebar = AppSidebar()
             .navigationSplitViewColumnWidth(ideal: 360)
 
         NavigationStack(path: $windowState.pathHost.path) {
@@ -105,6 +98,6 @@ struct BrokegenAppView: View {
         jobs.storedJobs.append(job)
     }
 
-    return AppSidebar(useSimplifiedSequenceViews: Binding.constant(true), showDebugSidebarItems: .constant(true))
+    return AppSidebar()
         .environmentObject(jobs)
 }

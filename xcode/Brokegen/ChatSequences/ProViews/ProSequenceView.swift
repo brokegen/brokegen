@@ -414,15 +414,6 @@ struct ProSequenceView: View {
         Divider()
 
         Section(header: Text("UI Options")) {
-            Button(action: {
-                NSApp.keyWindow?.contentViewController?.tryToPerform(
-                    #selector(NSSplitViewController.toggleSidebar(_:)),
-                    with: nil)
-            }, label: {
-                Text("Toggle Sidebar")
-            })
-            .keyboardShortcut("\\", modifiers: [.command])
-
             Toggle(isOn: $settings.pinChatSequenceDesc) {
                 Text("Pin chat name to top of window")
             }

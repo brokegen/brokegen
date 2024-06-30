@@ -97,21 +97,11 @@ struct ASRow: View {
 
 struct AppSidebar: View {
     @EnvironmentObject private var providerService: ProviderService
-    @EnvironmentObject public var appSettings: AppSettings
-
-    private let useSimplifiedSequenceViews: Binding<Bool>
-    private let showDebugSidebarItems: Binding<Bool>
-
-    init(
-        useSimplifiedSequenceViews: Binding<Bool>,
-        showDebugSidebarItems: Binding<Bool>
-    ) {
-        self.useSimplifiedSequenceViews = useSimplifiedSequenceViews
-        self.showDebugSidebarItems = showDebugSidebarItems
-    }
+    @EnvironmentObject private var appSettings: AppSettings
+    @EnvironmentObject private var chatSettingsService: CSCSettingsService
 
     var settingsSection: some View {
-        AppSidebarSection(isExpanded: showDebugSidebarItems.wrappedValue, label: {
+        AppSidebarSection(isExpanded: appSettings.showDebugSidebarItems, label: {
             HStack {
                 Image(systemName: "gear")
                     .padding(.trailing, 0)
@@ -132,7 +122,18 @@ struct AppSidebar: View {
 
             Divider()
 
-            Toggle(isOn: useSimplifiedSequenceViews, label: {
+            Toggle(isOn: $appSettings.showDebugSidebarItems, label: {
+                HStack(spacing: 0) {
+                    Text("Show debug sidebar items")
+                        .layoutPriority(0.2)
+
+                    Spacer()
+                }
+            })
+            .toggleStyle(.switch)
+            .padding(.trailing, -12)
+
+            Toggle(isOn: $chatSettingsService.useSimplifiedSequenceViews, label: {
                 HStack(spacing: 0) {
                     Text("Use simplified chat interface")
                         .layoutPriority(0.2)
@@ -152,7 +153,7 @@ struct AppSidebar: View {
                 VStack(spacing: 0) {
                     MiniSequencePickerSidebar()
 
-                    if showDebugSidebarItems.wrappedValue {
+                    if appSettings.showDebugSidebarItems {
                         AppSidebarSection(isExpanded: false, label: {
                             HStack {
                                 Image(systemName: "person.3")
@@ -173,7 +174,7 @@ struct AppSidebar: View {
 
                         Text("Inspectors")
                     }) {
-                        if showDebugSidebarItems.wrappedValue {
+                        if appSettings.showDebugSidebarItems {
                             NavigationLink(destination: SystemInfoView()) {
                                 ASRow("System Info")
                             }
@@ -196,7 +197,7 @@ struct AppSidebar: View {
                         ASRow("Vector Stores")
                             .foregroundStyle(Color(.disabledControlTextColor))
 
-                        if showDebugSidebarItems.wrappedValue {
+                        if appSettings.showDebugSidebarItems {
                             Divider()
 
                             ASRow("InferenceJobs")
