@@ -41,7 +41,7 @@ def make_provider_record(
         .where(ProviderRecordOrm.identifiers == provider_identifiers)
     ).scalar_one_or_none()
     if maybe_provider is not None:
-        return ProviderRecord.from_orm(maybe_provider)
+        return ProviderRecord.model_validate(maybe_provider)
 
     optional_kwargs = {}
     if provider_in.machine_info:
@@ -57,7 +57,7 @@ def make_provider_record(
     history_db.add(new_provider)
     history_db.commit()
 
-    return ProviderRecord.from_orm(new_provider)
+    return ProviderRecord.model_validate(new_provider)
 
 
 def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> None:

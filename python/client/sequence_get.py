@@ -85,13 +85,13 @@ def fetch_messages_for_sequence(
         if message is not None:
             if include_sequence_info:
                 augmented_message = ChatMessageResponse(
-                    **ChatMessage.from_orm(message).model_dump(),
+                    **ChatMessage.model_validate(message).model_dump(),
                     message_id=message.id,
                     sequence_id=sequence.id,
                 )
                 messages_list.append(augmented_message)
             else:
-                message_out = ChatMessage.from_orm(message)
+                message_out = ChatMessage.model_validate(message)
                 messages_list.append(message_out)
 
         # For "debug" purposes, compute the diffs even if we don't render them
@@ -117,7 +117,7 @@ def emit_sequence_details(
         sequence_orm: ChatSequenceOrm,
         history_db: HistoryDB,
 ) -> ChatSequenceResponse:
-    response_data: dict = ChatSequence.from_orm(sequence_orm).model_dump()
+    response_data: dict = ChatSequence.model_validate(sequence_orm).model_dump()
     response_data["messages"] = fetch_messages_for_sequence(
         sequence_orm.id,
         history_db,

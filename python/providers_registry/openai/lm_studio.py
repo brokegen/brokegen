@@ -82,7 +82,7 @@ class LMStudioProvider(BaseProvider):
             .where(ProviderRecordOrm.identifiers == provider_identifiers)
         ).scalar_one_or_none()
         if maybe_provider is not None:
-            return ProviderRecord.from_orm(maybe_provider)
+            return ProviderRecord.model_validate(maybe_provider)
 
         new_provider = ProviderRecordOrm(
             identifiers=provider_identifiers,
@@ -92,7 +92,7 @@ class LMStudioProvider(BaseProvider):
         history_db.add(new_provider)
         history_db.commit()
 
-        return ProviderRecord.from_orm(new_provider)
+        return ProviderRecord.model_validate(new_provider)
 
     async def list_models_nocache(
             self,
@@ -136,7 +136,7 @@ class LMStudioProvider(BaseProvider):
                 history_db.add(maybe_model)
                 history_db.commit()
 
-                yield FoundationModelRecord.from_orm(maybe_model)
+                yield FoundationModelRecord.model_validate(maybe_model)
                 continue
 
             else:
@@ -145,7 +145,7 @@ class LMStudioProvider(BaseProvider):
                 history_db.add(new_model)
                 history_db.commit()
 
-                yield FoundationModelRecord.from_orm(new_model)
+                yield FoundationModelRecord.model_validate(new_model)
                 continue
 
 

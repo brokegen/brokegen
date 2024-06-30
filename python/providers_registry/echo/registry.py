@@ -100,14 +100,14 @@ class EchoProvider(BaseProvider):
             history_db.add(maybe_model)
             history_db.commit()
 
-            yield FoundationModelRecord.from_orm(maybe_model)
+            yield FoundationModelRecord.model_validate(maybe_model)
 
         else:
             new_model = FoundationModelRecordOrm(**model_in.model_dump())
             history_db.add(new_model)
             history_db.commit()
 
-            yield FoundationModelRecord.from_orm(new_model)
+            yield FoundationModelRecord.model_validate(new_model)
 
     def chat_from(
             self,

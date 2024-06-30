@@ -266,14 +266,14 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
         maybe_message = lookup_chat_message(params.next_message, history_db)
         if maybe_message is not None:
-            messages_list.append(ChatMessage.from_orm(maybe_message))
+            messages_list.append(ChatMessage.model_validate(maybe_message))
             user_sequence.current_message = maybe_message.id
             user_sequence.generation_complete = True
         else:
             new_message = ChatMessageOrm(**params.next_message.model_dump())
             history_db.add(new_message)
             history_db.commit()
-            messages_list.append(ChatMessage.from_orm(new_message))
+            messages_list.append(ChatMessage.model_validate(new_message))
             user_sequence.current_message = new_message.id
             user_sequence.generation_complete = True
 

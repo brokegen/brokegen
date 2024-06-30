@@ -47,7 +47,7 @@ def build_models_from_api_tags(
             history_db.add(maybe_model)
             history_db.commit()
 
-            yield FoundationModelRecord.from_orm(maybe_model)
+            yield FoundationModelRecord.model_validate(maybe_model)
             continue
 
         else:
@@ -56,7 +56,7 @@ def build_models_from_api_tags(
             history_db.add(new_model)
             history_db.commit()
 
-            yield FoundationModelRecord.from_orm(new_model)
+            yield FoundationModelRecord.model_validate(new_model)
             continue
 
 
@@ -140,7 +140,7 @@ def build_model_from_api_show(
         history_db.add(exact_match)
         history_db.commit()
 
-        return FoundationModelRecord.from_orm(exact_match)
+        return FoundationModelRecord.model_validate(exact_match)
 
     # Scan for /api/tags-created entries one-at-a-time and figure out how to merge in data.
     # This merge is only feasible when /api/tags response and /api/show's 'details' sections are identical,
@@ -164,7 +164,7 @@ def build_model_from_api_show(
         history_db.add(api_tags_match)
         history_db.commit()
 
-        return FoundationModelRecord.from_orm(api_tags_match)
+        return FoundationModelRecord.model_validate(api_tags_match)
 
     raise RuntimeError(
         f"Could not process {human_id}, try calling /api/tags first before populating its inference parameters")
