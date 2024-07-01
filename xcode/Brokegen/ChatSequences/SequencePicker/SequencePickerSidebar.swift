@@ -98,7 +98,7 @@ struct MiniSequencePickerSidebar: View {
                 NavigationLink(destination: SequencePickerView(onlyUserPinned: true)) {
                     ASRow("Browse Pinned", showChevron: true)
                 }
-                NavigationLink(destination: SequencePickerView(onlyUserPinned: false, showSequenceIds: true)) {
+                NavigationLink(destination: SequencePickerView(onlyUserPinned: false)) {
                     ASRow("Browse All", showChevron: true)
                 }
 
