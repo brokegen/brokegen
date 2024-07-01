@@ -77,9 +77,7 @@ struct BlankOneSequenceView: View {
                     .frame(maxHeight: 36)
 
                     HStack(spacing: 0) {
-                        InlineTextInput($promptInEdit, allowNewlineSubmit: chatSettingsService.defaults.allowNewlineSubmit, isFocused: $focusTextInput) {
-                            submit()
-                        }
+                        InlineTextInput($promptInEdit, isFocused: $focusTextInput)
                         .focused($focusTextInput)
                         .onAppear {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -120,6 +118,7 @@ struct BlankOneSequenceView: View {
                                 .padding(.trailing, 12)
                                 .padding(.leading, -6)
                         }
+                        .keyboardShortcut(.return)
                         .disabled(!submitting && promptInEdit.isEmpty)
                         .modifier(ForegroundAccentColor(enabled: submitting || !promptInEdit.isEmpty))
                         .buttonStyle(.plain)

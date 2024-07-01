@@ -105,23 +105,16 @@ struct ChatNameInput: View {
 
 struct InlineTextInput: View {
     @Binding var textInEdit: String
-    let allowNewlineSubmit: Bool
 
     @State var isHovered: Bool = false
     var isFocused: FocusState<Bool>.Binding
 
-    var submitFunc: (() -> Void)
-
     init(
         _ textInEdit: Binding<String>,
-        allowNewlineSubmit: Bool,
-        isFocused: FocusState<Bool>.Binding,
-        submitFunc: (@escaping () -> Void)
+        isFocused: FocusState<Bool>.Binding
     ) {
         _textInEdit = textInEdit
-        self.allowNewlineSubmit = allowNewlineSubmit
         self.isFocused = isFocused
-        self.submitFunc = submitFunc
     }
 
     var body: some View {
@@ -138,15 +131,6 @@ struct InlineTextInput: View {
                     .foregroundColor(Color(.selectedControlColor))
                     .opacity(isHovered ? 1.0 : 0.0)
                 )
-            .onChange(of: textInEdit) {
-                if allowNewlineSubmit {
-                    // TODO: This is wonky as all hell, it submits when you paste text that ends with a newline
-                    if textInEdit.last?.isNewline == .some(true) {
-                        textInEdit.removeLast()
-                        self.submitFunc()
-                    }
-                }
-            }
             .onHover { isHovered in
                 self.isHovered = isHovered
             }
@@ -167,7 +151,7 @@ struct InlineTextInput: View {
                         .frame(maxHeight: .infinity)
                         .frame(maxWidth: .infinity)
 
-                    InlineTextInput($textInEdit, allowNewlineSubmit: allowNewlineSubmit, isFocused: $isFocused) {}
+                    InlineTextInput($textInEdit, isFocused: $isFocused)
                         .frame(minHeight: 200)
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height)

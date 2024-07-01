@@ -20,6 +20,44 @@ struct ProSequenceView: View {
         self.settings = viewModel.settings
     }
 
+    func aioSubmit() {
+        print("[TRACE] Detected ProSV.aioSubmit()")
+
+        if viewModel.submitting || viewModel.responseInEdit != nil {
+            viewModel.stopSubmitAndReceive(userRequested: true)
+        }
+        else {
+            if settings.showSeparateRetrievalButton {
+                if viewModel.sequence.serverId == nil {
+                    _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId)
+                }
+                else if viewModel.promptInEdit.isEmpty {
+                    if settings.allowContinuation {
+                        _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId)
+                    }
+                    else {}
+                }
+                else {
+                    viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId)
+                }
+            }
+            else {
+                if viewModel.sequence.serverId == nil {
+                    _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: settings.forceRetrieval)
+                }
+                else if viewModel.promptInEdit.isEmpty {
+                    if settings.allowContinuation {
+                        _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: settings.forceRetrieval)
+                    }
+                    else {}
+                }
+                else {
+                    viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: settings.forceRetrieval)
+                }
+            }
+        }
+    }
+
     @ViewBuilder
     var submitButtons: some View {
         let saveButtonDisabled: Bool = {
@@ -96,41 +134,7 @@ struct ProSequenceView: View {
             }
         }()
 
-        Button(action: {
-            if viewModel.submitting || viewModel.responseInEdit != nil {
-                viewModel.stopSubmitAndReceive(userRequested: true)
-            }
-            else {
-                if settings.showSeparateRetrievalButton {
-                    if viewModel.sequence.serverId == nil {
-                        _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId)
-                    }
-                    else if viewModel.promptInEdit.isEmpty {
-                        if settings.allowContinuation {
-                            _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId)
-                        }
-                        else {}
-                    }
-                    else {
-                        viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId)
-                    }
-                }
-                else {
-                    if viewModel.sequence.serverId == nil {
-                        _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: settings.forceRetrieval)
-                    }
-                    else if viewModel.promptInEdit.isEmpty {
-                        if settings.allowContinuation {
-                            _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: settings.forceRetrieval)
-                        }
-                        else {}
-                    }
-                    else {
-                        viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: settings.forceRetrieval)
-                    }
-                }
-            }
-        }) {
+        Button(action: aioSubmit) {
             Image(systemName: aioButtonName)
                 .font(.system(size: 32))
         }
@@ -147,32 +151,7 @@ struct ProSequenceView: View {
         VStack(spacing: 0) {
             GeometryReader { geometry in
                 HStack(spacing: 12) {
-                    InlineTextInput($viewModel.promptInEdit, allowNewlineSubmit: settings.allowNewlineSubmit, isFocused: $focusTextInput) {
-                        if viewModel.sequence.serverId == nil {
-                            if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
-                                _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
-                            }
-                            else {
-                                _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId)
-                            }
-                        }
-                        else if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
-                            if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
-                                _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
-                            }
-                            else {
-                                _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId)
-                            }
-                        }
-                        else {
-                            if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
-                                viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
-                            }
-                            else {
-                                viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId)
-                            }
-                        }
-                    }
+                    InlineTextInput($viewModel.promptInEdit,isFocused: $focusTextInput)
                     .padding(.leading, -24)
                     .focused($focusTextInput)
                     .onAppear {
@@ -241,7 +220,7 @@ struct ProSequenceView: View {
                     Rectangle()
                         .fill(Color.red.opacity(0.2))
 
-                    InlineTextInput($settings.overrideSystemPrompt, allowNewlineSubmit: false, isFocused: $focusSystemPromptOverride) {}
+                    InlineTextInput($settings.overrideSystemPrompt, isFocused: $focusSystemPromptOverride)
 
                     Text("Override System Prompt")
                         .foregroundStyle(Color(.disabledControlTextColor))
@@ -249,7 +228,7 @@ struct ProSequenceView: View {
                 }
 
                 ZStack {
-                    InlineTextInput($settings.overrideModelTemplate, allowNewlineSubmit: false, isFocused: $focusModelTemplateOverride) {}
+                    InlineTextInput($settings.overrideModelTemplate, isFocused: $focusModelTemplateOverride)
 
                     Text("Override Model Template")
                         .foregroundStyle(Color(.disabledControlTextColor))
@@ -268,7 +247,7 @@ struct ProSequenceView: View {
                 Rectangle()
                     .fill(Color.blue.opacity(0.2))
 
-                InlineTextInput($settings.seedAssistantResponse, allowNewlineSubmit: false, isFocused: $focusAssistantResponseSeed) {}
+                InlineTextInput($settings.seedAssistantResponse, isFocused: $focusAssistantResponseSeed)
 
                 Text("Seed Assistant Response")
                     .foregroundStyle(Color(.disabledControlTextColor))

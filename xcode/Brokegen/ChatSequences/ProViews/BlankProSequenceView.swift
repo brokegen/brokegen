@@ -22,25 +22,7 @@ struct BlankProSequenceView: View {
     var textEntryView: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                InlineTextInput($viewModel.promptInEdit, allowNewlineSubmit: viewModel.settings.allowNewlineSubmit, isFocused: $focusTextInput) {
-                    // If we have no continuation models chosen, show the picker and don't submit nothing.
-                    if noInferenceModelSelected {
-                        if !viewModel.settings.showOIMPicker {
-                            withAnimation { viewModel.settings.showOIMPicker = true }
-                        }
-                        else {
-                            withAnimation { showContinuationModelPicker = true }
-                        }
-                        return
-                    }
-
-                    if !viewModel.settings.showSeparateRetrievalButton && viewModel.settings.forceRetrieval {
-                        self.requestStartAndTransfer(withRetrieval: true)
-                    }
-                    else {
-                        self.requestStartAndTransfer(withRetrieval: false)
-                    }
-                }
+                InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
                 .padding(.leading, -24)
                 .focused($focusTextInput)
                 .onAppear {
@@ -133,6 +115,7 @@ struct BlankProSequenceView: View {
                             ? Color(.disabledControlTextColor)
                             : Color.accentColor)
                 }
+                .keyboardShortcut(.return)
                 .buttonStyle(.plain)
                 .padding(.trailing, 12)
             }
@@ -179,7 +162,7 @@ struct BlankProSequenceView: View {
                     Rectangle()
                         .fill(Color.red.opacity(0.2))
 
-                    InlineTextInput($viewModel.settings.overrideSystemPrompt, allowNewlineSubmit: false, isFocused: $focusSystemPromptOverride) {}
+                    InlineTextInput($viewModel.settings.overrideSystemPrompt, isFocused: $focusSystemPromptOverride)
 
                     Text("Override System Prompt")
                         .foregroundStyle(Color(.disabledControlTextColor))
@@ -187,7 +170,7 @@ struct BlankProSequenceView: View {
                 }
 
                 ZStack {
-                    InlineTextInput($viewModel.settings.overrideModelTemplate, allowNewlineSubmit: false, isFocused: $focusModelTemplateOverride) {}
+                    InlineTextInput($viewModel.settings.overrideModelTemplate, isFocused: $focusModelTemplateOverride)
 
                     Text("Override Model Template")
                         .foregroundStyle(Color(.disabledControlTextColor))
@@ -206,7 +189,7 @@ struct BlankProSequenceView: View {
                 Rectangle()
                     .fill(Color.blue.opacity(0.2))
 
-                InlineTextInput($viewModel.settings.seedAssistantResponse, allowNewlineSubmit: false, isFocused: $focusAssistantResponseSeed) {}
+                InlineTextInput($viewModel.settings.seedAssistantResponse, isFocused: $focusAssistantResponseSeed)
 
                 Text("Seed Assistant Response")
                     .foregroundStyle(Color(.disabledControlTextColor))

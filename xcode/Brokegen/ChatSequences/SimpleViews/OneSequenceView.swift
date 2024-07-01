@@ -18,26 +18,8 @@ struct OneSequenceView: View {
         HStack(spacing: 0) {
             InlineTextInput(
                 $viewModel.promptInEdit,
-                allowNewlineSubmit: settings.allowNewlineSubmit,
                 isFocused: $focusTextInput
-            ) {
-                if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
-                    if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
-                        _ = viewModel.requestContinue(withRetrieval: true)
-                    }
-                    else {
-                        _ = viewModel.requestContinue()
-                    }
-                }
-                else {
-                    if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
-                        viewModel.requestExtend(withRetrieval: true)
-                    }
-                    else {
-                        viewModel.requestExtend()
-                    }
-                }
-            }
+            )
             .focused($focusTextInput)
             .onAppear {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -128,6 +110,7 @@ struct OneSequenceView: View {
                     .padding(.trailing, 12)
                     .padding(.leading, -6)
             }
+            .keyboardShortcut(.return)
             .disabled(aioButtonDisabled)
             .modifier(ForegroundAccentColor(enabled: !aioButtonDisabled))
             .buttonStyle(.plain)
