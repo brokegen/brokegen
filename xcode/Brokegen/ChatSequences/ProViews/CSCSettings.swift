@@ -14,7 +14,7 @@ struct PersistentDefaultCSUISettings {
 //    var pinChatSequenceDesc: Bool? = nil
 
     @AppStorage("defaultUiSettings.showMessageHeaders")
-    var showMessageHeaders: Bool = true
+    var showMessageHeaders: Bool = false
 
     @AppStorage("defaultUiSettings.renderAsMarkdown")
     var renderAsMarkdown: Bool = true
