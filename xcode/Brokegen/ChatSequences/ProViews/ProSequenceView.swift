@@ -23,142 +23,185 @@ struct ProSequenceView: View {
         self.settings = viewModel.settings
     }
 
-    var textEntryView: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                InlineTextInput($viewModel.promptInEdit, allowNewlineSubmit: settings.allowNewlineSubmit, isFocused: $focusTextInput) {
+    @ViewBuilder
+    var submitButtons: some View {
+        let saveButtonDisabled: Bool = {
+            // TODO: Remove this after we've implemented message uploading
+            return true
+
+            if viewModel.submitting || viewModel.responseInEdit != nil {
+                return true
+            }
+
+            return viewModel.promptInEdit.isEmpty
+        }()
+
+        Button(action: {}) {
+            Image(systemName: "tray.and.arrow.up")
+                .font(.system(size: 32))
+        }
+        .help("Save message on server, no inference")
+        .buttonStyle(.plain)
+        .disabled(saveButtonDisabled)
+        .foregroundStyle(saveButtonDisabled
+                         ? Color(.disabledControlTextColor)
+                         : Color.accentColor)
+
+        if settings.showSeparateRetrievalButton {
+            let retrievalButtonDisabled: Bool = {
+                if viewModel.submitting || viewModel.responseInEdit != nil {
+                    return true
+                }
+
+                return viewModel.promptInEdit.isEmpty && !settings.allowContinuation
+            }()
+
+            Button(action: {
+                if viewModel.sequence.serverId == nil {
+                    _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
+                }
+                else if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
+                    _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
+                }
+                else {
+                    viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
+                }
+            }) {
+                Image(systemName: "arrow.up.doc")
+                    .font(.system(size: 32))
+            }
+            .help("Request inference with RAG generation")
+            .buttonStyle(.plain)
+            .disabled(retrievalButtonDisabled)
+            .foregroundStyle(retrievalButtonDisabled
+                             ? Color(.disabledControlTextColor)
+                             : Color.accentColor)
+        }
+
+        let aioButtonName: String = {
+            if viewModel.submitting || viewModel.responseInEdit != nil {
+                return "stop.fill"
+            }
+
+            if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
+                return "arrow.up.doc"
+            }
+
+            return "paperplane"
+        }()
+
+        let aioButtonDisabled: Bool = {
+            if viewModel.submitting || viewModel.responseInEdit != nil {
+                return false
+            }
+            else {
+                return viewModel.promptInEdit.isEmpty && !settings.allowContinuation
+            }
+        }()
+
+        Button(action: {
+            if viewModel.submitting || viewModel.responseInEdit != nil {
+                viewModel.stopSubmitAndReceive(userRequested: true)
+            }
+            else {
+                if settings.showSeparateRetrievalButton {
                     if viewModel.sequence.serverId == nil {
-                        if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
-                            _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
-                        }
-                        else {
-                            _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId)
-                        }
+                        _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId)
                     }
-                    else if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
-                        if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
-                            _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
-                        }
-                        else {
+                    else if viewModel.promptInEdit.isEmpty {
+                        if settings.allowContinuation {
                             _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId)
                         }
+                        else {}
                     }
                     else {
-                        if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
-                            viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
-                        }
-                        else {
-                            viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId)
-                        }
+                        viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId)
                     }
                 }
-                .padding(.leading, -24)
-                .focused($focusTextInput)
-                .onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        self.focusTextInput = true
+                else {
+                    if viewModel.sequence.serverId == nil {
+                        _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: settings.forceRetrieval)
+                    }
+                    else if viewModel.promptInEdit.isEmpty {
+                        if settings.allowContinuation {
+                            _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: settings.forceRetrieval)
+                        }
+                        else {}
+                    }
+                    else {
+                        viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: settings.forceRetrieval)
                     }
                 }
+            }
+        }) {
+            Image(systemName: aioButtonName)
+                .font(.system(size: 32))
+        }
+        .buttonStyle(.plain)
+        .disabled(aioButtonDisabled)
+        .foregroundStyle(
+            aioButtonDisabled
+            ? Color(.disabledControlTextColor)
+            : Color.accentColor)
+    }
 
-                if settings.showSeparateRetrievalButton {
-                    let retrievalButtonDisabled: Bool = {
-                        if viewModel.submitting || viewModel.responseInEdit != nil {
-                            return true
-                        }
-
-                        return viewModel.promptInEdit.isEmpty && !settings.allowContinuation
-                    }()
-
-                    Button(action: {
+    var textEntryView: some View {
+        VStack(spacing: 0) {
+            GeometryReader { geometry in
+                HStack(spacing: 12) {
+                    InlineTextInput($viewModel.promptInEdit, allowNewlineSubmit: settings.allowNewlineSubmit, isFocused: $focusTextInput) {
                         if viewModel.sequence.serverId == nil {
-                            _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
-                        }
-                        else if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
-                            _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
-                        }
-                        else {
-                            viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
-                        }
-                    }) {
-                        Image(systemName: "arrow.up.doc")
-                            .font(.system(size: 32))
-                            .disabled(retrievalButtonDisabled)
-                            .foregroundStyle(retrievalButtonDisabled
-                                             ? Color(.disabledControlTextColor)
-                                             : Color.accentColor)
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                let aioButtonName: String = {
-                    if viewModel.submitting || viewModel.responseInEdit != nil {
-                        return "stop.fill"
-                    }
-
-                    if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
-                        return "arrow.up.doc"
-                    }
-
-                    return "paperplane"
-                }()
-
-                let aioButtonDisabled: Bool = {
-                    if viewModel.submitting || viewModel.responseInEdit != nil {
-                        return false
-                    }
-                    else {
-                        return viewModel.promptInEdit.isEmpty && !settings.allowContinuation
-                    }
-                }()
-
-                Button(action: {
-                    if viewModel.submitting || viewModel.responseInEdit != nil {
-                        viewModel.stopSubmitAndReceive(userRequested: true)
-                    }
-                    else {
-                        if settings.showSeparateRetrievalButton {
-                            if viewModel.sequence.serverId == nil {
+                            if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
+                                _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
+                            }
+                            else {
                                 _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId)
                             }
-                            else if viewModel.promptInEdit.isEmpty {
-                                if settings.allowContinuation {
-                                    _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId)
-                                }
-                                else {}
+                        }
+                        else if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
+                            if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
+                                _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
+                            }
+                            else {
+                                _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId)
+                            }
+                        }
+                        else {
+                            if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
+                                viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
                             }
                             else {
                                 viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId)
                             }
                         }
-                        else {
-                            if viewModel.sequence.serverId == nil {
-                                _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: settings.forceRetrieval)
-                            }
-                            else if viewModel.promptInEdit.isEmpty {
-                                if settings.allowContinuation {
-                                    _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: settings.forceRetrieval)
-                                }
-                                else {}
-                            }
-                            else {
-                                viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: settings.forceRetrieval)
-                            }
+                    }
+                    .padding(.leading, -24)
+                    .focused($focusTextInput)
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            self.focusTextInput = true
                         }
                     }
-                }) {
-                    Image(systemName: aioButtonName)
-                        .font(.system(size: 32))
-                        .disabled(aioButtonDisabled)
-                        .foregroundStyle(
-                            aioButtonDisabled
-                            ? Color(.disabledControlTextColor)
-                            : Color.accentColor)
+
+                    let useVerticalLayout = geometry.size.height >= 144 + 36
+                    let buttonLayout = useVerticalLayout
+                    ? AnyLayout(VStackLayout(spacing: 18))
+                    : AnyLayout(HStackLayout(spacing: 12))
+
+                    buttonLayout {
+                        if useVerticalLayout {
+                            Spacer()
+                        }
+                        submitButtons
+                    }
+                    .frame(alignment: useVerticalLayout ? .bottom : .center)
+                    .padding(.bottom, useVerticalLayout ? 18 : 0)
+                    .padding([.leading, .trailing], 12)
+                    .animation(.snappy(duration: 0.2))
                 }
-                .buttonStyle(.plain)
+                .padding(.leading, 24)
                 .padding(.trailing, 12)
             }
-            .padding(.leading, 24)
-            .padding(.trailing, 12)
         }
     }
 
