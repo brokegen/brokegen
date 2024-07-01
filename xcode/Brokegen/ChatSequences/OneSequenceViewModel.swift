@@ -217,8 +217,12 @@ class OneSequenceViewModel: ObservableObject {
         }
 
         Task {
-            guard submitting == false else {
+            guard !submitting else {
                 print("[ERROR] OneSequenceViewModel.requestStart(withRetrieval: \(withRetrieval)) during another submission")
+                return
+            }
+            guard !receiving else {
+                print("[ERROR] OneSequenceViewModel.requestStart(withRetrieval: \(withRetrieval)) while receiving response")
                 return
             }
             DispatchQueue.main.async {
@@ -297,8 +301,12 @@ class OneSequenceViewModel: ObservableObject {
         }
 
         Task {
-            guard submitting == false else {
+            guard !submitting else {
                 print("[ERROR] OneSequenceViewModel.requestContinue(withRetrieval: \(withRetrieval)) during another submission")
+                return
+            }
+            guard !receiving else {
+                print("[ERROR] OneSequenceViewModel.requestContinue(withRetrieval: \(withRetrieval)) while receiving response")
                 return
             }
             DispatchQueue.main.async {
@@ -348,8 +356,12 @@ class OneSequenceViewModel: ObservableObject {
 
         Task {
             guard !self.promptInEdit.isEmpty else { return }
-            guard submitting == false else {
+            guard !submitting else {
                 print("[ERROR] OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval)) during another submission")
+                return
+            }
+            guard !receiving else {
+                print("[ERROR] OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval)) while receiving response")
                 return
             }
             DispatchQueue.main.async {
