@@ -169,6 +169,10 @@ class ChatSyncService: ObservableObject {
             }
         }
         catch {}
+
+        // Without this, SwiftUI won't notice renames in particular.
+        // Possibly because we're keeping the Identifiable .id the same?
+        objectWillChange.send()
     }
 
     func updateSequence(_ originalSequenceId: ChatSequenceServerID?, withNewSequence updatedSequenceId: ChatSequenceServerID) async -> ChatSequence? {
