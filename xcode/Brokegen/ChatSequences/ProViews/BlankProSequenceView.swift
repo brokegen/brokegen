@@ -90,7 +90,7 @@ struct BlankProSequenceView: View {
                         return "arrow.up.doc"
                     }
 
-                    return "arrowshape.up"
+                    return "paperplane"
                 }()
 
                 let aioButtonDisabled: Bool = {

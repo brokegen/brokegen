@@ -114,7 +114,7 @@ struct BlankOneSequenceView: View {
                                 }
                             }
                         }) {
-                            Image(systemName: submitting ? "stop.fill" : "arrowshape.up")
+                            Image(systemName: submitting ? "stop.fill" : "paperplane")
                                 .font(.system(size: 32))
                                 .padding(12)
                                 .padding(.trailing, 12)
