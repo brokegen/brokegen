@@ -90,8 +90,6 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 label: ProviderLabel,
                 provider: BaseProvider,
         ) -> list[tuple[FoundationModelRecord, ProviderLabel]]:
-            logger.debug(f"Enumerating FoundationModels for {label}")
-
             list_maker: AsyncIterable[FoundationModelRecord] = provider.list_models_nocache()
             available_models = [(model, label) async for model in list_maker]
 

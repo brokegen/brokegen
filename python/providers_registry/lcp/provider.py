@@ -63,8 +63,8 @@ class _OneModel:
                 logits_all=True,
             )
         except ValueError as e:
-            logger.error(f"LlamaCppProvider.available: Failed to load file, ignoring: {self.model_path}")
-            logger.debug(e)
+            # Exception usually happens because we loaded an invalid .gguf file; ignore it.
+            # logger.debug(e)
             return False
 
         tokenized: list[int] = just_tokens.tokenize(sample_text)
