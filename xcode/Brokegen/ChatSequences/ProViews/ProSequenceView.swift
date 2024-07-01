@@ -1,6 +1,7 @@
 import SwiftUI
 
 let tabBarHeight: CGFloat = 48
+let statusBarHeight: CGFloat = 36
 
 struct ProSequenceView: View {
     @EnvironmentObject private var pathHost: PathHost
@@ -9,14 +10,10 @@ struct ProSequenceView: View {
 
     @FocusState private var focusTextInput: Bool
     @State private var showContinuationModelPicker: Bool = false
-    @State private var splitViewLoaded: Bool = false
 
     @FocusState private var focusSystemPromptOverride: Bool
     @FocusState private var focusModelTemplateOverride: Bool
     @FocusState private var focusAssistantResponseSeed: Bool
-
-    @State private var statusBarHeight: CGFloat = 0
-    @State private var lowerVStackHeight: CGFloat = 0
 
     init(_ viewModel: OneSequenceViewModel) {
         self.viewModel = viewModel
@@ -583,7 +580,6 @@ struct ProSequenceView: View {
                                         let indentMessage = !settings.showMessageHeaders
 
                                         // We re-construct a new model object, because it makes rendering much faster.
-                                        // TODO: Why is this working? Are we doing something extremely strange? Are `if let` statements more performant?
                                         let constructedRIE = TemporaryChatMessage(
                                             role: viewModel.responseInEdit!.role,
                                             content: String(viewModel.responseInEdit?.content ?? ""),
@@ -608,10 +604,6 @@ struct ProSequenceView: View {
                             .defaultScrollAnchor(.bottom)
                             .onAppear {
                                 proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
-
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
-                                    splitViewLoaded = true
-                                }
                             }
                             .onChange(of: viewModel.sequence.messages) {
                                 if settings.scrollToBottomOnNew {
@@ -636,27 +628,9 @@ struct ProSequenceView: View {
                     }
                     .frame(minHeight: 240)
 
-                    let maxInputHeight = {
-                        if splitViewLoaded || showLowerVStack || showLowerVStackOptions {
-                            geometry.size.height * 0.7
-                        }
-                        else {
-                            geometry.size.height * 0.2
-                        }
-                    }()
-
                     // This is a separate branch, because otherwise the statusBar is resizeable, which we don't really want.
                     if showStatusBar && !showLowerVStack {
                         statusBar
-                        // Read and store the "preferred" height of the status bar
-                            .background(
-                                GeometryReader { statusBarGeometry in
-                                    Color.clear
-                                        .onAppear {
-                                            statusBarHeight = statusBarGeometry.size.height
-                                        }
-                                }
-                            )
                             .frame(minHeight: statusBarHeight)
                             .frame(maxHeight: statusBarHeight)
                     }
@@ -664,35 +638,15 @@ struct ProSequenceView: View {
                         VStack(spacing: 0) {
                             if showStatusBar {
                                 statusBar
-                                // Read and store the "preferred" height of the status bar
-                                    .background(
-                                        GeometryReader { statusBarGeometry in
-                                            Color.clear
-                                                .onAppear {
-                                                    statusBarHeight = statusBarGeometry.size.height
-                                                }
-                                        }
-                                    )
+                                    .frame(minHeight: statusBarHeight)
+                                    .frame(maxHeight: statusBarHeight)
                             }
 
                             if showLowerVStack {
                                 lowerVStack
-                                    .background(
-                                        GeometryReader { lowerVStackGeometry in
-                                            Color.clear
-                                                .onAppear {
-                                                    lowerVStackHeight = lowerVStackGeometry.size.height
-                                                }
-                                        }
-                                    )
+                                    .frame(minHeight: 72)
                             }
                         }
-                        .frame(
-                            minHeight: statusBarHeight + max(72, lowerVStackHeight),
-                            maxHeight: max(
-                                statusBarHeight + max(72, lowerVStackHeight),
-                                maxInputHeight - statusBarHeight - lowerVStackHeight
-                            ))
                     }
 
                     if showLowerVStackOptions {
@@ -703,6 +657,7 @@ struct ProSequenceView: View {
                                 }
                             }
                             .frame(width: optionsGeometry.size.width)
+                            .frame(idealHeight: 240)
                         }
                     }
 
