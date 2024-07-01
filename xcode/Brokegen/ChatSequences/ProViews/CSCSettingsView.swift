@@ -76,8 +76,6 @@ struct CSCSettingsView: View {
                            labelText: "Scroll to bottom of window on new messages")
                 WideToggle(isOn: $settings.defaults.showOIMPicker,
                            labelText: "Show InferenceModel override picker in ChatSequence Views")
-                WideToggle(isOn: $settings.defaults.allowNewlineSubmit,
-                           labelText: "Allow mouseless submit by pressing enter (or if the last pasted character was a newline)")
                 WideToggle(isOn: $settings.defaults.stayAwakeDuringInference,
                            labelText: "Assert macOS wakelock during inference requests")
             }
@@ -135,10 +133,6 @@ struct CSCSettingsView: View {
                 WidePicker(defaultIsOn: settings.defaults.showOIMPicker,
                            overrideIsOn: $settings.override.showOIMPicker,
                            labelText: "Show InferenceModel override picker in ChatSequence Views", trueText: "show", falseText: "don't show")
-
-                WidePicker(defaultIsOn: settings.defaults.allowNewlineSubmit,
-                           overrideIsOn: $settings.override.allowNewlineSubmit,
-                           labelText: "Allow mouseless submit by pressing enter", trueText: "allow", falseText: "don't allow")
 
                 WidePicker(defaultIsOn: settings.defaults.stayAwakeDuringInference,
                            overrideIsOn: $settings.override.stayAwakeDuringInference,

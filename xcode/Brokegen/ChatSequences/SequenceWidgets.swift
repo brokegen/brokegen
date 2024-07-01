@@ -141,7 +141,6 @@ struct InlineTextInput: View {
 #Preview(traits: .fixedLayout(width: 800, height: 800)) {
     struct ViewHolder: View {
         @State var textInEdit = "typed text"
-        @State var allowNewlineSubmit = false
         @FocusState var isFocused: Bool
 
         var body: some View {

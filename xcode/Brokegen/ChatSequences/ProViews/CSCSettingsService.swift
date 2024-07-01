@@ -65,11 +65,6 @@ class CSCSettingsService: ObservableObject {
             set { override.showOIMPicker = newValue }
         }
 
-        var allowNewlineSubmit: Bool {
-            get { override.allowNewlineSubmit ?? defaults.allowNewlineSubmit }
-            set { override.allowNewlineSubmit = newValue }
-        }
-
         var stayAwakeDuringInference: Bool {
             get { override.stayAwakeDuringInference ?? defaults.stayAwakeDuringInference }
             set { override.stayAwakeDuringInference = newValue }
