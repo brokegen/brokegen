@@ -134,6 +134,7 @@ struct ProSequenceView: View {
             Image(systemName: aioButtonName)
                 .font(.system(size: 32))
         }
+        .keyboardShortcut(.return)
         .buttonStyle(.plain)
         .disabled(aioButtonDisabled)
         .foregroundStyle(
