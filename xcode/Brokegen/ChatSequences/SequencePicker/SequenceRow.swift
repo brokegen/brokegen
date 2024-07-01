@@ -84,7 +84,9 @@ struct SequenceRow: View {
                             .monospaced()
                     }
 
-                    Text("\(sequence.messages.count) messages")
+                    Text(sequence.parentSequences != nil
+                         ? "\(sequence.parentSequences!.count) chat messages"
+                         : "\(sequence.messages.count) info + chat messages")
 
                     if let modelName = displayInferenceModel() {
                         Spacer()
@@ -208,7 +210,9 @@ struct RenameableSequenceRow: View {
                         .monospaced()
                 }
 
-                Text("\(sequence.messages.count) messages")
+                Text(sequence.parentSequences != nil
+                     ? "\(sequence.parentSequences!.count) chat messages"
+                     : "\(sequence.messages.count) info + chat messages")
 
                 if let modelName = displayInferenceModel() {
                     Spacer()
