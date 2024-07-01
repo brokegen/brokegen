@@ -4,13 +4,16 @@ struct SequenceRow: View {
     @EnvironmentObject private var providerService: ProviderService
 
     let sequence: ChatSequence
+    let showSequenceId: Bool
     let action: (() -> Void)
 
     init(
         _ sequence: ChatSequence,
+        showSequenceId: Bool = false,
         action: @escaping () -> Void
     ) {
         self.sequence = sequence
+        self.showSequenceId = showSequenceId
         self.action = action
     }
 
@@ -39,31 +42,39 @@ struct SequenceRow: View {
             action()
         }, label: {
             HStack(spacing: 0) {
-                HStack(alignment: .top, spacing: 16) {
-                    if sequence.userPinned {
-                        Image(systemName: "pin.fill")
-                    }
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(alignment: .top, spacing: 16) {
+                        if sequence.userPinned {
+                            Image(systemName: "pin.fill")
+                        }
 
-                    if sequence.isLeafSequence ?? false {
-                        Image(systemName: "bubble")
+                        if sequence.isLeafSequence ?? false {
+                            Image(systemName: "bubble")
+                        }
+                        else {
+                            Image(systemName: "eye.slash")
+                                .foregroundStyle(Color(.disabledControlTextColor))
+                        }
+
+                        Text(showSequenceId ? sequence.displayRecognizableDesc() : sequence.displayHumanDesc())
+                            .lineLimit(1...4)
+                            .multilineTextAlignment(.leading)
                     }
-                    else {
-                        Image(systemName: "eye.slash")
+                    .font(.title)
+                    .padding(12)
+                    .padding(.leading, -8)
+                    .foregroundStyle(
+                        sequence.userPinned || (sequence.isLeafSequence ?? false)
+                        ? Color(.controlTextColor)
+                        : Color(.disabledControlTextColor)
+                    )
+
+                    if showSequenceId && sequence.parentSequences != nil {
+                        Text(String(describing: sequence.parentSequences!))
+                            .monospaced()
                             .foregroundStyle(Color(.disabledControlTextColor))
                     }
-
-                    Text(sequence.displayHumanDesc())
-                        .lineLimit(1...4)
-                        .multilineTextAlignment(.leading)
                 }
-                .font(.title)
-                .padding(12)
-                .padding(.leading, -8)
-                .foregroundStyle(
-                    sequence.userPinned || (sequence.isLeafSequence ?? false)
-                    ? Color(.controlTextColor)
-                    : Color(.disabledControlTextColor)
-                )
 
                 Spacer()
 
@@ -132,60 +143,62 @@ struct RenameableSequenceRow: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            HStack(alignment: .top, spacing: 16) {
-                if sequence.userPinned {
-                    Image(systemName: "pin.fill")
-                        .padding([.top, .bottom], 12)
-                }
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top, spacing: 16) {
+                    if sequence.userPinned {
+                        Image(systemName: "pin.fill")
+                            .padding([.top, .bottom], 12)
+                    }
 
-                if sequence.isLeafSequence ?? false {
-                    Image(systemName: "bubble")
-                        .padding([.top, .bottom], 12)
-                }
-                else {
-                    Image(systemName: "eye.slash")
-                        .padding([.top, .bottom], 12)
-                        .foregroundStyle(Color(.disabledControlTextColor))
-                }
+                    if sequence.isLeafSequence ?? false {
+                        Image(systemName: "bubble")
+                            .padding([.top, .bottom], 12)
+                    }
+                    else {
+                        Image(systemName: "eye.slash")
+                            .padding([.top, .bottom], 12)
+                            .foregroundStyle(Color(.disabledControlTextColor))
+                    }
 
-                HStack(spacing: 0) {
-                    TextField("", text: $newSequenceName)
-                        .lineLimit(1...4)
-                        .multilineTextAlignment(.leading)
-                        .padding(12)
-                        .background(
-                            Rectangle()
-                                .fill(Color.clear)
-                                .strokeBorder(lineWidth: 4)
-                                .foregroundColor(Color(.selectedControlColor))
-                                .opacity(isHovered ? 1.0 : 0.0)
-                        )
-                        .padding(.leading, -12)
-                        .focused($isFocused)
-                        .onAppear {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                self.isFocused = true
+                    HStack(spacing: 0) {
+                        TextField("", text: $newSequenceName)
+                            .lineLimit(1...4)
+                            .multilineTextAlignment(.leading)
+                            .padding(12)
+                            .background(
+                                Rectangle()
+                                    .fill(Color.clear)
+                                    .strokeBorder(lineWidth: 4)
+                                    .foregroundColor(Color(.selectedControlColor))
+                                    .opacity(isHovered ? 1.0 : 0.0)
+                            )
+                            .padding(.leading, -12)
+                            .focused($isFocused)
+                            .onAppear {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    self.isFocused = true
+                                }
                             }
-                        }
-                        .onSubmit {
-                            action(newSequenceName)
-                        }
+                            .onSubmit {
+                                action(newSequenceName)
+                            }
 
-                    Image(systemName: "pencil")
-                        .padding(12)
+                        Image(systemName: "pencil")
+                            .padding(12)
+                    }
+                    .background(Color(.controlBackgroundColor))
                 }
-                .background(Color(.controlBackgroundColor))
+                .font(.title)
+                .padding(.leading, 4)
+                .onHover { isHovered in
+                    self.isHovered = isHovered
+                }
+                .foregroundStyle(
+                    sequence.userPinned || (sequence.isLeafSequence ?? false)
+                    ? Color(.controlTextColor)
+                    : Color(.disabledControlTextColor)
+                )
             }
-            .font(.title)
-            .padding(.leading, 4)
-            .onHover { isHovered in
-                self.isHovered = isHovered
-            }
-            .foregroundStyle(
-                sequence.userPinned || (sequence.isLeafSequence ?? false)
-                ? Color(.controlTextColor)
-                : Color(.disabledControlTextColor)
-            )
 
             Spacer()
 

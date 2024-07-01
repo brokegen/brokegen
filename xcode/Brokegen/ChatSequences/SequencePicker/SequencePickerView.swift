@@ -93,12 +93,14 @@ struct SequencePickerView: View {
 
     let onlyUserPinned: Bool
     let showNewChatButton: Bool
+    let showSequenceIds: Bool
 
     @State private var isRenaming: [ChatSequence] = []
 
-    init(onlyUserPinned: Bool = true, showNewChatButton: Bool = true) {
+    init(onlyUserPinned: Bool = true, showNewChatButton: Bool = true, showSequenceIds: Bool = false) {
         self.onlyUserPinned = onlyUserPinned
         self.showNewChatButton = showNewChatButton
+        self.showSequenceIds = showSequenceIds
     }
 
     private var sectionedSequences: [(String, [ChatSequence])] {
@@ -227,7 +229,7 @@ struct SequencePickerView: View {
             }
         }
         else {
-            SequenceRow(sequence) {
+            SequenceRow(sequence, showSequenceId: showSequenceIds) {
                 pathHost.push(
                     chatService.clientModel(for: sequence, appSettings: appSettings, chatSettingsService: chatSettingsService)
                 )

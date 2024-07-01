@@ -203,7 +203,7 @@ struct AppSidebar: View {
                             ASRow("InferenceJobs")
                                 .foregroundStyle(Color(.disabledControlTextColor))
 
-                            NavigationLink(destination: SequencePickerView(onlyUserPinned: false, showNewChatButton: false)) {
+                            NavigationLink(destination: SequencePickerView(onlyUserPinned: false, showNewChatButton: false, showSequenceIds: true)) {
                                 ASRow("ChatSequences", showChevron: true)
                             }
 

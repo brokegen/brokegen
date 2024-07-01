@@ -50,6 +50,13 @@ class ChatSequence: Identifiable {
             }
         }
 
+        var parentsBuilder: [ChatSequenceServerID] = []
+        for parentSequenceId in sequenceJson["parent_sequences"].arrayValue {
+            if let sequenceId = parentSequenceId.int {
+                parentsBuilder.append(sequenceId)
+            }
+        }
+
         return ChatSequence(
             serverId: serverId,
             humanDesc: sequenceJson["human_desc"].string,
@@ -58,7 +65,7 @@ class ChatSequence: Identifiable {
             messages: messageBuilder,
             inferenceModelId: sequenceJson["inference_model_id"].int,
             isLeafSequence: sequenceJson["is_leaf_sequence"].bool,
-            parentSequences: sequenceJson["parent_sequences"].array as? [ChatSequenceServerID]
+            parentSequences: parentsBuilder
         )
     }
 
