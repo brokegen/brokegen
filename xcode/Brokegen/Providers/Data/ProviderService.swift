@@ -110,7 +110,6 @@ class DefaultProviderService: ProviderService {
         let allModelsData = await getDataBlocking("/providers/any/any/models")
         guard allModelsData != nil else { throw ProviderServiceError.noResponseContentReturned }
 
-        print("[TRACE] Received modelData for \(JSON(allModelsData!).arrayValue.count) models")
         for (_, modelData) in JSON(allModelsData!) {
             let FoundationModel = FoundationModel(modelData.dictionaryValue)
             await self.replaceModelById(FoundationModel.serverId, with: FoundationModel)

@@ -163,7 +163,7 @@ class ChatSyncService: ObservableObject {
     }
 
     func updateSequenceOffline(_ originalSequenceID: ChatSequenceServerID?, withReplacement updatedSequence: ChatSequence) {
-        print("[DEBUG] Attempting to update \(originalSequenceID) to new_sequence_id: \(updatedSequence.serverId)")
+        print("[DEBUG] ChatSyncService.updateSequenceOffline(): \(originalSequenceID) => new_sequence_id=\(updatedSequence.serverId)")
 
         // Keep the first ChatSequence's clientId, in case of duplicates
         let originalClientId: UUID? = loadedChatSequences[updatedSequence.serverId]?.id

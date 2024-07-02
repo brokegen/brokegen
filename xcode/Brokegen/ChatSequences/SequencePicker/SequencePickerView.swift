@@ -52,14 +52,11 @@ func dateToISOWeekStartingMonday(_ date: Date) -> String {
     return "\(paddedYear)-ww\(paddedWeek).\(weekday)" + formatter.string(from: date)
 }
 
-func dateToSectionName(_ date: Date?) -> String {
-    // NB This "default" name should sort later than the ones starting 2024-wwXX
-    guard date != nil else { return "0000 no date" }
-
-    let sectionName = dateToISOWeekStartingMonday(date!)
+fileprivate func nocacheDateToSectionName(_ date: Date) -> String {
+    let sectionName = dateToISOWeekStartingMonday(date)
 
     // If the date was more than a week ago, just return the week-name
-    if date!.timeIntervalSinceNow < -168 * 24 * 3600 {
+    if date.timeIntervalSinceNow < -168 * 24 * 3600 {
         return String(sectionName.prefix(9))
     }
 
@@ -70,6 +67,22 @@ func dateToSectionName(_ date: Date?) -> String {
     }
 
     return sectionName
+}
+
+fileprivate var cachedSectionNames: [Date : String] = [:]
+
+func dateToSectionName(_ date: Date?) -> String {
+    // NB This "default" name should sort later than the ones starting 2024-wwXX
+    guard date != nil else { return "0000 no date" }
+
+    if let foundName = cachedSectionNames[date!] {
+        return foundName
+    }
+    else {
+        let madeName = nocacheDateToSectionName(date!)
+        cachedSectionNames[date!] = madeName
+        return madeName
+    }
 }
 
 extension ChatSequence: Comparable {
@@ -114,6 +127,7 @@ func sectionedSequences(
     return result
 }
 
+// MARK: - actual SequencePicker
 struct SequencePickerView: View {
     @EnvironmentObject private var chatService: ChatSyncService
     @EnvironmentObject private var pathHost: PathHost
