@@ -85,6 +85,45 @@ extension ChatSequence: Comparable {
     }
 }
 
+extension ChatSyncService {
+    func sectionedSequencesReal(onlyUserPinned: Bool) -> [(String, [ChatSequence])] {
+        let startTime = Date.now
+        print("[TRACE] re-sectioning \(self.loadedChatSequences.count) sequences")
+
+        var sortedSequences = Array(self.loadedChatSequences.values)
+        if onlyUserPinned {
+            sortedSequences = sortedSequences.filter {
+                $0.userPinned == true || $0.isLeafSequence == true
+            }
+        }
+        sortedSequences = sortedSequences.sorted()
+
+        let sectionedSequences = Dictionary(grouping: sortedSequences) {
+            dateToSectionName($0.lastMessageDate)
+        }
+
+        let result = Array(sectionedSequences)
+            .sorted { $0.0 > $1.0 }
+        
+        let elapsedMsec = String(format: "%.3f", Date.now.timeIntervalSince(startTime) * 1000)
+        print("[TRACE] ChatSyncService.sectionedSequences() update time: \(elapsedMsec) msecs")
+
+        return result
+    }
+
+    func sectionedSequences(onlyUserPinned: Bool) -> [(String, [ChatSequence])] {
+        let startTime = Date.now
+        print("[TRACE] re-sectioning \(self.loadedChatSequences.count) sequences")
+
+        let result = [("generic", Array(self.loadedChatSequences.values))]
+
+        let elapsedMsec = String(format: "%.3f", Date.now.timeIntervalSince(startTime) * 1000)
+        print("[TRACE] ChatSyncService.sectionedSequences() update time: \(elapsedMsec) msecs")
+
+        return result
+    }
+}
+
 struct SequencePickerView: View {
     @EnvironmentObject private var chatService: ChatSyncService
     @EnvironmentObject private var pathHost: PathHost
@@ -101,23 +140,6 @@ struct SequencePickerView: View {
         self.onlyUserPinned = onlyUserPinned
         self.showNewChatButton = showNewChatButton
         self.showSequenceIds = showSequenceIds
-    }
-
-    private var sectionedSequences: [(String, [ChatSequence])] {
-        var sortedSequences = chatService.loadedChatSequences
-        if onlyUserPinned {
-            sortedSequences = sortedSequences.filter {
-                $0.userPinned == true || $0.isLeafSequence == true
-            }
-        }
-        sortedSequences = sortedSequences.sorted()
-
-        let sectionedSequences = Dictionary(grouping: sortedSequences) {
-            dateToSectionName($0.lastMessageDate)
-        }
-
-        return Array(sectionedSequences)
-            .sorted { $0.0 > $1.0 }
     }
 
     @ViewBuilder
@@ -242,33 +264,35 @@ struct SequencePickerView: View {
             .padding(24)
             .font(.system(size: 18))
 
-        List {
-            ForEach(sectionedSequences, id: \.0) { pair in
-                let (sectionName, sectionSequences) = pair
+        ScrollView {
+            LazyVStack {
+                ForEach(chatService.sectionedSequences(onlyUserPinned: onlyUserPinned), id: \.0) { pair in
+                    let (sectionName, sectionSequences) = pair
 
-                Section(header: Text(sectionName)
-                    .font(.title)
-                    .monospaced()
-                    .foregroundColor(.accentColor)
-                    .padding(.top, 36)
-                    .contextMenu {
-                        sectionContextMenu(for: sectionName, sequences: sectionSequences)
+                    Section(header: Text(sectionName)
+                        .font(.title)
+                        .monospaced()
+                        .foregroundColor(.accentColor)
+                        .padding(.top, 36)
+                        .contextMenu {
+                            sectionContextMenu(for: sectionName, sequences: sectionSequences)
+                        }
+                    ) {
+                        ForEach(sectionSequences, id: \.serverId) { sequence in
+                            sequenceRow(sequence)
+                                .contextMenu {
+                                    sequenceContextMenu(for: sequence)
+                                }
+                        }
                     }
-                ) {
-                    ForEach(sectionSequences, id: \.serverId) { sequence in
-                        sequenceRow(sequence)
-                            .contextMenu {
-                                sequenceContextMenu(for: sequence)
-                            }
-                    }
+                    .padding(8)
                 }
-                .padding(8)
-            }
 
-            Text("End of loaded ChatSequences")
-                .foregroundStyle(Color(.disabledControlTextColor))
-                .frame(height: 400)
-                .frame(maxWidth: .infinity)
+                Text("End of loaded ChatSequences")
+                    .foregroundStyle(Color(.disabledControlTextColor))
+                    .frame(height: 400)
+                    .frame(maxWidth: .infinity)
+            }
         }
         .scrollContentBackground(.hidden)
     }

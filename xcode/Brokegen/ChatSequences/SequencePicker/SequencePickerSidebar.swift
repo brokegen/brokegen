@@ -14,7 +14,7 @@ struct MiniSequencePickerSidebar: View {
     }
 
     func someSectionedSequences(limit: Int) -> [(String, [ChatSequence])] {
-        let someSequences = chatService.loadedChatSequences
+        let someSequences = Array(chatService.loadedChatSequences.values)
             .filter { $0.userPinned == true }
             .sorted {
                 $0.generatedAt ?? Date.distantPast > $1.generatedAt ?? Date.distantPast

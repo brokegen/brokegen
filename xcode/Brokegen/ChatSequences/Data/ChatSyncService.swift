@@ -97,11 +97,7 @@ class ChatSyncService: ObservableObject {
     }
 
     // MARK: - ChatSequence construction
-    var _loadedChatSequences: [ChatSequenceServerID : ChatSequence] = [:]
-
-    var loadedChatSequences: [ChatSequence] {
-        get { Array(self._loadedChatSequences.values) }
-    }
+    @ObservationIgnored var loadedChatSequences: [ChatSequenceServerID : ChatSequence] = [:]
 
     public func constructChatMessage(from tempMessage: TemporaryChatMessage) async throws -> ChatMessageServerID? {
         return nil
@@ -140,17 +136,17 @@ class ChatSyncService: ObservableObject {
     public func fetchRecents(lookback: TimeInterval? = nil, limit: Int? = nil, onlyUserPinned: Bool? = nil) async throws {
     }
 
-    func updateSequence(withSameId updatedSequence: ChatSequence) {
+    func updateSequence(withSameId updatedSequence: ChatSequence, disablePublish: Bool = false) {
         // TODO: Make .serverId a non-optional type, and remove this check
         guard updatedSequence.serverId != nil else { return }
 
         // Keep the first ChatSequence's clientId, in case of duplicates
-        var originalClientId: UUID? = _loadedChatSequences[updatedSequence.serverId!]?.id
+        var originalClientId: UUID? = loadedChatSequences[updatedSequence.serverId!]?.id
         if originalClientId != nil {
-            _loadedChatSequences[updatedSequence.serverId!] = updatedSequence.replaceId(originalClientId!)
+            loadedChatSequences[updatedSequence.serverId!] = updatedSequence.replaceId(originalClientId!)
         }
         else {
-            _loadedChatSequences[updatedSequence.serverId!] = updatedSequence
+            loadedChatSequences[updatedSequence.serverId!] = updatedSequence
         }
 
         // Update matching client models that held the original sequence
@@ -162,21 +158,23 @@ class ChatSyncService: ObservableObject {
             clientModel.sequence = updatedSequence
         }
 
-        // Without this, SwiftUI won't notice renames in particular.
-        // Possibly because we're keeping the Identifiable .id the same?
-        objectWillChange.send()
+        if !disablePublish {
+            // Without this, SwiftUI won't notice renames in particular.
+            // Possibly because we're keeping the Identifiable .id the same?
+            objectWillChange.send()
+        }
     }
 
     func updateSequenceOffline(_ originalSequenceID: ChatSequenceServerID?, withReplacement updatedSequence: ChatSequence) {
         print("[DEBUG] Attempting to update \(originalSequenceID) to new_sequence_id: \(updatedSequence.serverId)")
 
         // Keep the first ChatSequence's clientId, in case of duplicates
-        var originalClientId: UUID? = _loadedChatSequences[updatedSequence.serverId!]?.id
+        var originalClientId: UUID? = loadedChatSequences[updatedSequence.serverId!]?.id
         if originalClientId != nil {
-            _loadedChatSequences[updatedSequence.serverId!] = updatedSequence.replaceId(originalClientId!)
+            loadedChatSequences[updatedSequence.serverId!] = updatedSequence.replaceId(originalClientId!)
         }
         else {
-            _loadedChatSequences[updatedSequence.serverId!] = updatedSequence
+            loadedChatSequences[updatedSequence.serverId!] = updatedSequence
         }
 
         // Update any clientModels that might hold it

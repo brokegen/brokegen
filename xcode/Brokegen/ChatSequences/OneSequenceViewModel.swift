@@ -181,7 +181,9 @@ class OneSequenceViewModel: ObservableObject {
                 let formerServerId: ChatSequenceServerID = sequence.serverId!
 
                 sequence.serverId = newSequenceId
-                chatService.updateSequenceOffline(formerServerId, withReplacement: sequence)
+                DispatchQueue.main.async {
+                    self.chatService.updateSequenceOffline(formerServerId, withReplacement: self.sequence)
+                }
             }
 
             if let newMessageId: ChatMessageServerID = jsonData["new_message_id"].int {
@@ -202,7 +204,9 @@ class OneSequenceViewModel: ObservableObject {
             let autoname: String = jsonData["autoname"].stringValue
             if !autoname.isEmpty && autoname != sequence.humanDesc {
                 let renamedSequence = sequence.replaceHumanDesc(desc: autoname)
-                chatService.updateSequence(withSameId: renamedSequence)
+                DispatchQueue.main.async {
+                    self.chatService.updateSequence(withSameId: renamedSequence)
+                }
             }
         }
     }

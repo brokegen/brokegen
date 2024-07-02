@@ -256,15 +256,34 @@ extension DefaultChatSyncService {
         let sequencesData = try await getDataBlocking(endpointMaker)
         guard sequencesData != nil else { throw ChatSyncServiceError.noResponseContentReturned }
 
-        for oneSequenceData in JSON(sequencesData!)["sequences"].arrayValue {
-            if let oneSequence = try? ChatSequence.fromJsonDict(
-                serverId: oneSequenceData["id"].int,
-                json: oneSequenceData
-            ) {
-                DispatchQueue.main.async {
-                    self.updateSequence(withSameId: oneSequence)
+        // Continue parsing the new sequences in this (background) coroutine.
+        // This doesn't save a significant amount of time, but that's okay.
+        let sequenceUpdates: [ChatSequence] = {
+            var sequenceUpdates: [ChatSequence] = []
+
+            for oneSequenceData in JSON(sequencesData!)["sequences"].arrayValue {
+                if let oneSequence = try? ChatSequence.fromJsonDict(
+                    serverId: oneSequenceData["id"].int,
+                    json: oneSequenceData
+                ) {
+                    sequenceUpdates.append(oneSequence)
                 }
             }
+
+            return sequenceUpdates
+        }()
+
+        DispatchQueue.main.async {
+            let startTime = Date.now
+
+            for oneSequence in sequenceUpdates {
+                self.updateSequence(withSameId: oneSequence, disablePublish: true)
+            }
+
+            let elapsedMsec = String(format: "%.3f", Date.now.timeIntervalSince(startTime) * 1000)
+            print("[TRACE] DefaultChatSyncService.fetchRecents() update time: \(elapsedMsec) msecs")
+
+            self.objectWillChange.send()
         }
     }
 
