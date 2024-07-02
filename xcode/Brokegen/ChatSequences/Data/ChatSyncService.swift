@@ -196,6 +196,8 @@ class ChatSyncService: ObservableObject {
         for clientModel in matchingClientModels {
             clientModel.sequence = updatedSequence
         }
+
+        objectWillChange.send()
     }
 
     // MARK: - ChatSequence extend/continue
