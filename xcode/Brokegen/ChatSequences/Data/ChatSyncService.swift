@@ -151,6 +151,7 @@ class ChatSyncService: ObservableObject {
             $0.serverId == updatedSequence.serverId
         })
 
+        // Add the new one
         if let clientId = originalClientId {
             loadedChatSequences.insert(updatedSequence.replaceId(clientId), at: 0)
         }
@@ -158,17 +159,14 @@ class ChatSyncService: ObservableObject {
             loadedChatSequences.insert(updatedSequence, at: 0)
         }
 
-        let staticSequenceId = updatedSequence.serverId
-        let predicate = #Predicate<OneSequenceViewModel> {
-            $0.sequence.serverId == staticSequenceId
+        // Update matching client models that held the original sequence
+        let matchingClientModels = chatSequenceClientModels.filter {
+            $0.sequence.serverId == updatedSequence.serverId
         }
 
-        do {
-            for clientModel in try chatSequenceClientModels.filter(predicate) {
-                clientModel.sequence = updatedSequence
-            }
+        for clientModel in matchingClientModels {
+            clientModel.sequence = updatedSequence
         }
-        catch {}
 
         // Without this, SwiftUI won't notice renames in particular.
         // Possibly because we're keeping the Identifiable .id the same?
