@@ -56,7 +56,7 @@ struct BrokegenApp: App {
             URLCache.shared.removeAllCachedResponses()
 
             chatService.chatSequenceClientModels = []
-            chatService.loadedChatSequences = []
+            chatService._loadedChatSequences.removeAll()
 
             providerService.allModels = []
         }

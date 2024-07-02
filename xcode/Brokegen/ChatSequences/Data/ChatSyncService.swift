@@ -97,7 +97,11 @@ class ChatSyncService: ObservableObject {
     }
 
     // MARK: - ChatSequence construction
-    var loadedChatSequences: [ChatSequence] = []
+    var _loadedChatSequences: [ChatSequenceServerID : ChatSequence] = [:]
+
+    var loadedChatSequences: [ChatSequence] {
+        get { Array(self._loadedChatSequences.values) }
+    }
 
     public func constructChatMessage(from tempMessage: TemporaryChatMessage) async throws -> ChatMessageServerID? {
         return nil
@@ -137,26 +141,16 @@ class ChatSyncService: ObservableObject {
     }
 
     func updateSequence(withSameId updatedSequence: ChatSequence) {
+        // TODO: Make .serverId a non-optional type, and remove this check
+        guard updatedSequence.serverId != nil else { return }
+
         // Keep the first ChatSequence's clientId, in case of duplicates
-        var originalClientId: UUID? = nil
-
-        if let removalIndex = loadedChatSequences.firstIndex(where: {
-            $0.serverId == updatedSequence.serverId
-        }) {
-            originalClientId = loadedChatSequences[removalIndex].id
-        }
-
-        // Remove all matching ChatSequences
-        loadedChatSequences.removeAll(where: {
-            $0.serverId == updatedSequence.serverId
-        })
-
-        // Add the new one
-        if let clientId = originalClientId {
-            loadedChatSequences.insert(updatedSequence.replaceId(clientId), at: 0)
+        var originalClientId: UUID? = _loadedChatSequences[updatedSequence.serverId!]?.id
+        if originalClientId != nil {
+            _loadedChatSequences[updatedSequence.serverId!] = updatedSequence.replaceId(originalClientId!)
         }
         else {
-            loadedChatSequences.insert(updatedSequence, at: 0)
+            _loadedChatSequences[updatedSequence.serverId!] = updatedSequence
         }
 
         // Update matching client models that held the original sequence
@@ -173,20 +167,17 @@ class ChatSyncService: ObservableObject {
         objectWillChange.send()
     }
 
-    func updateSequence(_ originalSequenceId: ChatSequenceServerID?, withNewSequence updatedSequenceId: ChatSequenceServerID) async -> ChatSequence? {
-        return nil
-    }
-
     func updateSequenceOffline(_ originalSequenceID: ChatSequenceServerID?, withReplacement updatedSequence: ChatSequence) {
         print("[DEBUG] Attempting to update \(originalSequenceID) to new_sequence_id: \(updatedSequence.serverId)")
 
-        // Remove all matching ChatSequences
-        loadedChatSequences.removeAll(where: {
-            $0.serverId == originalSequenceID
-        })
-
-        // Add the replacement
-        loadedChatSequences.insert(updatedSequence, at: 0)
+        // Keep the first ChatSequence's clientId, in case of duplicates
+        var originalClientId: UUID? = _loadedChatSequences[updatedSequence.serverId!]?.id
+        if originalClientId != nil {
+            _loadedChatSequences[updatedSequence.serverId!] = updatedSequence.replaceId(originalClientId!)
+        }
+        else {
+            _loadedChatSequences[updatedSequence.serverId!] = updatedSequence
+        }
 
         // Update any clientModels that might hold it
         let matchingClientModels: [OneSequenceViewModel] = chatSequenceClientModels.filter {
