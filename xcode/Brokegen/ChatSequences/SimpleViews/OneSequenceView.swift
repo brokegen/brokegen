@@ -253,20 +253,15 @@ struct OneSequenceView: View {
         .legacy(Message(role: "user", content: "Fourth message", createdAt: Date(timeIntervalSinceNow: +5)))
     ]
     
-    do {
-        let chatService = ChatSyncService()
-        let sequence = try ChatSequence(
-            serverId: 1,
-            humanDesc: "xcode preview",
-            userPinned: true,
-            messages: messages
-        )
-        let viewModel = OneSequenceViewModel(sequence, chatService: chatService, appSettings: AppSettings(), chatSettingsService: CSCSettingsService())
-        return OneSequenceView(viewModel)
-    }
-    catch {
-        return Text("Failed to construct SequenceViewTwo")
-    }
+    let chatService = ChatSyncService()
+    let sequence = ChatSequence(
+        serverId: 1,
+        humanDesc: "xcode preview",
+        userPinned: true,
+        messages: messages
+    )
+    let viewModel = OneSequenceViewModel(sequence, chatService: chatService, appSettings: AppSettings(), chatSettingsService: CSCSettingsService())
+    return OneSequenceView(viewModel)
 }
 
 #if os(macOS)

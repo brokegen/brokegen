@@ -30,7 +30,7 @@ class Message: Identifiable, Codable {
     }
 
     func appendContent(_ fragment: String) -> Message {
-        var newMessage = Message(
+        let newMessage = Message(
             role: self.role,
             content: self.content + fragment,
             createdAt: self.createdAt

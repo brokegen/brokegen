@@ -56,7 +56,7 @@ struct ProMessageView: View {
                 Image(systemName: "clipboard")
             })
 
-            if case .stored(let message) = message {
+            if case .stored(let message) = self.message {
                 Button(action: { self.branchAction?() }, label: {
                     Image(systemName: "arrow.triangle.branch")
                 })

@@ -28,10 +28,7 @@ struct ProSequenceView: View {
         }
         else {
             if settings.showSeparateRetrievalButton {
-                if viewModel.sequence.serverId == nil {
-                    _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId)
-                }
-                else if viewModel.promptInEdit.isEmpty {
+                if viewModel.promptInEdit.isEmpty {
                     if settings.allowContinuation {
                         _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId)
                     }
@@ -42,10 +39,7 @@ struct ProSequenceView: View {
                 }
             }
             else {
-                if viewModel.sequence.serverId == nil {
-                    _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: settings.forceRetrieval)
-                }
-                else if viewModel.promptInEdit.isEmpty {
+                if viewModel.promptInEdit.isEmpty {
                     if settings.allowContinuation {
                         _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: settings.forceRetrieval)
                     }
@@ -92,10 +86,7 @@ struct ProSequenceView: View {
             }()
 
             Button(action: {
-                if viewModel.sequence.serverId == nil {
-                    _ = viewModel.requestStart(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
-                }
-                else if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
+                if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
                     _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId, withRetrieval: true)
                 }
                 else {
@@ -642,21 +633,16 @@ struct ProSequenceView: View {
 }
 
 #Preview(traits: .fixedLayout(width: 800, height: 800)) {
-    do {
-        let chatService = ChatSyncService()
-        let sequence = try ChatSequence(
-            serverId: -1,
-            humanDesc: "xcode preview",
-            userPinned: true,
-            messages: []
-        )
-        let viewModel = OneSequenceViewModel(sequence, chatService: chatService, appSettings: AppSettings(), chatSettingsService: CSCSettingsService())
+    let chatService = ChatSyncService()
+    let sequence = ChatSequence(
+        serverId: -1,
+        humanDesc: "xcode preview",
+        userPinned: true,
+        messages: []
+    )
+    let viewModel = OneSequenceViewModel(sequence, chatService: chatService, appSettings: AppSettings(), chatSettingsService: CSCSettingsService())
 
-        return ProSequenceView(viewModel)
-    }
-    catch {
-        return Text("Failed to construct SequenceViewTwo")
-    }
+    return ProSequenceView(viewModel)
 }
 
 #Preview(traits: .fixedLayout(width: 800, height: 800)) {
@@ -666,19 +652,14 @@ struct ProSequenceView: View {
         .legacy(Message(role: "user", content: "Third message", createdAt: Date.now)),
         .legacy(Message(role: "user", content: "Fourth message", createdAt: Date(timeIntervalSinceNow: +5)))
     ]
-
-    do {
-        let chatService = ChatSyncService()
-        let sequence = try ChatSequence(
-            serverId: 1,
-            humanDesc: "xcode preview",
-            userPinned: true,
-            messages: messages
-        )
-        let viewModel = OneSequenceViewModel(sequence, chatService: chatService, appSettings: AppSettings(), chatSettingsService: CSCSettingsService())
-        return ProSequenceView(viewModel)
-    }
-    catch {
-        return Text("Failed to construct SequenceViewTwo")
-    }
+    
+    let chatService = ChatSyncService()
+    let sequence = ChatSequence(
+        serverId: 1,
+        humanDesc: "xcode preview",
+        userPinned: true,
+        messages: messages
+    )
+    let viewModel = OneSequenceViewModel(sequence, chatService: chatService, appSettings: AppSettings(), chatSettingsService: CSCSettingsService())
+    return ProSequenceView(viewModel)
 }

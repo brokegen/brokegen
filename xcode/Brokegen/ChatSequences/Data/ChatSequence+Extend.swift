@@ -44,7 +44,7 @@ extension DefaultChatSyncService {
         _ params: ChatSequenceParameters
     ) async -> AnyPublisher<Data, AFErrorAndData> {
         guard params.sequenceId != nil else {
-            let error: AFError = AFError.invalidURL(url: "/sequences/\(params.sequenceId)/continue")
+            let error: AFError = AFError.invalidURL(url: "/sequences/???/continue")
             return Fail(error: AFErrorAndData(error: error, data: nil))
                 .eraseToAnyPublisher()
         }

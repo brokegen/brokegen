@@ -159,22 +159,17 @@ class ChatSequence: Identifiable {
     func displayRecognizableDesc(
         displayLimit: Int? = 140
     ) -> String {
-        if serverId == nil {
-            return displayHumanDesc(displayLimit: displayLimit)
-        }
-        else {
-            if !(humanDesc ?? "").isEmpty {
-                let fullString = "\(displayServerId()): \(humanDesc!)"
-                if displayLimit != nil {
-                    return String(fullString.prefix(displayLimit!))
-                }
-                else {
-                    return fullString
-                }
+        if !(humanDesc ?? "").isEmpty {
+            let fullString = "\(displayServerId()): \(humanDesc!)"
+            if displayLimit != nil {
+                return String(fullString.prefix(displayLimit!))
             }
             else {
-                return displayServerId()
+                return fullString
             }
+        }
+        else {
+            return displayServerId()
         }
     }
 
@@ -196,10 +191,6 @@ class ChatSequence: Identifiable {
 
 extension ChatSequence: Equatable {
     static func == (lhs: ChatSequence, rhs: ChatSequence) -> Bool {
-        if lhs.serverId == nil || rhs.serverId == nil {
-            return lhs.id == rhs.id
-        }
-
         return lhs.serverId == rhs.serverId
     }
 }
