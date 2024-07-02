@@ -85,9 +85,7 @@ class OneSequenceViewModel: ObservableObject {
 
     func refreshSequenceData() {
         Task {
-            guard sequence.serverId != nil else { return }
-
-            if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId!) {
+            if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
                 DispatchQueue.main.async {
                     self.chatService.updateSequence(withSameId: refreshedSequence)
                 }
@@ -179,20 +177,11 @@ class OneSequenceViewModel: ObservableObject {
                 receivedDone += 1
             }
 
-            if let newSequenceId: ChatSequenceServerID = jsonData["new_sequence_id"].int {
-                let formerServerId: ChatSequenceServerID = sequence.serverId!
-
-                sequence.serverId = newSequenceId
-                DispatchQueue.main.async {
-                    self.chatService.updateSequenceOffline(formerServerId, withReplacement: self.sequence)
-                }
-            }
-
             if let newMessageId: ChatMessageServerID = jsonData["new_message_id"].int {
                 if responseInEdit != nil {
                     let storedMessage = ChatMessage(
                         serverId: newMessageId,
-                        hostSequenceId: sequence.serverId!,
+                        hostSequenceId: sequence.serverId,
                         role: responseInEdit!.role,
                         content: responseInEdit!.content ?? "",
                         createdAt: responseInEdit!.createdAt
@@ -200,6 +189,15 @@ class OneSequenceViewModel: ObservableObject {
 
                     sequence.messages.append(.stored(storedMessage))
                     responseInEdit = nil
+                }
+            }
+
+            if let replacementSequenceId: ChatSequenceServerID = jsonData["new_sequence_id"].int {
+                let originalSequenceId = self.sequence.serverId
+                let updatedSequence = self.sequence.replaceServerId(replacementSequenceId)
+
+                DispatchQueue.main.async {
+                    self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: updatedSequence)
                 }
             }
 
@@ -249,23 +247,26 @@ class OneSequenceViewModel: ObservableObject {
                 return
             }
 
-            let sequenceId: ChatSequenceServerID? = try? await chatService.constructNewChatSequence(messageId: messageId!, humanDesc: "")
-            guard sequenceId != nil else {
+            let replacementSequenceId: ChatSequenceServerID? = try? await chatService.constructNewChatSequence(messageId: messageId!, humanDesc: "")
+            guard replacementSequenceId != nil else {
                 submitting = false
                 print("[ERROR] Couldn't construct sequence from: ChatMessage#\(messageId!)")
                 return
             }
 
             // Manually (re)construct server data, rather than fetching the same data back.
+            let originalSequenceId = self.sequence.serverId
+            let updatedSequence = self.sequence.replaceServerId(replacementSequenceId!)
+            self.sequence.messages = [
+                .temporary(TemporaryChatMessage(
+                    role: "user",
+                    content: self.promptInEdit,
+                    createdAt: Date.now
+                ))
+            ]
+
             DispatchQueue.main.async {
-                self.sequence.serverId = sequenceId
-                self.sequence.messages = [
-                    .temporary(TemporaryChatMessage(
-                        role: "user",
-                        content: self.promptInEdit,
-                        createdAt: Date.now
-                    ))
-                ]
+                self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: updatedSequence)
             }
 
             receivingStreamer = await chatService.sequenceContinue(
@@ -282,15 +283,15 @@ class OneSequenceViewModel: ObservableObject {
                     preferredEmbeddingModel: withRetrieval ? appSettings.preferredEmbeddingModel?.serverId : nil,
                     autonamingPolicy: settings.autonamingPolicy.rawValue,
                     preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId,
-                    sequenceId: sequenceId!
+                    sequenceId: replacementSequenceId!
                 )
             )
                 .sink(receiveCompletion: completionHandler(
                     caller: "ChatSyncService.sequenceContinue",
-                    endpoint: "/sequences/\(sequenceId!)/continue"
+                    endpoint: "/sequences/\(replacementSequenceId!)/continue"
                 ), receiveValue: receiveHandler(
                     caller: "OneSequenceViewModel.requestStart(withRetrieval: \(withRetrieval))",
-                    endpoint: "/sequences/\(sequenceId!)/continue"
+                    endpoint: "/sequences/\(replacementSequenceId!)/continue"
                 ))
         }
 
@@ -303,7 +304,7 @@ class OneSequenceViewModel: ObservableObject {
     ) -> Self {
         print("[INFO] OneSequenceViewModel.requestContinue(\(continuationModelId), withRetrieval: \(withRetrieval))")
         if settings.stayAwakeDuringInference {
-            _ = stayAwake.createAssertion(reason: "brokegen OneSequenceViewModel.requestContinue() for ChatSequence#\(self.sequence.serverId ?? -1)")
+            _ = stayAwake.createAssertion(reason: "brokegen OneSequenceViewModel.requestContinue() for ChatSequence#\(self.sequence.serverId)")
         }
 
         Task {
@@ -317,7 +318,7 @@ class OneSequenceViewModel: ObservableObject {
             }
             DispatchQueue.main.async {
                 self.submitting = true
-                self.serverStatus = "/sequences/\(self.sequence.serverId!)/continue: submitting request"
+                self.serverStatus = "/sequences/\(self.sequence.serverId)/continue: submitting request"
             }
 
             submittedAssistantResponseSeed = settings.seedAssistantResponse
@@ -336,15 +337,15 @@ class OneSequenceViewModel: ObservableObject {
                     preferredEmbeddingModel: withRetrieval ? appSettings.preferredEmbeddingModel?.serverId : nil,
                     autonamingPolicy: settings.autonamingPolicy.rawValue,
                     preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId,
-                    sequenceId: sequence.serverId!
+                    sequenceId: sequence.serverId
                 )
             )
                 .sink(receiveCompletion: completionHandler(
                     caller: "ChatSyncService.sequenceContinue",
-                    endpoint: "/sequences/\(sequence.serverId!)/continue"
+                    endpoint: "/sequences/\(sequence.serverId)/continue"
                 ), receiveValue: receiveHandler(
                     caller: "OneSequenceViewModel.requestContinue(withRetrieval: \(withRetrieval))",
-                    endpoint: "/sequences/\(sequence.serverId!)/continue"
+                    endpoint: "/sequences/\(sequence.serverId)/continue"
                 ))
         }
 
@@ -357,7 +358,7 @@ class OneSequenceViewModel: ObservableObject {
     ) {
         print("[INFO] OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval))")
         if settings.stayAwakeDuringInference {
-            _ = stayAwake.createAssertion(reason: "brokegen OneSequenceViewModel.requestExtend() for ChatSequence#\(self.sequence.serverId ?? -1)")
+            _ = stayAwake.createAssertion(reason: "brokegen OneSequenceViewModel.requestExtend() for ChatSequence#\(self.sequence.serverId)")
         }
 
         Task {
@@ -372,7 +373,7 @@ class OneSequenceViewModel: ObservableObject {
             }
             DispatchQueue.main.async {
                 self.submitting = true
-                self.serverStatus = "/sequences/\(self.sequence.serverId!)/extend: submitting request"
+                self.serverStatus = "/sequences/\(self.sequence.serverId)/extend: submitting request"
             }
 
             let nextMessage = Message(
@@ -397,15 +398,15 @@ class OneSequenceViewModel: ObservableObject {
                     preferredEmbeddingModel: withRetrieval ? appSettings.preferredEmbeddingModel?.serverId : nil,
                     autonamingPolicy: settings.autonamingPolicy.rawValue,
                     preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId,
-                    sequenceId: sequence.serverId!
+                    sequenceId: sequence.serverId
                 )
             )
             .sink(receiveCompletion: completionHandler(
                 caller: "ChatSyncService.sequenceExtend",
-                endpoint: "/sequences/\(sequence.serverId!)/extend"
+                endpoint: "/sequences/\(sequence.serverId)/extend"
             ), receiveValue: receiveHandler(
                 caller: "OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval))",
-                endpoint: "/sequences/\(sequence.serverId!)/extend",
+                endpoint: "/sequences/\(sequence.serverId)/extend",
                 maybeNextMessage: nextMessage
             ))
         }

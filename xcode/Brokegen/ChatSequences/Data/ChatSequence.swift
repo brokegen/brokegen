@@ -8,7 +8,7 @@ typealias ChatSequenceServerID = Int
 
 class ChatSequence: Identifiable {
     let id: UUID
-    var serverId: ChatSequenceServerID?
+    let serverId: ChatSequenceServerID
     let humanDesc: String?
     let userPinned: Bool
 
@@ -25,7 +25,7 @@ class ChatSequence: Identifiable {
     let isLeafSequence: Bool?
     let parentSequences: [ChatSequenceServerID]?
 
-    static func fromJsonDict(serverId: ChatSequenceServerID? = nil, json sequenceJson: JSON) throws -> ChatSequence {
+    static func fromJsonDict(serverId: ChatSequenceServerID, json sequenceJson: JSON) throws -> ChatSequence {
         var messageBuilder: [MessageLike] = []
         for messageJson in sequenceJson["messages"].arrayValue {
             if messageJson["message_id"].int == nil {
@@ -71,7 +71,7 @@ class ChatSequence: Identifiable {
 
     init(
         clientId: UUID = UUID(),
-        serverId: ChatSequenceServerID?,
+        serverId: ChatSequenceServerID,
         humanDesc: String? = nil,
         userPinned: Bool = false,
         generatedAt: Date? = nil,
@@ -95,6 +95,20 @@ class ChatSequence: Identifiable {
         return ChatSequence(
             clientId: newClientId,
             serverId: self.serverId,
+            humanDesc: self.humanDesc,
+            userPinned: self.userPinned,
+            generatedAt: self.generatedAt,
+            messages: self.messages,
+            inferenceModelId: self.inferenceModelId,
+            isLeafSequence: self.isLeafSequence,
+            parentSequences: self.parentSequences
+        )
+    }
+
+    func replaceServerId(_ newServerId: ChatSequenceServerID) -> ChatSequence {
+        return ChatSequence(
+            clientId: self.id,
+            serverId: newServerId,
             humanDesc: self.humanDesc,
             userPinned: self.userPinned,
             generatedAt: self.generatedAt,
@@ -139,11 +153,7 @@ class ChatSequence: Identifiable {
     }
 
     func displayServerId() -> String {
-        if serverId == nil {
-            return "[uncommitted ChatSequence]"
-        }
-
-        return "ChatSequence#\(serverId!)"
+        return "ChatSequence#\(serverId)"
     }
 
     func displayRecognizableDesc(
@@ -263,7 +273,7 @@ extension DefaultChatSyncService {
 
             for oneSequenceData in JSON(sequencesData!)["sequences"].arrayValue {
                 if let oneSequence = try? ChatSequence.fromJsonDict(
-                    serverId: oneSequenceData["id"].int,
+                    serverId: oneSequenceData["id"].int!,
                     json: oneSequenceData
                 ) {
                     sequenceUpdates.append(oneSequence)

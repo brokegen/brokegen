@@ -240,10 +240,7 @@ struct OneSequenceView: View {
             .frame(width: geometry.size.width, height: geometry.size.height)
             .background(BackgroundEffectView().ignoresSafeArea())
             .navigationTitle(viewModel.displayHumanDesc)
-            .navigationSubtitle(
-                viewModel.sequence.serverId != nil
-                ? "ChatSequence#\(viewModel.sequence.serverId!)"
-                : "")
+            .navigationSubtitle(viewModel.sequence.displayServerId())
         }
     }
 }
@@ -259,7 +256,7 @@ struct OneSequenceView: View {
     do {
         let chatService = ChatSyncService()
         let sequence = try ChatSequence(
-            serverId: nil,
+            serverId: 1,
             humanDesc: "xcode preview",
             userPinned: true,
             messages: messages

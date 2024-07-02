@@ -262,20 +262,9 @@ struct ProSequenceView: View {
 
     @ViewBuilder var lowerVStackOptions: some View {
         if viewModel.showUiOptions {
-            // Tab.uiOptions
-            let sequenceDesc: String = {
-                if viewModel.sequence.serverId != nil {
-                    " for ChatSequence#\(viewModel.sequence.serverId!)"
-                }
-                else {
-                    ""
-                }
-            }()
-
-            CSCSettingsView(settings, sequenceDesc: sequenceDesc)
+            CSCSettingsView(settings, sequenceDesc: " for ChatSequence#\(viewModel.sequence.serverId)")
         }
 
-        // Tab.modelOptions
         if viewModel.showInferenceOptions {
             GroupBox(content: {
                 TextEditor(text: $settings.inferenceOptions)
@@ -656,7 +645,7 @@ struct ProSequenceView: View {
     do {
         let chatService = ChatSyncService()
         let sequence = try ChatSequence(
-            serverId: nil,
+            serverId: -1,
             humanDesc: "xcode preview",
             userPinned: true,
             messages: []
@@ -681,7 +670,7 @@ struct ProSequenceView: View {
     do {
         let chatService = ChatSyncService()
         let sequence = try ChatSequence(
-            serverId: nil,
+            serverId: 1,
             humanDesc: "xcode preview",
             userPinned: true,
             messages: messages

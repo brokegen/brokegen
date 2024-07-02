@@ -137,16 +137,13 @@ class ChatSyncService: ObservableObject {
     }
 
     func updateSequence(withSameId updatedSequence: ChatSequence, disablePublish: Bool = false) {
-        // TODO: Make .serverId a non-optional type, and remove this check
-        guard updatedSequence.serverId != nil else { return }
-
         // Keep the first ChatSequence's clientId, in case of duplicates
-        let originalClientId: UUID? = loadedChatSequences[updatedSequence.serverId!]?.id
+        let originalClientId: UUID? = loadedChatSequences[updatedSequence.serverId]?.id
         if originalClientId != nil {
-            loadedChatSequences[updatedSequence.serverId!] = updatedSequence.replaceId(originalClientId!)
+            loadedChatSequences[updatedSequence.serverId] = updatedSequence.replaceId(originalClientId!)
         }
         else {
-            loadedChatSequences[updatedSequence.serverId!] = updatedSequence
+            loadedChatSequences[updatedSequence.serverId] = updatedSequence
         }
 
         // Update matching client models that held the original sequence
@@ -169,12 +166,12 @@ class ChatSyncService: ObservableObject {
         print("[DEBUG] Attempting to update \(originalSequenceID) to new_sequence_id: \(updatedSequence.serverId)")
 
         // Keep the first ChatSequence's clientId, in case of duplicates
-        let originalClientId: UUID? = loadedChatSequences[updatedSequence.serverId!]?.id
+        let originalClientId: UUID? = loadedChatSequences[updatedSequence.serverId]?.id
         if originalClientId != nil {
-            loadedChatSequences[updatedSequence.serverId!] = updatedSequence.replaceId(originalClientId!)
+            loadedChatSequences[updatedSequence.serverId] = updatedSequence.replaceId(originalClientId!)
         }
         else {
-            loadedChatSequences[updatedSequence.serverId!] = updatedSequence
+            loadedChatSequences[updatedSequence.serverId] = updatedSequence
         }
 
         // Update any clientModels that might hold it
@@ -232,7 +229,7 @@ class DefaultChatSyncService: ChatSyncService {
 
     override func autonameChatSequence(_ sequence: ChatSequence, preferredAutonamingModel: FoundationModelRecordID?) -> String? {
         Task {
-            var endpointBuilder = "/sequences/\(sequence.serverId!)/autoname?wait_for_response=true"
+            var endpointBuilder = "/sequences/\(sequence.serverId)/autoname?wait_for_response=true"
             if preferredAutonamingModel != nil {
                 endpointBuilder += "&preferred_autonaming_model=\(preferredAutonamingModel!)"
             }
@@ -255,7 +252,7 @@ class DefaultChatSyncService: ChatSyncService {
         Task {
             _ = try? await self.postDataBlocking(
                 nil,
-                endpoint: "/sequences/\(sequence.serverId!)/human_desc?value=\(newHumanDesc ?? "")")
+                endpoint: "/sequences/\(sequence.serverId)/human_desc?value=\(newHumanDesc ?? "")")
         }
 
         return sequence.replaceHumanDesc(desc: newHumanDesc)
@@ -272,7 +269,7 @@ class DefaultChatSyncService: ChatSyncService {
         Task {
             _ = try? await self.postDataBlocking(
                 nil,
-                endpoint: "/sequences/\(sequence.serverId!)/user_pinned?value=\(userPinned)")
+                endpoint: "/sequences/\(sequence.serverId)/user_pinned?value=\(userPinned)")
         }
 
         return sequence.replaceUserPinned(pinned: userPinned)

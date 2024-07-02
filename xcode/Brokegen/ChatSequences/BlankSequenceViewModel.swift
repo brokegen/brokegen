@@ -91,8 +91,8 @@ class BlankSequenceViewModel: ObservableObject {
             return nil
         }
 
-        let sequenceId: ChatSequenceServerID? = try? await chatService.constructNewChatSequence(messageId: messageId!, humanDesc: humanDesc ?? "")
-        guard sequenceId != nil else {
+        let replacementSequenceId: ChatSequenceServerID? = try? await chatService.constructNewChatSequence(messageId: messageId!, humanDesc: humanDesc ?? "")
+        guard replacementSequenceId != nil else {
             submitting = false
             print("[ERROR] Couldn't construct sequence from: ChatMessage#\(messageId!)")
             return nil
@@ -100,7 +100,7 @@ class BlankSequenceViewModel: ObservableObject {
 
         // Manually (re)construct server data, rather than fetching the same data back.
         let constructedSequence: ChatSequence = ChatSequence(
-            serverId: sequenceId,
+            serverId: replacementSequenceId!,
             messages: [
                 .temporary(TemporaryChatMessage(
                     role: "user",
