@@ -106,6 +106,7 @@ class DefaultProviderService: ProviderService {
     }
 
     override func fetchAvailableModels() async throws {
+        let oldCount = allModels.count
         let allModelsData = await getDataBlocking("/providers/any/any/models")
         guard allModelsData != nil else { throw ProviderServiceError.noResponseContentReturned }
 
@@ -114,7 +115,7 @@ class DefaultProviderService: ProviderService {
             let FoundationModel = FoundationModel(modelData.dictionaryValue)
             await self.replaceModelById(FoundationModel.serverId, with: FoundationModel)
         }
-        print("[TRACE] Updated modelData for \(JSON(allModelsData!).arrayValue.count) models")
+        print("[TRACE] Updated data for \(JSON(allModelsData!).arrayValue.count) foundation models (\(oldCount) => \(allModels.count))")
     }
 
     override func fetchAllProviders() async throws -> [ProviderClientModel] {

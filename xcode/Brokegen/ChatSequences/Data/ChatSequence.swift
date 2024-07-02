@@ -281,8 +281,10 @@ extension DefaultChatSyncService {
                 self.updateSequence(withSameId: oneSequence, disablePublish: true)
             }
 
-            let elapsedMsec = String(format: "%.3f", Date.now.timeIntervalSince(startTime) * 1000)
-            print("[TRACE] DefaultChatSyncService.fetchRecents() update time: \(elapsedMsec) msecs")
+            let elapsedMsec = Date.now.timeIntervalSince(startTime) * 1000
+            if elapsedMsec > 8.333 {
+                print("[TRACE] DefaultChatSyncService.fetchRecents() update time: \(String(format: "%.3f", elapsedMsec)) msecs for \(sequenceUpdates.count) sequences")
+            }
 
             self.objectWillChange.send()
         }

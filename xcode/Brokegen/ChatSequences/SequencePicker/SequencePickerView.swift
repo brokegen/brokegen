@@ -85,30 +85,33 @@ extension ChatSequence: Comparable {
     }
 }
 
-extension ChatSyncService {
-    func sectionedSequences(onlyUserPinned: Bool) -> [(String, [ChatSequence])] {
-        let startTime = Date.now
+func sectionedSequences(
+    _ loadedChatSequences: [ChatSequenceServerID : ChatSequence],
+    onlyUserPinned: Bool
+) -> [(String, [ChatSequence])] {
+    let startTime = Date.now
 
-        var sortedSequences = Array(self.loadedChatSequences.values)
-        if onlyUserPinned {
-            sortedSequences = sortedSequences.filter {
-                $0.userPinned == true || $0.isLeafSequence == true
-            }
+    var sortedSequences = Array(loadedChatSequences.values)
+    if onlyUserPinned {
+        sortedSequences = sortedSequences.filter {
+            $0.userPinned == true || $0.isLeafSequence == true
         }
-        sortedSequences = sortedSequences.sorted()
-
-        let sectionedSequences = Dictionary(grouping: sortedSequences) {
-            dateToSectionName($0.lastMessageDate)
-        }
-
-        let result = Array(sectionedSequences)
-            .sorted { $0.0 > $1.0 }
-        
-        let elapsedMsec = String(format: "%.3f", Date.now.timeIntervalSince(startTime) * 1000)
-        print("[TRACE] ChatSyncService.sectionedSequences() generation time: \(elapsedMsec) msecs for \(self.loadedChatSequences.count) rows")
-
-        return result
     }
+    sortedSequences = sortedSequences.sorted()
+
+    let sectionedSequences = Dictionary(grouping: sortedSequences) {
+        dateToSectionName($0.lastMessageDate)
+    }
+
+    let result = Array(sectionedSequences)
+        .sorted { $0.0 > $1.0 }
+
+    let elapsedMsec = Date.now.timeIntervalSince(startTime) * 1000
+    if elapsedMsec > 8.333 {
+        print("[TRACE] ChatSyncService.sectionedSequences() generation time: \(String(format: "%.3f", elapsedMsec)) msecs for \(loadedChatSequences.count) rows")
+    }
+
+    return result
 }
 
 struct SequencePickerView: View {
@@ -254,7 +257,7 @@ struct SequencePickerView: View {
         GeometryReader { geometry in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 8) {
-                    ForEach(chatService.sectionedSequences(onlyUserPinned: onlyUserPinned), id: \.0) { pair in
+                    ForEach(sectionedSequences(chatService.loadedChatSequences, onlyUserPinned: onlyUserPinned), id: \.0) { pair in
                         let (sectionName, sectionSequences) = pair
 
                         Section(content: {
