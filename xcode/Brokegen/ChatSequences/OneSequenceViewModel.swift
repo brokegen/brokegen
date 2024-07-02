@@ -156,9 +156,11 @@ class OneSequenceViewModel: ObservableObject {
                 )
 
                 submittedAssistantResponseSeed = nil
-            }
 
-            serverStatus = "\(endpoint) response: (\((responseInEdit!.content ?? "").count) characters so far)"
+                // NB Don't live-update this; any direct SwiftUI updates from here will be very slow.
+                // This is possibly because status bar rendering is implemented wrong, but not worth investigating.
+                serverStatus = "\(endpoint): awaiting response"
+            }
 
             let jsonData: JSON = JSON(data)
 
