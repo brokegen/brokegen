@@ -298,10 +298,6 @@ class DefaultChatSyncService: ChatSyncService {
         )
     }
 
-    override func updateSequence(_ originalSequenceId: ChatSequenceServerID?, withNewSequence updatedSequenceId: ChatSequenceServerID) async -> ChatSequence? {
-        return await doUpdateSequence(originalSequenceId: originalSequenceId, updatedSequenceId: updatedSequenceId)
-    }
-
     // MARK: - ChatSequence extend/continue
     override public func sequenceContinue(_ params: ChatSequenceParameters) async -> AnyPublisher<Data, AFErrorAndData> {
         return await doSequenceContinue(params)
