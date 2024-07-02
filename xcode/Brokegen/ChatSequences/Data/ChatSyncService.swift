@@ -141,7 +141,7 @@ class ChatSyncService: ObservableObject {
         guard updatedSequence.serverId != nil else { return }
 
         // Keep the first ChatSequence's clientId, in case of duplicates
-        var originalClientId: UUID? = loadedChatSequences[updatedSequence.serverId!]?.id
+        let originalClientId: UUID? = loadedChatSequences[updatedSequence.serverId!]?.id
         if originalClientId != nil {
             loadedChatSequences[updatedSequence.serverId!] = updatedSequence.replaceId(originalClientId!)
         }
@@ -169,7 +169,7 @@ class ChatSyncService: ObservableObject {
         print("[DEBUG] Attempting to update \(originalSequenceID) to new_sequence_id: \(updatedSequence.serverId)")
 
         // Keep the first ChatSequence's clientId, in case of duplicates
-        var originalClientId: UUID? = loadedChatSequences[updatedSequence.serverId!]?.id
+        let originalClientId: UUID? = loadedChatSequences[updatedSequence.serverId!]?.id
         if originalClientId != nil {
             loadedChatSequences[updatedSequence.serverId!] = updatedSequence.replaceId(originalClientId!)
         }

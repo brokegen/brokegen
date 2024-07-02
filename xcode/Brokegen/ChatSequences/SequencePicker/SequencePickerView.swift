@@ -86,9 +86,8 @@ extension ChatSequence: Comparable {
 }
 
 extension ChatSyncService {
-    func sectionedSequencesReal(onlyUserPinned: Bool) -> [(String, [ChatSequence])] {
+    func sectionedSequences(onlyUserPinned: Bool) -> [(String, [ChatSequence])] {
         let startTime = Date.now
-        print("[TRACE] re-sectioning \(self.loadedChatSequences.count) sequences")
 
         var sortedSequences = Array(self.loadedChatSequences.values)
         if onlyUserPinned {
@@ -106,19 +105,7 @@ extension ChatSyncService {
             .sorted { $0.0 > $1.0 }
         
         let elapsedMsec = String(format: "%.3f", Date.now.timeIntervalSince(startTime) * 1000)
-        print("[TRACE] ChatSyncService.sectionedSequences() update time: \(elapsedMsec) msecs")
-
-        return result
-    }
-
-    func sectionedSequences(onlyUserPinned: Bool) -> [(String, [ChatSequence])] {
-        let startTime = Date.now
-        print("[TRACE] re-sectioning \(self.loadedChatSequences.count) sequences")
-
-        let result = [("generic", Array(self.loadedChatSequences.values))]
-
-        let elapsedMsec = String(format: "%.3f", Date.now.timeIntervalSince(startTime) * 1000)
-        print("[TRACE] ChatSyncService.sectionedSequences() update time: \(elapsedMsec) msecs")
+        print("[TRACE] ChatSyncService.sectionedSequences() generation time: \(elapsedMsec) msecs for \(self.loadedChatSequences.count) rows")
 
         return result
     }
@@ -264,36 +251,46 @@ struct SequencePickerView: View {
             .padding(24)
             .font(.system(size: 18))
 
-        ScrollView {
-            LazyVStack {
-                ForEach(chatService.sectionedSequences(onlyUserPinned: onlyUserPinned), id: \.0) { pair in
-                    let (sectionName, sectionSequences) = pair
+        GeometryReader { geometry in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 8) {
+                    ForEach(chatService.sectionedSequences(onlyUserPinned: onlyUserPinned), id: \.0) { pair in
+                        let (sectionName, sectionSequences) = pair
 
-                    Section(header: Text(sectionName)
-                        .font(.title)
-                        .monospaced()
-                        .foregroundColor(.accentColor)
-                        .padding(.top, 36)
-                        .contextMenu {
-                            sectionContextMenu(for: sectionName, sequences: sectionSequences)
-                        }
-                    ) {
-                        ForEach(sectionSequences, id: \.serverId) { sequence in
-                            sequenceRow(sequence)
+                        Section(content: {
+                            ForEach(sectionSequences, id: \.serverId) { sequence in
+                                sequenceRow(sequence)
+                                    .contextMenu {
+                                        sequenceContextMenu(for: sequence)
+                                    }
+
+                                Divider()
+                            }
+                        }, header: {
+                            Text(sectionName)
+                                .font(.title)
+                                .monospaced()
+                                .foregroundColor(.accentColor)
+                                .padding(.top, 48)
                                 .contextMenu {
-                                    sequenceContextMenu(for: sequence)
+                                    sectionContextMenu(for: sectionName, sequences: sectionSequences)
                                 }
-                        }
-                    }
-                    .padding(8)
-                }
 
-                Text("End of loaded ChatSequences")
-                    .foregroundStyle(Color(.disabledControlTextColor))
-                    .frame(height: 400)
-                    .frame(maxWidth: .infinity)
+                            Divider()
+                        })
+                    }
+
+                    Text("End of loaded ChatSequences")
+                        .foregroundStyle(Color(.disabledControlTextColor))
+                        .frame(height: 400)
+                        .frame(maxWidth: .infinity)
+
+                    Spacer()
+                } // LazyVStack
+                .padding([.leading, .trailing], 12)
             }
+            .background(BackgroundEffectView().ignoresSafeArea())
+            .frame(height: geometry.size.height)
         }
-        .scrollContentBackground(.hidden)
     }
 }

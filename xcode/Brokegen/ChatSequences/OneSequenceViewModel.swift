@@ -141,12 +141,12 @@ class OneSequenceViewModel: ObservableObject {
         return { [self] data in
             // On first data received, end "submitting" phase
             if submitting {
+                submitting = false
+
                 if maybeNextMessage != nil {
                     sequence.messages.append(.legacy(maybeNextMessage!))
                 }
-
                 promptInEdit = ""
-                submitting = false
 
                 receivedDone = 0
                 responseInEdit = TemporaryChatMessage(
