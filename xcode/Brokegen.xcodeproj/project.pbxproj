@@ -26,6 +26,7 @@
 		CE66FAFC2C1679C700BD8745 /* SwiftyJSON in Frameworks */ = {isa = PBXBuildFile; productRef = CE66FAFB2C1679C700BD8745 /* SwiftyJSON */; };
 		CE66FAFE2C16818800BD8745 /* ChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE66FAFD2C16818800BD8745 /* ChatMessage.swift */; };
 		CE66FB132C16968C00BD8745 /* ChatMessageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE66FAFF2C16915C00BD8745 /* ChatMessageTests.swift */; };
+		CE6807C22C35D9F500B0053A /* DefaultChatSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6807C12C35D9F400B0053A /* DefaultChatSyncService.swift */; };
 		CE6D8A7F2BF6DF1800A7934D /* RibbonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */; };
 		CE7FFE142C04435D00DB7CFA /* ProviderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE132C04435D00DB7CFA /* ProviderService.swift */; };
 		CE7FFE162C04482900DB7CFA /* ModelPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE152C04482900DB7CFA /* ModelPickerView.swift */; };
@@ -108,6 +109,7 @@
 		CE66FAFD2C16818800BD8745 /* ChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessage.swift; sourceTree = "<group>"; };
 		CE66FAFF2C16915C00BD8745 /* ChatMessageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessageTests.swift; sourceTree = "<group>"; };
 		CE66FB0A2C16966900BD8745 /* BrokegenTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BrokegenTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		CE6807C12C35D9F400B0053A /* DefaultChatSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultChatSyncService.swift; sourceTree = "<group>"; };
 		CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RibbonView.swift; sourceTree = "<group>"; };
 		CE7FFE132C04435D00DB7CFA /* ProviderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderService.swift; sourceTree = "<group>"; };
 		CE7FFE152C04482900DB7CFA /* ModelPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelPickerView.swift; sourceTree = "<group>"; };
@@ -327,6 +329,7 @@
 				CEAA2B712C070B2E002BEB26 /* ChatSequence.swift */,
 				CEAA2B6F2C070AE3002BEB26 /* ChatSequence+Extend.swift */,
 				CE4634F32BFBB4900063142E /* ChatSyncService.swift */,
+				CE6807C12C35D9F400B0053A /* DefaultChatSyncService.swift */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -514,6 +517,7 @@
 				CEE99E592C0D85AD008E1B07 /* OneSequenceViewModel.swift in Sources */,
 				CE145DAD2C1A106A00577314 /* ProMessageView.swift in Sources */,
 				CE7FFE142C04435D00DB7CFA /* ProviderService.swift in Sources */,
+				CE6807C22C35D9F500B0053A /* DefaultChatSyncService.swift in Sources */,
 				CE9065272C2A0824003593F1 /* SequenceRow.swift in Sources */,
 				CE7FFE182C06772400DB7CFA /* BlankOneSequenceView.swift in Sources */,
 				CE4634DE2BF937320063142E /* JobsSidebar.swift in Sources */,

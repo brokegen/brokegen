@@ -122,6 +122,7 @@ func sectionedSequences(
     let elapsedMsec = Date.now.timeIntervalSince(startTime) * 1000
     if elapsedMsec > 8.333 {
         print("[TRACE] ChatSyncService.sectionedSequences() generation time: \(String(format: "%.3f", elapsedMsec)) msecs for \(loadedChatSequences.count) rows")
+        print("        cachedSectionNames.count = \(cachedSectionNames.count)")
     }
 
     return result
