@@ -97,7 +97,7 @@ class ChatSyncService: ObservableObject {
     }
 
     // MARK: - ChatSequence construction
-    @ObservationIgnored var loadedChatSequences: [ChatSequenceServerID : ChatSequence] = [:]
+    var loadedChatSequences: [ChatSequenceServerID : ChatSequence] = [:]
 
     public func constructChatMessage(from tempMessage: TemporaryChatMessage) async throws -> ChatMessageServerID? {
         return nil
