@@ -51,16 +51,14 @@ extension DefaultChatSyncService {
 
         let subject = PassthroughSubject<Data, AFErrorAndData>()
 
-        var encodedParams: Data? = nil
-        do {
-            encodedParams = try jsonEncoder.encode(params)
-        }
-        catch {
+        let encodedParams: Data? = try? jsonEncoder.encode(params)
+        guard encodedParams != nil else {
             print("[ERROR] /sequences/\(params.sequenceId!)/continue failed, probably encoding error: \(String(describing: params))")
             return subject.eraseToAnyPublisher()
         }
 
         print("[DEBUG] POST /sequences/\(params.sequenceId!)/continue <= \(String(data: encodedParams!, encoding: .utf8)!)")
+        let receiveQueue = DispatchQueue(label: "brokegen server", qos: .background, attributes: .concurrent)
         var responseStatusCode: Int? = nil
 
         _ = session.streamRequest(
@@ -77,7 +75,7 @@ extension DefaultChatSyncService {
             // Store the status code until the later handler can deal with it.
             responseStatusCode = response.statusCode
         }
-        .responseStream { stream in
+        .responseStream(on: receiveQueue) { stream in
             switch stream.event {
             case let .stream(result):
                 switch result {
@@ -114,16 +112,14 @@ extension DefaultChatSyncService {
 
         let subject = PassthroughSubject<Data, AFErrorAndData>()
 
-        var encodedParams: Data? = nil
-        do {
-            encodedParams = try jsonEncoder.encode(params)
-        }
-        catch {
+        let encodedParams: Data? = try? jsonEncoder.encode(params)
+        guard encodedParams != nil else {
             print("[ERROR] /sequences/\(params.sequenceId!)/extend failed, probably encoding error: \(String(describing: params))")
             return subject.eraseToAnyPublisher()
         }
 
         print("[DEBUG] POST /sequences/\(params.sequenceId!)/extend <= \(String(data: encodedParams!, encoding: .utf8)!)")
+        let receiveQueue = DispatchQueue(label: "brokegen server", qos: .background, attributes: .concurrent)
         var responseStatusCode: Int? = nil
 
         _ = session.streamRequest(
@@ -140,7 +136,7 @@ extension DefaultChatSyncService {
             // Store the status code until the later handler can deal with it.
             responseStatusCode = response.statusCode
         }
-        .responseStream { stream in
+        .responseStream(on: receiveQueue) { stream in
             switch stream.event {
             case let .stream(result):
                 switch result {

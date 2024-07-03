@@ -220,22 +220,21 @@ class OneSequenceViewModel: ObservableObject {
             _ = stayAwake.createAssertion(reason: "brokegen OneSequenceViewModel.requestContinue() for ChatSequence#\(self.sequence.serverId)")
         }
 
+        guard !submitting else {
+            print("[ERROR] OneSequenceViewModel.requestContinue(withRetrieval: \(withRetrieval)) during another submission")
+            return self
+        }
+        guard !receiving else {
+            print("[ERROR] OneSequenceViewModel.requestContinue(withRetrieval: \(withRetrieval)) while receiving response")
+            return self
+        }
+
+        self.submitting = true
+        self.serverStatus = "/sequences/\(self.sequence.serverId)/continue: submitting request"
+
+        submittedAssistantResponseSeed = settings.seedAssistantResponse
+
         Task {
-            guard !submitting else {
-                print("[ERROR] OneSequenceViewModel.requestContinue(withRetrieval: \(withRetrieval)) during another submission")
-                return
-            }
-            guard !receiving else {
-                print("[ERROR] OneSequenceViewModel.requestContinue(withRetrieval: \(withRetrieval)) while receiving response")
-                return
-            }
-            DispatchQueue.main.async {
-                self.submitting = true
-                self.serverStatus = "/sequences/\(self.sequence.serverId)/continue: submitting request"
-            }
-
-            submittedAssistantResponseSeed = settings.seedAssistantResponse
-
             receivingStreamer = await chatService.sequenceContinue(
                 ChatSequenceParameters(
                     nextMessage: nil,
@@ -274,29 +273,28 @@ class OneSequenceViewModel: ObservableObject {
             _ = stayAwake.createAssertion(reason: "brokegen OneSequenceViewModel.requestExtend() for ChatSequence#\(self.sequence.serverId)")
         }
 
+        guard !self.promptInEdit.isEmpty else { return }
+        guard !submitting else {
+            print("[ERROR] OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval)) during another submission")
+            return
+        }
+        guard !receiving else {
+            print("[ERROR] OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval)) while receiving response")
+            return
+        }
+
+        self.submitting = true
+        self.serverStatus = "/sequences/\(self.sequence.serverId)/extend: submitting request"
+
+        let nextMessage = Message(
+            role: "user",
+            content: promptInEdit,
+            createdAt: Date.now
+        )
+
+        submittedAssistantResponseSeed = settings.seedAssistantResponse
+
         Task {
-            guard !self.promptInEdit.isEmpty else { return }
-            guard !submitting else {
-                print("[ERROR] OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval)) during another submission")
-                return
-            }
-            guard !receiving else {
-                print("[ERROR] OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval)) while receiving response")
-                return
-            }
-            DispatchQueue.main.async {
-                self.submitting = true
-                self.serverStatus = "/sequences/\(self.sequence.serverId)/extend: submitting request"
-            }
-
-            let nextMessage = Message(
-                role: "user",
-                content: promptInEdit,
-                createdAt: Date.now
-            )
-
-            submittedAssistantResponseSeed = settings.seedAssistantResponse
-
             receivingStreamer = await chatService.sequenceExtend(
                 ChatSequenceParameters(
                     nextMessage: nextMessage,

@@ -23,13 +23,13 @@ struct BlankProSequenceView: View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
-                .padding(.leading, -24)
-                .focused($focusTextInput)
-                .onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        self.focusTextInput = true
+                    .padding(.leading, -24)
+                    .focused($focusTextInput)
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            self.focusTextInput = true
+                        }
                     }
-                }
 
                 if viewModel.settings.showSeparateRetrievalButton {
                     let retrievalButtonDisabled: Bool = {
@@ -568,9 +568,9 @@ struct BlankProSequenceView: View {
                     viewModel.chatSettingsService.registerSettings(viewModel.settings, for: constructedSequence!)
 
                     let newViewModel: OneSequenceViewModel = viewModel.chatService.addClientModel(fromBlank: viewModel, for: constructedSequence!, withRetrieval: withRetrieval)
-                    _ = newViewModel.requestContinue(model: newViewModel.continuationInferenceModel?.serverId ?? viewModel.appSettings.defaultInferenceModel?.serverId, withRetrieval: withRetrieval)
+                    let continuedModel = newViewModel.requestContinue(model: newViewModel.continuationInferenceModel?.serverId ?? viewModel.appSettings.defaultInferenceModel?.serverId, withRetrieval: withRetrieval)
 
-                    pathHost.push(newViewModel)
+                    pathHost.push(continuedModel)
 
                     // Once we've successfully transferred the info to a different view, clear it out for if the user starts a new chat.
                     // Only some settings, though, since most of the other ones tend to get reused.

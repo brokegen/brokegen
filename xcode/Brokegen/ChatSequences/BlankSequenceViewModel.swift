@@ -73,10 +73,9 @@ class BlankSequenceViewModel: ObservableObject {
             print("[ERROR] BlankSequenceViewModel.requestStart() during another submission")
             return nil
         }
-        DispatchQueue.main.async {
-            self.submitting = true
-            self.serverStatus = "/sequences/???/continue: preparing request"
-        }
+
+        self.submitting = true
+        self.serverStatus = "/sequences/???/continue: preparing request"
 
         submittedAssistantResponseSeed = settings.seedAssistantResponse
 
