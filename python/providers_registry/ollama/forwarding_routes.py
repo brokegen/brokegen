@@ -11,7 +11,7 @@ from fastapi import FastAPI, APIRouter, Depends, HTTPException
 from starlette.requests import Request
 
 from _util.json import safe_get, JSONDict, safe_get_arrayed
-from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks_with_log
+from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks
 from _util.status import ServerStatusHolder
 from audit.http import AuditDB, get_db as get_audit_db
 from client.database import HistoryDB, get_db as get_history_db
@@ -25,9 +25,9 @@ from providers_registry.ollama.api_chat.inject_rag import do_proxy_chat_rag
 from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON, OllamaResponseContentJSON, \
     finalize_inference_job, ollama_response_consolidator, ollama_log_indexer
 from providers_registry.ollama.api_generate import do_generate_raw_templated
-from providers_registry.ollama.models.lookup import lookup_model_offline
 from providers_registry.ollama.json import keepalive_wrapper
 from providers_registry.ollama.models.list import do_api_tags, do_api_show
+from providers_registry.ollama.models.lookup import lookup_model_offline
 from providers_registry.ollama.registry import ExternalOllamaFactory
 from retrieval.faiss.retrieval import RetrievalLabel
 
@@ -69,7 +69,7 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
         async def do_keepalive(
                 primordial: AsyncIterator[JSONDict],
         ) -> AsyncGenerator[JSONDict, None]:
-            async for chunk in emit_keepalive_chunks_with_log(primordial, 3.0, None, logger.debug):
+            async for chunk in emit_keepalive_chunks(primordial, 3.0, None):
                 if chunk is None:
                     yield {
                         "model": safe_get(request_content, "model"),

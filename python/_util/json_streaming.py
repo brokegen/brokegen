@@ -101,4 +101,5 @@ async def emit_keepalive_chunks_with_log(
 
         if item == sentinel:
             current_time = datetime.now(tz=timezone.utc)
-            emit_logger_fn(f"emit_keepalive_chunks(): emitting sentinel after {current_time - start_time}")
+            time_desc = f"{(current_time - start_time).total_seconds():.6f}"
+            emit_logger_fn(f"emit_keepalive_chunks(): emitting sentinel after {time_desc}")
