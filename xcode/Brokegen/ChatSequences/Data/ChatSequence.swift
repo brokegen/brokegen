@@ -257,8 +257,6 @@ extension DefaultChatSyncService {
         let sequencesData = try await getDataBlocking(endpointMaker)
         guard sequencesData != nil else { throw ChatSyncServiceError.noResponseContentReturned }
 
-        // Continue parsing the new sequences in this (background) coroutine.
-        // This doesn't save a significant amount of time, but that's okay.
         let sequenceUpdates: [ChatSequence] = {
             var sequenceUpdates: [ChatSequence] = []
 
@@ -281,12 +279,12 @@ extension DefaultChatSyncService {
                 self.updateSequence(withSameId: oneSequence, disablePublish: true)
             }
 
+            self.objectWillChange.send()
+
             let elapsedMsec = Date.now.timeIntervalSince(startTime) * 1000
             if elapsedMsec > 8.333 {
                 print("[TRACE] DefaultChatSyncService.fetchRecents() update time: \(String(format: "%.3f", elapsedMsec)) msecs for \(sequenceUpdates.count) sequences")
             }
-
-            self.objectWillChange.send()
         }
     }
 
