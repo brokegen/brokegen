@@ -58,7 +58,7 @@ extension DefaultChatSyncService {
         }
 
         print("[DEBUG] POST /sequences/\(params.sequenceId!)/continue <= \(String(data: encodedParams!, encoding: .utf8)!)")
-        let receiveQueue = DispatchQueue(label: "brokegen server", qos: .background, attributes: .concurrent)
+        let receiveQueue = DispatchQueue(label: "brokegen::ChatSequence", qos: .background, attributes: .concurrent)
         var responseStatusCode: Int? = nil
 
         _ = session.streamRequest(
@@ -119,7 +119,7 @@ extension DefaultChatSyncService {
         }
 
         print("[DEBUG] POST /sequences/\(params.sequenceId!)/extend <= \(String(data: encodedParams!, encoding: .utf8)!)")
-        let receiveQueue = DispatchQueue(label: "brokegen server", qos: .background, attributes: .concurrent)
+        let receiveQueue = DispatchQueue(label: "brokegen::ChatSequence", qos: .background, attributes: .concurrent)
         var responseStatusCode: Int? = nil
 
         _ = session.streamRequest(

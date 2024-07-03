@@ -302,6 +302,8 @@ extension DefaultChatSyncService {
         print("[TRACE] GET \(endpoint)")
         var responseStatusCode: Int? = nil
 
+        let receiveQueue = DispatchQueue(label: "brokegen server", qos: .background, attributes: .concurrent)
+
         return try await withCheckedThrowingContinuation { continuation in
             session.request(
                 serverBaseURL + endpoint,
@@ -312,7 +314,7 @@ extension DefaultChatSyncService {
                 // Store the status code until the later handler can deal with it.
                 responseStatusCode = response.statusCode
             }
-            .response { r in
+            .response(queue: receiveQueue) { r in
                 switch r.result {
                 case .success(let data):
                     if responseStatusCode != nil && !(200..<400).contains(responseStatusCode!) {
@@ -338,6 +340,8 @@ extension DefaultChatSyncService {
         print("[TRACE] POST \(endpoint)")
         var responseStatusCode: Int? = nil
 
+        let receiveQueue = DispatchQueue(label: "brokegen server", qos: .background, attributes: .concurrent)
+
         return try await withCheckedThrowingContinuation { continuation in
             session.request(
                 serverBaseURL + endpoint
@@ -351,7 +355,7 @@ extension DefaultChatSyncService {
             .onHTTPResponse { response in
                 responseStatusCode = response.statusCode
             }
-            .response { r in
+            .response(queue: receiveQueue) { r in
                 switch r.result {
                 case .success(let data):
                     if responseStatusCode != nil && !(200..<400).contains(responseStatusCode!) {
