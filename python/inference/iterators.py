@@ -92,14 +92,20 @@ async def tee_to_console_output(
         yield chunk_t
 
         if len(buffer) >= max_buffer_len:
-            print(buffer)
+            if "\n" in buffer:
+                # For output that already includes a newline, don't bother extra-wrapping it.
+                print(buffer, end='')
+            else:
+                print(buffer)
             buffer = indexer(chunk_t)
         else:
             buffer += indexer(chunk_t)
 
     if buffer:
-        print(buffer)
-        del buffer
+        if "\n" in buffer:
+            print(buffer, end='')
+        else:
+            print(buffer)
 
 
 async def consolidate_and_call(
