@@ -468,8 +468,10 @@ struct ProSequenceView: View {
     }
 
     @ViewBuilder
-    func oimPicker(_ geometry: GeometryProxy) -> some View {
-        VStack(alignment: .center, spacing: 0) {
+    func ofmPicker(_ geometry: GeometryProxy) -> some View {
+        HStack(alignment: .center, spacing: 0) {
+            Spacer()
+
             OFMPicker(
                 boxLabel: "Select an override inference model for next message:",
                 selectedModelBinding: $viewModel.continuationInferenceModel,
@@ -478,7 +480,12 @@ struct ProSequenceView: View {
                 allowClear: true)
             .foregroundStyle(Color(.disabledControlTextColor))
             .contentShape(Rectangle())
+            .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
+
+            Spacer()
         }
+        .padding(.top, 240)
+        .padding(.bottom, 120)
     }
 
     var body: some View {
@@ -551,13 +558,7 @@ struct ProSequenceView: View {
                                     }
 
                                     if settings.showOIMPicker {
-                                        oimPicker(geometry)
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.top, max(
-                                                120,
-                                                geometry.size.height * 0.2
-                                            ))
-                                            .padding(.bottom, 120)
+                                        ofmPicker(geometry)
                                     }
                                 } // LazyVStack
                             } // ScrollView

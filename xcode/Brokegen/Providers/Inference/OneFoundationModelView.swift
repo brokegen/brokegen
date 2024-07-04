@@ -209,8 +209,8 @@ struct OFMPicker: View {
             ModelPickerView(modelSelection: $selectedModelBinding)
             // Frame is very wide because the way we're positioning incorrectly ignores the sidebar
                 .frame(
-                    width: geometry.size.width,
-                    height: geometry.size.height * 0.8,
+                    idealWidth: geometry.size.width,
+                    idealHeight: geometry.size.height * 0.8,
                     alignment: .top)
                 .animation(.linear(duration: 0.2))
         }
