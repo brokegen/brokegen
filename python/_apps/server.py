@@ -1,4 +1,5 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
+import sqlalchemy.exc
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 
@@ -207,10 +208,7 @@ def run_proxy(
         )
 
     @app.exception_handler(starlette.exceptions.HTTPException)
-    def http_exception_handler(
-            request: starlette.requests.Request,
-            exc,
-    ):
+    def http_exception_handler(exc):
         """
         NB Installing this causes the app to exit on any HTTP exceptions!
         """
@@ -218,6 +216,13 @@ def run_proxy(
             str(exc.detail),
             status_code=exc.status_code,
             background=BackgroundTask(exit_app),
+        )
+
+    @app.exception_handler(Exception)
+    def generic_exception_handler(exc):
+        return starlette.responses.PlainTextResponse(
+            str(exc),
+            status_code=exc.status_code,
         )
 
     if install_terminate_endpoint:
