@@ -169,7 +169,12 @@ class OneSequenceViewModel: ObservableObject {
             let messageFragment = jsonData["message"]["content"].stringValue
             if !messageFragment.isEmpty {
                 DispatchQueue.main.async {
-                    self.responseInEdit!.content?.append(messageFragment)
+                    if self.responseInEdit == nil {
+                        print("[WARNING] Dropping messageFragment = \(messageFragment)")
+                    }
+                    else {
+                        self.responseInEdit!.content?.append(messageFragment)
+                    }
                 }
             }
 
