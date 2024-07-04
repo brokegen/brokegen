@@ -1,4 +1,7 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
+
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
@@ -193,8 +196,18 @@ def run_proxy(
         loop = asyncio.get_running_loop()
         loop.stop()
 
-    @app.exception_handler(HTTPException)
-    async def http_exception_handler(
+    @app.exception_handler(RequestValidationError)
+    def validation_exception_handler(
+            request: starlette.requests.Request,
+            exc,
+    ):
+        return starlette.responses.PlainTextResponse(
+            jsonable_encoder({"detail": exc.errors(), "body": exc.body}),
+            status_code=exc.status_code,
+        )
+
+    @app.exception_handler(starlette.exceptions.HTTPException)
+    def http_exception_handler(
             request: starlette.requests.Request,
             exc,
     ):
