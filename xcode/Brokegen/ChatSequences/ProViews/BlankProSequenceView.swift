@@ -205,7 +205,7 @@ struct BlankProSequenceView: View {
     @ViewBuilder var lowerVStackOptions: some View {
         if viewModel.showUiOptions {
             // Tab.uiOptions
-            CSCSettingsView(viewModel.settings, sequenceDesc: " for draft")
+            CSCSettingsView(viewModel.settings, sequenceDesc: "draft")
         }
 
         // Tab.modelOptions

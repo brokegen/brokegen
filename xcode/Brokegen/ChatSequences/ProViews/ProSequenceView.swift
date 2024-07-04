@@ -253,7 +253,7 @@ struct ProSequenceView: View {
 
     @ViewBuilder var lowerVStackOptions: some View {
         if viewModel.showUiOptions {
-            CSCSettingsView(settings, sequenceDesc: " for ChatSequence#\(viewModel.sequence.serverId)")
+            CSCSettingsView(settings, sequenceDesc: "ChatSequence#\(viewModel.sequence.serverId)")
         }
 
         if viewModel.showInferenceOptions {

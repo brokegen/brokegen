@@ -52,13 +52,128 @@ struct CSCSettingsView: View {
 
     init(
         _ settings: CSCSettingsService.SettingsProxy,
-        sequenceDesc: String = " for ChatSequence"
+        sequenceDesc: String = "ChatSequence"
     ) {
         self.settings = settings
-        self.sequenceDesc = sequenceDesc
+        self.sequenceDesc = sequenceDesc.isEmpty
+        ? ""
+        : " for " + sequenceDesc
+    }
+
+    @ViewBuilder
+    var combinedGrid: some View {
+        GroupBox(content: {
+            Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
+                GridRow {
+                    Spacer()
+
+                    Text("global")
+
+                    Text("local" + sequenceDesc)
+                }
+
+                Divider()
+
+                GridRow {
+                    Text("ChatSequence UI Appearance")
+                        .font(.system(size: 12).lowercaseSmallCaps())
+                        .gridCellColumns(3)
+                }
+
+                GridRow {
+                    Text("Show ChatMessage headers")
+                        .layoutPriority(0.2)
+
+                    Toggle(isOn: $settings.defaults.showMessageHeaders) {
+                    }
+                    .toggleStyle(.switch)
+                    .gridCellUnsizedAxes(.horizontal)
+
+                    Picker(selection: $settings.override.showMessageHeaders, content: {
+                        Text(settings.defaults.showMessageHeaders
+                             ? "inherit global: show"
+                             : "inherit global: hide headers")
+                        .tag(nil as Bool?)
+
+                        Text("show")
+                            .tag(true as Bool?)
+
+                        Text("hide headers")
+                            .tag(false as Bool?)
+                    }, label: {})
+                    .gridCellUnsizedAxes(.horizontal)
+                }
+
+                GridRow {
+                    Text("Show InferenceModel override picker")
+                        .layoutPriority(0.2)
+
+                    Toggle(isOn: $settings.defaults.showOIMPicker) {
+                    }
+                    .toggleStyle(.switch)
+                    .gridCellUnsizedAxes(.horizontal)
+
+                    Picker(selection: $settings.override.showOIMPicker, content: {
+                        Text(settings.defaults.showOIMPicker
+                             ? "inherit global: show"
+                             : "inherit global: hide picker")
+                        .tag(nil as Bool?)
+
+                        Text("show")
+                            .tag(true as Bool?)
+
+                        Text("hide picker")
+                            .tag(false as Bool?)
+                    }, label: {})
+                }
+
+                Divider()
+
+                GridRow {
+                    Text("ChatSequence Submit Buttons")
+                        .font(.system(size: 12).lowercaseSmallCaps())
+                        .gridCellColumns(3)
+                }
+
+                Divider()
+
+                GridRow {
+                    Text("ChatSequence UI Behaviors")
+                        .font(.system(size: 12).lowercaseSmallCaps())
+                        .gridCellColumns(3)
+                }
+
+                GridRow {
+                    Text("Scroll to bottom of window on new messages")
+                        .layoutPriority(0.2)
+
+                    Toggle(isOn: $settings.defaults.scrollToBottomOnNew) {
+                    }
+                    .toggleStyle(.switch)
+                    .gridCellUnsizedAxes(.horizontal)
+
+                    Picker(selection: $settings.override.scrollToBottomOnNew, content: {
+                        Text(settings.defaults.scrollToBottomOnNew
+                             ? "inherit global: scroll"
+                             : "inherit global: don't scroll")
+                        .tag(nil as Bool?)
+
+                        Text("scroll")
+                            .tag(true as Bool?)
+
+                        Text("don't scroll")
+                            .tag(false as Bool?)
+                    }, label: {})
+                }
+            }
+        }, label: {
+            Text("ChatSequence settings")
+        })
     }
 
     var body: some View {
+        combinedGrid
+
         GroupBox(content: {
             VStack(spacing: 12) {
                 WideToggle(isOn: $settings.defaults.allowContinuation,
@@ -164,4 +279,26 @@ struct CSCSettingsView: View {
             Text("ChatSequence Generation Options")
         })
     }
+}
+
+#Preview(traits: .fixedLayout(width: 800, height: 800)) {
+    struct ViewHolder: View {
+        @State var settings: CSCSettingsService.SettingsProxy
+
+        init() {
+            settings = CSCSettingsService.SettingsProxy(
+                defaults: PersistentDefaultCSUISettings(),
+                override: OverrideCSUISettings(),
+                inference: CSInferenceSettings()
+            )
+        }
+
+        var body: some View {
+            ScrollView {
+                CSCSettingsView(settings)
+            }
+        }
+    }
+
+    return ViewHolder()
 }
