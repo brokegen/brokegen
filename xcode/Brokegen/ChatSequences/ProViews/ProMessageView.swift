@@ -146,11 +146,7 @@ struct ProMessageView: View {
                                 FontSize(18)
                                 BackgroundColor(nil)
                             }
-                            .markdownBlockStyle(\.paragraph) { configuration in
-                                configuration.label
-                                    .lineSpacing(6)
-                                    .markdownMargin(top: 6)
-                            }
+                            .markdownMargin(top: .em(1), bottom: .em(1))
                             .textSelection(.enabled)
                             .padding(16)
                             .background(
@@ -207,6 +203,57 @@ If you're willing, could you please share some ideas or topics you think would b
 Your input will help me generate more targeted and valuable responses. Let's collaborate to create something exciting together!
 """, createdAt: Date(timeIntervalSinceNow: +5))
 
+    let message4 = TemporaryChatMessage(role: "assistant", content: """
+        ```
+        **This is bold text**
+        ```
+        **This is bold text**
+        ```
+
+        *This text is italicized*
+        ```
+        *This text is italicized*
+        ```
+
+        ~~This was mistaken text~~
+        ```
+        ~~This was mistaken text~~
+        ```
+
+
+        **This text is _extremely_ important**
+        ```
+        **This text is _extremely_ important**
+        ```
+
+
+        ***All this text is important***
+        ```
+        ***All this text is important***
+        ```
+
+
+        MarkdownUI is fully compliant with the [CommonMark Spec](https://spec.commonmark.org/current/).
+        ```
+        MarkdownUI is fully compliant with the [CommonMark Spec](https://spec.commonmark.org/current/).
+        ```
+
+
+        Visit https://github.com.
+        ```
+        Visit https://github.com.
+        ```
+
+        ---
+        Use `git status` to list all new or modified files that haven't yet been committed.
+
+        ```
+        Use `git status` to list all new or modified files that haven't yet been committed.
+
+        ---
+        ok
+        """, createdAt: Date(timeIntervalSinceNow: +200))
+
     let showMessageHeaders = true
 
     return VStack(alignment: .leading, spacing: 0) {
@@ -221,7 +268,9 @@ Your input will help me generate more targeted and valuable responses. Let's col
             .temporary(TemporaryChatMessage(role: "clown", content: "Hello! How can I help you today with your prompt? Please provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now)),
             showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(false))
 
-        ProMessageView(.temporary(message3), showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(false))
+        ProMessageView(.temporary(message3), showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(true))
+
+        ProMessageView(.temporary(message4), showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(true))
 
         Spacer()
     }
