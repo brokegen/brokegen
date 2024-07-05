@@ -58,12 +58,21 @@ def translate_model_info_diff(
     if m0_dict == m1_dict:
         return None
 
-    return InfoMessageOut(
-        role='[INFO] FoundationModelRecords modified',
-        content=json.dumps(
-            jsondiff.diff(m0_dict, m1_dict), indent=2, cls=CatchAllEncoder,
-        ),
-    )
+    try:
+        return InfoMessageOut(
+            role='[INFO] FoundationModelRecords modified',
+            content=json.dumps(
+                # TODO: Need to pass the encoder somewhere/somehow
+                jsondiff.diff(m0_dict, m1_dict), indent=2, cls=CatchAllEncoder,
+            ),
+        )
+
+    except TypeError:
+        return InfoMessageOut(
+            role='[INFO] New FoundationModelRecord',
+            content=json.dumps(
+                dict(model1.model_dump()), indent=2, cls=CatchAllEncoder),
+        )
 
 
 def fetch_messages_for_sequence(

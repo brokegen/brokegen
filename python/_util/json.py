@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from typing import TypeAlias, Any, AnyStr, Dict, List
 
+import jsondiff
 from pydantic import BaseModel
 
 # These types aren't strictly defined because they get weirdly recursive
@@ -77,5 +78,7 @@ class CatchAllEncoder(DatetimeEncoder):
     def default(self, obj):
         if isinstance(obj, BaseModel):
             return obj.model_dump()
+        elif isinstance(obj, jsondiff.Symbol):
+            return str(obj)
         else:
             return DatetimeEncoder.default(self, obj)
