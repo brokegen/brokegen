@@ -110,9 +110,14 @@ class OneSequenceViewModel: ObservableObject {
                     sequence.messages.append(.temporary(responseInEdit!))
                     responseInEdit = nil
                 }
+
                 stopSubmitAndReceive()
+
+                serverStatus = nil
+
             case .failure(let errorAndData):
                 responseInEdit = nil
+
                 stopSubmitAndReceive()
 
                 let errorDesc: String = (
@@ -325,11 +330,12 @@ class OneSequenceViewModel: ObservableObject {
     func stopSubmitAndReceive(userRequested: Bool = false) {
         receivingStreamer?.cancel()
         receivingStreamer = nil
+
         _ = stayAwake.destroyAssertion()
         submittedAssistantResponseSeed = nil
 
         if submitting {
-            if  userRequested {
+            if userRequested {
                 serverStatus = "\(Date.now) [WARNING] User requested stop, but server will not actually stop inference"
             }
             else {
