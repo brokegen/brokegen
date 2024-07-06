@@ -46,5 +46,8 @@ testing = [
     'pytest-asyncio',
 ]
 
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
 [tool.setuptools.packages]
 find = {}

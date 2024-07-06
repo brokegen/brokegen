@@ -1,5 +1,5 @@
 import logging
-from typing import AsyncIterator, Callable, TypeVar, Awaitable, Any, Iterator
+from typing import AsyncIterator, Callable, TypeVar, Awaitable, Any, Iterator, AsyncContextManager, AsyncGenerator
 
 from orjson import orjson
 
@@ -133,9 +133,6 @@ async def consolidate_and_yield(
         initializer: U,
         *on_done_fns: Callable[[U], AsyncIterator[T]],
 ) -> AsyncIterator[T]:
-    """
-    This is basically an async functools.reduce()
-    """
     consolidated_response: U = initializer
 
     async for chunk_t in primordial_t:

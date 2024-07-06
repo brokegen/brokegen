@@ -8,16 +8,16 @@ import starlette.responses
 
 from _util.json import JSONDict
 from audit.http import AuditDB
+from audit.http import get_db as get_audit_db
 from audit.http_raw import HttpxLogger
 from client.database import HistoryDB
 from inference.iterators import stream_bytes_to_json, consolidate_and_call, dump_to_bytes
 from providers.foundation_models.orm import InferenceEventOrm, InferenceReason
 from providers_registry.ollama.api_chat.logging import finalize_inference_job, OllamaRequestContentJSON, \
     OllamaResponseContentJSON, ollama_response_consolidator
-from providers_registry.ollama.models.lookup import lookup_model_offline
 from providers_registry.ollama.json import OllamaEgressEventBuilder
 from providers_registry.ollama.models.list import _real_ollama_client
-from audit.http import get_db as get_audit_db
+from providers_registry.ollama.models.lookup import lookup_model_offline
 
 OllamaModelName: TypeAlias = str
 
@@ -78,7 +78,8 @@ async def do_generate_raw_templated(
 
     with HttpxLogger(_real_ollama_client, audit_db):
         upstream_response = await _real_ollama_client.send(upstream_request, stream=True)
-        wrapped_response: starlette.responses.StreamingResponse = await intercept.wrap_entire_streaming_response(upstream_response)
+        wrapped_response: starlette.responses.StreamingResponse = \
+            await intercept.wrap_entire_streaming_response(upstream_response)
 
         iter0: AsyncIterator[bytes] = wrapped_response.body_iterator
         iter1: AsyncIterator[JSONDict] = stream_bytes_to_json(iter0)
