@@ -6,7 +6,7 @@ import SwiftyJSON
 
 struct ChatMessage: Equatable {
     let serverId: ChatMessageServerID
-    let hostSequenceId: ChatSequenceServerID?
+    let hostSequenceId: ChatSequenceServerID
 
     let role: String
     let content: String
@@ -69,9 +69,7 @@ enum MessageLike: Equatable, Hashable {
         get {
             switch(self) {
             case .stored(let m):
-                m.hostSequenceId != nil
-                ? "ChatSequence#\(m.hostSequenceId!)"
-                : nil
+                "ChatSequence#\(m.hostSequenceId)"
             case _:
                 nil
             }

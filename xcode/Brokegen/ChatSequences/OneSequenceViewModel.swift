@@ -137,10 +137,10 @@ class OneSequenceViewModel: ObservableObject {
         maybeNextMessage: Message? = nil
     ) -> ((Data) -> Void) {
         return { [self] data in
+            let jsonData: JSON = JSON(data)
+
             // On first data received, end "submitting" phase
             if submitting {
-                submitting = false
-
                 if maybeNextMessage != nil {
                     sequence.messages.append(.legacy(maybeNextMessage!))
                 }
@@ -158,9 +158,9 @@ class OneSequenceViewModel: ObservableObject {
                 // NB Don't live-update this; any direct SwiftUI updates from here will be very slow.
                 // This is possibly because status bar rendering is implemented wrong, but not worth investigating.
                 serverStatus = "\(endpoint): awaiting response"
-            }
 
-            let jsonData: JSON = JSON(data)
+                submitting = false
+            }
 
             if let status = jsonData["status"].string {
                 serverStatus = status
@@ -168,18 +168,23 @@ class OneSequenceViewModel: ObservableObject {
 
             let messageFragment = jsonData["message"]["content"].stringValue
             if !messageFragment.isEmpty {
-                DispatchQueue.main.async {
-                    if self.responseInEdit == nil {
-                        print("[WARNING] Dropping messageFragment = \(messageFragment)")
-                    }
-                    else {
-                        self.responseInEdit!.content?.append(messageFragment)
-                    }
+                if self.responseInEdit == nil {
+                    print("[WARNING] Dropping messageFragment = \(messageFragment)")
+                }
+                else {
+                    self.responseInEdit!.content?.append(messageFragment)
                 }
             }
 
             if jsonData["done"].boolValue {
                 receivedDone += 1
+            }
+
+            if let replacementSequenceId: ChatSequenceServerID = jsonData["new_sequence_id"].int {
+                let originalSequenceId = self.sequence.serverId
+                let updatedSequence = self.sequence.replaceServerId(replacementSequenceId)
+
+                self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: updatedSequence)
             }
 
             if let newMessageId: ChatMessageServerID = jsonData["new_message_id"].int {
@@ -197,21 +202,10 @@ class OneSequenceViewModel: ObservableObject {
                 }
             }
 
-            if let replacementSequenceId: ChatSequenceServerID = jsonData["new_sequence_id"].int {
-                let originalSequenceId = self.sequence.serverId
-                let updatedSequence = self.sequence.replaceServerId(replacementSequenceId)
-
-                DispatchQueue.main.async {
-                    self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: updatedSequence)
-                }
-            }
-
             let autoname: String = jsonData["autoname"].stringValue
             if !autoname.isEmpty && autoname != sequence.humanDesc {
                 let renamedSequence = sequence.replaceHumanDesc(desc: autoname)
-                DispatchQueue.main.async {
-                    self.chatService.updateSequence(withSameId: renamedSequence)
-                }
+                self.chatService.updateSequence(withSameId: renamedSequence)
             }
         }
     }
@@ -331,20 +325,32 @@ class OneSequenceViewModel: ObservableObject {
     func stopSubmitAndReceive(userRequested: Bool = false) {
         receivingStreamer?.cancel()
         receivingStreamer = nil
+        _ = stayAwake.destroyAssertion()
+        submittedAssistantResponseSeed = nil
 
-        submitting = false
-        serverStatus = nil
+        if submitting {
+            if  userRequested {
+                serverStatus = "\(Date.now) [WARNING] User requested stop, but server will not actually stop inference"
+            }
+            else {
+                serverStatus = nil
+            }
+
+            submitting = false
+        }
 
         if responseInEdit != nil {
-            // TODO: There's all sort of error conditions we could/should actually check for.
-            if !(responseInEdit!.content ?? "").isEmpty {
+            if responseInEdit!.content == settings.seedAssistantResponse {
+                // We haven't actually received a response yet, so don't bother committing the submitted message.
+            }
+            else if !(responseInEdit!.content ?? "").isEmpty {
+                if receivedDone != 1 {
+                    responseInEdit!.role = "partial assistant response"
+                }
                 sequence.messages.append(.temporary(responseInEdit!))
             }
-            responseInEdit = nil
 
-            if userRequested {
-                serverStatus = "[WARNING] Requested stop of receive, but TODO: Ollama/server don't actually stop inference"
-            }
+            responseInEdit = nil
         }
     }
 }

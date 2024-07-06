@@ -101,11 +101,12 @@ class BlankSequenceViewModel: ObservableObject {
         let constructedSequence: ChatSequence = ChatSequence(
             serverId: replacementSequenceId!,
             messages: [
-                .temporary(TemporaryChatMessage(
+                .stored(ChatMessage(
+                    serverId: messageId!,
+                    hostSequenceId: replacementSequenceId!,
                     role: "user",
                     content: self.promptInEdit,
-                    createdAt: Date.now
-                ))
+                    createdAt: Date.now))
             ]
         )
 

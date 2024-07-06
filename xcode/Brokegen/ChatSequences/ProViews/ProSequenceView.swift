@@ -518,16 +518,14 @@ struct ProSequenceView: View {
                                         let indentMessage = !settings.showMessageHeaders && message.role != "user"
                                         let branchAction = {
                                             if case .stored(let message) = message {
-                                                if let sequence_id = message.hostSequenceId {
-                                                    Task {
-                                                        if let sequence = try? await viewModel.chatService.fetchChatSequenceDetails(sequence_id) {
-                                                            pathHost.push(
-                                                                viewModel.chatService.clientModel(
-                                                                    for: sequence,
-                                                                    appSettings: viewModel.appSettings,
-                                                                    chatSettingsService: viewModel.chatSettingsService)
-                                                            )
-                                                        }
+                                                Task {
+                                                    if let sequence = try? await viewModel.chatService.fetchChatSequenceDetails(message.hostSequenceId) {
+                                                        pathHost.push(
+                                                            viewModel.chatService.clientModel(
+                                                                for: sequence,
+                                                                appSettings: viewModel.appSettings,
+                                                                chatSettingsService: viewModel.chatSettingsService)
+                                                        )
                                                     }
                                                 }
                                             }
