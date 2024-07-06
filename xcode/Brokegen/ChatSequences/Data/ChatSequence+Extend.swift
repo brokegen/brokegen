@@ -58,7 +58,6 @@ extension DefaultChatSyncService {
         }
 
         print("[DEBUG] POST /sequences/\(params.sequenceId!)/continue <= \(String(data: encodedParams!, encoding: .utf8)!)")
-        let receiveQueue = DispatchQueue(label: "brokegen::ChatSequence", qos: .background, attributes: .concurrent)
         var responseStatusCode: Int? = nil
 
         _ = session.streamRequest(
@@ -75,7 +74,7 @@ extension DefaultChatSyncService {
             // Store the status code until the later handler can deal with it.
             responseStatusCode = response.statusCode
         }
-        .responseStream(on: receiveQueue) { stream in
+        .responseStream { stream in
             switch stream.event {
             case let .stream(result):
                 switch result {
@@ -119,7 +118,6 @@ extension DefaultChatSyncService {
         }
 
         print("[DEBUG] POST /sequences/\(params.sequenceId!)/extend <= \(String(data: encodedParams!, encoding: .utf8)!)")
-        let receiveQueue = DispatchQueue(label: "brokegen::ChatSequence", qos: .background, attributes: .concurrent)
         var responseStatusCode: Int? = nil
 
         _ = session.streamRequest(
@@ -136,7 +134,7 @@ extension DefaultChatSyncService {
             // Store the status code until the later handler can deal with it.
             responseStatusCode = response.statusCode
         }
-        .responseStream(on: receiveQueue) { stream in
+        .responseStream { stream in
             switch stream.event {
             case let .stream(result):
                 switch result {
