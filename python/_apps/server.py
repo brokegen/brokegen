@@ -208,7 +208,10 @@ def run_proxy(
         )
 
     @app.exception_handler(starlette.exceptions.HTTPException)
-    def http_exception_handler(exc):
+    def http_exception_handler(
+            request: starlette.requests.Request,
+            exc,
+    ):
         """
         NB Installing this causes the app to exit on any HTTP exceptions!
         """
@@ -219,7 +222,10 @@ def run_proxy(
         )
 
     @app.exception_handler(Exception)
-    def generic_exception_handler(exc):
+    def generic_exception_handler(
+            request: starlette.requests.Request,
+            exc,
+    ):
         return starlette.responses.PlainTextResponse(
             str(exc),
             status_code=exc.status_code,
