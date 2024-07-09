@@ -46,7 +46,10 @@ class NDJSONStreamingResponse(StreamingResponse, JSONResponse):
         async def body_iterator() -> AsyncIterable[bytes]:
             async for content_ in self._content_iterable:
                 if isinstance(content_, bytes):
-                    yield content_
+                    if len(content_) > 0:
+                        # TODO: If we're forwarding Ollama responses directly, there's usually an extra '\n' already.
+                        # This is because we're passing iterators from _two_ NDJSONStreamingResponses.
+                        yield content_ + b'\n'
                 else:
                     # Without newline after each chunk, it's just hard for the client to parse.
                     rendered_content: bytes = orjson.dumps(content_)

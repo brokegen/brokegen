@@ -6,14 +6,14 @@ import starlette.requests
 from starlette.exceptions import HTTPException
 
 from _util.json import safe_get, JSONDict
-from _util.json_streaming import JSONStreamingResponse
+from _util.json_streaming import JSONStreamingResponse, NDJSONStreamingResponse
 from _util.typing import PromptText, TemplatedPromptText
 from audit.http import AuditDB
 from client.database import HistoryDB
-from providers.registry import InferenceOptions
 from inference.iterators import stream_str_to_json
 from inference.prompting.templating import apply_llm_template
 from providers.foundation_models.orm import FoundationModelRecordOrm
+from providers.registry import InferenceOptions
 from .logging import OllamaRequestContentJSON
 from ..api_generate import do_generate_nolog
 
@@ -40,8 +40,6 @@ async def convert_chat_to_generate(
         inference_options: InferenceOptions,
         requested_system_message: PromptText | None,
         prompt_override: PromptText | None,
-        history_db: HistoryDB,
-        audit_db: AuditDB,
 ) -> tuple[TemplatedPromptText, JSONStreamingResponse]:
     used_assistant_response_seed: bool = False
 
@@ -167,7 +165,7 @@ async def convert_chat_to_generate(
         if unsupported_field in converted_response_headers:
             del converted_response_headers[unsupported_field]
 
-    return generate_request_content['prompt'], JSONStreamingResponse(
+    return generate_request_content['prompt'], NDJSONStreamingResponse(
         content=iter2,
         status_code=generate_response.status_code,
         headers=converted_response_headers,

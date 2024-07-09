@@ -143,8 +143,6 @@ async def do_proxy_chat_rag(
             inference_options=inference_options,
             requested_system_message=requested_system_message,
             prompt_override=prompt_override,
-            history_db=history_db,
-            audit_db=audit_db,
         )
 
     return prompt_with_templating, ollama_response

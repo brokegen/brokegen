@@ -10,7 +10,7 @@ import starlette.responses
 from starlette.background import BackgroundTask
 
 from _util.json import JSONDict
-from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks
+from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks, NDJSONStreamingResponse
 from _util.status import ServerStatusHolder
 from _util.typing import FoundationModelHumanID
 from audit.content_scrubber import scrub_json
@@ -34,7 +34,7 @@ async def keepalive_wrapper(
 
     async def do_keepalive(
             primordial: AsyncIterator[str | bytes],
-    ) -> AsyncGenerator[str | bytes, None]:
+    ) -> AsyncGenerator[bytes, None]:
         """
         Screen timeout for an iOS device with FaceID is 30 seconds (which maps to network timeout for simple iOS apps),
         so set the keepalive to be a fraction of that.
@@ -60,13 +60,16 @@ async def keepalive_wrapper(
 
                 yield orjson.dumps(constructed_chunk)
 
+            elif isinstance(chunk, str):
+                yield chunk.encode()
+
             else:
                 yield chunk
 
             if await request.is_disconnected():
                 logger.fatal(f"Detected client disconnection! Ignoring, because we want inference to continue.")
 
-    return JSONStreamingResponse(
+    return NDJSONStreamingResponse(
         content=do_keepalive(nonblocking_response_maker()),
         status_code=218,
     )

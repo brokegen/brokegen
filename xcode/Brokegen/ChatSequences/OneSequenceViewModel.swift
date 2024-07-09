@@ -219,7 +219,7 @@ class OneSequenceViewModel: ObservableObject {
                 submitting = false
             }
 
-            // print("[TRACE] OneSequenceViewModel.receiveHandler: \(String(data: newData, encoding: .utf8) ?? "[couldn't decode \(newData.count) bytes]")")
+            //print("[TRACE] OneSequenceViewModel.receiveHandler: \(String(data: newData, encoding: .utf8) ?? "[couldn't decode \(newData.count) bytes]")")
 
             // First, check if we have remnants of a prior chunk to process.
             var combinedData: Data = (incompleteResponseData ?? Data())
@@ -237,20 +237,27 @@ class OneSequenceViewModel: ObservableObject {
 
                 // If we have newlines, parse up to it, and then continue iteration
                 if let end: Int = combinedData.firstIndex(where: { $0 == "\n".utf8.first }) {
-                    // print("[TRACE] OneSequenceViewModel.receiveHandler: Parsing up to byte \(end + 1) of \(combinedData.endIndex) bytes remaining")
+                    //print("[TRACE] OneSequenceViewModel.receiveHandler: Parsing up to byte \(end + 1) of \(combinedData.endIndex) bytes remaining")
                     let dataChunk: Data = combinedData.prefix(through: end)
                     let jsonChunk: JSON = JSON(dataChunk)
 
                     if !jsonChunk.isEmpty {
-                        // print("[TRACE] OneSequenceViewModel.receiveHandler: Successful partial parse: \(jsonChunk)")
+                        //print("[TRACE] OneSequenceViewModel.receiveHandler: Successful partial parse: \(jsonChunk)")
                         _parseJSONChunk(jsonChunk)
                         combinedData = combinedData.suffix(from: end + 1)
                         continue
                     }
                     else {
-                        // TODO: Reaching here means we couldn't parse a newline-delimited chunk.
-                        // Need to fix it ourselves; newlines shouldn't be in encoded JSON
-                        print("[ERROR] OneSequenceViewModel.receiveHandler: Failed to parse, dropping dataChunk = \(String(data: dataChunk, encoding: .utf8) ?? "[invalid]")")
+                        if dataChunk == "\n".data(using: .utf8) {
+                        }
+                        else {
+                            // TODO: Reaching here means we couldn't parse a newline-delimited chunk.
+                            // Need to fix it ourselves; newlines shouldn't be in encoded JSON
+                            print(
+                                "[ERROR] OneSequenceViewModel.receiveHandler: Failed to parse, dropping "
+                                + "\(dataChunk.count) bytes: \"\(String(data: dataChunk, encoding: .utf8) ?? "[invalid]")\"")
+                        }
+
                         combinedData = combinedData.suffix(from: end + 1)
                         continue
                     }
