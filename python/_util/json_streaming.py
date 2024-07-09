@@ -16,38 +16,42 @@ import asyncio
 import logging
 from collections.abc import AsyncIterable
 from datetime import datetime, timezone
-from typing import Callable, AsyncIterator, TypeVar, Any
-from typing import Iterable
+from typing import Callable, AsyncIterator, TypeVar, Any, TypeAlias
 
+import orjson
 import starlette.datastructures
 import starlette.requests
 from starlette.background import BackgroundTask
-from starlette.concurrency import iterate_in_threadpool
 from starlette.responses import StreamingResponse, JSONResponse
 
 logger = logging.getLogger(__name__)
 
+T = TypeVar('T')
+U = TypeVar('U')
 
-class JSONStreamingResponse(StreamingResponse, JSONResponse):
+
+class NDJSONStreamingResponse(StreamingResponse, JSONResponse):
     def __init__(
             self,
-            content: Iterable | AsyncIterable,
+            content: AsyncIterable[T],
             status_code: int = 200,
             headers: starlette.datastructures.MutableHeaders | dict[str, str] | None = None,
             media_type: str | None = None,
             background: BackgroundTask | None = None,
     ) -> None:
-        if isinstance(content, AsyncIterable):
-            self._content_iterable: AsyncIterable = content
-        else:
-            self._content_iterable = iterate_in_threadpool(content)
+        super().__init__(content, status_code, headers, media_type, background)
+
+        self._content_iterable: AsyncIterable[T] = content
 
         async def body_iterator() -> AsyncIterable[bytes]:
             async for content_ in self._content_iterable:
                 if isinstance(content_, bytes):
                     yield content_
                 else:
-                    yield self.render(content_)
+                    # Without newline after each chunk, it's just hard for the client to parse.
+                    rendered_content: bytes = orjson.dumps(content_)
+                    if rendered_content is not None and len(rendered_content) > 0:
+                        yield rendered_content + b'\n'
 
         self.body_iterator = body_iterator()
         self.status_code = status_code
@@ -57,8 +61,7 @@ class JSONStreamingResponse(StreamingResponse, JSONResponse):
         self.init_headers(headers)
 
 
-T = TypeVar('T')
-U = TypeVar('U')
+JSONStreamingResponse: TypeAlias = NDJSONStreamingResponse
 
 
 async def emit_keepalive_chunks(
