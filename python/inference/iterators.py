@@ -1,5 +1,5 @@
 import logging
-from typing import AsyncIterator, Callable, TypeVar, Awaitable, Any, Iterator, AsyncContextManager, AsyncGenerator
+from typing import AsyncIterator, Callable, TypeVar, Awaitable, Any, Iterator
 
 from orjson import orjson
 
@@ -62,6 +62,10 @@ async def stream_bytes_to_json(
                     b''.join(buffered_chunks)
                 )
 
+                logger.info(
+                    f"Had to await {len(buffered_chunks)} chunks ({len(b''.join(buffered_chunks))} bytes)"
+                    "before constructing response JSON")
+
                 yield buffered_json
                 buffered_chunks = []
 
@@ -76,9 +80,9 @@ async def stream_bytes_to_json(
             except orjson.JSONDecodeError:
                 buffered_chunks.append(chunk0)
 
-        if buffered_chunks:
-            logger.fatal(f"Failed to decode {len(b''.join(buffered_chunks))} bytes in JSON response")
-            raise RuntimeError(f"Failed to decode {len(b''.join(buffered_chunks))} bytes in JSON response")
+    if buffered_chunks:
+        logger.fatal(f"Failed to decode {len(b''.join(buffered_chunks))} bytes in JSON response")
+        raise RuntimeError(f"Failed to decode {len(b''.join(buffered_chunks))} bytes in JSON response")
 
 
 async def tee_to_console_output(
