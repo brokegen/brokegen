@@ -25,6 +25,7 @@ class OneSequenceViewModel: ObservableObject {
     var submitting: Bool = false
 
     var responseInEdit: TemporaryChatMessage? = nil
+    var incompleteResponseData: Data? = nil
     @ObservationIgnored private var receivedDone: Int = 0
     var receiving: Bool {
         /// This field does double duty to indicate whether we are currently receiving data.
@@ -110,6 +111,10 @@ class OneSequenceViewModel: ObservableObject {
                     sequence.messages.append(.temporary(responseInEdit!))
                     responseInEdit = nil
                 }
+                if incompleteResponseData != nil {
+                    print("[ERROR] \(callerName) dropping \(incompleteResponseData!.count) bytes of unparsed JSON")
+                    incompleteResponseData = nil
+                }
 
                 stopSubmitAndReceive()
 
@@ -117,6 +122,7 @@ class OneSequenceViewModel: ObservableObject {
 
             case .failure(let errorAndData):
                 responseInEdit = nil
+                incompleteResponseData = nil
 
                 stopSubmitAndReceive()
 
@@ -136,14 +142,60 @@ class OneSequenceViewModel: ObservableObject {
         }
     }
 
+    private func _parseJSONChunk(_ jsonData: JSON) {
+        if let status = jsonData["status"].string {
+            serverStatus = status
+        }
+
+        let messageFragment = jsonData["message"]["content"].stringValue
+        if !messageFragment.isEmpty {
+            if self.responseInEdit == nil {
+                print("[WARNING] Dropping messageFragment = \(messageFragment)")
+            }
+            else {
+                self.responseInEdit!.content!.append(messageFragment)
+            }
+        }
+
+        if jsonData["done"].boolValue {
+            receivedDone += 1
+        }
+
+        if let replacementSequenceId: ChatSequenceServerID = jsonData["new_sequence_id"].int {
+            let originalSequenceId = self.sequence.serverId
+            let updatedSequence = self.sequence.replaceServerId(replacementSequenceId)
+
+            self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: updatedSequence)
+        }
+
+        if let newMessageId: ChatMessageServerID = jsonData["new_message_id"].int {
+            if responseInEdit != nil {
+                let storedMessage = ChatMessage(
+                    serverId: newMessageId,
+                    hostSequenceId: sequence.serverId,
+                    role: responseInEdit!.role,
+                    content: responseInEdit!.content ?? "",
+                    createdAt: responseInEdit!.createdAt
+                )
+
+                sequence.messages.append(.stored(storedMessage))
+                responseInEdit = nil
+            }
+        }
+
+        let autoname: String = jsonData["autoname"].stringValue
+        if !autoname.isEmpty && autoname != sequence.humanDesc {
+            let renamedSequence = sequence.replaceHumanDesc(desc: autoname)
+            self.chatService.updateSequence(withSameId: renamedSequence)
+        }
+    }
+
     private func receiveHandler(
         caller callerName: String,
         endpoint: String,
         maybeNextMessage: Message? = nil
     ) -> ((Data) -> Void) {
-        return { [self] data in
-            let jsonData: JSON = JSON(data)
-
+        return { [self] newData in
             // On first data received, end "submitting" phase
             if submitting {
                 if maybeNextMessage != nil {
@@ -167,50 +219,61 @@ class OneSequenceViewModel: ObservableObject {
                 submitting = false
             }
 
-            if let status = jsonData["status"].string {
-                serverStatus = status
+            // print("[TRACE] OneSequenceViewModel.receiveHandler: \(String(data: newData, encoding: .utf8) ?? "[couldn't decode \(newData.count) bytes]")")
+
+            // First, check if we have remnants of a prior chunk to process.
+            var combinedData: Data = (incompleteResponseData ?? Data())
+            combinedData.append(newData)
+
+            if incompleteResponseData != nil && !incompleteResponseData!.isEmpty {
+                print("[TRACE] OneSequenceViewModel.receiveHandler: rollover of \(incompleteResponseData!.count) bytes incompleteResponseData")
+                incompleteResponseData = nil
             }
 
-            let messageFragment = jsonData["message"]["content"].stringValue
-            if !messageFragment.isEmpty {
-                if self.responseInEdit == nil {
-                    print("[WARNING] Dropping messageFragment = \(messageFragment)")
+            while true {
+                if combinedData.isEmpty {
+                    break
                 }
+
+                // If we have newlines, parse up to it, and then continue iteration
+                if let end: Int = combinedData.firstIndex(where: { $0 == "\n".utf8.first }) {
+                    // print("[TRACE] OneSequenceViewModel.receiveHandler: Parsing up to byte \(end + 1) of \(combinedData.endIndex) bytes remaining")
+                    let dataChunk: Data = combinedData.prefix(through: end)
+                    let jsonChunk: JSON = JSON(dataChunk)
+
+                    if !jsonChunk.isEmpty {
+                        // print("[TRACE] OneSequenceViewModel.receiveHandler: Successful partial parse: \(jsonChunk)")
+                        _parseJSONChunk(jsonChunk)
+                        combinedData = combinedData.suffix(from: end + 1)
+                        continue
+                    }
+                    else {
+                        // TODO: Reaching here means we couldn't parse a newline-delimited chunk.
+                        // Need to fix it ourselves; newlines shouldn't be in encoded JSON
+                        print("[ERROR] OneSequenceViewModel.receiveHandler: Failed to parse, dropping dataChunk = \(String(data: dataChunk, encoding: .utf8) ?? "[invalid]")")
+                        combinedData = combinedData.suffix(from: end + 1)
+                        continue
+                    }
+                }
+                // Otherwise, try parsing everything all together
                 else {
-                    self.responseInEdit!.content?.append(messageFragment)
+                    print("[TRACE] OneSequenceViewModel.receiveHandler: Parsing all of \(combinedData.count) bytes remaining")
+                    let jsonChunk: JSON = JSON(combinedData)
+
+                    if !jsonChunk.isEmpty {
+                        // print("[TRACE] OneSequenceViewModel.receiveHandler: Successful parse")
+                        _parseJSONChunk(jsonChunk)
+                        incompleteResponseData = nil
+                        combinedData = Data()
+                        break
+                    }
+                    else {
+                        print("[WARNING] Failed parse, rolling over remaining \(combinedData.count) bytes")
+                        incompleteResponseData = combinedData
+                        combinedData = Data()
+                        break
+                    }
                 }
-            }
-
-            if jsonData["done"].boolValue {
-                receivedDone += 1
-            }
-
-            if let replacementSequenceId: ChatSequenceServerID = jsonData["new_sequence_id"].int {
-                let originalSequenceId = self.sequence.serverId
-                let updatedSequence = self.sequence.replaceServerId(replacementSequenceId)
-
-                self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: updatedSequence)
-            }
-
-            if let newMessageId: ChatMessageServerID = jsonData["new_message_id"].int {
-                if responseInEdit != nil {
-                    let storedMessage = ChatMessage(
-                        serverId: newMessageId,
-                        hostSequenceId: sequence.serverId,
-                        role: responseInEdit!.role,
-                        content: responseInEdit!.content ?? "",
-                        createdAt: responseInEdit!.createdAt
-                    )
-
-                    sequence.messages.append(.stored(storedMessage))
-                    responseInEdit = nil
-                }
-            }
-
-            let autoname: String = jsonData["autoname"].stringValue
-            if !autoname.isEmpty && autoname != sequence.humanDesc {
-                let renamedSequence = sequence.replaceHumanDesc(desc: autoname)
-                self.chatService.updateSequence(withSameId: renamedSequence)
             }
         }
     }
