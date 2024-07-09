@@ -174,12 +174,6 @@ struct AppSidebar: View {
 
                         Text("Inspectors")
                     }) {
-                        if appSettings.showDebugSidebarItems {
-                            NavigationLink(destination: SystemInfoView()) {
-                                ASRow("System Info")
-                            }
-                        }
-
                         NavigationLink(destination: {
                             RefreshableModelPickerView()
                         }) {
