@@ -8,6 +8,7 @@ from langchain_core.documents import Document
 from langchain_core.messages import ChatMessage
 from pydantic import BaseModel
 
+from _util.json import safe_get_arrayed, JSONDict
 from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import PromptText, FoundationModelRecordID
 from retrieval.faiss.knowledge import KnowledgeSingleton, get_knowledge
@@ -49,11 +50,9 @@ class SkipRetrievalPolicy(RetrievalPolicy):
 class SimpleRetrievalPolicy(RetrievalPolicy):
     def __init__(self, knowledge: KnowledgeSingleton):
         self.retriever = knowledge.as_retriever(
-            search_type="mmr",
+            search_type="similarity",
             search_kwargs={
-                "k": 18,
-                "fetch_k": 60,
-                "lambda_mult": 0.25,
+                "k": 6,
             },
         )
 
@@ -66,7 +65,7 @@ class SimpleRetrievalPolicy(RetrievalPolicy):
         with StatusContext("Loading retrieval databases…", status_holder):
             await get_knowledge().load_queued_data_dirs(status_holder)
 
-        latest_message_content = messages[-1].content
+        latest_message_content = safe_get_arrayed(messages, -1, "content") or getattr(messages[-1], "content", "")
         retrieval_str = latest_message_content
 
         matching_docs: List[Document] = await self.retriever.ainvoke(retrieval_str)
@@ -94,11 +93,15 @@ class SummarizingRetrievalPolicy(RetrievalPolicy):
             knowledge: KnowledgeSingleton,
             # For thoroughness, this should be 18, but we haven't figured out prompt size/tuning yet.
             # More specifically, how to configure it in a reasonable way.
-            search_args_json: str = """{"k":12}""",
+            search_args_json: JSONDict = {
+                "k": 18,
+                "fetch_k": 60,
+                "lambda_mult": 0.25,
+            },
     ):
         self.retriever = knowledge.as_retriever(
-            search_type='similarity',
-            search_kwargs=orjson.loads(search_args_json),
+            search_type="mmr",
+            search_kwargs=dict(search_args_json),
         )
 
     async def parse_chat_history(

@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import AsyncIterator, Annotated, Awaitable
 
 import fastapi.routing
+import orjson
 import starlette.datastructures
 import starlette.datastructures
 import starlette.requests
@@ -42,7 +43,7 @@ async def with_retrieval(
                 "knowledge": knowledge,
             }
             if retrieval_label.retrieval_search_args is not None:
-                init_kwargs["search_args_json"] = retrieval_label.retrieval_search_args
+                init_kwargs["search_args_json"] = orjson.loads(retrieval_label.retrieval_search_args)
 
             real_retrieval_policy = SummarizingRetrievalPolicy(**init_kwargs)
 

@@ -1,6 +1,7 @@
 import logging
 from typing import AsyncIterator
 
+import orjson
 import starlette.requests
 
 from _util.json import safe_get, JSONArray, JSONDict
@@ -105,7 +106,7 @@ async def do_proxy_chat_rag(
                 "knowledge": get_knowledge(),
             }
             if retrieval_label.retrieval_search_args is not None:
-                init_kwargs["search_args_json"] = retrieval_label.retrieval_search_args
+                init_kwargs["search_args_json"] = orjson.loads(retrieval_label.retrieval_search_args)
 
             real_retrieval_policy = SummarizingRetrievalPolicy(**init_kwargs)
 
