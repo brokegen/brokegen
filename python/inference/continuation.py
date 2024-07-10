@@ -6,7 +6,6 @@ from sqlalchemy import select
 
 from _util.typing import FoundationModelRecordID, ChatSequenceID
 from client.database import HistoryDB
-from client.message import ChatMessage
 from providers.foundation_models.orm import InferenceEventOrm, FoundationModelRecordOrm
 from providers.registry import InferenceOptions
 from retrieval.faiss.retrieval import RetrievalLabel
@@ -21,10 +20,6 @@ class ContinueRequest(InferenceOptions, RetrievalLabel, AutonamingOptions):
     continuation_model_id: Optional[FoundationModelRecordID] = None
     fallback_model_id: Optional[FoundationModelRecordID] = None
     """Used in case the continuation_model_id is None, and also nothing recorded in ChatSequence history"""
-
-
-class ExtendRequest(ContinueRequest):
-    next_message: ChatMessage
 
 
 def select_continuation_model(
