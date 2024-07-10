@@ -101,11 +101,11 @@ class ChatSyncService: ObservableObject {
         return nil
     }
 
-    public func saveTo(sequence: ChatSequence, messageId: ChatMessageServerID) async throws -> ChatSequenceServerID? {
+    public func constructNewChatSequence(messageId: ChatMessageServerID, humanDesc: String = "") async throws -> ChatSequenceServerID? {
         return nil
     }
 
-    public func constructNewChatSequence(messageId: ChatMessageServerID, humanDesc: String = "") async throws -> ChatSequenceServerID? {
+    public func appendMessage(sequence: ChatSequence, messageId: ChatMessageServerID) async throws -> ChatSequenceServerID? {
         return nil
     }
 
@@ -191,14 +191,8 @@ class ChatSyncService: ObservableObject {
         objectWillChange.send()
     }
 
-    // MARK: - ChatSequence extend/continue
+    // MARK: - ChatSequence continue
     public func sequenceContinue(_ params: ChatSequenceParameters) async -> AnyPublisher<Data, AFErrorAndData> {
-        let error: AFError = AFError.sessionTaskFailed(error: ChatSyncServiceError.callingAbstractBaseMethod)
-        return Fail(error: AFErrorAndData(error: error, data: nil))
-            .eraseToAnyPublisher()
-    }
-
-    public func sequenceExtend(_ params: ChatSequenceParameters) async -> AnyPublisher<Data, AFErrorAndData> {
         let error: AFError = AFError.sessionTaskFailed(error: ChatSyncServiceError.callingAbstractBaseMethod)
         return Fail(error: AFErrorAndData(error: error, data: nil))
             .eraseToAnyPublisher()

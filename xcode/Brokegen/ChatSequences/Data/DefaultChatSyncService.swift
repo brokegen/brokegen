@@ -22,12 +22,12 @@ class DefaultChatSyncService: ChatSyncService {
         return try await doConstructChatMessage(from: tempMessage)
     }
 
-    override public func saveTo(sequence: ChatSequence, messageId: ChatMessageServerID) async throws -> ChatSequenceServerID? {
-        return try await doSaveTo(sequence: sequence, messageId: messageId)
-    }
-
     override public func constructNewChatSequence(messageId: ChatMessageServerID, humanDesc: String = "") async throws -> ChatSequenceServerID? {
         return try await doConstructNewChatSequence(messageId: messageId, humanDesc: humanDesc)
+    }
+
+    override public func appendMessage(sequence: ChatSequence, messageId: ChatMessageServerID) async throws -> ChatSequenceServerID? {
+        return try await doAppendMessage(sequence: sequence, messageId: messageId)
     }
 
     override public func fetchChatSequenceDetails(_ sequenceId: ChatSequenceServerID) async throws -> ChatSequence? {
@@ -94,13 +94,9 @@ class DefaultChatSyncService: ChatSyncService {
         )
     }
 
-    // MARK: - ChatSequence extend/continue
+    // MARK: - ChatSequence continue
     override public func sequenceContinue(_ params: ChatSequenceParameters) async -> AnyPublisher<Data, AFErrorAndData> {
         return await doSequenceContinue(params)
-    }
-
-    override public func sequenceExtend(_ params: ChatSequenceParameters) async -> AnyPublisher<Data, AFErrorAndData> {
-        return await doSequenceExtend(params)
     }
 }
 

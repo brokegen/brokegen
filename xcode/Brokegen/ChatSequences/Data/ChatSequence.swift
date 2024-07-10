@@ -203,7 +203,33 @@ extension ChatSequence: Hashable {
 }
 
 extension DefaultChatSyncService {
-    func doSaveTo(sequence: ChatSequence, messageId: ChatMessageServerID) async throws -> ChatSequenceServerID? {
+    func doConstructNewChatSequence(messageId: ChatMessageServerID, humanDesc: String = "") async throws -> ChatSequenceServerID? {
+        struct Parameters: Codable {
+            var humanDesc: String? = nil
+            var userPinned: Bool
+            let currentMessage: ChatMessageServerID
+            var parentSequence: ChatSequenceServerID? = nil
+            var generatedAt: Date?
+            var generationComplete: Bool
+            var inferenceJobId: InferenceEventID? = nil
+            var inferenceError: String? = nil
+        }
+        let params = Parameters(
+            humanDesc: humanDesc.isEmpty ? nil : humanDesc,
+            userPinned: false,
+            currentMessage: messageId,
+            generatedAt: Date.now,
+            generationComplete: true
+        )
+        let encodedParams: Data = try jsonEncoder.encode(params)
+
+        let responseData: Data? = try? await postDataBlocking(encodedParams, endpoint: "/sequences")
+        guard responseData != nil else { throw ChatSyncServiceError.invalidResponseContentReturned }
+
+        return JSON(responseData!)["sequence_id"].int
+    }
+
+    func doAppendMessage(sequence: ChatSequence, messageId: ChatMessageServerID) async throws -> ChatSequenceServerID? {
         struct Parameters: Codable {
             var humanDesc: String? = nil
             var userPinned: Bool
@@ -236,30 +262,13 @@ extension DefaultChatSyncService {
         return responseSequenceId
     }
 
-    func doConstructNewChatSequence(messageId: ChatMessageServerID, humanDesc: String = "") async throws -> ChatSequenceServerID? {
-        struct Parameters: Codable {
-            var humanDesc: String? = nil
-            var userPinned: Bool
-            let currentMessage: ChatMessageServerID
-            var parentSequence: ChatSequenceServerID? = nil
-            var generatedAt: Date?
-            var generationComplete: Bool
-            var inferenceJobId: InferenceEventID? = nil
-            var inferenceError: String? = nil
+    public func doFetchChatSequenceDetails(_ sequenceId: ChatSequenceServerID) async throws -> ChatSequence? {
+        if let entireSequence = try await getDataBlocking("/sequences/\(sequenceId)/as-json") {
+            return try ChatSequence.fromJsonDict(serverId: sequenceId, json: JSON(entireSequence))
         }
-        let params = Parameters(
-            humanDesc: humanDesc.isEmpty ? nil : humanDesc,
-            userPinned: false,
-            currentMessage: messageId,
-            generatedAt: Date.now,
-            generationComplete: true
-        )
-        let encodedParams: Data = try jsonEncoder.encode(params)
-
-        let responseData: Data? = try? await postDataBlocking(encodedParams, endpoint: "/sequences")
-        guard responseData != nil else { throw ChatSyncServiceError.invalidResponseContentReturned }
-
-        return JSON(responseData!)["sequence_id"].int
+        else {
+            throw ChatSyncServiceError.noResponseContentReturned
+        }
     }
 
     func doFetchRecents(
@@ -318,15 +327,6 @@ extension DefaultChatSyncService {
             if elapsedMsec > 8.333 {
                 print("[TRACE] DefaultChatSyncService.fetchRecents() update time: \(String(format: "%.3f", elapsedMsec)) msecs for \(sequenceUpdates.count) sequences")
             }
-        }
-    }
-
-    public func doFetchChatSequenceDetails(_ sequenceId: ChatSequenceServerID) async throws -> ChatSequence? {
-        if let entireSequence = try await getDataBlocking("/sequences/\(sequenceId)/as-json") {
-            return try ChatSequence.fromJsonDict(serverId: sequenceId, json: JSON(entireSequence))
-        }
-        else {
-            throw ChatSyncServiceError.noResponseContentReturned
         }
     }
 }

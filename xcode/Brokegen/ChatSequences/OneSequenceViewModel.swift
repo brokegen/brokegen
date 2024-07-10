@@ -284,6 +284,56 @@ class OneSequenceViewModel: ObservableObject {
         }
     }
 
+    private func save() async throws -> ChatSequence? {
+        let messageId: ChatMessageServerID? = try await chatService.constructChatMessage(from: TemporaryChatMessage(
+            role: "user",
+            content: promptInEdit,
+            createdAt: Date.now
+        ))
+        guard messageId != nil else {
+            print("[ERROR] Couldn't construct ChatMessage from text: \(promptInEdit)")
+            stopSubmitAndReceive()
+
+            return nil
+        }
+
+        let replacementSequenceId: ChatSequenceServerID? = try await chatService.appendMessage(sequence: self.sequence, messageId: messageId!)
+        guard replacementSequenceId != nil else {
+            print("[ERROR] Couldn't save new message to sequence \(self.sequence.serverId)")
+            stopSubmitAndReceive()
+
+            return nil
+        }
+
+        // Manually (re)construct server data, rather than fetching the same data back.
+        var replacementMessages = self.sequence.messages
+        replacementMessages.append(.stored(ChatMessage(
+            serverId: messageId!,
+            hostSequenceId: replacementSequenceId!,
+            role: "user",
+            content: self.promptInEdit,
+            createdAt: Date.now)))
+
+        var replacementParents: [ChatSequenceServerID]? = nil
+        if self.sequence.parentSequences != nil {
+            replacementParents = self.sequence.parentSequences!
+            replacementParents!.insert(replacementSequenceId!, at: 0)
+        }
+
+        let replacementSequence: ChatSequence = ChatSequence(
+            serverId: replacementSequenceId!,
+            humanDesc: self.sequence.humanDesc,
+            userPinned: self.sequence.userPinned,
+            generatedAt: Date.now,
+            messages: replacementMessages,
+            inferenceModelId: self.sequence.inferenceModelId,
+            isLeafSequence: true,
+            parentSequences: replacementParents
+        )
+
+        return replacementSequence
+    }
+
     func requestSave() {
         print("[INFO] OneSequenceViewModel.requestSave()")
 
@@ -301,41 +351,12 @@ class OneSequenceViewModel: ObservableObject {
         self.serverStatus = "/sequences/\(self.sequence.serverId): appending follow-up message"
 
         Task {
-            let messageId: ChatMessageServerID? = try? await chatService.constructChatMessage(from: TemporaryChatMessage(
-                role: "user",
-                content: promptInEdit,
-                createdAt: Date.now
-            ))
-            guard messageId != nil else {
-                print("[ERROR] Couldn't construct ChatMessage from text: \(promptInEdit)")
-                stopSubmitAndReceive()
-                return
-            }
+            let appendResult = try? await self.save()
+            guard appendResult != nil else { return }
 
-            let replacementSequenceId: ChatSequenceServerID? = try? await chatService.saveTo(sequence: self.sequence, messageId: messageId!)
-            guard replacementSequenceId != nil else {
-                print("[ERROR] Couldn't save new message to sequence \(self.sequence.serverId)")
-                stopSubmitAndReceive()
-                return
-            }
-
-            // Manually (re)construct server data, rather than fetching the same data back.
-            var replacementMessages = self.sequence.messages
-            replacementMessages.append(.stored(ChatMessage(
-                serverId: messageId!,
-                hostSequenceId: replacementSequenceId!,
-                role: "user",
-                content: self.promptInEdit,
-                createdAt: Date.now)))
-
-            let replacementSequence: ChatSequence = ChatSequence(
-                serverId: replacementSequenceId!,
-                messages: replacementMessages
-            )
-
-            let originalSequenceId = self.sequence.serverId
             DispatchQueue.main.async {
-                self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: replacementSequence)
+                let originalSequenceId = self.sequence.serverId
+                self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: appendResult!)
                 self.promptInEdit = ""
 
                 self.stopSubmitAndReceive()
@@ -399,37 +420,41 @@ class OneSequenceViewModel: ObservableObject {
     func requestExtend(
         model continuationModelId: FoundationModelRecordID? = nil,
         withRetrieval: Bool = false
-    ) {
-        print("[INFO] OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval))")
+    ) -> Self {
+        print("[INFO] OneSequenceViewModel.requestExtend(\(continuationModelId), withRetrieval: \(withRetrieval))")
         if settings.stayAwakeDuringInference {
             _ = stayAwake.createAssertion(reason: "brokegen OneSequenceViewModel.requestExtend() for ChatSequence#\(self.sequence.serverId)")
         }
 
-        guard !self.promptInEdit.isEmpty else { return }
+        guard !self.promptInEdit.isEmpty else { return self }
         guard !submitting else {
             print("[ERROR] OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval)) during another submission")
-            return
+            return self
         }
         guard !receiving else {
             print("[ERROR] OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval)) while receiving response")
-            return
+            return self
         }
 
         self.submitting = true
-        self.serverStatus = "/sequences/\(self.sequence.serverId)/extend: submitting request"
-
-        let nextMessage = Message(
-            role: "user",
-            content: promptInEdit,
-            createdAt: Date.now
-        )
+        self.serverStatus = "/sequences/\(self.sequence.serverId): appending follow-up message"
 
         submittedAssistantResponseSeed = settings.seedAssistantResponse
 
         Task {
-            receivingStreamer = await chatService.sequenceExtend(
+            let appendResult = try? await self.save()
+            guard appendResult != nil else { return }
+
+            DispatchQueue.main.sync {
+                let originalSequenceId = self.sequence.serverId
+                self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: appendResult!)
+
+                self.serverStatus = "/sequences/\(self.sequence.serverId)/continue: submitting request"
+            }
+
+            receivingStreamer = await chatService.sequenceContinue(
                 ChatSequenceParameters(
-                    nextMessage: nextMessage,
+                    nextMessage: nil,
                     continuationModelId: continuationModelId,
                     fallbackModelId: appSettings.fallbackInferenceModel?.serverId,
                     inferenceOptions: settings.inferenceOptions,
@@ -444,15 +469,16 @@ class OneSequenceViewModel: ObservableObject {
                     sequenceId: sequence.serverId
                 )
             )
-            .sink(receiveCompletion: completionHandler(
-                caller: "ChatSyncService.sequenceExtend",
-                endpoint: "/sequences/\(sequence.serverId)/extend"
-            ), receiveValue: receiveHandler(
-                caller: "OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval))",
-                endpoint: "/sequences/\(sequence.serverId)/extend",
-                maybeNextMessage: nextMessage
-            ))
+                .sink(receiveCompletion: completionHandler(
+                    caller: "ChatSyncService.sequenceContinue",
+                    endpoint: "/sequences/\(sequence.serverId)/continue"
+                ), receiveValue: receiveHandler(
+                    caller: "OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval))",
+                    endpoint: "/sequences/\(sequence.serverId)/continue"
+                ))
         }
+
+        return self
     }
 
     func stopSubmitAndReceive(userRequested: Bool = false) {
