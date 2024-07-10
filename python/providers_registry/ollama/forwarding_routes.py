@@ -1,3 +1,4 @@
+import functools
 import logging
 from datetime import datetime, timezone
 from typing import AsyncIterator, Awaitable, AsyncGenerator
@@ -5,22 +6,26 @@ from typing import AsyncIterator, Awaitable, AsyncGenerator
 import httpx
 import orjson
 import sqlalchemy
-import starlette
+import starlette.requests
 import starlette.responses
 from fastapi import FastAPI, APIRouter, Depends, HTTPException
-from starlette.requests import Request
 
-from _util.json import safe_get, JSONDict, safe_get_arrayed
+from _util.json import safe_get, JSONDict, safe_get_arrayed, JSONArray
 from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks
 from _util.status import ServerStatusHolder
+from _util.typing import FoundationModelHumanID, PromptText, TemplatedPromptText
 from audit.http import AuditDB, get_db as get_audit_db
 from client.database import HistoryDB, get_db as get_history_db
+from client.message import ChatMessageOrm
+from client.sequence import ChatSequenceOrm
 from client_ollama.forward import forward_request_nolog, forward_request
 from inference.iterators import consolidate_and_call, tee_to_console_output, decode_from_bytes, stream_str_to_json, \
     dump_to_bytes
-from providers.foundation_models.orm import InferenceEventOrm
+from inference.logging import construct_new_sequence_from, construct_assistant_message
+from providers.foundation_models.orm import InferenceEventOrm, FoundationModelRecordOrm
 from providers.registry import ProviderRegistry, InferenceOptions
 from providers_registry.ollama.api_chat.inject_rag import do_proxy_chat_rag
+from providers_registry.ollama.api_chat.intercept import do_capture_chat_messages
 from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON, OllamaResponseContentJSON, \
     finalize_inference_job, ollama_response_consolidator, ollama_log_indexer
 from providers_registry.ollama.api_generate import do_generate_raw_templated
@@ -33,12 +38,108 @@ from retrieval.faiss.retrieval import RetrievalLabel
 logger = logging.getLogger(__name__)
 
 
+async def do_api_chat_textonly(
+        request_content_json: OllamaRequestContentJSON,
+        inference_model: FoundationModelRecordOrm,
+        inference_options: InferenceOptions,
+        retrieval_label: RetrievalLabel,
+        status_holder: ServerStatusHolder,
+        request: starlette.requests.Request,
+        history_db: HistoryDB,
+        audit_db: AuditDB,
+):
+    async def record_inference_result(
+            consolidated_response: OllamaResponseContentJSON,
+            captured_sequence: ChatSequenceOrm | None,
+            prompt_with_templating: TemplatedPromptText,
+    ) -> None:
+        nonlocal inference_model
+        inference_model = history_db.merge(inference_model)
+
+        inference_event = InferenceEventOrm(
+            model_record_id=inference_model.id,
+            prompt_with_templating=prompt_with_templating,
+            reason="/api/chat intercept",
+            response_created_at=datetime.now(tz=timezone.utc),
+            response_error="[haven't received/finalized response info yet]",
+        )
+        finalize_inference_job(inference_event, consolidated_response)
+
+        try:
+            history_db.add(inference_event)
+            history_db.commit()
+        except sqlalchemy.exc.SQLAlchemyError:
+            logger.exception(f"Failed to commit {inference_event=}")
+            history_db.rollback()
+
+        # And now, construct the ChatSequence (which references the InferenceEvent, actually)
+        if captured_sequence is not None:
+            try:
+                response_message: ChatMessageOrm | None = construct_assistant_message(
+                    inference_options.seed_assistant_response,
+                    ollama_log_indexer(consolidated_response),
+                    inference_event.response_created_at,
+                    history_db,
+                )
+                if not response_message:
+                    return
+
+                response_sequence: ChatSequenceOrm = await construct_new_sequence_from(
+                    captured_sequence,
+                    response_message.id,
+                    inference_event,
+                    history_db,
+                )
+
+                if not safe_get(consolidated_response, 'done'):
+                    logger.debug(f"Generated ChatSequence#{response_sequence.id}, but response was marked not-done")
+
+            except sqlalchemy.exc.SQLAlchemyError:
+                logger.exception(f"Failed to create add-on ChatSequence from {consolidated_response}")
+                history_db.rollback()
+
+    # Assume that these are messages from a third-party client, and try to feed them into the history database.
+    chat_messages: JSONArray | None = safe_get(request_content_json, 'messages')
+    if not chat_messages:
+        raise RuntimeError("No 'messages' provided in call to /api/chat")
+
+    captured_sequence: ChatSequenceOrm | None
+    requested_system_message: PromptText | None
+    captured_sequence, requested_system_message = do_capture_chat_messages(chat_messages, history_db)
+
+    prompt_with_templating, ollama_response = await do_proxy_chat_rag(
+        request,
+        request_content_json,
+        inference_model=inference_model,
+        inference_options=inference_options,
+        retrieval_label=retrieval_label,
+        history_db=history_db,
+        audit_db=audit_db,
+        status_holder=status_holder,
+        requested_system_message=requested_system_message,
+    )
+
+    iter1: AsyncIterator[JSONDict] = ollama_response._content_iterable
+    iter2: AsyncIterator[JSONDict] = tee_to_console_output(iter1, ollama_log_indexer)
+    iter3: AsyncIterator[JSONDict] = consolidate_and_call(
+        iter2, ollama_response_consolidator, {},
+        functools.partial(
+            record_inference_result,
+            captured_sequence=captured_sequence,
+            prompt_with_templating=prompt_with_templating,
+        ),
+    )
+
+    ollama_response._content_iterable = iter3
+    return ollama_response
+
+
 def install_forwards(app: FastAPI, force_ollama_rag: bool):
     ollama_forwarder = APIRouter()
 
     @ollama_forwarder.post("/ollama-proxy/api/generate")
     async def proxy_generate(
-            request: Request,
+            request: starlette.requests.Request,
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
     ):
@@ -100,7 +201,7 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
 
     @ollama_forwarder.post("/ollama-proxy/api/chat")
     async def proxy_chat_rag(
-            request: Request,
+            request: starlette.requests.Request,
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
             registry: ProviderRegistry = Depends(ProviderRegistry),
@@ -114,10 +215,11 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
         request_content_bytes: bytes = await request.body()
         request_content_json: OllamaRequestContentJSON = orjson.loads(request_content_bytes)
 
-        inference_model_human_id = safe_get(request_content_json, "model")
+        inference_model_human_id: FoundationModelHumanID = safe_get(request_content_json, "model")
         status_holder = ServerStatusHolder(f"Received /api/chat request for {inference_model_human_id}, processing")
 
         try:
+            inference_model: FoundationModelRecordOrm
             inference_model, _ = await lookup_model_offline(
                 inference_model_human_id,
                 history_db,
@@ -139,62 +241,24 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
                 )
 
             else:
-                async def get_response():
-                    prompt_with_templating, ollama_response = await do_proxy_chat_rag(
-                        request,
+                return await keepalive_wrapper(
+                    inference_model_human_id,
+                    do_api_chat_textonly(
                         request_content_json,
                         inference_model=inference_model,
                         inference_options=InferenceOptions(),
                         retrieval_label=RetrievalLabel(
                             retrieval_policy="simple" if force_ollama_rag else "skip",
                         ),
+                        status_holder=status_holder,
+                        request=request,
                         history_db=history_db,
                         audit_db=audit_db,
-                        capture_chat_messages=True,
-                        status_holder=status_holder,
-                    )
-
-                    async def record_inference_event(
-                            consolidated_response: OllamaResponseContentJSON,
-                    ) -> None:
-                        nonlocal inference_model
-                        inference_model = history_db.merge(inference_model)
-
-                        inference_event = InferenceEventOrm(
-                            model_record_id=inference_model.id,
-                            prompt_with_templating=prompt_with_templating,
-                            reason="/api/chat intercept",
-                            response_created_at=datetime.now(tz=timezone.utc),
-                            response_error="[haven't received/finalized response info yet]",
-                        )
-                        finalize_inference_job(inference_event, consolidated_response)
-
-                        try:
-                            history_db.add(inference_event)
-                            history_db.commit()
-                        except sqlalchemy.exc.SQLAlchemyError:
-                            logger.exception(f"Failed to commit intercepted inference event for {inference_event}")
-                            history_db.rollback()
-
-                    if status_holder is not None:
-                        status_holder.set(f"Running Ollama response")
-
-                    iter1: AsyncIterator[JSONDict] = ollama_response._content_iterable
-                    iter2: AsyncIterator[JSONDict] = tee_to_console_output(iter1, ollama_log_indexer)
-                    iter3: AsyncIterator[JSONDict] = consolidate_and_call(
-                        iter2, ollama_response_consolidator, {},
-                        record_inference_event,
-                    )
-
-                    ollama_response._content_iterable = iter3
-                    return ollama_response
-
-                return await keepalive_wrapper(
-                    inference_model_human_id,
-                    get_response(),
+                    ),
                     status_holder,
                     request,
                 )
+
         except HTTPException as e:
             return starlette.responses.JSONResponse(
                 content={
@@ -211,7 +275,7 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
     # TODO: Using a router prefix breaks this, somehow
     @ollama_forwarder.head("/ollama-proxy/{ollama_head_path:path}")
     async def proxy_head(
-            request: Request,
+            request: starlette.requests.Request,
             ollama_head_path,
     ):
         try:
@@ -222,7 +286,7 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
     @ollama_forwarder.get("/ollama-proxy/{ollama_get_path:path}")
     @ollama_forwarder.post("/ollama-proxy/{ollama_post_path:path}")
     async def proxy_get_post(
-            request: Request,
+            request: starlette.requests.Request,
             ollama_get_path: str | None = None,
             ollama_post_path: str | None = None,
             history_db: HistoryDB = Depends(get_history_db),

@@ -4,9 +4,6 @@ from typing import TypeAlias, Union
 
 from _util.json import JSONDict, safe_get
 from _util.typing import PromptText
-from client.database import HistoryDB
-from client.message import ChatMessageOrm
-from client.sequence import ChatSequenceOrm
 from providers.foundation_models.orm import InferenceEventOrm
 
 logger = logging.getLogger(__name__)
@@ -59,58 +56,6 @@ def ollama_log_indexer(
     return safe_get(chunk_json, 'response') \
         or safe_get(chunk_json, 'message', 'content') \
         or ""
-
-
-async def construct_new_sequence_from(
-        original_sequence: ChatSequenceOrm,
-        assistant_response_seed: PromptText | None,
-        consolidated_response: OllamaResponseContentJSON,
-        inference_event: InferenceEventOrm,
-        history_db: HistoryDB,
-) -> tuple[ChatSequenceOrm, ChatMessageOrm] | None:
-    assistant_message = ChatMessageOrm(
-        role="assistant",
-        content=(assistant_response_seed or "") + ollama_log_indexer(consolidated_response),
-        created_at=inference_event.response_created_at,
-    )
-    if not assistant_message.content:
-        return None
-
-    history_db.add(assistant_message)
-    history_db.commit()
-
-    # Add what we need for response_sequence
-    response_sequence = ChatSequenceOrm(
-        human_desc=original_sequence.human_desc,
-        current_message=assistant_message.id,
-        parent_sequence=original_sequence.id,
-    )
-
-    response_sequence.user_pinned = original_sequence.user_pinned
-    original_sequence.user_pinned = False
-
-    history_db.add(original_sequence)
-    history_db.add(response_sequence)
-
-    response_sequence.generated_at = inference_event.response_created_at
-    response_sequence.generation_complete = True
-    response_sequence.inference_job_id = inference_event.id
-    if inference_event.response_error:
-        response_sequence.inference_error = inference_event.response_error
-
-    history_db.commit()
-
-    # And complete the circular reference that really should be handled in the SQLAlchemy ORM
-    inference_job = history_db.merge(inference_event)
-    inference_job.parent_sequence = response_sequence.id
-
-    history_db.add(inference_job)
-    history_db.commit()
-
-    if not safe_get(consolidated_response, 'done'):
-        logger.debug(f"Generated ChatSequence#{response_sequence.id}, but response was marked not-done")
-
-    return response_sequence, assistant_message
 
 
 def ollama_response_consolidator(

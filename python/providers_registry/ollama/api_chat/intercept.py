@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timezone
+from typing import Annotated
 
 from sqlalchemy import select
 
@@ -15,7 +16,10 @@ logger = logging.getLogger(__name__)
 def do_capture_chat_messages(
         chat_messages: JSONArray,
         history_db: HistoryDB,
-) -> tuple[ChatSequenceOrm | None, PromptText | None]:
+) -> tuple[
+    Annotated[ChatSequenceOrm | None, "prior_sequence"],
+    Annotated[PromptText | None, "system_message"],
+]:
     prior_sequence: ChatSequenceOrm | None = None
     system_message: PromptText | None = None
 

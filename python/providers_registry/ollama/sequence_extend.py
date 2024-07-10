@@ -11,7 +11,7 @@ from fastapi import Depends
 from sqlalchemy import select
 from starlette.responses import RedirectResponse
 
-from _util.json import JSONDict
+from _util.json import JSONDict, safe_get
 from _util.json_streaming import JSONStreamingResponse
 from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, TemplatedPromptText
@@ -24,12 +24,13 @@ from client.sequence_add import do_extend_sequence
 from client.sequence_get import fetch_messages_for_sequence
 from inference.continuation import ContinueRequest, ExtendRequest, select_continuation_model, AutonamingOptions
 from inference.iterators import consolidate_and_yield, tee_to_console_output
+from inference.logging import construct_new_sequence_from, construct_assistant_message
 from providers.foundation_models.orm import FoundationModelRecordOrm, InferenceEventOrm
 from providers.orm import ProviderLabel
 from providers.registry import ProviderRegistry, InferenceOptions
 from retrieval.faiss.retrieval import RetrievalLabel
 from .api_chat.inject_rag import do_proxy_chat_rag
-from .api_chat.logging import ollama_response_consolidator, construct_new_sequence_from, \
+from .api_chat.logging import ollama_response_consolidator, \
     OllamaResponseContentJSON, finalize_inference_job, ollama_log_indexer
 from .json import keepalive_wrapper
 from .sequence_autoname import autoname_sequence
@@ -56,7 +57,6 @@ async def do_continuation(
         nonlocal inference_model
         inference_model = history_db.merge(inference_model)
 
-        # Store everything we can into the InferenceEvent
         inference_event = InferenceEventOrm(
             model_record_id=inference_model.id,
             prompt_with_templating=prompt_with_templating,
@@ -70,48 +70,60 @@ async def do_continuation(
             history_db.add(inference_event)
             history_db.commit()
         except sqlalchemy.exc.SQLAlchemyError:
-            logger.exception(f"Failed to commit `prompt_with_templating` for {inference_event}")
+            logger.exception(f"Failed to commit {inference_event=}")
             history_db.rollback()
+            return
 
         # And now, construct the ChatSequence (which references the InferenceEvent, actually)
-        response_pair: tuple[ChatSequenceOrm, ChatMessageOrm] | None = None
         try:
-            response_pair = await construct_new_sequence_from(
-                original_sequence,
+            response_message: ChatMessageOrm | None = construct_assistant_message(
                 inference_options.seed_assistant_response,
-                consolidated_response,
+                ollama_log_indexer(consolidated_response),
+                inference_event.response_created_at,
+                history_db,
+            )
+            if not response_message:
+                return
+
+            response_sequence: ChatSequenceOrm = await construct_new_sequence_from(
+                original_sequence,
+                response_message.id,
                 inference_event,
                 history_db,
             )
+
+            if not safe_get(consolidated_response, 'done'):
+                logger.debug(f"Generated ChatSequence#{response_sequence.id}, but response was marked not-done")
+
         except sqlalchemy.exc.SQLAlchemyError:
             logger.exception(f"Failed to create add-on ChatSequence from {consolidated_response}")
             history_db.rollback()
-
-        if response_pair is None:
-            status_holder.set("Failed to construct a new ChatSequence")
-            yield {
-                "error": "Failed to construct a new ChatSequence",
-                "done": True,
-            }
             return
 
+        except Exception:
+            logger.exception(f"Failed to create add-on ChatSequence from {consolidated_response}")
+            status_holder.set("Failed to create add-on ChatSequence")
+            yield {
+                "error": "Failed to create add-on ChatSequence",
+                "done": True,
+            }
+
         # Lastly (after inference), do auto-naming
-        if not response_pair[0].human_desc:
-            consolidated_messages = list(messages_list)
-            consolidated_messages.append(ChatMessage.model_validate(response_pair[1]))
+        consolidated_messages = list(messages_list)
+        consolidated_messages.append(ChatMessage.model_validate(response_message))
 
-            name = await autoname_sequence(consolidated_messages, inference_model, status_holder)
-            logger.info(f"Auto-generated chat title is {len(name)} chars: {name=}")
-            response_pair[0].human_desc = name
+        name = await autoname_sequence(consolidated_messages, inference_model, status_holder)
+        logger.info(f"Auto-generated chat title is {len(name)} chars: {name=}")
+        response_sequence.human_desc = name
 
-            history_db.add(response_pair[0])
-            history_db.commit()
+        history_db.add(response_sequence)
+        history_db.commit()
 
         # Return fields that the client probably cares about
         yield {
-            "new_message_id": response_pair[1].id,
-            "new_sequence_id": response_pair[0].id,
-            "autoname": response_pair[0].human_desc,
+            "new_message_id": response_sequence.current_message,
+            "new_sequence_id": response_sequence.id,
+            "autoname": response_sequence.human_desc,
             "done": True,
         }
 
@@ -153,8 +165,8 @@ async def do_continuation(
         retrieval_label=retrieval_label,
         history_db=history_db,
         audit_db=audit_db,
-        capture_chat_messages=False,
         status_holder=status_holder,
+        requested_system_message=None,
     )
 
     # Convert to JSON chunks

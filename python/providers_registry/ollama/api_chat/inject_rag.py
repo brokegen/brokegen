@@ -33,21 +33,14 @@ async def do_proxy_chat_rag(
         retrieval_label: RetrievalLabel,
         history_db: HistoryDB,
         audit_db: AuditDB,
-        capture_chat_messages: bool = True,
-        capture_chat_response: bool = False,
-        status_holder: ServerStatusHolder | None = None,
+        status_holder: ServerStatusHolder,
+        requested_system_message: PromptText | None,
 ) -> tuple[TemplatedPromptText, JSONStreamingResponse]:
     # For now, everything we could possibly retrieve is from intercepting an Ollama /api/chat,
     # so there's no need to check for /api/generate's 'content' field.
     chat_messages: JSONArray | None = safe_get(request_content_json, 'messages')
     if not chat_messages:
         raise RuntimeError("No 'messages' provided in call to /api/chat")
-
-    # Assume that these are messages from a third-party client, and try to feed them into the history database.
-    captured_sequence: ChatSequenceOrm | None = None
-    requested_system_message: PromptText | None = None
-    if capture_chat_messages:
-        captured_sequence, requested_system_message = do_capture_chat_messages(chat_messages, history_db)
 
     async def generate_helper_fn(
             inference_reason: InferenceReason,

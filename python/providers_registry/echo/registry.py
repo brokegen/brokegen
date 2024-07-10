@@ -10,7 +10,7 @@ from audit.http import AuditDB
 from client.message import ChatMessage
 from client.database import HistoryDB, get_db as get_history_db
 from inference.iterators import tee_to_console_output, consolidate_and_call
-from inference.logging import construct_new_sequence_from, inference_event_logger
+from inference.logging import construct_new_sequence_from
 from providers.foundation_models.orm import FoundationModelRecord, FoundationModelAddRequest, \
     lookup_foundation_model_detailed, FoundationModelRecordOrm
 from providers.orm import ProviderType, ProviderLabel, ProviderRecord, ProviderID
@@ -125,7 +125,6 @@ class EchoProvider(BaseProvider):
         iter2: AsyncIterator[JSONDict] = _chat_slowed_down(iter1, status_holder)
         iter3: AsyncIterator[JSONDict] = consolidate_and_call(
             iter2, echo_consolidator, {},
-            functools.partial(inference_event_logger, history_db=history_db),
             functools.partial(construct_new_sequence_from, history_db=history_db),
         )
 
@@ -145,7 +144,6 @@ class EchoProvider(BaseProvider):
         iter2: AsyncIterator[JSONDict] = _chat_slowed_down(iter1, status_holder)
         iter3: AsyncIterator[JSONDict] = consolidate_and_call(
             iter2, echo_consolidator, {},
-            functools.partial(inference_event_logger, history_db=history_db),
             functools.partial(construct_new_sequence_from, history_db=history_db),
         )
 
