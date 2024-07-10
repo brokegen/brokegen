@@ -107,6 +107,15 @@ async def do_continuation(
                 "done": True,
             }
 
+            # TODO: Why shouldn't we have this return?
+            # return
+
+        # Return a chunk that includes the entire context-y prompt.
+        # This is marked a separate packet to guard against overflows and similar.
+        yield {
+            "prompt_with_templating": prompt_with_templating,
+        }
+
         # Lastly (after inference), do auto-naming
         consolidated_messages = list(messages_list)
         consolidated_messages.append(ChatMessage.model_validate(response_message))
@@ -117,12 +126,6 @@ async def do_continuation(
 
         history_db.add(response_sequence)
         history_db.commit()
-
-        # Return a chunk that includes the entire context-y prompt.
-        # This is marked a separate packet to guard against overflows and similar.
-        yield {
-            "prompt_with_templating": prompt_with_templating,
-        }
 
         # Return fields that the client probably cares about
         yield {

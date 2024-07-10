@@ -168,6 +168,15 @@ class OneSequenceViewModel: ObservableObject {
             )
 
             sequence.messages.append(.temporary(templated))
+
+            // If we get this end-of-prompt field, flush the response content buffer.
+            // (We're probably done rendering, just autonaming left.)
+            if !bufferedResponseContent.isEmpty {
+                responseInEdit?.content?.append(bufferedResponseContent)
+                if !(responseInEdit?.content?.isEmpty ?? false) {
+                    bufferedResponseContent = ""
+                }
+            }
         }
 
         if jsonData["done"].boolValue {

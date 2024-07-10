@@ -574,11 +574,11 @@ struct ProSequenceView: View {
                             }
                             .onChange(of: viewModel.responseInEdit?.content) {
                                 if settings.scrollToBottomOnNew {
-                                    if viewModel.receiving {
-                                        withAnimation { proxy.scrollTo(-1, anchor: .bottom) }
+                                    if viewModel.responseInEdit != nil {
+                                        proxy.scrollTo(-1, anchor: .bottom)
                                     }
                                     else {
-                                        withAnimation { proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom) }
+                                        proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
                                     }
                                 }
                             }
