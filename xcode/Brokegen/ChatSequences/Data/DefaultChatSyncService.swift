@@ -22,6 +22,10 @@ class DefaultChatSyncService: ChatSyncService {
         return try await doConstructChatMessage(from: tempMessage)
     }
 
+    override public func saveTo(sequence: ChatSequence, messageId: ChatMessageServerID) async throws -> ChatSequenceServerID? {
+        return try await doSaveTo(sequence: sequence, messageId: messageId)
+    }
+
     override public func constructNewChatSequence(messageId: ChatMessageServerID, humanDesc: String = "") async throws -> ChatSequenceServerID? {
         return try await doConstructNewChatSequence(messageId: messageId, humanDesc: humanDesc)
     }

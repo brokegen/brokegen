@@ -63,19 +63,21 @@ class BlankSequenceViewModel: ObservableObject {
         }
     }
 
-    func requestStart() async -> ChatSequence? {
-        print("[INFO] BlankSequenceViewModel.requestStart()")
+    func requestSave() async -> ChatSequence? {
+        print("[INFO] BlankSequenceViewModel.requestSave()")
         if settings.stayAwakeDuringInference {
-            _ = stayAwake.createAssertion(reason: "brokegen BlankSequenceViewModel.requestStart()")
+            // There's only a brief window wherein this is necessary,
+            // but it's better to do extra work and ensure user request goes through.
+            _ = stayAwake.createAssertion(reason: "brokegen BlankSequenceViewModel.requestSave()")
         }
 
-        guard submitting == false else {
-            print("[ERROR] BlankSequenceViewModel.requestStart() during another submission")
+        guard !submitting else {
+            print("[ERROR] BlankSequenceViewModel.requestSave() during another submission")
             return nil
         }
 
         self.submitting = true
-        self.serverStatus = "/sequences/???/continue: preparing request"
+        self.serverStatus = "/sequences/???/extend: preparing request"
 
         submittedAssistantResponseSeed = settings.seedAssistantResponse
 
@@ -85,15 +87,15 @@ class BlankSequenceViewModel: ObservableObject {
             createdAt: Date.now
         ))
         guard messageId != nil else {
-            submitting = false
             print("[ERROR] Couldn't construct ChatMessage from text: \(promptInEdit)")
+            stopSubmit()
             return nil
         }
 
         let replacementSequenceId: ChatSequenceServerID? = try? await chatService.constructNewChatSequence(messageId: messageId!, humanDesc: humanDesc ?? "")
         guard replacementSequenceId != nil else {
-            submitting = false
             print("[ERROR] Couldn't construct sequence from: ChatMessage#\(messageId!)")
+            stopSubmit()
             return nil
         }
 
@@ -110,7 +112,7 @@ class BlankSequenceViewModel: ObservableObject {
             ]
         )
 
-        submitting = false
+        stopSubmit()
         return constructedSequence
     }
 

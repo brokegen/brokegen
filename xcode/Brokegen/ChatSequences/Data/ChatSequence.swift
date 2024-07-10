@@ -203,6 +203,33 @@ extension ChatSequence: Hashable {
 }
 
 extension DefaultChatSyncService {
+    func doSaveTo(sequence: ChatSequence, messageId: ChatMessageServerID) async throws -> ChatSequenceServerID? {
+        struct Parameters: Codable {
+            var humanDesc: String? = nil
+            var userPinned: Bool
+            let currentMessage: ChatMessageServerID
+            var parentSequence: ChatSequenceServerID? = nil
+            var generatedAt: Date?
+            var generationComplete: Bool
+            var inferenceJobId: InferenceEventID? = nil
+            var inferenceError: String? = nil
+        }
+        let params = Parameters(
+            humanDesc: sequence.displayHumanDesc().isEmpty ? nil : sequence.humanDesc,
+            userPinned: false,
+            currentMessage: messageId,
+            parentSequence: sequence.serverId,
+            generatedAt: Date.now,
+            generationComplete: true
+        )
+        let encodedParams: Data = try jsonEncoder.encode(params)
+
+        let responseData: Data? = try? await postDataBlocking(encodedParams, endpoint: "/sequences")
+        guard responseData != nil else { throw ChatSyncServiceError.invalidResponseContentReturned }
+
+        return JSON(responseData!)["sequence_id"].int
+    }
+
     func doConstructNewChatSequence(messageId: ChatMessageServerID, humanDesc: String = "") async throws -> ChatSequenceServerID? {
         struct Parameters: Codable {
             var humanDesc: String? = nil

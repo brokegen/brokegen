@@ -54,18 +54,11 @@ struct ProSequenceView: View {
 
     @ViewBuilder
     var submitButtons: some View {
-        let saveButtonDisabled: Bool = {
-            // TODO: Remove this after we've implemented message uploading
-            return true
+        let saveButtonDisabled: Bool = viewModel.submitting || viewModel.receiving || viewModel.promptInEdit.isEmpty
 
-            if viewModel.submitting || viewModel.responseInEdit != nil {
-                return true
-            }
-
-            return viewModel.promptInEdit.isEmpty
-        }()
-
-        Button(action: {}) {
+        Button(action: {
+            viewModel.requestSave()
+        }) {
             Image(systemName: "tray.and.arrow.up")
                 .font(.system(size: 32))
         }
@@ -78,7 +71,7 @@ struct ProSequenceView: View {
 
         if settings.showSeparateRetrievalButton {
             let retrievalButtonDisabled: Bool = {
-                if viewModel.submitting || viewModel.responseInEdit != nil {
+                if viewModel.submitting || viewModel.receiving {
                     return true
                 }
 
@@ -105,7 +98,7 @@ struct ProSequenceView: View {
         }
 
         let aioButtonName: String = {
-            if viewModel.submitting || viewModel.responseInEdit != nil {
+            if viewModel.submitting || viewModel.receiving {
                 return "stop.fill"
             }
 
@@ -117,7 +110,7 @@ struct ProSequenceView: View {
         }()
 
         let aioButtonDisabled: Bool = {
-            if viewModel.submitting || viewModel.responseInEdit != nil {
+            if viewModel.submitting || viewModel.receiving {
                 return false
             }
             else {
@@ -174,10 +167,11 @@ struct ProSequenceView: View {
     }
 
     var showStatusBar: Bool {
-        return viewModel.displayServerStatus != nil || viewModel.submitting || viewModel.responseInEdit != nil
+        return viewModel.displayServerStatus != nil || viewModel.submitting || viewModel.receiving
     }
 
-    @ViewBuilder var statusBar: some View {
+    @ViewBuilder
+    var statusBar: some View {
         HStack(alignment: .bottom, spacing: 0) {
             if viewModel.displayServerStatus != nil {
                 Text(viewModel.displayServerStatus!)
@@ -204,7 +198,8 @@ struct ProSequenceView: View {
         return viewModel.showSystemPromptOverride || viewModel.showTextEntryView || viewModel.showAssistantResponseSeed
     }
 
-    @ViewBuilder var lowerVStack: some View {
+    @ViewBuilder
+    var lowerVStack: some View {
         if viewModel.showSystemPromptOverride {
             HStack {
                 ZStack {
@@ -282,8 +277,8 @@ struct ProSequenceView: View {
         }
     }
 
-    @ViewBuilder var lowerTabBar: some View {
-        // Tab bar
+    @ViewBuilder
+    var lowerTabBar: some View {
         HStack(spacing: 0) {
             Button(action: {
                 viewModel.showTextEntryView.toggle()
@@ -469,20 +464,29 @@ struct ProSequenceView: View {
 
     @ViewBuilder
     func ofmPicker(_ geometry: GeometryProxy) -> some View {
-        HStack(alignment: .center, spacing: 0) {
-            Spacer()
+        VStack(alignment: .center, spacing: 0) {
+            if viewModel.appSettings.stillPopulating {
+                ProgressView()
+                    .progressViewStyle(.linear)
+                    .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
+            }
 
-            OFMPicker(
-                boxLabel: "Select an override inference model for next message:",
-                selectedModelBinding: $viewModel.continuationInferenceModel,
-                showModelPicker: $showContinuationModelPicker,
-                geometry: geometry,
-                allowClear: true)
-            .foregroundStyle(Color(.disabledControlTextColor))
-            .contentShape(Rectangle())
-            .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
+            HStack(alignment: .center, spacing: 0) {
+                Spacer()
 
-            Spacer()
+                OFMPicker(
+                    boxLabel: "Select an override inference model for next message:",
+                    selectedModelBinding: $viewModel.continuationInferenceModel,
+                    showModelPicker: $showContinuationModelPicker,
+                    geometry: geometry,
+                    allowClear: true)
+                .disabled(viewModel.appSettings.stillPopulating)
+                .foregroundStyle(Color(.disabledControlTextColor))
+                .contentShape(Rectangle())
+                .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
+
+                Spacer()
+            }
         }
         .padding(.top, 240)
         .padding(.bottom, 120)
@@ -541,7 +545,7 @@ struct ProSequenceView: View {
                                         .id(message)
                                     }
 
-                                    if viewModel.responseInEdit != nil {
+                                    if viewModel.receiving {
                                         let indentMessage = !settings.showMessageHeaders
 
                                         // We re-construct a new model object, because it makes rendering much faster.

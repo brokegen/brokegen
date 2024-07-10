@@ -62,8 +62,7 @@ class ChatSyncService: ObservableObject {
 
     func addClientModel(
         fromBlank blankModel: BlankSequenceViewModel,
-        for sequence: ChatSequence,
-        withRetrieval: Bool
+        for sequence: ChatSequence
     ) -> OneSequenceViewModel {
         let model: OneSequenceViewModel = OneSequenceViewModel(sequence, chatService: blankModel.chatService, appSettings: blankModel.appSettings, chatSettingsService: blankModel.chatSettingsService)
         model.submitting = blankModel.submitting
@@ -99,6 +98,10 @@ class ChatSyncService: ObservableObject {
     var loadedChatSequences: [ChatSequenceServerID : ChatSequence] = [:]
 
     public func constructChatMessage(from tempMessage: TemporaryChatMessage) async throws -> ChatMessageServerID? {
+        return nil
+    }
+
+    public func saveTo(sequence: ChatSequence, messageId: ChatMessageServerID) async throws -> ChatSequenceServerID? {
         return nil
     }
 

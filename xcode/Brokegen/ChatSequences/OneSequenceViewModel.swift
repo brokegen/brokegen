@@ -117,7 +117,6 @@ class OneSequenceViewModel: ObservableObject {
                 }
 
                 stopSubmitAndReceive()
-
                 serverStatus = nil
 
             case .failure(let errorAndData):
@@ -281,6 +280,69 @@ class OneSequenceViewModel: ObservableObject {
                         break
                     }
                 }
+            }
+        }
+    }
+
+    func requestSave() {
+        print("[INFO] OneSequenceViewModel.requestSave()")
+
+        guard !self.promptInEdit.isEmpty else { return }
+        guard !submitting else {
+            print("[ERROR] OneSequenceViewModel.requestSave() during another submission")
+            return
+        }
+        guard !receiving else {
+            print("[ERROR] OneSequenceViewModel.requestSave() while receiving response")
+            return
+        }
+
+        self.submitting = true
+        self.serverStatus = "/sequences/\(self.sequence.serverId): appending follow-up message"
+
+        Task {
+            let messageId: ChatMessageServerID? = try? await chatService.constructChatMessage(from: TemporaryChatMessage(
+                role: "user",
+                content: promptInEdit,
+                createdAt: Date.now
+            ))
+            guard messageId != nil else {
+                print("[ERROR] Couldn't construct ChatMessage from text: \(promptInEdit)")
+                stopSubmitAndReceive()
+                return
+            }
+
+            let replacementSequenceId: ChatSequenceServerID? = try? await chatService.saveTo(sequence: self.sequence, messageId: messageId!)
+            guard replacementSequenceId != nil else {
+                print("[ERROR] Couldn't save new message to sequence \(self.sequence.serverId)")
+                stopSubmitAndReceive()
+                return
+            }
+
+            if sequence.userPinned {
+                // TODO: swap in the "pinned" statuses ourselves
+            }
+
+            // Manually (re)construct server data, rather than fetching the same data back.
+            var replacementMessages = self.sequence.messages
+            replacementMessages.append(.stored(ChatMessage(
+                serverId: messageId!,
+                hostSequenceId: replacementSequenceId!,
+                role: "user",
+                content: self.promptInEdit,
+                createdAt: Date.now)))
+
+            let replacementSequence: ChatSequence = ChatSequence(
+                serverId: replacementSequenceId!,
+                messages: replacementMessages
+            )
+
+            let originalSequenceId = self.sequence.serverId
+            DispatchQueue.main.async {
+                self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: replacementSequence)
+                self.promptInEdit = ""
+
+                self.stopSubmitAndReceive()
             }
         }
     }

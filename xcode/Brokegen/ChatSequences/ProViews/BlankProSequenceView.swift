@@ -6,121 +6,172 @@ struct BlankProSequenceView: View {
 
     @FocusState private var focusTextInput: Bool
     @State private var showContinuationModelPicker: Bool = false
-    @State private var splitViewLoaded: Bool = false
 
     @FocusState private var focusSystemPromptOverride: Bool
     @FocusState private var focusModelTemplateOverride: Bool
     @FocusState private var focusAssistantResponseSeed: Bool
 
-    @State private var statusBarHeight: CGFloat = 0
-    @State private var lowerVStackHeight: CGFloat = 0
-
     var noInferenceModelSelected: Bool {
         return viewModel.continuationInferenceModel == nil && viewModel.appSettings.defaultInferenceModel == nil
     }
 
-    var textEntryView: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
-                    .padding(.leading, -24)
-                    .focused($focusTextInput)
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            self.focusTextInput = true
-                        }
+    @ViewBuilder
+    var submitButtons: some View {
+        let saveButtonDisabled: Bool = viewModel.submitting || viewModel.promptInEdit.isEmpty
+
+        Button(action: {
+            Task {
+                let constructedSequence: ChatSequence? = await viewModel.requestSave()
+                if constructedSequence != nil {
+                    DispatchQueue.main.async {
+                        viewModel.chatSettingsService.registerSettings(viewModel.settings, for: constructedSequence!)
+
+                        let newViewModel: OneSequenceViewModel = viewModel.chatService.addClientModel(fromBlank: viewModel, for: constructedSequence!)
+
+                        pathHost.push(newViewModel)
+
+                        // Once we've successfully transferred the info to a different view, clear it out for if the user starts a new chat.
+                        // Only some settings, though, since most of the other ones tend to get reused.
+                        viewModel.humanDesc = nil
+                        viewModel.promptInEdit = ""
+                        viewModel.submitting = false
+                        viewModel.submittedAssistantResponseSeed = nil
+                        viewModel.serverStatus = nil
                     }
+                }
+            }
+        }) {
+            Image(systemName: "tray.and.arrow.up")
+                .font(.system(size: 32))
+        }
+        .help("Save message on server, no inference")
+        .buttonStyle(.plain)
+        .disabled(saveButtonDisabled)
+        .foregroundStyle(saveButtonDisabled
+                         ? Color(.disabledControlTextColor)
+                         : Color.accentColor)
+
+        if viewModel.settings.showSeparateRetrievalButton {
+            let retrievalButtonDisabled: Bool = {
+                if viewModel.submitting {
+                    return true
+                }
+
+                return viewModel.promptInEdit.isEmpty && !viewModel.settings.allowContinuation
+            }()
+
+            Button(action: {
+                if noInferenceModelSelected {
+                    if !viewModel.settings.showOIMPicker {
+                        withAnimation { viewModel.settings.showOIMPicker = true }
+                    }
+                    else {
+                        withAnimation { showContinuationModelPicker = true }
+                    }
+                    return
+                }
+
+                self.requestStartAndTransfer(withRetrieval: true)
+            }) {
+                Image(systemName: "arrow.up.doc")
+                    .font(.system(size: 32))
+            }
+            .help("Request inference with RAG generation")
+            .buttonStyle(.plain)
+            .disabled(retrievalButtonDisabled)
+            .foregroundStyle(retrievalButtonDisabled
+                             ? Color(.disabledControlTextColor)
+                             : Color.accentColor)
+        }
+
+        let aioButtonName: String = {
+            if viewModel.submitting {
+                return "stop.fill"
+            }
+
+            if !viewModel.settings.showSeparateRetrievalButton && viewModel.settings.forceRetrieval {
+                return "arrow.up.doc"
+            }
+
+            return "paperplane"
+        }()
+
+        let aioButtonDisabled: Bool = {
+            if viewModel.submitting {
+                return false
+            }
+            else {
+                return viewModel.promptInEdit.isEmpty && !viewModel.settings.allowContinuation
+            }
+        }()
+
+        Button(action: {
+            if viewModel.submitting {
+                viewModel.stopSubmit(userRequested: true)
+            }
+            else {
+                if noInferenceModelSelected {
+                    if !viewModel.settings.showOIMPicker {
+                        withAnimation { viewModel.settings.showOIMPicker = true }
+                    }
+                    else {
+                        withAnimation { showContinuationModelPicker = true }
+                    }
+                    return
+                }
 
                 if viewModel.settings.showSeparateRetrievalButton {
-                    let retrievalButtonDisabled: Bool = {
-                        if viewModel.submitting {
-                            return true
-                        }
-
-                        return viewModel.promptInEdit.isEmpty && !viewModel.settings.allowContinuation
-                    }()
-
-                    Button(action: {
-                        if noInferenceModelSelected {
-                            if !viewModel.settings.showOIMPicker {
-                                withAnimation { viewModel.settings.showOIMPicker = true }
-                            }
-                            else {
-                                withAnimation { showContinuationModelPicker = true }
-                            }
-                            return
-                        }
-
-                        self.requestStartAndTransfer(withRetrieval: true)
-                    }) {
-                        Image(systemName: "arrow.up.doc")
-                            .font(.system(size: 32))
-                            .disabled(retrievalButtonDisabled)
-                            .foregroundStyle(retrievalButtonDisabled
-                                             ? Color(.disabledControlTextColor)
-                                             : Color.accentColor)
-                    }
-                    .buttonStyle(.plain)
+                    self.requestStartAndTransfer(withRetrieval: false)
                 }
-
-                let aioButtonName: String = {
-                    if viewModel.submitting {
-                        return "stop.fill"
-                    }
-
-                    if !viewModel.settings.showSeparateRetrievalButton && viewModel.settings.forceRetrieval {
-                        return "arrow.up.doc"
-                    }
-
-                    return "paperplane"
-                }()
-
-                let aioButtonDisabled: Bool = {
-                    if viewModel.submitting {
-                        return false
-                    }
-                    else {
-                        return viewModel.promptInEdit.isEmpty && !viewModel.settings.allowContinuation
-                    }
-                }()
-
-                Button(action: {
-                    if viewModel.submitting {
-                        viewModel.stopSubmit(userRequested: true)
-                    }
-                    else {
-                        if noInferenceModelSelected {
-                            if !viewModel.settings.showOIMPicker {
-                                withAnimation { viewModel.settings.showOIMPicker = true }
-                            }
-                            else {
-                                withAnimation { showContinuationModelPicker = true }
-                            }
-                            return
-                        }
-
-                        if viewModel.settings.showSeparateRetrievalButton {
-                            self.requestStartAndTransfer(withRetrieval: false)
-                        }
-                        else {
-                            self.requestStartAndTransfer(withRetrieval: viewModel.settings.forceRetrieval)
-                        }
-                    }
-                }) {
-                    Image(systemName: aioButtonName)
-                        .font(.system(size: 32))
-                        .disabled(aioButtonDisabled)
-                        .foregroundStyle(
-                            aioButtonDisabled
-                            ? Color(.disabledControlTextColor)
-                            : Color.accentColor)
+                else {
+                    self.requestStartAndTransfer(withRetrieval: viewModel.settings.forceRetrieval)
                 }
-                .keyboardShortcut(.return)
-                .buttonStyle(.plain)
+            }
+        }) {
+            Image(systemName: aioButtonName)
+                .font(.system(size: 32))
+        }
+        .keyboardShortcut(.return)
+        .buttonStyle(.plain)
+        .disabled(aioButtonDisabled)
+        .foregroundStyle(
+            aioButtonDisabled
+            ? Color(.disabledControlTextColor)
+            : Color.accentColor)
+    }
+
+    var textEntryView: some View {
+        VStack(spacing: 0) {
+            GeometryReader { geometry in
+                HStack(spacing: 12) {
+                    InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
+                        .padding(.leading, -24)
+                        .focused($focusTextInput)
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                self.focusTextInput = true
+                            }
+                        }
+
+                    let useVerticalLayout = geometry.size.height >= 144 + 36
+                    let buttonLayout = useVerticalLayout
+                    ? AnyLayout(VStackLayout(spacing: 18))
+                    : AnyLayout(HStackLayout(spacing: 12))
+
+                    buttonLayout {
+                        if useVerticalLayout {
+                            Spacer()
+                        }
+                        submitButtons
+                    }
+                    .frame(alignment: useVerticalLayout ? .bottom : .center)
+                    .padding(.bottom, useVerticalLayout ? 18 : 0)
+                    .padding([.leading, .trailing], 12)
+                    .animation(.snappy(duration: 0.2))
+                }
+                .padding(.leading, 24)
                 .padding(.trailing, 12)
             }
-            .padding(.leading, 24)
-            .padding(.trailing, 12)
         }
     }
 
@@ -128,7 +179,8 @@ struct BlankProSequenceView: View {
         return viewModel.displayServerStatus != nil || viewModel.submitting
     }
 
-    @ViewBuilder var statusBar: some View {
+    @ViewBuilder
+    var statusBar: some View {
         HStack(alignment: .bottom, spacing: 0) {
             if viewModel.displayServerStatus != nil {
                 Text(viewModel.displayServerStatus!)
@@ -155,7 +207,8 @@ struct BlankProSequenceView: View {
         return viewModel.showSystemPromptOverride || viewModel.showTextEntryView || viewModel.showAssistantResponseSeed
     }
 
-    @ViewBuilder var lowerVStack: some View {
+    @ViewBuilder
+    var lowerVStack: some View {
         if viewModel.showSystemPromptOverride {
             HStack {
                 ZStack {
@@ -204,11 +257,9 @@ struct BlankProSequenceView: View {
 
     @ViewBuilder var lowerVStackOptions: some View {
         if viewModel.showUiOptions {
-            // Tab.uiOptions
             CSCSettingsView(viewModel.settings, sequenceDesc: "draft")
         }
 
-        // Tab.modelOptions
         if viewModel.showInferenceOptions {
             GroupBox(content: {
                 TextEditor(text: $viewModel.settings.inferenceOptions)
@@ -235,8 +286,8 @@ struct BlankProSequenceView: View {
         }
     }
 
-    @ViewBuilder var lowerTabBar: some View {
-        // Tab bar
+    @ViewBuilder
+    var lowerTabBar: some View {
         HStack(spacing: 0) {
             Button(action: {
                 viewModel.showTextEntryView.toggle()
@@ -360,7 +411,8 @@ struct BlankProSequenceView: View {
         .frame(height: tabBarHeight)
     }
 
-    @ViewBuilder var contextMenuItems: some View {
+    @ViewBuilder
+    var contextMenuItems: some View {
         Text(viewModel.displayHumanDesc)
 
         Divider()
@@ -374,6 +426,10 @@ struct BlankProSequenceView: View {
                 Text("Show message headers in the UI")
             }
 
+            Toggle(isOn: $viewModel.settings.renderAsMarkdown) {
+                Text("Render message content as markdown")
+            }
+
             Toggle(isOn: $viewModel.settings.scrollToBottomOnNew) {
                 Text("Scroll to bottom of window on new messages")
             }
@@ -382,30 +438,10 @@ struct BlankProSequenceView: View {
                 Text("Show InferenceModel override picker")
             }
         }
-
-        Divider()
-
-        Section(header: Text("Chat Data")) {
-            Button {
-            } label: {
-                Toggle(isOn: .constant(false)) {
-                    Text("Pin ChatSequence to sidebar")
-                }
-            }
-            .disabled(true)
-
-            Button {
-            } label: {
-                Text(
-                    "Autoname disabled"
-                )
-            }
-            .disabled(true)
-        }
     }
 
     @ViewBuilder
-    func oimPicker(_ geometry: GeometryProxy) -> some View {
+    func ofmPicker(_ geometry: GeometryProxy) -> some View {
         VStack(alignment: .center, spacing: 0) {
             if viewModel.appSettings.stillPopulating {
                 ProgressView()
@@ -413,20 +449,29 @@ struct BlankProSequenceView: View {
                     .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
             }
 
-            OFMPicker(
-                boxLabel: viewModel.continuationInferenceModel == nil && viewModel.appSettings.defaultInferenceModel != nil
-                ? "Default inference model:"
-                : "Select an inference model:",
-                selectedModelBinding: Binding(
-                    get: { viewModel.continuationInferenceModel ?? viewModel.appSettings.defaultInferenceModel },
-                    set: { viewModel.continuationInferenceModel = $0 }),
-                showModelPicker: $showContinuationModelPicker,
-                geometry: geometry,
-                allowClear: viewModel.continuationInferenceModel != nil)
-            .disabled(viewModel.appSettings.stillPopulating)
-            .foregroundStyle(Color(.disabledControlTextColor))
-            .contentShape(Rectangle())
+            HStack(alignment: .center, spacing: 0) {
+                Spacer()
+
+                OFMPicker(
+                    boxLabel: viewModel.continuationInferenceModel == nil && viewModel.appSettings.defaultInferenceModel != nil
+                    ? "Default inference model:"
+                    : "Select an inference model:",
+                    selectedModelBinding: Binding(
+                        get: { viewModel.continuationInferenceModel ?? viewModel.appSettings.defaultInferenceModel },
+                        set: { viewModel.continuationInferenceModel = $0 }),
+                    showModelPicker: $showContinuationModelPicker,
+                    geometry: geometry,
+                    allowClear: viewModel.continuationInferenceModel != nil)
+                .disabled(viewModel.appSettings.stillPopulating)
+                .foregroundStyle(Color(.disabledControlTextColor))
+                .contentShape(Rectangle())
+                .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
+
+                Spacer()
+            }
         }
+        .padding(.top, 240)
+        .padding(.bottom, 120)
     }
 
     var body: some View {
@@ -456,13 +501,7 @@ struct BlankProSequenceView: View {
                                     }
 
                                     if viewModel.settings.showOIMPicker {
-                                        oimPicker(geometry)
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.top, max(
-                                                120,
-                                                geometry.size.height * 0.2
-                                            ))
-                                            .padding(.bottom, 120)
+                                        ofmPicker(geometry)
                                     }
                                 } // LazyVStack
                             } // ScrollView
@@ -474,27 +513,9 @@ struct BlankProSequenceView: View {
                     }
                     .frame(minHeight: 240)
 
-                    let maxInputHeight = {
-                        if splitViewLoaded || showLowerVStack || showLowerVStackOptions {
-                            geometry.size.height * 0.7
-                        }
-                        else {
-                            geometry.size.height * 0.2
-                        }
-                    }()
-
                     // This is a separate branch, because otherwise the statusBar is resizeable, which we don't really want.
                     if showStatusBar && !showLowerVStack {
                         statusBar
-                        // Read and store the "preferred" height of the status bar
-                            .background(
-                                GeometryReader { statusBarGeometry in
-                                    Color.clear
-                                        .onAppear {
-                                            statusBarHeight = statusBarGeometry.size.height
-                                        }
-                                }
-                            )
                             .frame(minHeight: statusBarHeight)
                             .frame(maxHeight: statusBarHeight)
                     }
@@ -502,35 +523,15 @@ struct BlankProSequenceView: View {
                         VStack(spacing: 0) {
                             if showStatusBar {
                                 statusBar
-                                // Read and store the "preferred" height of the status bar
-                                    .background(
-                                        GeometryReader { statusBarGeometry in
-                                            Color.clear
-                                                .onAppear {
-                                                    statusBarHeight = statusBarGeometry.size.height
-                                                }
-                                        }
-                                    )
+                                    .frame(minHeight: statusBarHeight)
+                                    .frame(maxHeight: statusBarHeight)
                             }
 
                             if showLowerVStack {
                                 lowerVStack
-                                    .background(
-                                        GeometryReader { lowerVStackGeometry in
-                                            Color.clear
-                                                .onAppear {
-                                                    lowerVStackHeight = lowerVStackGeometry.size.height
-                                                }
-                                        }
-                                    )
+                                    .frame(minHeight: 72)
                             }
                         }
-                        .frame(
-                            minHeight: statusBarHeight + max(72, lowerVStackHeight),
-                            maxHeight: max(
-                                statusBarHeight + max(72, lowerVStackHeight),
-                                maxInputHeight - statusBarHeight - lowerVStackHeight
-                            ))
                     }
 
                     if showLowerVStackOptions {
@@ -541,6 +542,7 @@ struct BlankProSequenceView: View {
                                 }
                             }
                             .frame(width: optionsGeometry.size.width)
+                            .frame(idealHeight: 240)
                         }
                     }
 
@@ -562,12 +564,12 @@ struct BlankProSequenceView: View {
 
     func requestStartAndTransfer(withRetrieval: Bool) {
         Task {
-            let constructedSequence: ChatSequence? = await viewModel.requestStart()
+            let constructedSequence: ChatSequence? = await viewModel.requestSave()
             if constructedSequence != nil {
                 DispatchQueue.main.async {
                     viewModel.chatSettingsService.registerSettings(viewModel.settings, for: constructedSequence!)
 
-                    let newViewModel: OneSequenceViewModel = viewModel.chatService.addClientModel(fromBlank: viewModel, for: constructedSequence!, withRetrieval: withRetrieval)
+                    let newViewModel: OneSequenceViewModel = viewModel.chatService.addClientModel(fromBlank: viewModel, for: constructedSequence!)
                     let continuedModel = newViewModel.requestContinue(model: newViewModel.continuationInferenceModel?.serverId ?? viewModel.appSettings.defaultInferenceModel?.serverId, withRetrieval: withRetrieval)
 
                     pathHost.push(continuedModel)
