@@ -15,6 +15,7 @@ from datetime import timezone, datetime
 from typing import Annotated, Awaitable
 
 import click
+import fastapi
 import starlette.responses
 from fastapi import FastAPI, APIRouter, Query
 from fastapi.encoders import jsonable_encoder
@@ -222,7 +223,7 @@ def run_proxy(
     ):
         return starlette.responses.PlainTextResponse(
             str(exc),
-            status_code=exc.status_code,
+            status_code=getattr(exc, "status_code", fastapi.status.HTTP_500_INTERNAL_SERVER_ERROR),
         )
 
     if install_terminate_endpoint:

@@ -211,8 +211,7 @@ async def do_api_chat(
 def install_forwards(app: FastAPI, force_ollama_rag: bool):
     ollama_forwarder = APIRouter()
 
-    @ollama_forwarder.post("api/generate")
-    @ollama_forwarder.post("api/generate")
+    @ollama_forwarder.post("/api/generate")
     async def proxy_generate(
             request: starlette.requests.Request,
             history_db: HistoryDB = Depends(get_history_db),
@@ -274,8 +273,8 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
             status_code=200,
         )
 
-    @ollama_forwarder.post("api/chat")
-    async def proxy_chat_rag(
+    @ollama_forwarder.post("/api/chat")
+    async def proxy_chat(
             request: starlette.requests.Request,
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
@@ -289,8 +288,8 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
             registry,
         )
 
-    @ollama_forwarder.get("{ollama_get_path:path}")
-    @ollama_forwarder.post("{ollama_post_path:path}")
+    @ollama_forwarder.get("/{ollama_get_path:path}")
+    @ollama_forwarder.post("/{ollama_post_path:path}")
     async def proxy_get_post(
             request: starlette.requests.Request,
             ollama_get_path: str | None = None,
@@ -308,9 +307,9 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
         return await forward_request(request, audit_db)
 
     if force_ollama_rag:
-        app.include_router(ollama_forwarder, prefix="/ollama-proxy")
-    else:
         app.include_router(ollama_forwarder, prefix="/ollama-proxy-rag")
+    else:
+        app.include_router(ollama_forwarder, prefix="/ollama-proxy")
 
     # TODO: Using a router prefix breaks this, somehow
     @app.head(

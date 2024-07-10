@@ -82,6 +82,7 @@ async def stream_bytes_to_json(
 
     if buffered_chunks:
         logger.fatal(f"Failed to decode {len(b''.join(buffered_chunks))} bytes in JSON response")
+        logger.debug(b''.join(buffered_chunks))
         raise RuntimeError(f"Failed to decode {len(b''.join(buffered_chunks))} bytes in JSON response")
 
 
