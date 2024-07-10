@@ -566,7 +566,7 @@ struct BlankProSequenceView: View {
         Task {
             let constructedSequence: ChatSequence? = await viewModel.requestSave()
             if constructedSequence != nil {
-                DispatchQueue.main.sync {
+                DispatchQueue.main.async {
                     viewModel.chatSettingsService.registerSettings(viewModel.settings, for: constructedSequence!)
 
                     let newViewModel: OneSequenceViewModel = viewModel.chatService.addClientModel(fromBlank: viewModel, for: constructedSequence!)
