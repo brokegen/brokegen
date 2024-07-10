@@ -182,7 +182,7 @@ struct ProSequenceView: View {
 
             Spacer()
 
-            if viewModel.submitting || viewModel.responseInEdit != nil {
+            if viewModel.submitting || viewModel.receiving {
                 ProgressView()
                     .progressViewStyle(.linear)
                     .frame(maxWidth: 144)
@@ -544,18 +544,18 @@ struct ProSequenceView: View {
                                         .id(message)
                                     }
 
-                                    if viewModel.receiving {
-                                        let indentMessage = !settings.showMessageHeaders
+                                    if viewModel.responseInEdit != nil {
+                                        let messageIndent = settings.showMessageHeaders ? 0.0 : 24.0
 
-                                        // We re-construct a new model object, because it makes rendering much faster.
-                                        let constructedRIE = TemporaryChatMessage(
-                                            role: viewModel.responseInEdit!.role,
-                                            content: String(viewModel.responseInEdit?.content ?? ""),
-                                            createdAt: viewModel.responseInEdit!.createdAt)
-
-                                        ProMessageView(.temporary(constructedRIE), stillUpdating: true, showMessageHeaders: settings.showMessageHeaders, renderAsMarkdown: $settings.renderAsMarkdown)
-                                            .padding(.leading, indentMessage ? 24.0 : 0.0)
-                                            .id(-1)
+                                        ProMessageView(
+                                            .temporary(viewModel.responseInEdit!),
+                                            stillUpdating: true,
+                                            showMessageHeaders: settings.showMessageHeaders,
+                                            renderAsMarkdown: $settings.renderAsMarkdown
+                                        )
+                                        .animation(.snappy)
+                                        .padding(.leading, messageIndent)
+                                        .id(-1)
                                     }
 
                                     if settings.showOIMPicker {
@@ -574,8 +574,7 @@ struct ProSequenceView: View {
                             }
                             .onChange(of: viewModel.responseInEdit?.content) {
                                 if settings.scrollToBottomOnNew {
-                                    if viewModel.responseInEdit != nil {
-                                        // TODO: This makes scrolling at the same time impossible, probably due to constant updates
+                                    if viewModel.receiving {
                                         withAnimation { proxy.scrollTo(-1, anchor: .bottom) }
                                     }
                                     else {

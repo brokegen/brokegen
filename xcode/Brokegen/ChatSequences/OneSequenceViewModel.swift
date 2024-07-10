@@ -24,8 +24,9 @@ class OneSequenceViewModel: ObservableObject {
     var promptInEdit: String = ""
     var submitting: Bool = false
 
+    @ObservationIgnored var incompleteResponseData: Data? = nil
+    @ObservationIgnored var bufferedResponseContent: String = ""
     var responseInEdit: TemporaryChatMessage? = nil
-    var incompleteResponseData: Data? = nil
     @ObservationIgnored private var receivedDone: Int = 0
     var receiving: Bool {
         /// This field does double duty to indicate whether we are currently receiving data.
@@ -112,11 +113,6 @@ class OneSequenceViewModel: ObservableObject {
                 if receivedDone != 1 {
                     print("[ERROR] \(callerName) completed, but received \(receivedDone) \"done\" chunks")
                 }
-                if responseInEdit != nil {
-                    print("[ERROR] \(callerName) completed early, storing response message as temporary")
-                    sequence.messages.append(.temporary(responseInEdit!))
-                    responseInEdit = nil
-                }
                 if incompleteResponseData != nil {
                     print("[ERROR] \(callerName) dropping \(incompleteResponseData!.count) bytes of unparsed JSON")
                     incompleteResponseData = nil
@@ -126,9 +122,6 @@ class OneSequenceViewModel: ObservableObject {
                 serverStatus = nil
 
             case .failure(let errorAndData):
-                responseInEdit = nil
-                incompleteResponseData = nil
-
                 stopSubmitAndReceive()
 
                 let errorDesc: String = (
@@ -147,18 +140,23 @@ class OneSequenceViewModel: ObservableObject {
         }
     }
 
-    private func _parseJSONChunk(_ jsonData: JSON) {
+    private func _parseJSONChunk(_ jsonData: JSON, bufferSize: Int = 48) {
         if let status = jsonData["status"].string {
             serverStatus = status
         }
 
         let messageFragment = jsonData["message"]["content"].stringValue
-        if !messageFragment.isEmpty {
+        bufferedResponseContent.append(messageFragment)
+
+        // TODO: This should actually be about rate of updates, not number.
+        // Time + redraw speed are what would make this choppy.
+        if bufferedResponseContent.count > bufferSize {
             if self.responseInEdit == nil {
-                print("[WARNING] Dropping messageFragment = \(messageFragment)")
+                print("[WARNING] Should not have nil responseInEdit at this point; maintaining buffer size of \(bufferedResponseContent.count)")
             }
             else {
-                self.responseInEdit!.content!.append(messageFragment)
+                self.responseInEdit!.content!.append(bufferedResponseContent)
+                bufferedResponseContent = ""
             }
         }
 
@@ -185,11 +183,14 @@ class OneSequenceViewModel: ObservableObject {
 
         if let newMessageId: ChatMessageServerID = jsonData["new_message_id"].int {
             if responseInEdit != nil {
+                responseInEdit!.content = (responseInEdit?.content ?? "")
+                responseInEdit!.content!.append(bufferedResponseContent)
+
                 let storedMessage = ChatMessage(
                     serverId: newMessageId,
                     hostSequenceId: sequence.serverId,
                     role: responseInEdit!.role,
-                    content: responseInEdit!.content ?? "",
+                    content: responseInEdit!.content!,
                     createdAt: responseInEdit!.createdAt
                 )
 
@@ -515,6 +516,12 @@ class OneSequenceViewModel: ObservableObject {
             submitting = false
         }
 
+        receivedDone = 0
+        incompleteResponseData = nil
+        if !bufferedResponseContent.isEmpty {
+            responseInEdit?.content?.append(bufferedResponseContent)
+            bufferedResponseContent = ""
+        }
         if responseInEdit != nil {
             if responseInEdit!.content == settings.seedAssistantResponse {
                 // We haven't actually received a response yet, so don't bother committing the submitted message.
