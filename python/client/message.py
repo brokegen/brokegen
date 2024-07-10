@@ -59,8 +59,6 @@ def lookup_chat_message(
         ChatMessageOrm.role == message_in.role,
         ChatMessageOrm.content == message_in.content,
     ]
-    if message_in.created_at is not None:
-        where_clauses.append(ChatMessageOrm.created_at == message_in.created_at)
 
     return history_db.execute(
         select(ChatMessageOrm)
