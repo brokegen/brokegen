@@ -16,7 +16,6 @@ from _util.status import ServerStatusHolder
 from audit.http import AuditDB, get_db as get_audit_db
 from client.database import HistoryDB, get_db as get_history_db
 from client_ollama.forward import forward_request_nolog, forward_request
-from inference.continuation import AutonamingOptions
 from inference.iterators import consolidate_and_call, tee_to_console_output, decode_from_bytes, stream_str_to_json, \
     dump_to_bytes
 from providers.foundation_models.orm import InferenceEventOrm
@@ -146,7 +145,6 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
                         request_content_json,
                         inference_model=inference_model,
                         inference_options=InferenceOptions(),
-                        autonaming_options=AutonamingOptions(),
                         retrieval_label=RetrievalLabel(
                             retrieval_policy="simple" if force_ollama_rag else "skip",
                         ),

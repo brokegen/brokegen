@@ -1,7 +1,6 @@
 import logging
 from typing import AsyncIterator
 
-import starlette.datastructures
 import starlette.requests
 
 from _util.json import safe_get, JSONArray, JSONDict
@@ -9,13 +8,12 @@ from _util.json_streaming import JSONStreamingResponse
 from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import PromptText, TemplatedPromptText
 from audit.http import AuditDB
-from client.sequence import ChatSequenceOrm
 from client.database import HistoryDB
-from inference.continuation import AutonamingOptions
-from providers.registry import InferenceOptions
+from client.sequence import ChatSequenceOrm
 from inference.iterators import decode_from_bytes, stream_str_to_json
 from inference.prompting.templating import apply_llm_template
 from providers.foundation_models.orm import InferenceReason, FoundationModelRecordOrm
+from providers.registry import InferenceOptions
 from providers_registry.ollama.api_chat.converter import convert_chat_to_generate
 from providers_registry.ollama.api_chat.intercept import do_capture_chat_messages
 from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON, ollama_log_indexer
@@ -32,7 +30,6 @@ async def do_proxy_chat_rag(
         request_content_json: OllamaRequestContentJSON,
         inference_model: FoundationModelRecordOrm,
         inference_options: InferenceOptions,
-        autonaming_options: AutonamingOptions,
         retrieval_label: RetrievalLabel,
         history_db: HistoryDB,
         audit_db: AuditDB,

@@ -6,8 +6,8 @@ from _util.json import safe_get, JSONDict
 from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import PromptText
 from audit.http import get_db as get_audit_db
-from client.message import ChatMessage
 from client.database import get_db as get_history_db
+from client.message import ChatMessage
 from inference.iterators import decode_from_bytes, stream_str_to_json
 from inference.prompting.templating import apply_llm_template
 from providers.foundation_models.orm import FoundationModelRecordOrm, InferenceReason

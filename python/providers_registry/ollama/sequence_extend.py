@@ -17,9 +17,9 @@ from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, TemplatedPromptText
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
+from client.database import HistoryDB, get_db as get_history_db
 from client.message import ChatMessageOrm, lookup_chat_message, ChatMessage
 from client.sequence import ChatSequenceOrm
-from client.database import HistoryDB, get_db as get_history_db
 from client.sequence_add import do_extend_sequence
 from client.sequence_get import fetch_messages_for_sequence
 from inference.continuation import ContinueRequest, ExtendRequest, select_continuation_model, AutonamingOptions
@@ -150,7 +150,6 @@ async def do_continuation(
         constructed_ollama_request_content_json,
         inference_model=inference_model,
         inference_options=inference_options,
-        autonaming_options=autonaming_options,
         retrieval_label=retrieval_label,
         history_db=history_db,
         audit_db=audit_db,

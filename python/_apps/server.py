@@ -1,8 +1,4 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
-import sqlalchemy.exc
-from fastapi.encoders import jsonable_encoder
-from fastapi.exceptions import RequestValidationError
-
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
@@ -21,6 +17,8 @@ from typing import Annotated, Awaitable
 import click
 import starlette.responses
 from fastapi import FastAPI, APIRouter, Query
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from starlette.background import BackgroundTask
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
