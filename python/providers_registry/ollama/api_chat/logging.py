@@ -45,6 +45,13 @@ def finalize_inference_job(
     else:
         inference_event.response_error = None
 
+    # Scrub the Ollama "context" field, because it's virtually useless for us.
+    # Provide a similar context "count" field, which may be useful for confirming the tokens parsed/kv cache.
+    if safe_get(response_content, 'context'):
+        context_array = response_content['context']
+        del response_content['context']
+        response_content['context_count'] = len(context_array)
+
     inference_event.response_info = dict(response_content)
 
 
