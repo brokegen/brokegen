@@ -19,16 +19,10 @@ class ProviderService: ObservableObject {
 
     var availableModels: [FoundationModel] {
         get {
-            do {
-                let predicate = #Predicate<FoundationModel> {
-                    $0.humanId.contains("instruct")
-                    // This relies on the way our stats field is implemented, but, fine.
-                    || $0.displayStats?.count ?? 0 > 1
-                }
-                return try allModels.filter(predicate)
-            }
-            catch {
-                return allModels
+            return allModels.filter {
+                $0.humanId.contains("instruct")
+                // This relies on the way our stats field is implemented, but, fine.
+                || $0.displayStats?.count ?? 0 > 1
             }
         }
     }
@@ -82,26 +76,20 @@ class DefaultProviderService: ProviderService {
     }
 
     func getDataBlocking(_ endpoint: String) async -> Data? {
-        do {
-            return try await withCheckedThrowingContinuation { continuation in
-                session.request(
-                    serverBaseURL + endpoint,
-                    method: .get
-                )
-                .response { r in
-                    switch r.result {
-                    case .success(let data):
-                        continuation.resume(returning: data)
-                    case .failure(let error):
-                        print("[ERROR] GET \(endpoint) failed, " + error.localizedDescription)
-                        continuation.resume(returning: nil)
-                    }
+        return try? await withCheckedThrowingContinuation { continuation in
+            session.request(
+                serverBaseURL + endpoint,
+                method: .get
+            )
+            .response { r in
+                switch r.result {
+                case .success(let data):
+                    continuation.resume(returning: data)
+                case .failure(let error):
+                    print("[ERROR] GET \(endpoint) failed, " + error.localizedDescription)
+                    continuation.resume(returning: nil)
                 }
             }
-        }
-        catch {
-            print("[ERROR] GET \(endpoint) failed, exception thrown")
-            return nil
         }
     }
 
