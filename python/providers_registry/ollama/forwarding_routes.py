@@ -134,10 +134,85 @@ async def do_api_chat_textonly(
     return ollama_response
 
 
+async def do_api_chat(
+        request: starlette.requests.Request,
+        force_ollama_rag: bool,
+        history_db: HistoryDB,
+        audit_db: AuditDB,
+        registry: ProviderRegistry,
+):
+    # Trigger Ollama providers, if needed
+    # TODO: Refactor this into shared code
+    ollama_providers = [provider for (label, provider) in registry.by_label.items() if label.type == "ollama"]
+    if not ollama_providers:
+        await ExternalOllamaFactory().discover(None, registry)
+
+    request_content_bytes: bytes = await request.body()
+    request_content_json: OllamaRequestContentJSON = orjson.loads(request_content_bytes)
+
+    inference_model_human_id: FoundationModelHumanID = safe_get(request_content_json, "model")
+    status_holder = ServerStatusHolder(f"Received /api/chat request for {inference_model_human_id}, processing")
+
+    try:
+        inference_model: FoundationModelRecordOrm
+        inference_model, _ = await lookup_model_offline(
+            inference_model_human_id,
+            history_db,
+        )
+
+        if safe_get(request_content_json, 'options', 'temperature') is not None:
+            logger.debug(
+                f"Intentionally disabling Ollama client request for {request_content_json['options']['temperature']=}")
+            del request_content_json['options']['temperature']
+
+        last_message_images: JSONDict | None = safe_get_arrayed(request_content_json, 'messages', -1, 'images')
+        if last_message_images:
+            logger.info("Can't convert multimodal request, disabling RAG")
+            return await keepalive_wrapper(
+                inference_model_human_id,
+                forward_request(request, audit_db),
+                status_holder,
+                request,
+            )
+
+        else:
+            return await keepalive_wrapper(
+                inference_model_human_id,
+                do_api_chat_textonly(
+                    request_content_json,
+                    inference_model=inference_model,
+                    inference_options=InferenceOptions(),
+                    retrieval_label=RetrievalLabel(
+                        retrieval_policy="simple" if force_ollama_rag else "skip",
+                    ),
+                    status_holder=status_holder,
+                    request=request,
+                    history_db=history_db,
+                    audit_db=audit_db,
+                ),
+                status_holder,
+                request,
+            )
+
+    except HTTPException as e:
+        return starlette.responses.JSONResponse(
+            content={
+                "model": inference_model_human_id,
+                "message": {
+                    "role": "assistant",
+                    "content": str(e),
+                },
+                "done": True,
+            },
+            status_code=200,
+        )
+
+
 def install_forwards(app: FastAPI, force_ollama_rag: bool):
     ollama_forwarder = APIRouter()
 
-    @ollama_forwarder.post("/ollama-proxy/api/generate")
+    @ollama_forwarder.post("api/generate")
+    @ollama_forwarder.post("api/generate")
     async def proxy_generate(
             request: starlette.requests.Request,
             history_db: HistoryDB = Depends(get_history_db),
@@ -199,92 +274,23 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
             status_code=200,
         )
 
-    @ollama_forwarder.post("/ollama-proxy/api/chat")
+    @ollama_forwarder.post("api/chat")
     async def proxy_chat_rag(
             request: starlette.requests.Request,
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ):
-        # Trigger Ollama providers, if needed
-        # TODO: Refactor this into shared code
-        ollama_providers = [provider for (label, provider) in registry.by_label.items() if label.type == "ollama"]
-        if not ollama_providers:
-            await ExternalOllamaFactory().discover(None, registry)
+        return await do_api_chat(
+            request,
+            force_ollama_rag,
+            history_db,
+            audit_db,
+            registry,
+        )
 
-        request_content_bytes: bytes = await request.body()
-        request_content_json: OllamaRequestContentJSON = orjson.loads(request_content_bytes)
-
-        inference_model_human_id: FoundationModelHumanID = safe_get(request_content_json, "model")
-        status_holder = ServerStatusHolder(f"Received /api/chat request for {inference_model_human_id}, processing")
-
-        try:
-            inference_model: FoundationModelRecordOrm
-            inference_model, _ = await lookup_model_offline(
-                inference_model_human_id,
-                history_db,
-            )
-
-            if safe_get(request_content_json, 'options', 'temperature') is not None:
-                logger.debug(
-                    f"Intentionally disabling Ollama client request for {request_content_json['options']['temperature']=}")
-                del request_content_json['options']['temperature']
-
-            last_message_images: JSONDict | None = safe_get_arrayed(request_content_json, 'messages', -1, 'images')
-            if last_message_images:
-                logger.info("Can't convert multimodal request, disabling RAG")
-                return await keepalive_wrapper(
-                    inference_model_human_id,
-                    forward_request(request, audit_db),
-                    status_holder,
-                    request,
-                )
-
-            else:
-                return await keepalive_wrapper(
-                    inference_model_human_id,
-                    do_api_chat_textonly(
-                        request_content_json,
-                        inference_model=inference_model,
-                        inference_options=InferenceOptions(),
-                        retrieval_label=RetrievalLabel(
-                            retrieval_policy="simple" if force_ollama_rag else "skip",
-                        ),
-                        status_holder=status_holder,
-                        request=request,
-                        history_db=history_db,
-                        audit_db=audit_db,
-                    ),
-                    status_holder,
-                    request,
-                )
-
-        except HTTPException as e:
-            return starlette.responses.JSONResponse(
-                content={
-                    "model": inference_model_human_id,
-                    "message": {
-                        "role": "assistant",
-                        "content": str(e),
-                    },
-                    "done": True,
-                },
-                status_code=200,
-            )
-
-    # TODO: Using a router prefix breaks this, somehow
-    @ollama_forwarder.head("/ollama-proxy/{ollama_head_path:path}")
-    async def proxy_head(
-            request: starlette.requests.Request,
-            ollama_head_path,
-    ):
-        try:
-            return await forward_request_nolog(ollama_head_path, request)
-        except httpx.ConnectError:
-            return starlette.responses.Response(status_code=500)
-
-    @ollama_forwarder.get("/ollama-proxy/{ollama_get_path:path}")
-    @ollama_forwarder.post("/ollama-proxy/{ollama_post_path:path}")
+    @ollama_forwarder.get("{ollama_get_path:path}")
+    @ollama_forwarder.post("{ollama_post_path:path}")
     async def proxy_get_post(
             request: starlette.requests.Request,
             ollama_get_path: str | None = None,
@@ -301,4 +307,19 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
 
         return await forward_request(request, audit_db)
 
-    app.include_router(ollama_forwarder)
+    if force_ollama_rag:
+        app.include_router(ollama_forwarder, prefix="/ollama-proxy")
+    else:
+        app.include_router(ollama_forwarder, prefix="/ollama-proxy-rag")
+
+    # TODO: Using a router prefix breaks this, somehow
+    @app.head(
+        "/ollama-proxy-rag/" if force_ollama_rag else "/ollama-proxy/"
+    )
+    async def proxy_head(
+            request: starlette.requests.Request,
+    ):
+        try:
+            return await forward_request_nolog("/", request)
+        except httpx.ConnectError:
+            return starlette.responses.Response(status_code=500)

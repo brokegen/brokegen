@@ -120,9 +120,6 @@ async def init_app(app: FastAPI):
 @click.option('--print-uvicorn-access-log', default=True, show_default=True,
               help='Print all HTTP requests/response codes',
               type=click.BOOL)
-@click.option('--force-ollama-rag', default=False, show_default=True,
-              help='Load FAISS files from --data-dir, and apply them to any ollama-proxy /api/chat calls',
-              type=click.BOOL)
 @click.option('--install-terminate-endpoint', default=False, show_default=True,
               help='Add /terminate endpoint that will halt the server. '
                    '(Sometimes needed due to how PyInstaller or Swift handle processes.)',
@@ -136,7 +133,6 @@ def run_proxy(
         trace_sqlalchemy: bool,
         trace_fastapi_http: bool,
         print_uvicorn_access_log: bool,
-        force_ollama_rag: bool,
         install_terminate_endpoint: bool,
 ):
     numeric_log_level = getattr(logging, str(log_level).upper(), None)
@@ -259,7 +255,8 @@ def run_proxy(
     )
 
     # Ollama proxy & emulation
-    providers_registry.ollama.forwarding_routes.install_forwards(app, force_ollama_rag)
+    providers_registry.ollama.forwarding_routes.install_forwards(app, force_ollama_rag=False)
+    providers_registry.ollama.forwarding_routes.install_forwards(app, force_ollama_rag=True)
     client_ollama.emulate.install_forwards(app)
 
     # Direct test points, only used in Swagger test UI
