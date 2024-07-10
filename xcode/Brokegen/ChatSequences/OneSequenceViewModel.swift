@@ -53,7 +53,13 @@ class OneSequenceViewModel: ObservableObject {
     var showSystemPromptOverride: Bool = false
 
     convenience init(_ sequence: ChatSequence, chatService: ChatSyncService, appSettings: AppSettings, chatSettingsService: CSCSettingsService) {
-        self.init(sequence: sequence, chatService: chatService, settings: chatSettingsService.settings(for: sequence), chatSettingsService: chatSettingsService, appSettings: appSettings)
+        self.init(
+            sequence: sequence,
+            chatService: chatService,
+            settings: chatSettingsService.settings(for: sequence.serverId),
+            chatSettingsService: chatSettingsService,
+            appSettings: appSettings
+        )
     }
 
     init(
@@ -154,6 +160,16 @@ class OneSequenceViewModel: ObservableObject {
             else {
                 self.responseInEdit!.content!.append(messageFragment)
             }
+        }
+
+        if let promptWithTemplating = jsonData["prompt_with_templating"].string {
+            let templated = TemporaryChatMessage(
+                role: "user (templated)",
+                content: promptWithTemplating,
+                createdAt: Date.now
+            )
+
+            sequence.messages.append(.temporary(templated))
         }
 
         if jsonData["done"].boolValue {

@@ -118,6 +118,12 @@ async def do_continuation(
         history_db.add(response_sequence)
         history_db.commit()
 
+        # Return a chunk that includes the entire context-y prompt.
+        # This is marked a separate packet to guard against overflows and similar.
+        yield {
+            "prompt_with_templating": prompt_with_templating,
+        }
+
         # Return fields that the client probably cares about
         yield {
             "new_message_id": response_sequence.current_message,

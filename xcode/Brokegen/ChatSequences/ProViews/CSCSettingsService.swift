@@ -9,8 +9,8 @@ class CSCSettingsService: ObservableObject {
     @ObservationIgnored public var useSimplifiedSequenceViews: Bool = true
 
     @ObservationIgnored let defaults: PersistentDefaultCSUISettings = PersistentDefaultCSUISettings()
-    var perSequenceUiSettings: [ChatSequence : OverrideCSUISettings] = [:]
-    var perSequenceInferenceSettings: [ChatSequence : CSInferenceSettings] = [:]
+    var perSequenceUiSettings: [ChatSequenceServerID : OverrideCSUISettings] = [:]
+    var perSequenceInferenceSettings: [ChatSequenceServerID : CSInferenceSettings] = [:]
 
     @Observable
     class SettingsProxy: ObservableObject {
@@ -107,24 +107,24 @@ class CSCSettingsService: ObservableObject {
         }
     }
 
-    public func settings(for sequence: ChatSequence) -> SettingsProxy {
-        var uiSettings = perSequenceUiSettings[sequence]
+    public func settings(for sequenceId: ChatSequenceServerID) -> SettingsProxy {
+        var uiSettings = perSequenceUiSettings[sequenceId]
         if uiSettings == nil {
             uiSettings = OverrideCSUISettings()
-            perSequenceUiSettings[sequence] = uiSettings
+            perSequenceUiSettings[sequenceId] = uiSettings
         }
 
-        var inferenceSettings = perSequenceInferenceSettings[sequence]
+        var inferenceSettings = perSequenceInferenceSettings[sequenceId]
         if inferenceSettings == nil {
             inferenceSettings = CSInferenceSettings()
-            perSequenceInferenceSettings[sequence] = inferenceSettings
+            perSequenceInferenceSettings[sequenceId] = inferenceSettings
         }
 
         return SettingsProxy(defaults: defaults, override: uiSettings!, inference: inferenceSettings!)
     }
 
-    public func registerSettings(_ settings: SettingsProxy, for sequence: ChatSequence) {
-        perSequenceUiSettings[sequence] = settings.override
-        perSequenceInferenceSettings[sequence] = settings.inference
+    public func registerSettings(_ settings: SettingsProxy, for sequenceId: ChatSequenceServerID) {
+        perSequenceUiSettings[sequenceId] = settings.override
+        perSequenceInferenceSettings[sequenceId] = settings.inference
     }
 }

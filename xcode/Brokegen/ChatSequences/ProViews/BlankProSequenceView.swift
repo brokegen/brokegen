@@ -24,7 +24,7 @@ struct BlankProSequenceView: View {
                 let constructedSequence: ChatSequence? = await viewModel.requestSave()
                 if constructedSequence != nil {
                     DispatchQueue.main.sync {
-                        viewModel.chatSettingsService.registerSettings(viewModel.settings, for: constructedSequence!)
+                        viewModel.chatSettingsService.registerSettings(viewModel.settings, for: constructedSequence!.serverId)
 
                         let newViewModel: OneSequenceViewModel = viewModel.chatService.addClientModel(fromBlank: viewModel, for: constructedSequence!)
 
@@ -567,7 +567,7 @@ struct BlankProSequenceView: View {
             let constructedSequence: ChatSequence? = await viewModel.requestSave()
             if constructedSequence != nil {
                 DispatchQueue.main.async {
-                    viewModel.chatSettingsService.registerSettings(viewModel.settings, for: constructedSequence!)
+                    viewModel.chatSettingsService.registerSettings(viewModel.settings, for: constructedSequence!.serverId)
 
                     let newViewModel: OneSequenceViewModel = viewModel.chatService.addClientModel(fromBlank: viewModel, for: constructedSequence!)
                     let continuedModel = newViewModel.requestContinue(model: newViewModel.continuationInferenceModel?.serverId ?? viewModel.appSettings.defaultInferenceModel?.serverId, withRetrieval: withRetrieval)
