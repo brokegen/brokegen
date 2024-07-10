@@ -78,7 +78,10 @@ def do_capture_chat_messages(
         if prior_sequence is not None:
             sequence_in.human_desc = prior_sequence.human_desc
             sequence_in.parent_sequence = prior_sequence.id
-            sequence_in.inference_error = "[unknown, skimmed from /api/chat]"
+            if message_in.role == "user":
+                pass
+            else:
+                sequence_in.inference_error = "[unknown, skimmed from /api/chat]"
 
         history_db.add(sequence_in)
         history_db.commit()
