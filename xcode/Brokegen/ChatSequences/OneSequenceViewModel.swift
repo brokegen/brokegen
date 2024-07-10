@@ -164,7 +164,7 @@ class OneSequenceViewModel: ObservableObject {
 
         if let promptWithTemplating = jsonData["prompt_with_templating"].string {
             let templated = TemporaryChatMessage(
-                role: "user (templated)",
+                role: "user prompt (with model template + RAG context)",
                 content: promptWithTemplating,
                 createdAt: Date.now
             )

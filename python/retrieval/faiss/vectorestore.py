@@ -123,8 +123,6 @@ class VectorStoreReadOnly:
                     self.embedder,
                     shard_id,
                     allow_dangerous_deserialization=True)
-                logger.info(f"Loaded {len(new_vectordb.index_to_docstore_id):_} embeddings "
-                            f"from \"{parent_dir}\" / \"{shard_id}\"")
 
                 return new_vectordb
 
@@ -165,5 +163,5 @@ class VectorStoreReadOnly:
             return
 
         new_entries_count = len(self.unified_vectordb.index_to_docstore_id)
-        logger.debug(f"Merged {new_entries_count - original_entries_count:_} into main memory store"
+        logger.debug(f"Merged {new_entries_count - original_entries_count:_} embeddings into main memory store"
                      f" => {new_entries_count:_} total entries")

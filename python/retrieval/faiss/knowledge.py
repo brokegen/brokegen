@@ -117,8 +117,10 @@ class KnowledgeSingleton(_Borg):
         async def load_from(parent_dir: str, shard_id: VectorStoreShardID):
             return store._load_from(parent_dir, shard_id)
 
-        with StatusContext("KnowledgeSingleton.load_queued_data_dirs()", status_holder):
-            with RAMEstimator(logger.info, "KnowledgeSingleton.load_queued_data_dirs()"):
+        with StatusContext("KnowledgeSingleton.load_queued_data_dirs_scatter_gather()", status_holder):
+            with RAMEstimator(logger.info,
+                              "KnowledgeSingleton.load_queued_data_dirs_scatter_gather()",
+                              manage_tracemalloc_hooks=True):
                 shard_loaders: list[Awaitable[VectorStoreShard | None]] = [
                     load_from(parent_dir, shard_id)
                     for (parent_dir, shard_id)
@@ -151,17 +153,20 @@ class KnowledgeSingleton(_Borg):
             return store._load_from(parent_dir, shard_id)
 
         with StatusContext("KnowledgeSingleton.load_queued_data_dirs()", status_holder):
-            shards_generated = list(shards_generator())
-            shards_total = len(shards_generated)
+            with RAMEstimator(logger.debug,
+                              "KnowledgeSingleton.load_queued_data_dirs()",
+                              manage_tracemalloc_hooks=True):
+                shards_generated = list(shards_generator())
+                shards_total = len(shards_generated)
 
-            for index, (parent_dir, shard_id) in enumerate(shards_generated):
-                # Yield to other coroutines, particularly emit_keepalive_chunks()
-                await asyncio.sleep(0)
-                with RAMEstimator(logger.debug, shard_id):
-                    status_holder.set(f"KnowledgeSingleton loading {index + 1} of {shards_total}: {shard_id}")
-                    maybe_shard = await load_from(parent_dir, shard_id)
-                    if maybe_shard is not None:
-                        store._copy_in(maybe_shard, destructive=True)
+                for index, (parent_dir, shard_id) in enumerate(shards_generated):
+                    # Yield to other coroutines, particularly emit_keepalive_chunks()
+                    await asyncio.sleep(0)
+                    with RAMEstimator(logger.debug, shard_id):
+                        status_holder.set(f"KnowledgeSingleton loading {index + 1} of {shards_total}: {shard_id}")
+                        maybe_shard = await load_from(parent_dir, shard_id)
+                        if maybe_shard is not None:
+                            store._copy_in(maybe_shard, destructive=True)
 
     def load_shards_from(
             self,
