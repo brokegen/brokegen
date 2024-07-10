@@ -100,7 +100,7 @@ async def do_continuation(
             consolidated_messages = list(messages_list)
             consolidated_messages.append(ChatMessage.model_validate(response_pair[1]))
 
-            name = await autoname_sequence(messages_list, inference_model, status_holder)
+            name = await autoname_sequence(consolidated_messages, inference_model, status_holder)
             logger.info(f"Auto-generated chat title is {len(name)} chars: {name=}")
             response_pair[0].human_desc = name
 
