@@ -87,7 +87,7 @@ class OneSequenceViewModel: ObservableObject {
     func refreshSequenceData() {
         Task {
             if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
-                DispatchQueue.main.async {
+                DispatchQueue.main.sync {
                     self.chatService.updateSequence(withSameId: refreshedSequence)
                 }
             }
@@ -354,7 +354,7 @@ class OneSequenceViewModel: ObservableObject {
             let appendResult = try? await self.save()
             guard appendResult != nil else { return }
 
-            DispatchQueue.main.async {
+            DispatchQueue.main.sync {
                 let originalSequenceId = self.sequence.serverId
                 self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: appendResult!)
                 self.promptInEdit = ""

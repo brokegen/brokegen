@@ -168,7 +168,7 @@ struct BlankOneSequenceView: View {
                 return
             }
 
-            DispatchQueue.main.async {
+            DispatchQueue.main.sync {
                 chatService.updateSequence(withSameId: nextSequence!)
                 
                 pathHost.push(

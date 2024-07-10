@@ -43,7 +43,7 @@ class OneShotProcess: Job {
         }
 
         task!.terminationHandler = { _ in
-            DispatchQueue.main.async {
+            DispatchQueue.main.sync {
                 self.task = nil
                 self.status = .stopped
             }
@@ -61,6 +61,7 @@ class OneShotProcess: Job {
             guard dataAsString != nil else { return }
             guard dataAsString!.count > 0 else { return }
 
+            // TODO: Should this be .sync?
             DispatchQueue.main.async {
                 self.displayedOutput += dataAsString!
                 self.status = .startedWithOutput
@@ -99,7 +100,7 @@ class OneShotProcess: Job {
                 task?.waitUntilExit()
                 task = nil
 
-                DispatchQueue.main.async {
+                DispatchQueue.main.sync {
                     self.status = .stopped
                 }
                 continuation.resume()

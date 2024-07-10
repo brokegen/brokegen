@@ -44,7 +44,7 @@ class DefaultChatSyncService: ChatSyncService {
             if let resultData: Data = try? await self.postDataBlocking(nil, endpoint: endpointBuilder) {
                 if let autoname: String = JSON(resultData)["autoname"].string {
                     let autonamedSequence = sequence.replaceHumanDesc(desc: autoname)
-                    DispatchQueue.main.async {
+                    DispatchQueue.main.sync {
                         self.updateSequence(withSameId: autonamedSequence)
                     }
                 }
@@ -77,7 +77,7 @@ class DefaultChatSyncService: ChatSyncService {
             guard result != nil else { return }
 
             let updatedSequence = sequence.replaceUserPinned(pinned: userPinned)
-            DispatchQueue.main.async {
+            DispatchQueue.main.sync {
                 self.updateSequence(withSameId: updatedSequence)
             }
         }

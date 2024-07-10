@@ -65,7 +65,7 @@ class ManagedService: Job {
         currentProcess.environment = mergedEnvironment
 
         currentProcess.terminationHandler = { _ in
-            DispatchQueue.main.async {
+            DispatchQueue.main.sync {
                 if let index = self.processes.firstIndex(of: currentProcess) {
                     self.processes.remove(at: index)
                 }
@@ -85,6 +85,7 @@ class ManagedService: Job {
             guard dataAsString != nil else { return }
             guard dataAsString!.count > 0 else { return }
 
+            // TODO: Should this be .sync?
             DispatchQueue.main.async {
                 // Truncate the output to 64k characters, because we rarely care about history.
                 if self.displayedOutput.count > 64_000 {
@@ -225,7 +226,7 @@ class ManagedService: Job {
                 }
                 processes.removeAll()
 
-                DispatchQueue.main.async {
+                DispatchQueue.main.sync {
                     self.status = .stopped
                 }
             }

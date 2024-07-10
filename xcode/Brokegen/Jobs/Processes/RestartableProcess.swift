@@ -38,7 +38,7 @@ class RestartableProcess: Job {
         currentProcess.arguments = arguments
 
         currentProcess.terminationHandler = { _ in
-            DispatchQueue.main.async {
+            DispatchQueue.main.sync {
                 if let index = self.processes.firstIndex(of: currentProcess) {
                     self.processes.remove(at: index)
                 }
@@ -58,6 +58,7 @@ class RestartableProcess: Job {
             guard dataAsString != nil else { return }
             guard dataAsString!.count > 0 else { return }
 
+            // TODO: Should this handler be .sync?
             DispatchQueue.main.async {
                 if self.displayedOutput.count > 256_000 {
                     self.displayedOutput = String(self.displayedOutput.suffix(128_000))
@@ -105,7 +106,7 @@ class RestartableProcess: Job {
                 }
                 processes.removeAll()
 
-                DispatchQueue.main.async {
+                DispatchQueue.main.sync {
                     self.status = .stopped
                 }
                 continuation.resume()
