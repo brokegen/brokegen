@@ -1,8 +1,9 @@
 import copy
 import logging
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import Enum
-from typing import TypeAlias
+from typing import TypeAlias, Callable, Any
 
 import langchain_community
 import langchain_core
@@ -18,6 +19,48 @@ VectorStoreShard: TypeAlias = langchain_community.vectorstores.FAISS
 VectorStoreShardID: TypeAlias = str
 
 VectorStoreUnified: TypeAlias = langchain_community.vectorstores.FAISS
+
+
+class BlockTimer:
+    start_time: datetime
+
+    def __init__(
+            self,
+            log_fn: Callable[[str], Any],
+            desc: str | None = None,
+            print_limit_msec: float = 2,
+    ):
+        self.log_fn = log_fn or print
+        self.desc = desc
+        self.print_limit_msec = print_limit_msec
+
+    def __enter__(self):
+        self.start_time = datetime.now(tz=timezone.utc)
+        return self
+
+    def __exit__(self, exc_type, exc_value, tb):
+        if exc_value is not None:
+            self.log_fn(f"Exception during {self.desc}: {exc_value}")
+
+        elapsed_sec = (datetime.now(tz=timezone.utc) - self.start_time).total_seconds()
+        if elapsed_sec * 1000.0 < self.print_limit_msec:
+            return
+
+        if abs(elapsed_sec) > 600:
+            time_desc_str = f"{elapsed_sec / 60:_.2f} minutes"
+        elif abs(elapsed_sec) > 1.5:
+            time_desc_str = f"{elapsed_sec:_.3f} seconds"
+        else:
+            time_desc_str = f"{elapsed_sec * 1000.00:_.0f} msec"
+
+        exception_desc = ""
+        if exc_value is not None:
+            exception_desc = f" -- {exc_value}"
+
+        if self.desc:
+            self.log_fn(f"Elapsed time to {self.desc}: {time_desc_str}{exception_desc}")
+        else:
+            self.log_fn(f"Elapsed time: {time_desc_str}{exception_desc}")
 
 
 @dataclass
@@ -74,14 +117,16 @@ class VectorStoreReadOnly:
 
     def _load_from(self, parent_dir: str, shard_id: VectorStoreShardID) -> VectorStoreShard | None:
         try:
-            new_vectordb = FAISS.load_local(
-                parent_dir,
-                self.embedder,
-                shard_id,
-                allow_dangerous_deserialization=True)
-            logger.info(f"Loaded {len(new_vectordb.index_to_docstore_id):_} embeddings "
-                        f"from \"{parent_dir}\" / \"{shard_id}\"")
-            return new_vectordb
+            with BlockTimer(logger.info, f"load from \"{parent_dir}\" / \"{shard_id}\""):
+                new_vectordb = FAISS.load_local(
+                    parent_dir,
+                    self.embedder,
+                    shard_id,
+                    allow_dangerous_deserialization=True)
+                logger.info(f"Loaded {len(new_vectordb.index_to_docstore_id):_} embeddings "
+                            f"from \"{parent_dir}\" / \"{shard_id}\"")
+
+                return new_vectordb
 
         except RuntimeError:
             logger.info(f"Couldn't load \"{shard_id}\" from file, ignoring")
