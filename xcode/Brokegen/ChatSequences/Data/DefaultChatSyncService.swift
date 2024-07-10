@@ -54,13 +54,12 @@ class DefaultChatSyncService: ChatSyncService {
         return nil
     }
 
-    override func renameChatSequence(_ sequence: ChatSequence, to newHumanDesc: String?) -> ChatSequence {
-        // TODO: Make this synchronous, otherwise failures get eaten
-        Task {
-            _ = try? await self.postDataBlocking(
-                nil,
-                endpoint: "/sequences/\(sequence.serverId)/human_desc?value=\(newHumanDesc ?? "")")
-        }
+    override func renameChatSequence(_ sequence: ChatSequence, to newHumanDesc: String?) async -> ChatSequence? {
+        guard newHumanDesc != sequence.humanDesc else { return nil }
+
+        _ = try? await self.postDataBlocking(
+            nil,
+            endpoint: "/sequences/\(sequence.serverId)/human_desc?value=\(newHumanDesc ?? "")")
 
         return sequence.replaceHumanDesc(desc: newHumanDesc)
     }
@@ -68,18 +67,20 @@ class DefaultChatSyncService: ChatSyncService {
     override func pinChatSequence(
         _ sequence: ChatSequence,
         pinned userPinned: Bool
-    ) -> ChatSequence {
-        guard userPinned != sequence.userPinned else { return sequence }
+    ) {
+        guard userPinned != sequence.userPinned else { return }
 
-        // TODO: Figure out how to try and make this synchronous, because otherwise failures still result in client updates.
-        // For now, this succeeds most of the time, but _silently_.
         Task {
-            _ = try? await self.postDataBlocking(
+            let result = try? await self.postDataBlocking(
                 nil,
                 endpoint: "/sequences/\(sequence.serverId)/user_pinned?value=\(userPinned)")
-        }
+            guard result != nil else { return }
 
-        return sequence.replaceUserPinned(pinned: userPinned)
+            let updatedSequence = sequence.replaceUserPinned(pinned: userPinned)
+            DispatchQueue.main.async {
+                self.updateSequence(withSameId: updatedSequence)
+            }
+        }
     }
 
     // MARK: - ChatSequence change members

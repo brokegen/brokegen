@@ -122,16 +122,19 @@ class ChatSyncService: ObservableObject {
         return nil
     }
 
-    func renameChatSequence(_ sequence: ChatSequence, to newHumanDesc: String?) -> ChatSequence {
+    func renameChatSequence(_ sequence: ChatSequence, to newHumanDesc: String?) async -> ChatSequence? {
+        guard newHumanDesc != sequence.humanDesc else { return nil }
         return sequence.replaceHumanDesc(desc: newHumanDesc)
     }
 
     func pinChatSequence(
         _ sequence: ChatSequence,
         pinned userPinned: Bool
-    ) -> ChatSequence {
-        guard userPinned != sequence.userPinned else { return sequence }
-        return sequence.replaceUserPinned(pinned: userPinned)
+    ) {
+        guard userPinned != sequence.userPinned else { return }
+
+        let updatedSequence = sequence.replaceUserPinned(pinned: userPinned)
+        self.updateSequence(withSameId: updatedSequence)
     }
 
     // MARK: - ChatSequence change members

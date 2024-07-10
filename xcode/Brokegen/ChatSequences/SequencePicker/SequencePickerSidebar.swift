@@ -194,8 +194,7 @@ struct MiniSequencePickerSidebar: View {
             
             Section(header: Text("Chat Data")) {
                 Button {
-                    let updatedSequence = chatService.pinChatSequence(sequence, pinned: !sequence.userPinned)
-                    chatService.updateSequence(withSameId: updatedSequence)
+                    chatService.pinChatSequence(sequence, pinned: !sequence.userPinned)
                 } label: {
                     Toggle(isOn: .constant(sequence.userPinned)) {
                         Text("Pin ChatSequence to sidebar")

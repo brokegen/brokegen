@@ -434,8 +434,7 @@ struct ProSequenceView: View {
 
         Section(header: Text("Chat Data")) {
             Button {
-                let updatedSequence = viewModel.chatService.pinChatSequence(viewModel.sequence, pinned: !viewModel.sequence.userPinned)
-                viewModel.chatService.updateSequence(withSameId: updatedSequence)
+                viewModel.chatService.pinChatSequence(viewModel.sequence, pinned: !viewModel.sequence.userPinned)
             } label: {
                 Toggle(isOn: .constant(viewModel.sequence.userPinned)) {
                     Text("Pin ChatSequence to sidebar")

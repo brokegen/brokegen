@@ -170,8 +170,7 @@ struct SequencePickerView: View {
 
         Section(header: Text("Chat Data")) {
             Button {
-                let updatedSequence = chatService.pinChatSequence(sequence, pinned: !sequence.userPinned)
-                chatService.updateSequence(withSameId: updatedSequence)
+                chatService.pinChatSequence(sequence, pinned: !sequence.userPinned)
             } label: {
                 Toggle(isOn: .constant(sequence.userPinned)) {
                     Text("Pin ChatSequence to sidebar")
@@ -248,11 +247,15 @@ struct SequencePickerView: View {
     @ViewBuilder
     func sequenceRow(_ sequence: ChatSequence) -> some View {
         if self.isRenaming.contains(where: { $0 == sequence }) {
-            RenameableSequenceRow(sequence) {
-                let updatedSequence = chatService.renameChatSequence(sequence, to: $0)
-                chatService.updateSequence(withSameId: updatedSequence)
-
-                self.isRenaming.removeAll { $0 == sequence }
+            RenameableSequenceRow(sequence) { newHumanDesc in
+                Task {
+                    if let updatedSequence = try? await chatService.renameChatSequence(sequence, to: newHumanDesc) {
+                        DispatchQueue.main.async {
+                            chatService.updateSequence(withSameId: updatedSequence)
+                            self.isRenaming.removeAll { $0 == sequence }
+                        }
+                    }
+                }
             }
         }
         else {

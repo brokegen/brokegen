@@ -216,7 +216,7 @@ extension DefaultChatSyncService {
         }
         let params = Parameters(
             humanDesc: sequence.displayHumanDesc().isEmpty ? nil : sequence.humanDesc,
-            userPinned: false,
+            userPinned: sequence.userPinned,
             currentMessage: messageId,
             parentSequence: sequence.serverId,
             generatedAt: Date.now,
@@ -227,7 +227,13 @@ extension DefaultChatSyncService {
         let responseData: Data? = try? await postDataBlocking(encodedParams, endpoint: "/sequences")
         guard responseData != nil else { throw ChatSyncServiceError.invalidResponseContentReturned }
 
-        return JSON(responseData!)["sequence_id"].int
+        let responseSequenceId: ChatSequenceServerID? = JSON(responseData!)["sequence_id"].int
+        guard responseSequenceId != nil else { throw ChatSyncServiceError.invalidResponseContentReturned }
+
+        // Now that we're done, un-pin the parent sequence, if needed
+        pinChatSequence(sequence, pinned: false)
+
+        return responseSequenceId
     }
 
     func doConstructNewChatSequence(messageId: ChatMessageServerID, humanDesc: String = "") async throws -> ChatSequenceServerID? {

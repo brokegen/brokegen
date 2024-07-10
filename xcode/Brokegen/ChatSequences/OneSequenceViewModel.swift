@@ -319,10 +319,6 @@ class OneSequenceViewModel: ObservableObject {
                 return
             }
 
-            if sequence.userPinned {
-                // TODO: swap in the "pinned" statuses ourselves
-            }
-
             // Manually (re)construct server data, rather than fetching the same data back.
             var replacementMessages = self.sequence.messages
             replacementMessages.append(.stored(ChatMessage(
