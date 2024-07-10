@@ -90,26 +90,25 @@ async def tee_to_console_output(
         indexer: Callable[[T], str],
         max_buffer_len: int = 120,
 ) -> AsyncIterator[T]:
-    buffer = ""
+    buffer: str = ""
 
     async for chunk_t in primordial_t:
         yield chunk_t
+        buffer += indexer(chunk_t)
+
+        while "\n" in buffer:
+            prefix, suffix = buffer.split("\n", 1)
+            # For output that already includes a newline, don't bother extra-wrapping it.
+            print(prefix)
+            buffer = suffix
 
         if len(buffer) >= max_buffer_len:
-            if "\n" in buffer:
-                # For output that already includes a newline, don't bother extra-wrapping it.
-                print(buffer, end='')
-            else:
-                print(buffer)
-            buffer = indexer(chunk_t)
-        else:
-            buffer += indexer(chunk_t)
+            print(buffer)
+            buffer = ""
 
     if buffer:
-        if "\n" in buffer:
-            print(buffer, end='')
-        else:
-            print(buffer)
+        print(buffer)
+        buffer = ""
 
 
 async def consolidate_and_call(
