@@ -25,6 +25,7 @@ _real_ollama_client = httpx.AsyncClient(
     base_url="http://localhost:11434",
     http2=True,
     proxy=None,
+    trust_env=False,
     cert=None,
     timeout=httpx.Timeout(2.0, read=None),
     max_redirects=0,
