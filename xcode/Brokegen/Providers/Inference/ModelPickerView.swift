@@ -62,7 +62,7 @@ struct ModelPickerView: View {
     }
 
     func isModelAvailable(_ model: FoundationModel) -> Binding<Bool> {
-        return Binding(
+        return Binding<Bool>(
             get: { return self.providerService.availableModels.contains { $0.serverId == model.serverId } },
             set: { _ in }
         )

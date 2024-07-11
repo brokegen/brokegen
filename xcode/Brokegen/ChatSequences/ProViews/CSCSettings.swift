@@ -19,6 +19,9 @@ struct PersistentDefaultCSUISettings {
     @AppStorage("defaultUiSettings.renderAsMarkdown")
     var renderAsMarkdown: Bool = true
 
+    @AppStorage("defaultUiSettings.responseBufferMaxSize")
+    var responseBufferMaxSize: Int = 48
+
     @AppStorage("defaultUiSettings.scrollToBottomOnNew")
     var scrollToBottomOnNew: Bool = true
 

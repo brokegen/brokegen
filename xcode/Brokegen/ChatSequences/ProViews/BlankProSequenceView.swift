@@ -255,7 +255,8 @@ struct BlankProSequenceView: View {
         return viewModel.showUiOptions || viewModel.showInferenceOptions || viewModel.showRetrievalOptions
     }
 
-    @ViewBuilder var lowerVStackOptions: some View {
+    @ViewBuilder
+    var lowerVStackOptions: some View {
         if viewModel.showUiOptions {
             CSCSettingsView(viewModel.settings, sequenceDesc: "draft")
         }

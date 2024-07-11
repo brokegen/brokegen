@@ -140,7 +140,7 @@ class OneSequenceViewModel: ObservableObject {
         }
     }
 
-    private func _parseJSONChunk(_ jsonData: JSON, bufferSize: Int = 48) {
+    private func _parseJSONChunk(_ jsonData: JSON) {
         if let status = jsonData["status"].string {
             serverStatus = status
         }
@@ -150,6 +150,7 @@ class OneSequenceViewModel: ObservableObject {
 
         // TODO: This should actually be about rate of updates, not number.
         // Time + redraw speed are what would make this choppy.
+        let bufferSize = self.settings.defaults.responseBufferMaxSize
         if bufferedResponseContent.count > bufferSize {
             if self.responseInEdit == nil {
                 print("[WARNING] Should not have nil responseInEdit at this point; maintaining buffer size of \(bufferedResponseContent.count)")

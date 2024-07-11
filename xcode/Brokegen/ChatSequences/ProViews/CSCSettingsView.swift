@@ -275,6 +275,42 @@ struct CSCSettingsView: View {
                     .tag(CSInferenceSettings.AutonamingPolicy.summarizeBefore)
             }
             .pickerStyle(.inline)
+
+            HStack {
+                WideToggle(isOn:
+                            Binding(
+                                get: { $settings.defaults.responseBufferMaxSize.wrappedValue > 0 },
+                                set: { newValue in
+                                    print("[TRACE] Trying to set responseBufferMaxSize to \(newValue)")
+                                    if newValue {
+                                        settings.defaults.responseBufferMaxSize = 48
+                                    }
+                                    else {
+                                        settings.defaults.responseBufferMaxSize = 0
+                                    }}),
+                           labelText: "Buffer inference results for more responsive UI")
+
+                Stepper(value: $settings.defaults.responseBufferMaxSize) {
+                    Text("\(settings.defaults.responseBufferMaxSize)")
+                }
+
+                Picker("", selection: $settings.defaults.responseBufferMaxSize) {
+                    Text("disabled")
+                        .tag(0)
+
+                    Text("12")
+                        .tag(12)
+
+                    Text("24")
+                        .tag(24)
+
+                    Text("48")
+                        .tag(48)
+
+                    Text("96")
+                        .tag(96)
+                }
+            } // HStack
         }, label: {
             Text("ChatSequence Generation Options")
         })
