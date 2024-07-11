@@ -73,6 +73,12 @@ async def do_continuation(
             history_db.rollback()
             return
 
+        # Return a chunk that includes the entire context-y prompt.
+        # This is marked a separate packet to guard against overflows and similar.
+        yield {
+            "prompt_with_templating": prompt_with_templating,
+        }
+
         # And now, construct the ChatSequence (which references the InferenceEvent, actually)
         try:
             response_message: ChatMessageOrm | None = construct_assistant_message(
@@ -106,26 +112,19 @@ async def do_continuation(
                 "error": "Failed to create add-on ChatSequence",
                 "done": True,
             }
+            return
 
-            # TODO: Why shouldn't we have this return?
-            # return
+        # Lastly (after inference), do auto-naming, if needed
+        if not response_sequence.human_desc:
+            consolidated_messages = list(messages_list)
+            consolidated_messages.append(ChatMessage.model_validate(response_message))
 
-        # Return a chunk that includes the entire context-y prompt.
-        # This is marked a separate packet to guard against overflows and similar.
-        yield {
-            "prompt_with_templating": prompt_with_templating,
-        }
+            name = await autoname_sequence(consolidated_messages, inference_model, status_holder)
+            logger.info(f"Auto-generated chat title is {len(name)} chars: {name=}")
+            response_sequence.human_desc = name
 
-        # Lastly (after inference), do auto-naming
-        consolidated_messages = list(messages_list)
-        consolidated_messages.append(ChatMessage.model_validate(response_message))
-
-        name = await autoname_sequence(consolidated_messages, inference_model, status_holder)
-        logger.info(f"Auto-generated chat title is {len(name)} chars: {name=}")
-        response_sequence.human_desc = name
-
-        history_db.add(response_sequence)
-        history_db.commit()
+            history_db.add(response_sequence)
+            history_db.commit()
 
         # Return fields that the client probably cares about
         yield {
