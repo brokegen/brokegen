@@ -263,19 +263,3 @@ struct OneSequenceView: View {
     let viewModel = OneSequenceViewModel(sequence, chatService: chatService, appSettings: AppSettings(), chatSettingsService: CSCSettingsService())
     return OneSequenceView(viewModel)
 }
-
-#if os(macOS)
-#Preview(traits: .fixedLayout(width: 800, height: 800)) {
-    VSplitView {
-        GeometryReader{geometry in
-           HSplitView(){
-              Rectangle().foregroundColor(.red).frame(minWidth:200, idealWidth: 200, maxWidth: .infinity)
-              HSplitView(){
-                  Rectangle().foregroundColor(.black).layoutPriority(1)
-                  Rectangle().foregroundColor(.green).frame(minWidth:200, idealWidth: 200, maxWidth: .infinity)
-              }.layoutPriority(1)
-           }.frame(width: geometry.size.width, height: geometry.size.height)
-        }
-    }
-}
-#endif
