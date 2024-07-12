@@ -12,6 +12,7 @@ struct RibbonView: View {
             Text(bigText)
                 .font(.largeTitle)
                 .monospaced()
+                .textSelection(.enabled)
                 .lineSpacing(20)
                 .layoutPriority(0.2)
 

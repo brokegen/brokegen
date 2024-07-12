@@ -17,6 +17,7 @@ struct JobOutputView: View {
                 Text(job.displayedStatus)
                     .monospaced()
                     .font(.title2)
+                    .textSelection(.enabled)
             }
             .frame(maxWidth: .infinity)
             .lineLimit(1...)
@@ -29,6 +30,7 @@ struct JobOutputView: View {
                         Text(splitOutput[index])
                             .monospaced()
                             .font(.title2)
+                            .textSelection(.enabled)
                     }
                 }
                 .padding([.leading, .trailing], 24)
