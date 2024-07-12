@@ -123,12 +123,12 @@ async def convert_chat_to_generate(
                 break_early_on_response=True,
             )]
         else:
-            # TODO: Figure out how/what to truncate
-            existing_content = sum(map(len, templated_messages))
+            existing_content_len = sum(map(len, templated_messages))
+            max_print_len = 280
             logging.debug(
-                f"Existing chat history is {existing_content} chars, "
-                f"adding prompt_override with {len(prompt_override):_} chars:\n"
-                f"{prompt_override[:280]}"
+                f"Existing chat history is {existing_content_len} chars, "
+                f"adding prompt_override with {len(prompt_override):_} chars ({max_print_len=}):\n"
+                f"{prompt_override[:max_print_len]}"
             )
 
             templated_messages.append(await apply_llm_template(

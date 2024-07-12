@@ -31,7 +31,7 @@ async def with_retrieval(
         status_holder: ServerStatusHolder | None = None,
         knowledge: KnowledgeSingleton = get_knowledge(),
 ) -> PromptText | None:
-    with StatusContext(f"Retrieving documents with {retrieval_label=}", status_holder):
+    with StatusContext(f"Retrieving documents with {retrieval_label}", status_holder):
         real_retrieval_policy: RetrievalPolicy | None = None
 
         if retrieval_label.retrieval_policy == "skip":

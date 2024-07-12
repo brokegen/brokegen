@@ -94,7 +94,7 @@ async def do_proxy_chat_rag(
         return ollama_log_indexer(response0_json)
 
     prompt_override: PromptText | None = None
-    with StatusContext(f"Retrieving documents with {retrieval_label=}", status_holder):
+    with StatusContext(f"Retrieving documents with {retrieval_label}", status_holder):
         real_retrieval_policy: RetrievalPolicy | None = None
 
         if retrieval_label.retrieval_policy == "skip":
