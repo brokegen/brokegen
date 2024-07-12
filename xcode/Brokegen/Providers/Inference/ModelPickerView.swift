@@ -140,17 +140,6 @@ struct ModelPickerView: View {
             }
         }
         .background(BackgroundEffectView().ignoresSafeArea())
-        .onAppear {
-            if providerService.availableModels.isEmpty {
-                Task {
-                    do { _ = try await providerService.fetchAllProviders() }
-                    catch { print("[ERROR] Failed to providerService.fetchAllProviders()") }
-
-                    do { try await providerService.fetchAvailableModels() }
-                    catch { print("[ERROR] Failed to providerService.fetchAvailableModels()") }
-                }
-            }
-        }
         .onChange(of: modelSelection) {
             dismiss.callAsFunction()
         }
@@ -164,7 +153,7 @@ struct RefreshableModelPickerView: View {
         VStack(spacing: 0) {
             HStack(spacing: 24) {
                 Button("Refresh", systemImage: "arrow.clockwise") {
-                    Task { try? await providerService.fetchAvailableModels() }
+                    providerService.fetchAvailableModels(repeatUntilSuccess: false)
                 }
                 .buttonStyle(.accessoryBar)
                 .padding(12)

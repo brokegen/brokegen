@@ -45,7 +45,7 @@ struct ProvidersSidebar: View {
                 Text("Available Providers")
             }) {
                 Button("Refresh Providers", systemImage: "arrow.clockwise") {
-                    Task { try? await providerService.fetchAllProviders() }
+                    Task { try? await providerService.fetchAllProviders(repeatUntilSuccess: false) }
                 }
                 .foregroundStyle(Color.accentColor)
                 .padding(.leading, -24)
@@ -78,10 +78,9 @@ struct ProvidersSidebar: View {
         })
         .onAppear {
             Task {
-                do {
-                    providers.append(contentsOf: try await providerService.fetchAllProviders())
+                if let fetchedProviders = try? await providerService.fetchAllProviders(repeatUntilSuccess: false) {
+                    providers.append(contentsOf: fetchedProviders)
                 }
-                catch {}
             }
         }
     }
@@ -108,10 +107,9 @@ struct ProviderPickerView: View {
         }
         .onAppear {
             Task {
-                do {
-                    providers.append(contentsOf: try await providerService.fetchAllProviders())
+                if let fetchedProviders = try? await providerService.fetchAllProviders(repeatUntilSuccess: false) {
+                    providers.append(contentsOf: fetchedProviders)
                 }
-                catch {}
             }
         }
     }

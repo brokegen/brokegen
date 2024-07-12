@@ -30,8 +30,8 @@ struct BrokegenApp: App {
     init() {
         let providerService = DefaultProviderService(serverBaseURL, configuration: configuration)
         self.providerService = providerService
-        Task { try? await providerService.fetchAllProviders() }
-        Task { try? await providerService.fetchAvailableModels() }
+        Task { try? await providerService.fetchAllProviders(repeatUntilSuccess: true) }
+        providerService.fetchAvailableModels(repeatUntilSuccess: true)
 
         let appSettings = AppSettings()
         self.appSettings = appSettings

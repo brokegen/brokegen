@@ -50,7 +50,9 @@ extension ProviderClientModel {
 }
 
 extension DefaultProviderService {
-    public func doFetchAllProviders() async throws -> [ProviderClientModel] {
+    public func doFetchAllProviders(
+        repeatUntilSuccess: Bool
+    ) async throws -> [ProviderClientModel] {
         var allProviders: [ProviderClientModel] = []
 
         let providersData: Data? = await getDataBlocking("/providers/any/.discover")
@@ -63,6 +65,10 @@ extension DefaultProviderService {
             else {
                 print("[ERROR] Couldn't parse a providerJson blob")
             }
+        }
+
+        if allProviders.isEmpty && repeatUntilSuccess {
+            print("[WARNING] DefaultProviderService.doFetchAllProviders(repeatUntilSuccess: true) not implemented, will not repeat")
         }
 
         return allProviders

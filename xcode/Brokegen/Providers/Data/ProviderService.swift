@@ -11,9 +11,9 @@ enum ProviderServiceError: Error {
 class ProviderService: ObservableObject {
     var allModels: [FoundationModel] = []
 
-    func fetchAvailableModels() async throws {}
+    func fetchAvailableModels(repeatUntilSuccess: Bool) {}
 
-    public func fetchAllProviders() async throws -> [ProviderClientModel] {
+    public func fetchAllProviders(repeatUntilSuccess: Bool) async throws -> [ProviderClientModel] {
         return []
     }
 
@@ -70,6 +70,8 @@ class DefaultProviderService: ProviderService {
     @ObservationIgnored var serverBaseURL: String
     @ObservationIgnored let session: Alamofire.Session
 
+    @ObservationIgnored var modelFetcher: Task<Void, Never>? = nil
+
     init(_ serverBaseURL: String, configuration: URLSessionConfiguration) {
         self.serverBaseURL = serverBaseURL
         self.session = Alamofire.Session(configuration: configuration)
@@ -93,19 +95,49 @@ class DefaultProviderService: ProviderService {
         }
     }
 
-    override func fetchAvailableModels() async throws {
-        let oldCount = allModels.count
-        let allModelsData = await getDataBlocking("/providers/any/any/models")
-        guard allModelsData != nil else { throw ProviderServiceError.noResponseContentReturned }
+    func doFetchAvailableModels() async throws {
+        let allModelsData = await self.getDataBlocking("/providers/any/any/models")
+        guard allModelsData != nil else { throw ProviderServiceError.invalidResponseContentReturned }
 
+        let oldCount = self.allModels.count
         for (_, modelData) in JSON(allModelsData!) {
             let FoundationModel = FoundationModel(modelData.dictionaryValue)
             await self.replaceModelById(FoundationModel.serverId, with: FoundationModel)
         }
-        print("[TRACE] Updated data for \(JSON(allModelsData!).arrayValue.count) foundation models (\(oldCount) => \(allModels.count))")
+        print("[TRACE] Updated data for \(JSON(allModelsData!).arrayValue.count) foundation models (\(oldCount) => \(self.allModels.count))")
     }
 
-    override func fetchAllProviders() async throws -> [ProviderClientModel] {
-        return try await doFetchAllProviders()
+    override func fetchAvailableModels(repeatUntilSuccess: Bool) {
+        print("[TRACE] DefaultProviderService.fetchAvailableModels() starting")
+        guard modelFetcher == nil else { return }
+
+        if !repeatUntilSuccess {
+            modelFetcher = Task {
+                try? await doFetchAvailableModels()
+
+                DispatchQueue.main.async {
+                    self.modelFetcher = nil
+                }
+            }
+        }
+        else {
+            modelFetcher = Task {
+                do {
+                    try await doFetchAvailableModels()
+                }
+                catch {
+                    try? await Task.sleep(nanoseconds: 5_000_000_000)
+
+                    DispatchQueue.main.async {
+                        self.modelFetcher = nil
+                        self.fetchAvailableModels(repeatUntilSuccess: true)
+                    }
+                }
+            }
+        }
+    }
+
+    override func fetchAllProviders(repeatUntilSuccess: Bool) async throws -> [ProviderClientModel] {
+        return try await doFetchAllProviders(repeatUntilSuccess: repeatUntilSuccess)
     }
 }
