@@ -51,6 +51,7 @@ struct CSCSettingsView: View {
 
                     Text("this sequence")
                         .gridColumnAlignment(.center)
+                        .frame(minWidth: 288)
                 }
                 Divider()
 
@@ -117,6 +118,7 @@ struct CSCSettingsView: View {
 
                     Text("this sequence")
                         .gridColumnAlignment(.center)
+                        .frame(minWidth: 240)
                 }
                 Divider()
 
@@ -145,16 +147,11 @@ struct CSCSettingsView: View {
                         .disabled(settings.showSeparateRetrievalButton)
 
                     if settings.showSeparateRetrievalButton {
-                        ZStack {
-                            Picker(selection: .constant(false), content: {
-                                Text("")
-                            }, label: {})
-                                .disabled(true)
-
-                            Text("[separate retrieval button is shown, disabling]")
-                                .lineLimit(1)
-                                .foregroundStyle(Color(.disabledControlTextColor))
-                        }
+                        Picker(selection: .constant(false), content: {
+                            Text("[separate retrieval button]")
+                                .tag(false)
+                        }, label: {})
+                        .disabled(true)
                     }
                     else {
                         Picker(selection: $settings.override.forceRetrieval, content: {
@@ -208,7 +205,7 @@ struct CSCSettingsView: View {
                             Text("custom")
                                 .tag(settings.defaults.responseBufferMaxSize)
                         }
-                        .frame(maxWidth: 96)
+                        .frame(minWidth: 96)
 
                         Text("(customize:")
 
