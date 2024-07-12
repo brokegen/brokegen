@@ -33,7 +33,6 @@ extension ProviderClientModel {
             throw ProviderServiceError.invalidResponseContentReturned
         }
 
-        // TODO: Wasn't the whole point of SwiftyJSON that we don't unpack values manually?
         let label = ProviderLabel(
             type: json[0]["type"].string!,
             id: json[0]["id"].string!
@@ -50,27 +49,13 @@ extension ProviderClientModel {
 }
 
 extension DefaultProviderService {
-    public func doFetchAllProviders(
-        repeatUntilSuccess: Bool
-    ) async throws -> [ProviderClientModel] {
-        var allProviders: [ProviderClientModel] = []
-
+    public func doFetchAllProviders() async throws {
         let providersData: Data? = await getDataBlocking("/providers/any/.discover")
         guard providersData != nil else { throw ProviderServiceError.noResponseContentReturned }
 
         for (_, providerJson) in JSON(providersData!) {
-            if let newProvider = try? ProviderClientModel.fromJson(providerJson) {
-                allProviders.append(newProvider)
-            }
-            else {
-                print("[ERROR] Couldn't parse a providerJson blob")
-            }
+            let newProvider = try ProviderClientModel.fromJson(providerJson)
+            allProviders.append(newProvider)
         }
-
-        if allProviders.isEmpty && repeatUntilSuccess {
-            print("[WARNING] DefaultProviderService.doFetchAllProviders(repeatUntilSuccess: true) not implemented, will not repeat")
-        }
-
-        return allProviders
     }
 }

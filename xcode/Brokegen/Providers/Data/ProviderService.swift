@@ -10,12 +10,9 @@ enum ProviderServiceError: Error {
 @Observable
 class ProviderService: ObservableObject {
     var allModels: [FoundationModel] = []
+    var allProviders: [ProviderClientModel] = []
 
     func fetchAvailableModels(repeatUntilSuccess: Bool) {}
-
-    public func fetchAllProviders(repeatUntilSuccess: Bool) async throws -> [ProviderClientModel] {
-        return []
-    }
 
     var availableModels: [FoundationModel] {
         get {
@@ -25,6 +22,12 @@ class ProviderService: ObservableObject {
                 || $0.displayStats?.count ?? 0 > 1
             }
         }
+    }
+
+    public func fetchAllProviders(repeatUntilSuccess: Bool) {}
+
+    var availableProviders: [ProviderClientModel] {
+        get { allProviders }
     }
 
     @MainActor
@@ -71,6 +74,7 @@ class DefaultProviderService: ProviderService {
     @ObservationIgnored let session: Alamofire.Session
 
     @ObservationIgnored var modelFetcher: Task<Void, Never>? = nil
+    @ObservationIgnored var providerFetcher: Task<Void, Never>? = nil
 
     init(_ serverBaseURL: String, configuration: URLSessionConfiguration) {
         self.serverBaseURL = serverBaseURL
@@ -97,7 +101,7 @@ class DefaultProviderService: ProviderService {
 
     func doFetchAvailableModels() async throws {
         let allModelsData = await self.getDataBlocking("/providers/any/any/models")
-        guard allModelsData != nil else { throw ProviderServiceError.invalidResponseContentReturned }
+        guard allModelsData != nil else { throw ProviderServiceError.noResponseContentReturned }
 
         let oldCount = self.allModels.count
         for (_, modelData) in JSON(allModelsData!) {
@@ -125,7 +129,7 @@ class DefaultProviderService: ProviderService {
                 do {
                     try await doFetchAvailableModels()
                 }
-                catch {
+                catch ProviderServiceError.noResponseContentReturned {
                     try? await Task.sleep(nanoseconds: 5_000_000_000)
 
                     DispatchQueue.main.async {
@@ -133,11 +137,42 @@ class DefaultProviderService: ProviderService {
                         self.fetchAvailableModels(repeatUntilSuccess: true)
                     }
                 }
+                catch {
+                    print("[ERROR] Couldn't fetchAvailableModels(): \(error)")
+                }
             }
         }
     }
 
-    override func fetchAllProviders(repeatUntilSuccess: Bool) async throws -> [ProviderClientModel] {
-        return try await doFetchAllProviders(repeatUntilSuccess: repeatUntilSuccess)
+    override func fetchAllProviders(repeatUntilSuccess: Bool) {
+        guard providerFetcher == nil else { return }
+
+        if !repeatUntilSuccess {
+            providerFetcher = Task {
+                try? await doFetchAllProviders()
+
+                DispatchQueue.main.async {
+                    self.providerFetcher = nil
+                }
+            }
+        }
+        else {
+            providerFetcher = Task {
+                do {
+                    try await doFetchAllProviders()
+                }
+                catch ProviderServiceError.noResponseContentReturned {
+                    try? await Task.sleep(nanoseconds: 7_000_000_000)
+
+                    DispatchQueue.main.async {
+                        self.providerFetcher = nil
+                        self.fetchAllProviders(repeatUntilSuccess: true)
+                    }
+                }
+                catch {
+                    print("[ERROR] Couldn't fetchAllProviders(): \(error)")
+                }
+            }
+        }
     }
 }

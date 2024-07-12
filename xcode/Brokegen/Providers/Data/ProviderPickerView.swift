@@ -37,15 +37,13 @@ struct RefreshingRow: View {
 struct ProvidersSidebar: View {
     @ObservedObject var providerService: ProviderService
 
-    @State var providers: [ProviderClientModel] = []
-
     var body: some View {
         NavigationSplitView(sidebar: {
             AppSidebarSection(label: {
                 Text("Available Providers")
             }) {
                 Button("Refresh Providers", systemImage: "arrow.clockwise") {
-                    Task { try? await providerService.fetchAllProviders(repeatUntilSuccess: false) }
+                    providerService.fetchAllProviders(repeatUntilSuccess: false)
                 }
                 .foregroundStyle(Color.accentColor)
                 .padding(.leading, -24)
@@ -55,7 +53,7 @@ struct ProvidersSidebar: View {
 
                 ScrollView {
                     LazyVStack(spacing: 24) {
-                        ForEach(providers) { provider in
+                        ForEach(providerService.availableProviders) { provider in
                             NavigationLink(destination: {
                                 Text(provider.label.type)
                                 Text(provider.label.id)
@@ -76,39 +74,23 @@ struct ProvidersSidebar: View {
         }, detail: {
             ProviderPickerView(providerService: providerService)
         })
-        .onAppear {
-            Task {
-                if let fetchedProviders = try? await providerService.fetchAllProviders(repeatUntilSuccess: false) {
-                    providers.append(contentsOf: fetchedProviders)
-                }
-            }
-        }
     }
 }
 
 struct ProviderPickerView: View {
     @ObservedObject var providerService: ProviderService
 
-    @State var providers: [ProviderClientModel] = []
-
     var body: some View {
         ScrollView {
-            if providers.isEmpty {
+            if providerService.availableProviders.isEmpty {
                 Text("[no providers available]")
                     .frame(height: 400)
             }
             else {
                 VStack(spacing: 24) {
-                    ForEach(providers) { provider in
+                    ForEach(providerService.availableProviders) { provider in
                         Text("\(provider.label.type) -- \(provider.label.id)")
                     }
-                }
-            }
-        }
-        .onAppear {
-            Task {
-                if let fetchedProviders = try? await providerService.fetchAllProviders(repeatUntilSuccess: false) {
-                    providers.append(contentsOf: fetchedProviders)
                 }
             }
         }
