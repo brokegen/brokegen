@@ -97,8 +97,8 @@ async def do_continuation(
                 history_db,
             )
 
-            if not safe_get(consolidated_response, 'done'):
-                logger.debug(f"Generated ChatSequence#{response_sequence.id}, but response was marked not-done")
+            if safe_get(consolidated_response, 'done'):
+                logger.warning(f"ChatSequence#{response_sequence.id} continuation received \"done\", but we still have JSON chunks to send")
 
         except sqlalchemy.exc.SQLAlchemyError:
             logger.exception(f"Failed to create add-on ChatSequence from {consolidated_response}")
