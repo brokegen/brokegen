@@ -482,7 +482,6 @@ struct ProSequenceView: View {
                     allowClear: true)
                 .disabled(viewModel.appSettings.stillPopulating)
                 .foregroundStyle(Color(.disabledControlTextColor))
-                .contentShape(Rectangle())
                 .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
 
                 Spacer()
