@@ -44,15 +44,6 @@ struct FoundationModelSettingsView: View {
                     )
                     .disabled(appSettings.stillPopulating)
 
-//                    OFMPicker(
-//                        boxLabel: "Preferred embedding model:",
-//                        selectedModelBinding: $appSettings.preferredEmbeddingModel,
-//                        showModelPicker: $showPreferredEmbeddingModelPicker,
-//                        geometry: geometry,
-//                        allowClear: true
-//                    )
-//                    .disabled(appSettings.stillPopulating)
-
                     Spacer()
                         .frame(minHeight: 0)
                 }
