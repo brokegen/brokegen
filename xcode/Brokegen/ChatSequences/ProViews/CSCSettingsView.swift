@@ -296,7 +296,6 @@ struct CSCSettingsView: View {
                 GeometryReader { geometry in
                     Spacer()
                         .onAppear {
-                            print("[TRACE] Setting CSCSettingsView.generationWidth to \(geometry.size.width)")
                             generationWidth = geometry.size.width
                         }
                 }

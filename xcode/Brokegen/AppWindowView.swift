@@ -81,6 +81,9 @@ struct AppWindowView: View {
                 })
             }
         }
+        .frame(idealWidth: 960)
+        // Without this, shrinking the window shows a weird grey blank area on the left
+        .frame(minWidth: 640)
         .environmentObject(windowState.pathHost)
         .environmentObject(windowState.blankViewModel)
         .focusedSceneObject(windowState)
