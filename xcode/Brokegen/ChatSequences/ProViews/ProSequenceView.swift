@@ -249,7 +249,7 @@ struct ProSequenceView: View {
     @ViewBuilder
     var lowerVStackOptions: some View {
         if viewModel.showUiOptions {
-            CSCSettingsView(settings, sequenceDesc: "ChatSequence#\(viewModel.sequence.serverId)")
+            CSCSettingsView(settings)
         }
 
         if viewModel.showInferenceOptions {
@@ -553,7 +553,7 @@ struct ProSequenceView: View {
                                             showMessageHeaders: settings.showMessageHeaders,
                                             renderAsMarkdown: $settings.renderAsMarkdown
                                         )
-                                        .animation(.snappy)
+                                        .animation(settings.override.animateNewResponseText ? .snappy : nil)
                                         .padding(.leading, messageIndent)
                                         .id(-1)
                                     }

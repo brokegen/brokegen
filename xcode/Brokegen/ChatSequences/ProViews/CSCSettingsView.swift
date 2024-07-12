@@ -1,323 +1,328 @@
 import SwiftUI
 
-struct WideToggle: View {
-    let isOn: Binding<Bool>
-    let labelText: String
-
-    var body: some View {
-        Toggle(isOn: isOn, label: {
-            HStack(spacing: 0) {
-                Text(labelText)
-                    .lineLimit(1...4)
-                    .layoutPriority(0.2)
-
-                Spacer()
-            }
-        })
-        .frame(maxWidth: .infinity)
-    }
-}
-
-struct WidePicker: View {
-    var defaultIsOn: Bool
-    var overrideIsOn: Binding<Bool?>
-    let labelText: String
-    let trueText: String
-    let falseText: String
-
-    var body: some View {
-        Picker(selection: overrideIsOn, content: {
-            Text("inherit global: \(defaultIsOn ? trueText : falseText)")
-                .tag(nil as Bool?)
-
-            Text(trueText)
-                .tag(true as Bool?)
-
-            Text(falseText)
-                .tag(false as Bool?)
-        }, label: {
-            HStack(spacing: 0) {
-                Text(labelText)
-                    .lineLimit(1...4)
-
-            }
-        })
-        .frame(maxWidth: .infinity)
-    }
-}
-
 struct CSCSettingsView: View {
     @ObservedObject var settings: CSCSettingsService.SettingsProxy
-    let sequenceDesc: String
+    @State var generationWidth: CGFloat = 0
 
     init(
-        _ settings: CSCSettingsService.SettingsProxy,
-        sequenceDesc: String = "ChatSequence"
+        _ settings: CSCSettingsService.SettingsProxy
     ) {
         self.settings = settings
-        self.sequenceDesc = sequenceDesc.isEmpty
-        ? ""
-        : " for " + sequenceDesc
+    }
+
+    func combinedGridRow(
+        _ labelText: String,
+        globalIsOn: Binding<Bool>,
+        localIsOn: Binding<Bool?>,
+        trueText: String,
+        falseText: String
+    ) -> some View {
+        GridRow {
+            Text(labelText)
+                .layoutPriority(0.2)
+
+            Toggle(isOn: globalIsOn) {}
+                .toggleStyle(.switch)
+
+            Picker(selection: localIsOn, content: {
+                Text(globalIsOn.wrappedValue
+                     ? "inherit global: " + trueText
+                     : "inherit global: " + falseText)
+                .tag(nil as Bool?)
+
+                Text(trueText)
+                    .tag(true as Bool?)
+
+                Text(falseText)
+                    .tag(false as Bool?)
+            }, label: {})
+        }
     }
 
     @ViewBuilder
-    var combinedGrid: some View {
+    var appearanceOptions: some View {
         GroupBox(content: {
             Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
                 GridRow {
                     Spacer()
 
                     Text("global")
+                        .gridColumnAlignment(.trailing)
 
-                    Text("local" + sequenceDesc)
+                    Text("this sequence")
+                        .gridColumnAlignment(.center)
                 }
-
                 Divider()
 
                 GridRow {
-                    Text("ChatSequence UI Appearance")
-                        .font(.system(size: 12).lowercaseSmallCaps())
-                        .gridCellColumns(3)
-                }
-
-                GridRow {
-                    Text("Show ChatMessage headers")
+                    Text("Pin chat name to the top of the window")
                         .layoutPriority(0.2)
 
-                    Toggle(isOn: $settings.defaults.showMessageHeaders) {
-                    }
-                    .toggleStyle(.switch)
-                    .gridCellUnsizedAxes(.horizontal)
+                    Text("")
 
-                    Picker(selection: $settings.override.showMessageHeaders, content: {
-                        Text(settings.defaults.showMessageHeaders
-                             ? "inherit global: show"
-                             : "inherit global: hide headers")
-                        .tag(nil as Bool?)
+                    Picker(selection: $settings.override.pinChatSequenceDesc, content: {
+                        Text("default behavior: pin if a name exists")
+                            .tag(nil as Bool?)
 
-                        Text("show")
+                        Text("always pin")
                             .tag(true as Bool?)
 
-                        Text("hide headers")
-                            .tag(false as Bool?)
-                    }, label: {})
-                    .gridCellUnsizedAxes(.horizontal)
-                }
-
-                GridRow {
-                    Text("Show InferenceModel override picker")
-                        .layoutPriority(0.2)
-
-                    Toggle(isOn: $settings.defaults.showOIMPicker) {
-                    }
-                    .toggleStyle(.switch)
-                    .gridCellUnsizedAxes(.horizontal)
-
-                    Picker(selection: $settings.override.showOIMPicker, content: {
-                        Text(settings.defaults.showOIMPicker
-                             ? "inherit global: show"
-                             : "inherit global: hide picker")
-                        .tag(nil as Bool?)
-
-                        Text("show")
-                            .tag(true as Bool?)
-
-                        Text("hide picker")
+                        Text("don't pin")
                             .tag(false as Bool?)
                     }, label: {})
                 }
 
+                combinedGridRow(
+                    "Show message headers",
+                    globalIsOn: $settings.defaults.showMessageHeaders,
+                    localIsOn: $settings.override.showMessageHeaders,
+                    trueText: "show",
+                    falseText: "hide headers"
+                )
+
+                combinedGridRow(
+                    "Render message content as markdown",
+                    globalIsOn: $settings.defaults.renderAsMarkdown,
+                    localIsOn: $settings.override.renderAsMarkdown,
+                    trueText: "as markdown",
+                    falseText: "as plaintext"
+                )
+
+                combinedGridRow(
+                    "Show inference model override picker",
+                    globalIsOn: $settings.defaults.showOIMPicker,
+                    localIsOn: $settings.override.showOIMPicker,
+                    trueText: "show",
+                    falseText: "hide picker"
+                )
+            }
+            .padding(24)
+        }, label: {
+            Text("ChatSequence UI Appearance")
+                .font(.system(size: 12).lowercaseSmallCaps())
+                .gridCellColumns(3)
+                .padding(.top, 24)
+        })
+    }
+
+    @ViewBuilder
+    var behaviorOptions: some View {
+        GroupBox(content: {
+            Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
+                GridRow {
+                    Spacer()
+
+                    Text("global")
+                        .gridColumnAlignment(.trailing)
+
+                    Text("this sequence")
+                        .gridColumnAlignment(.center)
+                }
                 Divider()
 
-                GridRow {
-                    Text("ChatSequence Submit Buttons")
-                        .font(.system(size: 12).lowercaseSmallCaps())
-                        .gridCellColumns(3)
-                }
+                combinedGridRow(
+                    "Allow direct continuation (model talks to itself)",
+                    globalIsOn: $settings.defaults.allowContinuation,
+                    localIsOn: $settings.override.allowContinuation,
+                    trueText: "allow",
+                    falseText: "require user prompt"
+                )
 
-                Divider()
+                combinedGridRow(
+                    "Show separate retrieval button",
+                    globalIsOn: $settings.defaults.showSeparateRetrievalButton,
+                    localIsOn: $settings.override.showSeparateRetrievalButton,
+                    trueText: "show",
+                    falseText: "combine buttons"
+                )
 
                 GridRow {
-                    Text("ChatSequence UI Behaviors")
-                        .font(.system(size: 12).lowercaseSmallCaps())
-                        .gridCellColumns(3)
-                }
-
-                GridRow {
-                    Text("Scroll to bottom of window on new messages")
+                    Text("Force retrieval-augmented generation on every query")
                         .layoutPriority(0.2)
 
-                    Toggle(isOn: $settings.defaults.scrollToBottomOnNew) {
+                    Toggle(isOn: $settings.defaults.forceRetrieval) {}
+                        .toggleStyle(.switch)
+                        .disabled(settings.showSeparateRetrievalButton)
+
+                    if settings.showSeparateRetrievalButton {
+                        ZStack {
+                            Picker(selection: .constant(false), content: {
+                                Text("")
+                            }, label: {})
+                                .disabled(true)
+
+                            Text("[separate retrieval button is shown, disabling]")
+                                .lineLimit(1)
+                                .foregroundStyle(Color(.disabledControlTextColor))
+                        }
                     }
-                    .toggleStyle(.switch)
-                    .gridCellUnsizedAxes(.horizontal)
+                    else {
+                        Picker(selection: $settings.override.forceRetrieval, content: {
+                            Text(settings.defaults.forceRetrieval
+                                 ? "inherit global: always use RAG"
+                                 : "inherit global: disable")
+                            .tag(nil as Bool?)
 
-                    Picker(selection: $settings.override.scrollToBottomOnNew, content: {
-                        Text(settings.defaults.scrollToBottomOnNew
-                             ? "inherit global: scroll"
-                             : "inherit global: don't scroll")
-                        .tag(nil as Bool?)
+                            Text("always use RAG")
+                                .tag(true as Bool?)
 
-                        Text("scroll")
-                            .tag(true as Bool?)
+                            Text("disable")
+                                .tag(false as Bool?)
+                        }, label: {})
+                    }
+                }
 
-                        Text("don't scroll")
-                            .tag(false as Bool?)
-                    }, label: {})
+                Divider()
+
+                combinedGridRow(
+                    "Scroll to bottom of window on new messages",
+                    globalIsOn: $settings.defaults.scrollToBottomOnNew,
+                    localIsOn: $settings.override.scrollToBottomOnNew,
+                    trueText: "scroll",
+                    falseText: "don't scroll"
+                )
+
+                GridRow {
+                    Text("Buffer inference results for more responsive UI")
+                        .layoutPriority(0.2)
+
+                    Text("")
+
+                    HStack {
+                        Picker("", selection: $settings.defaults.responseBufferMaxSize) {
+                            Text("disabled")
+                                .tag(0)
+
+                            Text("12")
+                                .tag(12)
+
+                            Text("24")
+                                .tag(24)
+
+                            Text("48")
+                                .tag(48)
+
+                            Text("96")
+                                .tag(96)
+
+                            Text("custom")
+                                .tag(settings.defaults.responseBufferMaxSize)
+                        }
+                        .frame(maxWidth: 96)
+
+                        Text("(customize:")
+
+                        Stepper(value: $settings.defaults.responseBufferMaxSize) {
+                            Text("\(settings.defaults.responseBufferMaxSize)")
+                        }
+
+                        Text("chars)")
+
+                        Spacer()
+                    }
+                    .padding(.leading, -8)
+                }
+
+                GridRow {
+                    Text("Animate (fade in) new response text")
+                        .layoutPriority(0.2)
+
+                    Text("")
+
+                    Picker("", selection: $settings.override.animateNewResponseText) {
+                        Text("animate (.snappy)")
+                            .tag(true)
+
+                        Text("disable")
+                            .tag(false)
+                    }
+                    .padding(.leading, -8)
                 }
             }
+            .padding(24)
         }, label: {
-            Text("ChatSequence settings")
+            Text("ChatSequence UI Behaviors")
+                .font(.system(size: 12).lowercaseSmallCaps())
+                .gridCellColumns(3)
+                .padding(.top, 24)
+        })
+    }
+
+    @ViewBuilder
+    var generationOptions: some View {
+        GroupBox(content: {
+            VStack(spacing: 24) {
+                Picker("Chat autonaming policy (global)", selection: $settings.autonamingPolicy) {
+                    Text("server default")
+                        .tag(CSInferenceSettings.AutonamingPolicy.serverDefault)
+
+                    Text("disable")
+                        .tag(CSInferenceSettings.AutonamingPolicy.disable)
+
+                    Text("summarize after inference (asynchronous)")
+                        .tag(CSInferenceSettings.AutonamingPolicy.summarizeAfterAsync)
+
+                    Text("summarize before inference")
+                        .tag(CSInferenceSettings.AutonamingPolicy.summarizeBefore)
+                }
+                .pickerStyle(.inline)
+                // TODO: Re-enable once we plumb this through on the server
+                .disabled(true)
+
+                Divider()
+                    .frame(maxWidth: generationWidth)
+
+                Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
+                    GridRow {
+                        Spacer()
+
+                        Text("global")
+                            .gridColumnAlignment(.trailing)
+
+                        Text("this sequence")
+                            .frame(minWidth: 240)
+                    }
+                    Divider()
+
+                    combinedGridRow(
+                        "Assert macOS wakelock during inference requests",
+                        globalIsOn: $settings.defaults.stayAwakeDuringInference,
+                        localIsOn: $settings.override.stayAwakeDuringInference,
+                        trueText: "stay awake",
+                        falseText: "don't stay awake"
+                    )
+                }
+            }
+            .overlay {
+                // Read the target width of this entire block,
+                // so we can apply it to Divider() which is otherwise greedy
+                GeometryReader { geometry in
+                    Spacer()
+                        .onAppear {
+                            print("[TRACE] Setting CSCSettingsView.generationWidth to \(geometry.size.width)")
+                            generationWidth = geometry.size.width
+                        }
+                }
+            }
+            .padding(24)
+        }, label: {
+            Text("ChatSequence Inference Options")
+                .font(.system(size: 12).lowercaseSmallCaps())
+                .gridCellColumns(3)
+                .padding(.top, 24)
         })
     }
 
     var body: some View {
-        combinedGrid
+        appearanceOptions
 
-        GroupBox(content: {
-            VStack(spacing: 12) {
-                WideToggle(isOn: $settings.defaults.allowContinuation,
-                           labelText: "Allow direct continuation (no user input)")
-                WideToggle(isOn: $settings.defaults.showSeparateRetrievalButton,
-                           labelText: "Show separate retrieval button")
-                WideToggle(isOn: $settings.defaults.forceRetrieval,
-                           labelText: "Force retrieval-augmented generation on every query")
+        behaviorOptions
 
-                WideToggle(isOn: $settings.defaults.showMessageHeaders,
-                           labelText: "Show ChatMessage headers in the UI")
-                WideToggle(isOn: $settings.defaults.renderAsMarkdown,
-                           labelText: "Render message content as markdown")
-                WideToggle(isOn: $settings.defaults.scrollToBottomOnNew,
-                           labelText: "Scroll to bottom of window on new messages")
-                WideToggle(isOn: $settings.defaults.showOIMPicker,
-                           labelText: "Show InferenceModel override picker in ChatSequence Views")
-                WideToggle(isOn: $settings.defaults.stayAwakeDuringInference,
-                           labelText: "Assert macOS wakelock during inference requests")
-            }
-            .toggleStyle(.switch)
-            .padding(24)
-        }, label: {
-            Text("Global Settings")
-        })
-
-        GroupBox(content: {
-            VStack(spacing: 12) {
-                WidePicker(defaultIsOn: settings.defaults.allowContinuation,
-                           overrideIsOn: $settings.override.allowContinuation,
-                           labelText: "Allow direct continuation", trueText: "allow", falseText: "deny")
-
-                WidePicker(defaultIsOn: settings.defaults.showSeparateRetrievalButton,
-                           overrideIsOn: $settings.override.showSeparateRetrievalButton,
-                           labelText: "Show separate retrieval button", trueText: "show", falseText: "don't show")
-
-                WidePicker(defaultIsOn: settings.defaults.forceRetrieval,
-                           overrideIsOn: $settings.override.forceRetrieval,
-                           labelText: "Force retrieval-augmented generation on every query", trueText: "always use retrieval", falseText: "never use retrieval")
-                .disabled(settings.override.showSeparateRetrievalButton ?? settings.defaults.showSeparateRetrievalButton)
-
-                Picker(selection: $settings.override.pinChatSequenceDesc, content: {
-                    Text("Allow default behavior (pin if a description is set)")
-                        .tag(nil as Bool?)
-
-                    Text("pin")
-                        .tag(true as Bool?)
-
-                    Text("don't pin")
-                        .tag(false as Bool?)
-                }, label: {
-                    HStack(spacing: 0) {
-                        Text("Keep ChatSequence name pinned to top of its View window")
-                            .lineLimit(1...4)
-
-                    }
-                })
-                .frame(maxWidth: .infinity)
-
-                WidePicker(defaultIsOn: settings.defaults.showMessageHeaders,
-                           overrideIsOn: $settings.override.showMessageHeaders,
-                           labelText: "Show ChatMessage headers in the UI", trueText: "show headers", falseText: "don't show headers")
-
-                WidePicker(defaultIsOn: settings.defaults.renderAsMarkdown,
-                           overrideIsOn: $settings.override.renderAsMarkdown,
-                           labelText: "Render message content as markdown", trueText: "as markdown", falseText: "as plaintext")
-
-                WidePicker(defaultIsOn: settings.defaults.scrollToBottomOnNew,
-                           overrideIsOn: $settings.override.scrollToBottomOnNew,
-                           labelText: "Scroll to bottom of window on new messages", trueText: "scroll", falseText: "don't scroll")
-
-                WidePicker(defaultIsOn: settings.defaults.showOIMPicker,
-                           overrideIsOn: $settings.override.showOIMPicker,
-                           labelText: "Show InferenceModel override picker in ChatSequence Views", trueText: "show", falseText: "don't show")
-
-                WidePicker(defaultIsOn: settings.defaults.stayAwakeDuringInference,
-                           overrideIsOn: $settings.override.stayAwakeDuringInference,
-                           labelText: "Assert macOS wakelock during inference requests", trueText: "stay awake", falseText: "don't stay awake")
-            }
-            .pickerStyle(.inline)
-            .padding(24)
-        }, label: {
-            Text("Override Settings\(sequenceDesc)")
-        })
-
-        GroupBox(content: {
-            Text("ChatSequence auto-naming policy")
-            Picker("", selection: $settings.autonamingPolicy) {
-                Text("server default")
-                    .tag(CSInferenceSettings.AutonamingPolicy.serverDefault)
-
-                Text("disable")
-                    .tag(CSInferenceSettings.AutonamingPolicy.disable)
-
-                Text("summarize after inference (asynchronous)")
-                    .tag(CSInferenceSettings.AutonamingPolicy.summarizeAfterAsync)
-
-                Text("summarize before inference")
-                    .tag(CSInferenceSettings.AutonamingPolicy.summarizeBefore)
-            }
-            .pickerStyle(.inline)
-
-            HStack {
-                WideToggle(isOn:
-                            Binding(
-                                get: { $settings.defaults.responseBufferMaxSize.wrappedValue > 0 },
-                                set: { newValue in
-                                    print("[TRACE] Trying to set responseBufferMaxSize to \(newValue)")
-                                    if newValue {
-                                        settings.defaults.responseBufferMaxSize = 48
-                                    }
-                                    else {
-                                        settings.defaults.responseBufferMaxSize = 0
-                                    }}),
-                           labelText: "Buffer inference results for more responsive UI")
-
-                Stepper(value: $settings.defaults.responseBufferMaxSize) {
-                    Text("\(settings.defaults.responseBufferMaxSize)")
-                }
-
-                Picker("", selection: $settings.defaults.responseBufferMaxSize) {
-                    Text("disabled")
-                        .tag(0)
-
-                    Text("12")
-                        .tag(12)
-
-                    Text("24")
-                        .tag(24)
-
-                    Text("48")
-                        .tag(48)
-
-                    Text("96")
-                        .tag(96)
-                }
-            } // HStack
-        }, label: {
-            Text("ChatSequence Generation Options")
-        })
+        generationOptions
     }
 }
 
-#Preview(traits: .fixedLayout(width: 800, height: 800)) {
+#Preview(traits: .fixedLayout(width: 1280, height: 1280)) {
     struct ViewHolder: View {
         @State var settings: CSCSettingsService.SettingsProxy
 

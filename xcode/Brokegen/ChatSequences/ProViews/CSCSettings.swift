@@ -40,7 +40,9 @@ struct OverrideCSUISettings {
     var pinChatSequenceDesc: Bool? = nil
     var showMessageHeaders: Bool? = nil
     var renderAsMarkdown: Bool? = nil
+
     var scrollToBottomOnNew: Bool? = nil
+    var animateNewResponseText: Bool = true
 
     var showOIMPicker: Bool? = nil
     var stayAwakeDuringInference: Bool? = nil
