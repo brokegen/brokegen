@@ -10,7 +10,7 @@ build/xcode-macos-export-options.plist:
 dist: dist-xcode
 dist-xcode: build-xcode
 dist-xcode: build/xcode-macos-export-options.plist
-	xcodebuild \
+	xcodebuild -quiet \
 			-exportArchive \
 			-archivePath build/"macOS App.xcarchive" \
 			-exportPath dist/ \
@@ -21,6 +21,7 @@ build: build-xcode
 build-xcode: server
 build-xcode:
 	xcodebuild archive \
+		-quiet \
 		-project xcode/Brokegen.xcodeproj \
 		-scheme Release \
 		-config Release \

@@ -447,20 +447,20 @@ class OneSequenceViewModel: ObservableObject {
     func requestExtend(
         model continuationModelId: FoundationModelRecordID? = nil,
         withRetrieval: Bool = false
-    ) -> Self {
+    ) {
         print("[INFO] OneSequenceViewModel.requestExtend(\(continuationModelId), withRetrieval: \(withRetrieval))")
         if settings.stayAwakeDuringInference {
             _ = stayAwake.createAssertion(reason: "brokegen OneSequenceViewModel.requestExtend() for ChatSequence#\(self.sequence.serverId)")
         }
 
-        guard !self.promptInEdit.isEmpty else { return self }
+        guard !self.promptInEdit.isEmpty else { return }
         guard !submitting else {
             print("[ERROR] OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval)) during another submission")
-            return self
+            return
         }
         guard !receiving else {
             print("[ERROR] OneSequenceViewModel.requestExtend(withRetrieval: \(withRetrieval)) while receiving response")
-            return self
+            return
         }
 
         self.submitting = true
@@ -505,7 +505,7 @@ class OneSequenceViewModel: ObservableObject {
                 ))
         }
 
-        return self
+        return
     }
 
     func stopSubmitAndReceive(userRequested: Bool = false) {
