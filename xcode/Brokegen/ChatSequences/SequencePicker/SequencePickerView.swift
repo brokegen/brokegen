@@ -250,7 +250,7 @@ struct SequencePickerView: View {
             RenameableSequenceRow(sequence) { newHumanDesc in
                 Task {
                     if let updatedSequence = await chatService.renameChatSequence(sequence, to: newHumanDesc) {
-                        DispatchQueue.main.sync {
+                        DispatchQueue.main.async {
                             chatService.updateSequence(withSameId: updatedSequence)
                             self.isRenaming.removeAll { $0 == sequence }
                         }
