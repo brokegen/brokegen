@@ -443,15 +443,12 @@ struct BlankProSequenceView: View {
 
     @ViewBuilder
     func ofmPicker(_ geometry: GeometryProxy) -> some View {
-        VStack(alignment: .center, spacing: 0) {
-            if viewModel.appSettings.stillPopulating {
-                ProgressView()
-                    .progressViewStyle(.linear)
-                    .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
-            }
-
-            HStack(alignment: .center, spacing: 0) {
-                Spacer()
+        VStack(alignment: .center) {
+            VStack(spacing: 0) {
+                if viewModel.appSettings.stillPopulating {
+                    ProgressView()
+                        .progressViewStyle(.linear)
+                }
 
                 OFMPicker(
                     boxLabel: viewModel.continuationInferenceModel == nil && viewModel.appSettings.defaultInferenceModel != nil
@@ -465,11 +462,10 @@ struct BlankProSequenceView: View {
                     allowClear: viewModel.continuationInferenceModel != nil)
                 .disabled(viewModel.appSettings.stillPopulating)
                 .foregroundStyle(Color(.disabledControlTextColor))
-                .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
-
-                Spacer()
             }
+            .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
         }
+        .frame(maxWidth: .infinity)
         .padding(.top, 240)
         .padding(.bottom, 120)
     }
@@ -537,13 +533,16 @@ struct BlankProSequenceView: View {
                     if showLowerVStackOptions {
                         GeometryReader { optionsGeometry in
                             ScrollView {
-                                VFlowLayout(spacing: 24) {
-                                    lowerVStackOptions
+                                VStack(alignment: .center) {
+                                    VFlowLayout(spacing: 24) {
+                                        lowerVStackOptions
+                                    }
+                                    .frame(width: optionsGeometry.size.width)
                                 }
+                                .frame(maxWidth: .infinity)
                             }
-                            .frame(width: optionsGeometry.size.width)
-                            .frame(idealHeight: 240)
                         }
+                        .frame(idealHeight: 240)
                     }
 
                     lowerTabBar

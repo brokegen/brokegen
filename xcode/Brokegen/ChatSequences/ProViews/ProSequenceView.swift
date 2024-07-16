@@ -136,13 +136,13 @@ struct ProSequenceView: View {
             GeometryReader { geometry in
                 HStack(spacing: 12) {
                     InlineTextInput($viewModel.promptInEdit,isFocused: $focusTextInput)
-                    .padding(.leading, -24)
-                    .focused($focusTextInput)
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            self.focusTextInput = true
+                        .padding(.leading, -24)
+                        .focused($focusTextInput)
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                self.focusTextInput = true
+                            }
                         }
-                    }
 
                     let useVerticalLayout = geometry.size.height >= 144 + 36
                     let buttonLayout = useVerticalLayout
@@ -464,15 +464,12 @@ struct ProSequenceView: View {
 
     @ViewBuilder
     func ofmPicker(_ geometry: GeometryProxy) -> some View {
-        VStack(alignment: .center, spacing: 0) {
-            if viewModel.appSettings.stillPopulating {
-                ProgressView()
-                    .progressViewStyle(.linear)
-                    .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
-            }
-
-            HStack(alignment: .center, spacing: 0) {
-                Spacer()
+        VStack(alignment: .center) {
+            VStack(spacing: 0) {
+                if viewModel.appSettings.stillPopulating {
+                    ProgressView()
+                        .progressViewStyle(.linear)
+                }
 
                 OFMPicker(
                     boxLabel: "Select an override inference model for next message:",
@@ -482,11 +479,10 @@ struct ProSequenceView: View {
                     allowClear: true)
                 .disabled(viewModel.appSettings.stillPopulating)
                 .foregroundStyle(Color(.disabledControlTextColor))
-                .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
-
-                Spacer()
             }
+            .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
         }
+        .frame(maxWidth: .infinity)
         .padding(.top, 240)
         .padding(.bottom, 120)
     }
@@ -612,14 +608,29 @@ struct ProSequenceView: View {
 
                     if showLowerVStackOptions {
                         GeometryReader { optionsGeometry in
-                            ScrollView {
-                                VFlowLayout(spacing: 24) {
-                                    lowerVStackOptions
+                            // Use ViewThatFits for the case where the options space is so big
+                            // there's no need to allow scrolling.
+                            ViewThatFits {
+                                VStack(alignment: .center) {
+                                    VFlowLayout(spacing: 24) {
+                                        lowerVStackOptions
+                                    }
+                                    .frame(width: optionsGeometry.size.width)
+                                }
+                                .frame(maxWidth: .infinity)
+
+                                ScrollView {
+                                    VStack(alignment: .center) {
+                                        VFlowLayout(spacing: 24) {
+                                            lowerVStackOptions
+                                        }
+                                        .frame(width: optionsGeometry.size.width)
+                                    }
+                                    .frame(maxWidth: .infinity)
                                 }
                             }
-                            .frame(width: optionsGeometry.size.width)
-                            .frame(idealHeight: 240)
                         }
+                        .frame(idealHeight: 240)
                     }
 
                     lowerTabBar

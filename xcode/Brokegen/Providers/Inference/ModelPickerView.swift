@@ -70,11 +70,8 @@ struct ModelPickerView: View {
 
     var body: some View {
         ZStack(alignment: Alignment(horizontal: .trailing, vertical: .top)) {
-            ViewThatFits(in: .horizontal) {
-                // TODO: ViewThatFits will just pop in and out of existence, willy-nilly.
-                // Which makes it very hard to track items in a particular spot,
-                // especially since sorting is virtually random.
-                ScrollView {
+            ScrollView {
+                VStack(spacing: 0) {
                     if !usedModels.isEmpty {
                         VFlowLayout(spacing: 24) {
                             ForEach(usedModels) { model in
@@ -87,9 +84,9 @@ struct ModelPickerView: View {
                                 )
                             }
                         }
+                        .padding(24)
 
                         Divider()
-                            .padding(24)
                     }
 
                     if expandNeverUsedModels {
@@ -166,11 +163,11 @@ struct RefreshableModelPickerView: View {
     }
 }
 
-fileprivate func makeFakeModel() -> FoundationModel {
+fileprivate func makeFakeModel(_ suffix: String) -> FoundationModel {
     return FoundationModel(
         id: UUID(),
         serverId: 1000,
-        humanId: "test-model:FP32",
+        humanId: "test-model:FP32" + suffix,
         firstSeenAt: Date.now,
         lastSeen: Date.now,
         providerIdentifiers: "xcode preview",
@@ -192,7 +189,7 @@ fileprivate func makeFakeModel() -> FoundationModel {
 
         init() {
             providerService.allModels = [
-                makeFakeModel()
+                makeFakeModel("")
             ]
         }
 
@@ -213,7 +210,17 @@ fileprivate func makeFakeModel() -> FoundationModel {
 
         init() {
             providerService.allModels = [
-                makeFakeModel()
+                makeFakeModel("-00"),
+                makeFakeModel("-01"),
+                makeFakeModel("-02"),
+                makeFakeModel("-03"),
+                makeFakeModel("-04"),
+                makeFakeModel("-05"),
+                makeFakeModel("-06"),
+                makeFakeModel("-07"),
+                makeFakeModel("-08"),
+                makeFakeModel("-09"),
+                makeFakeModel("-10"),
             ]
         }
 
