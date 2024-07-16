@@ -140,13 +140,21 @@ struct ProMessageView: View {
                 ZStack(alignment: .topTrailing) {
                     if renderAsMarkdown {
                         Markdown(message.content)
-                        // TODO: Re-enable the theme once we figure out how to tweak it
-                        // .markdownTheme(.gitHub)
+                            .markdownBlockStyle(\.listItem) { configuration in
+                                configuration.label
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .markdownMargin(top: 6)
+                            }
+                            .markdownBlockStyle(\.paragraph) { configuration in
+                                configuration.label
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .relativeLineSpacing(.em(0.333))
+                                    .markdownMargin(top: 0, bottom: 33)
+                            }
                             .markdownTextStyle {
                                 FontSize(18)
                                 BackgroundColor(nil)
                             }
-                            .markdownMargin(top: .em(1), bottom: .em(1))
                             .textSelection(.enabled)
                             .padding(16)
                             .background(
@@ -199,6 +207,7 @@ If you're willing, could you please share some ideas or topics you think would b
 1.  A creative writing prompt (e.g., a character, setting, or scenario)
 2.  A topic you'd like me to explain or summarize (e.g., science, history, or technology)
 3.  A style of content you'd like me to emulate (e.g., humor, poetry, or storytelling)
+4.  Here's a really long paragraph that extends past the edge of the 800 point preview screen width, because it's crucial to test text and line spacing for a given paragraph.
 
 Your input will help me generate more targeted and valuable responses. Let's collaborate to create something exciting together!
 """, createdAt: Date(timeIntervalSinceNow: +5))
