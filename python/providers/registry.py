@@ -103,7 +103,7 @@ class BaseProvider:
         )
 
     @abstractmethod
-    async def generate(
+    def generate(
             self,
             prompt: TemplatedPromptText,
             inference_model: FoundationModelRecordOrm,

@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 from typing import AsyncIterable, Awaitable, AsyncIterator, AsyncGenerator
 
 import orjson
+import starlette.requests
+import starlette.responses
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy import select
 from starlette.requests import Request
@@ -97,7 +99,8 @@ async def emulate_api_generate(
         if safe_get(request_content, "raw"):
             logger.warning("Ollama client provided \"raw\" flag, ignoring")
 
-        return provider.generate(
+        enumerator: AsyncGenerator[JSONDict, None]
+        enumerator = provider.generate(
             prompt=safe_get(request_content, "prompt"),
             inference_model=inference_model,
             inference_options=safe_get(request_content, "options"),
@@ -105,6 +108,8 @@ async def emulate_api_generate(
             history_db=history_db,
             audit_db=audit_db,
         )
+
+        return enumerator
 
     async def nonblocking_response_maker(
             real_response_maker: Awaitable[AsyncIterator[JSONDict]],
@@ -208,6 +213,13 @@ def install_forwards(router_ish: FastAPI):
             return await do_api_show(request_content_json['name'], history_db, audit_db)
 
         return await forward_request(original_request, audit_db)
+
+    # TODO: Using a router prefix breaks this, somehow
+    @router_ish.head("/ollama-emulate/")
+    async def proxy_head(
+            request: starlette.requests.Request,
+    ):
+        return starlette.responses.Response()
 
     @router_ish.head("/providers/{provider_type:str}/{provider_id:path}/ollama/")
     async def ollama_head(
