@@ -60,6 +60,11 @@ class CSCSettingsService: ObservableObject {
             set { override.scrollToBottomOnNew = newValue }
         }
 
+        var animateNewResponseText: Bool {
+            get { override.animateNewResponseText ?? defaults.animateNewResponseText }
+            set { override.animateNewResponseText = newValue }
+        }
+
         var showOIMPicker: Bool {
             get { override.showOIMPicker ?? defaults.showOIMPicker }
             set { override.showOIMPicker = newValue }

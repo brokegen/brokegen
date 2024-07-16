@@ -220,21 +220,13 @@ struct CSCSettingsView: View {
                     .padding(.leading, -8)
                 }
 
-                GridRow {
-                    Text("Animate (fade in) new response text")
-                        .layoutPriority(0.2)
-
-                    Text("")
-
-                    Picker("", selection: $settings.override.animateNewResponseText) {
-                        Text("animate (.snappy)")
-                            .tag(true)
-
-                        Text("disable")
-                            .tag(false)
-                    }
-                    .padding(.leading, -8)
-                }
+                combinedGridRow(
+                    "Animate (fade in) new response text",
+                    globalIsOn: $settings.defaults.animateNewResponseText,
+                    localIsOn: $settings.override.animateNewResponseText,
+                    trueText: "animate (snappy)",
+                    falseText: "disable"
+                )
             }
             .padding(24)
         }, label: {

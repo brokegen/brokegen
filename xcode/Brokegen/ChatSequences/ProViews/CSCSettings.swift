@@ -25,6 +25,9 @@ struct PersistentDefaultCSUISettings {
     @AppStorage("defaultUiSettings.scrollToBottomOnNew")
     var scrollToBottomOnNew: Bool = true
 
+    @AppStorage("defaultUiSettings.animateNewResponseText")
+    var animateNewResponseText: Bool = false
+
     @AppStorage("defaultUiSettings.showOIMPicker")
     var showOIMPicker: Bool = false
 
@@ -42,7 +45,7 @@ struct OverrideCSUISettings {
     var renderAsMarkdown: Bool? = nil
 
     var scrollToBottomOnNew: Bool? = nil
-    var animateNewResponseText: Bool = true
+    var animateNewResponseText: Bool? = nil
 
     var showOIMPicker: Bool? = nil
     var stayAwakeDuringInference: Bool? = nil

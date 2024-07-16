@@ -549,7 +549,7 @@ struct ProSequenceView: View {
                                             showMessageHeaders: settings.showMessageHeaders,
                                             renderAsMarkdown: $settings.renderAsMarkdown
                                         )
-                                        .animation(settings.override.animateNewResponseText ? .snappy : nil, value: viewModel.responseInEdit)
+                                        .animation(settings.animateNewResponseText ? .easeIn : nil, value: viewModel.responseInEdit)
                                         .padding(.leading, messageIndent)
                                         .id(-1)
                                     }
