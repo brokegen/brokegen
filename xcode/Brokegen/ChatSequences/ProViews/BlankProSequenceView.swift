@@ -418,25 +418,33 @@ struct BlankProSequenceView: View {
 
         Divider()
 
-        Section(header: Text("UI Options")) {
+        Section(header: Text("UI Appearance")) {
             Toggle(isOn: $viewModel.settings.pinChatSequenceDesc) {
                 Text("Pin chat name to top of window")
             }
 
             Toggle(isOn: $viewModel.settings.showMessageHeaders) {
-                Text("Show message headers in the UI")
+                Text("Show message headers")
             }
 
             Toggle(isOn: $viewModel.settings.renderAsMarkdown) {
                 Text("Render message content as markdown")
             }
 
+            Toggle(isOn: $viewModel.settings.showOIMPicker) {
+                Text("Show InferenceModel override picker")
+            }
+        }
+
+        Divider()
+
+        Section(header: Text("UI Behaviors")) {
             Toggle(isOn: $viewModel.settings.scrollToBottomOnNew) {
                 Text("Scroll to bottom of window on new messages")
             }
 
-            Toggle(isOn: $viewModel.settings.showOIMPicker) {
-                Text("Show InferenceModel override picker")
+            Toggle(isOn: $viewModel.settings.animateNewResponseText) {
+                Text("Animate (fade in) new response text")
             }
         }
     }

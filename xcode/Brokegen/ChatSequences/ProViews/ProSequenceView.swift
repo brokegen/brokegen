@@ -409,25 +409,33 @@ struct ProSequenceView: View {
 
         Divider()
 
-        Section(header: Text("UI Options")) {
+        Section(header: Text("UI Appearance")) {
             Toggle(isOn: $settings.pinChatSequenceDesc) {
                 Text("Pin chat name to top of window")
             }
 
             Toggle(isOn: $settings.showMessageHeaders) {
-                Text("Show message headers in the UI")
+                Text("Show message headers")
             }
 
             Toggle(isOn: $settings.renderAsMarkdown) {
                 Text("Render message content as markdown")
             }
 
+            Toggle(isOn: $settings.showOIMPicker) {
+                Text("Show InferenceModel override picker")
+            }
+        }
+
+        Divider()
+
+        Section(header: Text("UI Behaviors")) {
             Toggle(isOn: $settings.scrollToBottomOnNew) {
                 Text("Scroll to bottom of window on new messages")
             }
 
-            Toggle(isOn: $settings.showOIMPicker) {
-                Text("Show InferenceModel override picker")
+            Toggle(isOn: $settings.animateNewResponseText) {
+                Text("Animate (fade in) new response text")
             }
         }
 
@@ -438,7 +446,7 @@ struct ProSequenceView: View {
                 viewModel.chatService.pinChatSequence(viewModel.sequence, pinned: !viewModel.sequence.userPinned)
             } label: {
                 Toggle(isOn: .constant(viewModel.sequence.userPinned)) {
-                    Text("Pin ChatSequence to sidebar")
+                    Text("Keep ChatSequence pinned to sidebar")
                 }
             }
 
@@ -449,7 +457,7 @@ struct ProSequenceView: View {
                      ? "Autoname disabled (still loading)"
                      : (viewModel.appSettings.preferredAutonamingModel == nil
                         ? "Autoname disabled (set a model in settings)"
-                        : "Autoname chat with \(viewModel.appSettings.preferredAutonamingModel!.humanId)")
+                        : "Autoname with model: \(viewModel.appSettings.preferredAutonamingModel!.humanId)")
                 )
             }
             .disabled(viewModel.appSettings.preferredAutonamingModel == nil)
