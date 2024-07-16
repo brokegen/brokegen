@@ -39,7 +39,7 @@ struct JobsSidebarItem: View {
                 Circle()
                     .stroke(hoverColor, lineWidth: isButtonHovered ? 2 : 0)
                     .blur(radius: isButtonHovered ? 8 : 0)
-                    .animation(.easeOut(duration: 0.3))
+                    .animation(.easeOut(duration: 0.3), value: isButtonHovered)
                     .frame(width: 12, height: 12)
             )
     }

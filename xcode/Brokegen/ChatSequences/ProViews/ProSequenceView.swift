@@ -158,7 +158,7 @@ struct ProSequenceView: View {
                     .frame(alignment: useVerticalLayout ? .bottom : .center)
                     .padding(.bottom, useVerticalLayout ? 18 : 0)
                     .padding([.leading, .trailing], 12)
-                    .animation(.snappy(duration: 0.2))
+                    .animation(.snappy, value: useVerticalLayout)
                 }
                 .padding(.leading, 24)
                 .padding(.trailing, 12)
@@ -553,7 +553,7 @@ struct ProSequenceView: View {
                                             showMessageHeaders: settings.showMessageHeaders,
                                             renderAsMarkdown: $settings.renderAsMarkdown
                                         )
-                                        .animation(settings.override.animateNewResponseText ? .snappy : nil)
+                                        .animation(settings.override.animateNewResponseText ? .snappy : nil, value: viewModel.responseInEdit)
                                         .padding(.leading, messageIndent)
                                         .id(-1)
                                     }

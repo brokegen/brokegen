@@ -212,7 +212,7 @@ struct OFMPicker: View {
                     idealWidth: geometry.size.width,
                     idealHeight: geometry.size.height * 0.8,
                     alignment: .top)
-                .animation(.linear(duration: 0.2))
+                .animation(.easeInOut, value: showModelPicker)
         }
         .frame(minHeight: 160)
     }
