@@ -140,10 +140,9 @@ struct ProMessageView: View {
                 ZStack(alignment: .topTrailing) {
                     if renderAsMarkdown {
                         Markdown(message.content)
-                            .markdownBlockStyle(\.listItem) { configuration in
-                                configuration.label
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .markdownMargin(top: 6)
+                            .markdownTextStyle {
+                                FontSize(18)
+                                BackgroundColor(nil)
                             }
                             .markdownBlockStyle(\.paragraph) { configuration in
                                 configuration.label
@@ -151,9 +150,21 @@ struct ProMessageView: View {
                                     .relativeLineSpacing(.em(0.333))
                                     .markdownMargin(top: 0, bottom: 33)
                             }
-                            .markdownTextStyle {
-                                FontSize(18)
-                                BackgroundColor(nil)
+                            .markdownBlockStyle(\.listItem) { configuration in
+                                configuration.label
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .markdownMargin(top: 6)
+                            }
+                            .markdownBlockStyle(\.blockquote) { configuration in
+                                HStack(spacing: 0) {
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color(.disabledControlTextColor))
+                                        .relativeFrame(width: .em(0.2))
+                                    configuration.label
+                                        .relativePadding(.horizontal, length: .em(0.75))
+                                }
+                                .fixedSize(horizontal: false, vertical: true)
+                                .markdownMargin(top: 6)
                             }
                             .textSelection(.enabled)
                             .padding(16)
@@ -208,8 +219,12 @@ If you're willing, could you please share some ideas or topics you think would b
 2.  A topic you'd like me to explain or summarize (e.g., science, history, or technology)
 3.  A style of content you'd like me to emulate (e.g., humor, poetry, or storytelling)
 4.  Here's a really long paragraph that extends past the edge of the 800 point preview screen width, because it's crucial to test text and line spacing for a given paragraph.
+5.  And an indented blockquote sub-item!
+    > We should probably just use a real list of markdown samples from somewhere.
 
 Your input will help me generate more targeted and valuable responses. Let's collaborate to create something exciting together!
+
+> Thanks.
 """, createdAt: Date(timeIntervalSinceNow: +5))
 
     let message4 = TemporaryChatMessage(role: "assistant", content: """
