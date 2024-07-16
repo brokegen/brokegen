@@ -96,14 +96,14 @@ struct MiniSequencePickerSidebar: View {
             }
             else {
                 NavigationLink(destination: SequencePickerView(onlyUserPinned: true)) {
-                    ASRow("Browse Pinned", showChevron: true)
+                    ASRow("Pinned Chats", showChevron: true)
                 }
                 NavigationLink(destination: SequencePickerView(onlyUserPinned: false)) {
-                    ASRow("Browse All", showChevron: true)
+                    ASRow("Pinned + Recent", showChevron: true)
                 }
 
                 Divider()
-                
+
                 ForEach(someSectionedSequences(limit: navLimit), id: \.0) { pair in
                     let (sectionName, sectionSequences) = pair
                     

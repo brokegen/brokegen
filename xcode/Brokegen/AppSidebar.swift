@@ -122,17 +122,6 @@ struct AppSidebar: View {
 
             Divider()
 
-            Toggle(isOn: $appSettings.showDebugSidebarItems, label: {
-                HStack(spacing: 0) {
-                    Text("Show debug sidebar items")
-                        .layoutPriority(0.2)
-
-                    Spacer()
-                }
-            })
-            .toggleStyle(.switch)
-            .padding(.trailing, -12)
-
             Toggle(isOn: $chatSettingsService.useSimplifiedSequenceViews, label: {
                 HStack(spacing: 0) {
                     Text("Use simplified chat interface")
@@ -180,28 +169,21 @@ struct AppSidebar: View {
                             ASRow("Foundation Models")
                         }
 
-                        Divider()
+                        NavigationLink(destination: SequencePickerView(onlyUserPinned: false, showNewChatButton: false, showSequenceIds: true)) {
+                            ASRow("ChatSequences", showChevron: true)
+                        }
 
-                        ASRow("Chat Templates")
-                            .foregroundStyle(Color(.disabledControlTextColor))
-
-                        ASRow("Tokenization Check")
-                            .foregroundStyle(Color(.disabledControlTextColor))
-
-                        ASRow("Vector Stores")
-                            .foregroundStyle(Color(.disabledControlTextColor))
-
+                        // TODO: Hide these, because they aren't implemented
                         if appSettings.showDebugSidebarItems {
                             Divider()
 
-                            ASRow("InferenceJobs")
+                            ASRow("Chat Templates")
                                 .foregroundStyle(Color(.disabledControlTextColor))
 
-                            NavigationLink(destination: SequencePickerView(onlyUserPinned: false, showNewChatButton: false, showSequenceIds: true)) {
-                                ASRow("ChatSequences", showChevron: true)
-                            }
+                            ASRow("Tokenization Check")
+                                .foregroundStyle(Color(.disabledControlTextColor))
 
-                            ASRow("ChatMessages")
+                            ASRow("Vector Stores")
                                 .foregroundStyle(Color(.disabledControlTextColor))
                         }
                     }
