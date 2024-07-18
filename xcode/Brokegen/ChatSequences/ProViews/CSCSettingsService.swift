@@ -55,6 +55,22 @@ class CSCSettingsService: ObservableObject {
             set { override.renderAsMarkdown = newValue }
         }
 
+        var messageFontDesign: Font.Design {
+            get { Font.Design.fromString(defaults.messageFontDesign) }
+            set {
+                defaults.messageFontDesign = newValue.toString()
+                objectWillChange.send()
+            }
+        }
+
+        var textEntryFontDesign: Font.Design {
+            get { Font.Design.fromString(defaults.textEntryFontDesign) }
+            set {
+                defaults.textEntryFontDesign = newValue.toString()
+                objectWillChange.send()
+            }
+        }
+
         var scrollToBottomOnNew: Bool {
             get { override.scrollToBottomOnNew ?? defaults.scrollToBottomOnNew }
             set { override.scrollToBottomOnNew = newValue }
@@ -131,5 +147,35 @@ class CSCSettingsService: ObservableObject {
     public func registerSettings(_ settings: SettingsProxy, for sequenceId: ChatSequenceServerID) {
         perSequenceUiSettings[sequenceId] = settings.override
         perSequenceInferenceSettings[sequenceId] = settings.inference
+    }
+}
+
+extension Font.Design {
+    static func fromString(_ s: String) -> Font.Design {
+        switch(s) {
+        case "serif":
+            Font.Design.serif
+        case "rounded":
+            Font.Design.rounded
+        case "monospaced":
+            Font.Design.monospaced
+        default:
+            Font.Design.default
+        }
+    }
+
+    func toString() -> String {
+        switch(self) {
+        case .default:
+            "default"
+        case .serif:
+            "serif"
+        case .rounded:
+            "rounded"
+        case .monospaced:
+            "monospaced"
+        @unknown default:
+            ""
+        }
     }
 }

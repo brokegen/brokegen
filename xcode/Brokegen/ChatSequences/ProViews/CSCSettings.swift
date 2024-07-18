@@ -1,35 +1,5 @@
 import SwiftUI
 
-extension Font.Design {
-    static func fromString(_ s: String) -> Font.Design {
-        switch(s) {
-        case "serif":
-            Font.Design.serif
-        case "rounded":
-            Font.Design.rounded
-        case "monospaced":
-            Font.Design.monospaced
-        default:
-            Font.Design.default
-        }
-    }
-
-    func toString() -> String {
-        switch(self) {
-        case .default:
-            "default"
-        case .serif:
-            "serif"
-        case .rounded:
-            "rounded"
-        case .monospaced:
-            "monospaced"
-        @unknown default:
-            ""
-        }
-    }
-}
-
 struct PersistentDefaultCSUISettings {
     @AppStorage("defaultUiSettings.allowContinuation")
     var allowContinuation: Bool = true
@@ -49,14 +19,13 @@ struct PersistentDefaultCSUISettings {
     @AppStorage("defaultUiSettings.renderAsMarkdown")
     var renderAsMarkdown: Bool = true
 
-    // NB This is the stringified name for Font.Design
+    // NB This is the stringified name for a Font.Design
     @AppStorage("defaultUiSettings.messageFontDesign")
-    var _messageFontDesign: String = ""
+    var messageFontDesign: String = ""
 
-    var messageFontDesign: Font.Design {
-        get { Font.Design.fromString(_messageFontDesign) }
-        set { _messageFontDesign = newValue.toString() }
-    }
+    // NB This is the stringified name for a Font.Design
+    @AppStorage("defaultUiSettings.textEntryFontDesign")
+    var textEntryFontDesign: String = ""
 
     @AppStorage("defaultUiSettings.responseBufferMaxSize")
     var responseBufferMaxSize: Int = 48

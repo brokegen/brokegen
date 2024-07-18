@@ -566,7 +566,7 @@ struct ProSequenceView: View {
                                     }
 
                                     messages
-                                        .fontDesign(settings.defaults.messageFontDesign)
+                                        .fontDesign(settings.messageFontDesign)
 
                                     if settings.showOIMPicker {
                                         ofmPicker(geometry)
@@ -616,6 +616,7 @@ struct ProSequenceView: View {
                             if showLowerVStack {
                                 lowerVStack
                                     .frame(minHeight: 72)
+                                    .fontDesign(settings.textEntryFontDesign)
                             }
                         }
                     }

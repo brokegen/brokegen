@@ -103,32 +103,63 @@ struct CSCSettingsView: View {
                 Divider()
                     .frame(maxWidth: generationWidth)
 
-                HStack(spacing: 0) {
-                    Text("Message font style (global)")
-                        .layoutPriority(0.2)
+                Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
+                    GridRow {
+                        Text("Font for rendering messages (global)")
+                            .layoutPriority(0.2)
 
-                    Spacer()
+                        Spacer()
 
-                    Picker("", selection: $settings.defaults.messageFontDesign) {
-                        Text("default")
-                            .fontDesign(.default)
-                            .tag(Font.Design.default)
+                        Picker("", selection: $settings.messageFontDesign) {
+                            Text("default")
+                                .fontDesign(.default)
+                                .tag(Font.Design.default)
 
-                        Text("serif")
-                            .fontDesign(.serif)
-                            .tag(Font.Design.serif)
+                            Text("serif")
+                                .fontDesign(.serif)
+                                .tag(Font.Design.serif)
 
-                        Text("rounded")
-                            .fontDesign(.rounded)
-                            .tag(Font.Design.rounded)
+                            Text("rounded")
+                                .fontDesign(.rounded)
+                                .tag(Font.Design.rounded)
 
-                        Text("monospaced")
-                            .fontDesign(.monospaced)
-                            .tag(Font.Design.monospaced)
+                            Text("monospaced")
+                                .fontDesign(.monospaced)
+                                .tag(Font.Design.monospaced)
 
-                        Text("current: \(settings.defaults.messageFontDesign)")
-                            .fontDesign(settings.defaults.messageFontDesign)
-                            .tag(settings.defaults.messageFontDesign)
+                            Text("current: \(settings.messageFontDesign)")
+                                .fontDesign(settings.messageFontDesign)
+                                .tag(settings.messageFontDesign)
+                        }
+                    }
+
+                    GridRow {
+                        Text("Font for entering prompt text (global)")
+                            .layoutPriority(0.2)
+
+                        Spacer()
+
+                        Picker("", selection: $settings.textEntryFontDesign) {
+                            Text("default")
+                                .fontDesign(.default)
+                                .tag(Font.Design.default)
+
+                            Text("serif")
+                                .fontDesign(.serif)
+                                .tag(Font.Design.serif)
+
+                            Text("rounded")
+                                .fontDesign(.rounded)
+                                .tag(Font.Design.rounded)
+
+                            Text("monospaced")
+                                .fontDesign(.monospaced)
+                                .tag(Font.Design.monospaced)
+
+                            Text("current: \(settings.textEntryFontDesign)")
+                                .fontDesign(settings.textEntryFontDesign)
+                                .tag(settings.textEntryFontDesign)
+                        }
                     }
                 }
             }
