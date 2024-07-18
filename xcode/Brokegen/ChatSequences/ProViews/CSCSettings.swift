@@ -1,5 +1,7 @@
 import SwiftUI
 
+// TODO: Determine whether this needs to be @Observable,
+// or otherwise figure out how observability interacts with @AppStorage (esp across windows).
 struct PersistentDefaultCSUISettings {
     @AppStorage("defaultUiSettings.allowContinuation")
     var allowContinuation: Bool = true

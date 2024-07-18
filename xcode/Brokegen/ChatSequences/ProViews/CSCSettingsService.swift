@@ -8,7 +8,7 @@ class CSCSettingsService: ObservableObject {
     @AppStorage("useSimplifiedSequenceViews")
     @ObservationIgnored public var useSimplifiedSequenceViews: Bool = true
 
-    @ObservationIgnored let defaults: PersistentDefaultCSUISettings = PersistentDefaultCSUISettings()
+    let defaults: PersistentDefaultCSUISettings = PersistentDefaultCSUISettings()
     var perSequenceUiSettings: [ChatSequenceServerID : OverrideCSUISettings] = [:]
     var perSequenceInferenceSettings: [ChatSequenceServerID : CSInferenceSettings] = [:]
 
@@ -141,7 +141,7 @@ class CSCSettingsService: ObservableObject {
             perSequenceInferenceSettings[sequenceId] = inferenceSettings
         }
 
-        return SettingsProxy(defaults: defaults, override: uiSettings!, inference: inferenceSettings!)
+        return SettingsProxy(defaults: self.defaults, override: uiSettings!, inference: inferenceSettings!)
     }
 
     public func registerSettings(_ settings: SettingsProxy, for sequenceId: ChatSequenceServerID) {
