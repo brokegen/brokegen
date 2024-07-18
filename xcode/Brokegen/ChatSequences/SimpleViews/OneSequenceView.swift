@@ -14,60 +14,25 @@ struct OneSequenceView: View {
     }
 
     var textEntryView: some View {
-        // Tab.retrieval
-        HStack(spacing: 0) {
-            InlineTextInput(
-                $viewModel.promptInEdit,
-                isFocused: $focusTextInput
-            )
-            .focused($focusTextInput)
-            .onAppear {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    self.focusTextInput = true
-                }
-            }
-            .backgroundStyle(inputBackgroundStyle)
-
-            let retrievalButtonDisabled: Bool = {
-                if viewModel.submitting || viewModel.responseInEdit != nil {
-                    return true
-                }
-
-                return viewModel.promptInEdit.isEmpty && !settings.allowContinuation
-            }()
-
-            if settings.showSeparateRetrievalButton {
-                Button(action: {
-                    if viewModel.promptInEdit.isEmpty && settings.allowContinuation {
-                        _ = viewModel.requestContinue(withRetrieval: true)
+        HStack(spacing: 12) {
+            InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
+                .focused($focusTextInput)
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        self.focusTextInput = true
                     }
-                    else {
-                        viewModel.requestExtend(withRetrieval: true)
-                    }
-                }) {
-                    Image(systemName: "arrow.up.doc")
-                        .font(.system(size: 32))
-                        .padding(12)
                 }
-                .disabled(retrievalButtonDisabled)
-                .modifier(ForegroundAccentColor(enabled: !retrievalButtonDisabled))
-                .buttonStyle(.plain)
-            }
 
             let aioButtonName: String = {
-                if viewModel.submitting || viewModel.responseInEdit != nil {
+                if viewModel.submitting || viewModel.receiving {
                     return "stop.fill"
-                }
-
-                if !settings.showSeparateRetrievalButton && settings.forceRetrieval {
-                    return "arrow.up.doc"
                 }
 
                 return "paperplane"
             }()
 
             let aioButtonDisabled: Bool = {
-                if viewModel.submitting || viewModel.responseInEdit != nil {
+                if viewModel.submitting || viewModel.receiving {
                     return false
                 }
                 else {
@@ -75,166 +40,151 @@ struct OneSequenceView: View {
                 }
             }()
 
-            Button(action: {
-                if viewModel.submitting || viewModel.responseInEdit != nil {
-                    viewModel.stopSubmitAndReceive(userRequested: true)
-                }
-                else {
-                    if settings.showSeparateRetrievalButton {
-                        if viewModel.promptInEdit.isEmpty {
-                            if settings.allowContinuation {
-                                _ = viewModel.requestContinue()
-                            }
-                            else {}
-                        }
-                        else {
-                            viewModel.requestExtend()
-                        }
+            HStack(spacing: 12) {
+                Button(action: {
+                    print("[TRACE] Detected OneSequenceView submit")
+
+                    if viewModel.submitting || viewModel.receiving {
+                        viewModel.stopSubmitAndReceive(userRequested: true)
                     }
                     else {
                         if viewModel.promptInEdit.isEmpty {
                             if settings.allowContinuation {
-                                _ = viewModel.requestContinue(withRetrieval: settings.forceRetrieval)
+                                _ = viewModel.requestContinue(model: viewModel.continuationInferenceModel?.serverId)
                             }
                             else {}
                         }
                         else {
-                            viewModel.requestExtend(withRetrieval: settings.forceRetrieval)
+                            viewModel.requestExtend(model: viewModel.continuationInferenceModel?.serverId)
                         }
                     }
+                }) {
+                    Image(systemName: aioButtonName)
+                        .font(.system(size: 32))
                 }
-            }) {
-                Image(systemName: aioButtonName)
-                    .font(.system(size: 32))
-                    .padding(12)
-                    .padding(.trailing, 12)
-                    .padding(.leading, -6)
+                .keyboardShortcut(.return)
+                .buttonStyle(.plain)
+                .disabled(aioButtonDisabled)
+                .modifier(ForegroundAccentColor(enabled: !aioButtonDisabled))
             }
-            .keyboardShortcut(.return)
-            .disabled(aioButtonDisabled)
-            .modifier(ForegroundAccentColor(enabled: !aioButtonDisabled))
-            .buttonStyle(.plain)
+            .frame(alignment: .center)
+            .padding([.leading, .trailing], 12)
         }
+        .padding(.leading, 24)
+        .padding(.trailing, 12)
     }
 
     var body: some View {
         GeometryReader { geometry in
-            ScrollViewReader { proxy in
-                VSplitView {
-                    VStack(spacing: 0) {
-                        if settings.pinChatSequenceDesc {
-                            HStack(spacing: 0) {
-                                Text(viewModel.displayHumanDesc)
-                                    .font(.system(size: 36))
-                                    .foregroundColor(.gray)
-                                    .lineLimit(1)
-                                    .layoutPriority(0.2)
-
-                                Spacer()
-
-                                Button(action: {
-                                    settings.pinChatSequenceDesc = false
-                                }) {
-                                    Image(systemName: "pin")
-                                        .font(.system(size: 24))
-                                        .padding(12)
-                                        .contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain)
-                            }
-                            .id("sequence title")
-                            .padding(.bottom, 12)
-                            .padding(.leading, 24)
-                            .padding(.trailing, 24)
-                        }
-
-                        ScrollView(.vertical) {
-                            if !settings.pinChatSequenceDesc {
-                                HStack(spacing: 0) {
-                                    Text(viewModel.displayHumanDesc)
-                                        .font(.system(size: 36))
-                                        .foregroundColor(.gray)
-                                        .lineLimit(1...10)
-                                        .layoutPriority(0.2)
-
-                                    Spacer()
-
-                                    Button(action: {
-                                        settings.pinChatSequenceDesc = true
-                                    }) {
-                                        Image(systemName: "pin.slash")
-                                            .font(.system(size: 24))
-                                            .padding(12)
-                                            .contentShape(Rectangle())
-                                            .foregroundStyle(Color(.disabledControlTextColor))
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                                .id("sequence title")
-                                .padding(.bottom, 12)
-                                .padding(.leading, 24)
-                                .padding(.trailing, 24)
-                            }
-
-                            ForEach(viewModel.sequence.messages) { message in
-                                OneMessageView(message)
-                            }
-
-                            if viewModel.responseInEdit != nil {
-                                OneMessageView(.temporary(viewModel.responseInEdit!), stillUpdating: true)
-                            }
-                        }
-                    }
-                    .frame(minHeight: 80)
-
-                    let maxInputHeight = {
-                        if splitViewLoaded {
-                            geometry.size.height * 0.7
-                        }
-                        else {
-                            geometry.size.height * 0.2
-                        }
-                    }()
-
-                    VStack(spacing: 0) {
+            VSplitView {
+                VStack(spacing: 0) {
+                    if settings.pinChatSequenceDesc {
                         HStack(spacing: 0) {
-                            Text(viewModel.serverStatus ?? "Ready")
-                                .foregroundStyle(Color(.disabledControlTextColor))
-                                .lineSpacing(9)
+                            Text(viewModel.displayHumanDesc)
+                                .font(.system(size: 36))
+                                .foregroundColor(.gray)
+                                .lineLimit(1)
                                 .layoutPriority(0.2)
 
                             Spacer()
 
-                            if viewModel.submitting || viewModel.responseInEdit != nil {
-                                ProgressView()
-                                    .progressViewStyle(.linear)
-                                    .frame(maxWidth: 120)
-                                    .layoutPriority(0.2)
+                            Button(action: {
+                                settings.pinChatSequenceDesc = false
+                            }) {
+                                Image(systemName: "pin")
+                                    .font(.system(size: 24))
+                                    .padding(12)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .id("sequence title")
+                        .padding(.bottom, 12)
+                        .padding(.leading, 24)
+                        .padding(.trailing, 24)
+                    }
+
+                    ScrollViewReader { proxy in
+                        ScrollView(.vertical) {
+                            LazyVStack(alignment: .leading, spacing: 0) {
+                                if !settings.pinChatSequenceDesc {
+                                    HStack(spacing: 0) {
+                                        Text(viewModel.displayHumanDesc)
+                                            .font(.system(size: 36))
+                                            .foregroundColor(.gray)
+                                            .lineLimit(1...10)
+                                            .layoutPriority(0.2)
+
+                                        Spacer()
+
+                                        Button(action: {
+                                            settings.pinChatSequenceDesc = true
+                                        }) {
+                                            Image(systemName: "pin.slash")
+                                                .font(.system(size: 24))
+                                                .padding(12)
+                                                .contentShape(Rectangle())
+                                                .foregroundStyle(Color(.disabledControlTextColor))
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                    .id("sequence title")
+                                    .padding(.bottom, 12)
+                                    .padding(.leading, 24)
+                                    .padding(.trailing, 24)
+                                }
+
+                                ForEach(viewModel.sequence.messages) { message in
+                                    OneMessageView(message)
+                                }
+
+                                if viewModel.responseInEdit != nil {
+                                    OneMessageView(.temporary(viewModel.responseInEdit!), stillUpdating: true)
+                                }
+                            } // LazyVStack
+                        } // ScrollView
+                        .defaultScrollAnchor(.bottom)
+                        .onAppear {
+                            proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+                                splitViewLoaded = true
                             }
                         }
-                        .padding([.leading, .trailing], 18)
-                        .padding([.top, .bottom], 12)
-                        .frame(minHeight: 36)
-                        .background(BackgroundEffectView().ignoresSafeArea())
-
-                        textEntryView
-                    } // end of entire lower VStack
-                    .background(inputBackgroundStyle)
-                    .frame(minHeight: 180, maxHeight: max(180, maxInputHeight))
-                }
-                .defaultScrollAnchor(.bottom)
-                .onAppear {
-                    proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
-
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
-                        splitViewLoaded = true
+                        .onChange(of: viewModel.sequence.messages) {
+                            proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+                        }
+                        .onChange(of: viewModel.responseInEdit?.content) {
+                            proxy.scrollTo(viewModel.responseInEdit, anchor: .bottom)
+                        }
                     }
                 }
-                .onChange(of: viewModel.sequence.messages) {
-                    proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
-                }
-                .onChange(of: viewModel.responseInEdit?.content) {
-                    proxy.scrollTo(viewModel.responseInEdit, anchor: .bottom)
+                .frame(minHeight: 240)
+
+                VStack(spacing: 0) {
+                    HStack(alignment: .bottom, spacing: 0) {
+                        Text(viewModel.displayServerStatus ?? "Ready")
+                            .foregroundStyle(Color(.disabledControlTextColor))
+                            .lineSpacing(9)
+                            .layoutPriority(0.2)
+
+                        Spacer()
+
+                        if viewModel.submitting || viewModel.receiving {
+                            ProgressView()
+                                .progressViewStyle(.linear)
+                                .frame(maxWidth: 144)
+                                .layoutPriority(0.2)
+                        }
+                    }
+                    .padding([.leading, .trailing], 18)
+                    .padding([.top, .bottom], 12)
+                    .background(BackgroundEffectView().ignoresSafeArea())
+                    .frame(minHeight: statusBarHeight)
+                    .frame(maxHeight: statusBarHeight)
+
+                    textEntryView
+                        .frame(minHeight: 72)
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)

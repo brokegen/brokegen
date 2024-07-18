@@ -21,9 +21,9 @@ struct ProSequenceView: View {
     }
 
     func aioSubmit() {
-        print("[TRACE] Detected ProSV.aioSubmit()")
+        print("[TRACE] Detected ProSequenceView.aioSubmit()")
 
-        if viewModel.submitting || viewModel.responseInEdit != nil {
+        if viewModel.submitting || viewModel.receiving {
             viewModel.stopSubmitAndReceive(userRequested: true)
         }
         else {
@@ -125,17 +125,14 @@ struct ProSequenceView: View {
         .keyboardShortcut(.return)
         .buttonStyle(.plain)
         .disabled(aioButtonDisabled)
-        .foregroundStyle(
-            aioButtonDisabled
-            ? Color(.disabledControlTextColor)
-            : Color.accentColor)
+        .modifier(ForegroundAccentColor(enabled: !aioButtonDisabled))
     }
 
     var textEntryView: some View {
         VStack(spacing: 0) {
             GeometryReader { geometry in
                 HStack(spacing: 12) {
-                    InlineTextInput($viewModel.promptInEdit,isFocused: $focusTextInput)
+                    InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
                         .padding(.leading, -24)
                         .focused($focusTextInput)
                         .onAppear {
