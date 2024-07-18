@@ -154,6 +154,21 @@ class OneSequenceViewModel: ObservableObject {
         if bufferedResponseContent.count > bufferSize {
             if self.responseInEdit == nil {
                 print("[WARNING] Should not have nil responseInEdit at this point; maintaining buffer size of \(bufferedResponseContent.count)")
+
+                // DEBUG: There's a race condition somewhere that lets you continue submitting while still receiving.
+                // For now, just duplicate the code from receiveHandler().
+                //
+                // NB All this state-mungeing is okay for now because we refresh the entire sequenceDetails on end of inference.
+                //
+                promptInEdit = ""
+                receivedDone = 0
+                responseInEdit = TemporaryChatMessage(
+                    role: "assistant",
+                    content: submittedAssistantResponseSeed ?? "",
+                    createdAt: Date.now
+                )
+                submittedAssistantResponseSeed = nil
+                submitting = false
             }
             else {
                 self.responseInEdit!.content!.append(bufferedResponseContent)
