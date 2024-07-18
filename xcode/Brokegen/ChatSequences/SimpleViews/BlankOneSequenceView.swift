@@ -116,6 +116,7 @@ struct BlankOneSequenceView: View {
                 .buttonStyle(.plain)
                 .disabled(aioButtonDisabled)
                 .modifier(ForegroundAccentColor(enabled: !aioButtonDisabled))
+                .id("aio button")
             }
             .frame(alignment: .center)
             .padding([.leading, .trailing], 12)
@@ -130,6 +131,7 @@ struct BlankOneSequenceView: View {
                 VStack(spacing: 0) {
                     ChatNameInput($viewModel.humanDesc)
                         .padding(.bottom, 24)
+                        .id("sequence title")
 
                     ScrollViewReader { proxy in
                         ScrollView(.vertical) {

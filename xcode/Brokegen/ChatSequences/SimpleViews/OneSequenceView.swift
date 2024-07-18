@@ -86,6 +86,7 @@ struct OneSequenceView: View {
                 .buttonStyle(.plain)
                 .disabled(aioButtonDisabled)
                 .modifier(ForegroundAccentColor(enabled: !aioButtonDisabled))
+                .id("aio button")
             }
             .frame(alignment: .center)
             .padding([.leading, .trailing], 12)

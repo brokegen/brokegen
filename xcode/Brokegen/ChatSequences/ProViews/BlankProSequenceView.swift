@@ -136,10 +136,8 @@ struct BlankProSequenceView: View {
         .keyboardShortcut(.return)
         .buttonStyle(.plain)
         .disabled(aioButtonDisabled)
-        .foregroundStyle(
-            aioButtonDisabled
-            ? Color(.disabledControlTextColor)
-            : Color.accentColor)
+        .modifier(ForegroundAccentColor(enabled: !aioButtonDisabled))
+        .id("aio button")
     }
 
     var textEntryView: some View {
@@ -486,7 +484,8 @@ struct BlankProSequenceView: View {
                 VStack(spacing: 0) {
                     ChatNameInput($viewModel.humanDesc)
                         .padding(.bottom, 24)
-                    
+                        .id("sequence title")
+
                     ScrollViewReader { proxy in
                         ScrollView(.vertical) {
                             VStack(alignment: .leading, spacing: 0) {
