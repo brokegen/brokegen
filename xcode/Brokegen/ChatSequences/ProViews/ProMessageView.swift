@@ -1,4 +1,3 @@
-import MarkdownUI
 import SwiftUI
 
 struct ProMessageView: View {
@@ -139,39 +138,7 @@ struct ProMessageView: View {
             if expandContent && !message.content.isEmpty {
                 ZStack(alignment: .topTrailing) {
                     if renderAsMarkdown {
-                        Markdown(message.content)
-                            .markdownTextStyle {
-                                FontSize(18)
-                                BackgroundColor(nil)
-                            }
-                            .markdownBlockStyle(\.paragraph) { configuration in
-                                configuration.label
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .relativeLineSpacing(.em(0.333))
-                                    .markdownMargin(top: 0, bottom: 33)
-                            }
-                            .markdownBlockStyle(\.listItem) { configuration in
-                                configuration.label
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .markdownMargin(top: 6)
-                            }
-                            .markdownBlockStyle(\.blockquote) { configuration in
-                                HStack(spacing: 0) {
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .fill(Color(.disabledControlTextColor))
-                                        .relativeFrame(width: .em(0.2))
-                                    configuration.label
-                                        .relativePadding(.horizontal, length: .em(0.75))
-                                }
-                                .fixedSize(horizontal: false, vertical: true)
-                                .markdownMargin(top: 6)
-                            }
-                            .textSelection(.enabled)
-                            .padding(16)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(Color(.controlBackgroundColor))
-                            )
+                        MarkdownView(content: message.content)
                     }
                     else {
                         Text(message.content)
@@ -198,7 +165,6 @@ struct ProMessageView: View {
                 }
             }
         }
-        .contentShape(Rectangle())
         .onHover { isHovered in
             withAnimation(.snappy) {
                 self.isHovered = isHovered

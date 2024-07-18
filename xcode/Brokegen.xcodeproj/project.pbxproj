@@ -44,6 +44,8 @@
 		CEA8E2482C2FD14000757DA8 /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = CEA8E2472C2FD14000757DA8 /* MarkdownUI */; };
 		CEAA2B702C070AE3002BEB26 /* ChatSequence+Extend.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA2B6F2C070AE3002BEB26 /* ChatSequence+Extend.swift */; };
 		CEAA2B722C070B2E002BEB26 /* ChatSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAA2B712C070B2E002BEB26 /* ChatSequence.swift */; };
+		CEAEF07C2C49AF8D00281578 /* Splash in Frameworks */ = {isa = PBXBuildFile; productRef = CEAEF07B2C49AF8D00281578 /* Splash */; };
+		CEAEF07E2C49B02B00281578 /* MarkdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAEF07D2C49B02B00281578 /* MarkdownView.swift */; };
 		CEB773232C0160530051F41C /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = CEB773222C0160530051F41C /* Alamofire */; };
 		CEDCF2AB2BFFD623006ABBA9 /* OneMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */; };
 		CEE99E592C0D85AD008E1B07 /* OneSequenceViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E582C0D85AD008E1B07 /* OneSequenceViewModel.swift */; };
@@ -125,6 +127,7 @@
 		CEA8E2412C2F8DB000757DA8 /* BlankSequenceViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankSequenceViewModel.swift; sourceTree = "<group>"; };
 		CEAA2B6F2C070AE3002BEB26 /* ChatSequence+Extend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChatSequence+Extend.swift"; sourceTree = "<group>"; };
 		CEAA2B712C070B2E002BEB26 /* ChatSequence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSequence.swift; sourceTree = "<group>"; };
+		CEAEF07D2C49B02B00281578 /* MarkdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownView.swift; sourceTree = "<group>"; };
 		CEDCF2AA2BFFD623006ABBA9 /* OneMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneMessageView.swift; sourceTree = "<group>"; };
 		CEE99E582C0D85AD008E1B07 /* OneSequenceViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneSequenceViewModel.swift; sourceTree = "<group>"; };
 		CEE99E622C0E7D9F008E1B07 /* OneFoundationModelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneFoundationModelView.swift; sourceTree = "<group>"; };
@@ -157,6 +160,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CEA8E2482C2FD14000757DA8 /* MarkdownUI in Frameworks */,
+				CEAEF07C2C49AF8D00281578 /* Splash in Frameworks */,
 				CEB773232C0160530051F41C /* Alamofire in Frameworks */,
 				CE66FAFC2C1679C700BD8745 /* SwiftyJSON in Frameworks */,
 			);
@@ -226,6 +230,7 @@
 				CEE99E582C0D85AD008E1B07 /* OneSequenceViewModel.swift */,
 				CEA8E2412C2F8DB000757DA8 /* BlankSequenceViewModel.swift */,
 				CE145DA72C1A0DFD00577314 /* SequenceWidgets.swift */,
+				CEAEF07D2C49B02B00281578 /* MarkdownView.swift */,
 				CEAA2B6E2C070AAE002BEB26 /* Data */,
 				CE145DA62C1A0A1E00577314 /* SimpleViews */,
 				CE9065232C272B12003593F1 /* SequencePicker */,
@@ -408,6 +413,7 @@
 				CEB773222C0160530051F41C /* Alamofire */,
 				CE66FAFB2C1679C700BD8745 /* SwiftyJSON */,
 				CEA8E2472C2FD14000757DA8 /* MarkdownUI */,
+				CEAEF07B2C49AF8D00281578 /* Splash */,
 			);
 			productName = Brokegen;
 			productReference = CE98674D2BF4047C008D6C41 /* Brokegen.app */;
@@ -445,6 +451,7 @@
 				CEFEB4792BFDAABC00334522 /* XCRemoteSwiftPackageReference "Alamofire" */,
 				CE66FAFA2C1679C700BD8745 /* XCRemoteSwiftPackageReference "SwiftyJSON" */,
 				CEA8E2462C2FD14000757DA8 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
+				CEAEF07A2C49AF8D00281578 /* XCRemoteSwiftPackageReference "Splash" */,
 			);
 			productRefGroup = CE98674E2BF4047C008D6C41 /* Products */;
 			projectDirPath = "";
@@ -517,6 +524,7 @@
 				CEE99E652C0E8378008E1B07 /* JobPickerView.swift in Sources */,
 				CE4634ED2BFAE3020063142E /* RestartableProcess.swift in Sources */,
 				CE7FFE162C04482900DB7CFA /* ModelPickerView.swift in Sources */,
+				CEAEF07E2C49B02B00281578 /* MarkdownView.swift in Sources */,
 				CEA410FF2C1E3B9A00FA3111 /* ManagedService.swift in Sources */,
 				CE4634F42BFBB4900063142E /* ChatSyncService.swift in Sources */,
 				CE4634EF2BFAFA340063142E /* StayAwakeService.swift in Sources */,
@@ -832,6 +840,14 @@
 				minimumVersion = 2.3.1;
 			};
 		};
+		CEAEF07A2C49AF8D00281578 /* XCRemoteSwiftPackageReference "Splash" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/JohnSundell/Splash";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.16.0;
+			};
+		};
 		CEFEB4792BFDAABC00334522 /* XCRemoteSwiftPackageReference "Alamofire" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Alamofire/Alamofire.git";
@@ -852,6 +868,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = CEA8E2462C2FD14000757DA8 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
 			productName = MarkdownUI;
+		};
+		CEAEF07B2C49AF8D00281578 /* Splash */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CEAEF07A2C49AF8D00281578 /* XCRemoteSwiftPackageReference "Splash" */;
+			productName = Splash;
 		};
 		CEB773222C0160530051F41C /* Alamofire */ = {
 			isa = XCSwiftPackageProductDependency;
