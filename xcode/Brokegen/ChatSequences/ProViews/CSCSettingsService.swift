@@ -3,10 +3,36 @@ import SwiftUI
 @Observable
 class CSCSettingsService: ObservableObject {
     @AppStorage("useSimplifiedBlankOSV")
-    @ObservationIgnored public var useSimplifiedBlankOSV: Bool = true
+    @ObservationIgnored public var _useSimplifiedBlankOSV: Bool = true
+
+    @ObservationIgnored
+    var useSimplifiedBlankOSV: Bool {
+        get {
+            access(keyPath: \.useSimplifiedBlankOSV)
+            return _useSimplifiedBlankOSV
+        }
+        set {
+            withMutation(keyPath: \.useSimplifiedBlankOSV) {
+                _useSimplifiedBlankOSV = newValue
+            }
+        }
+    }
 
     @AppStorage("useSimplifiedSequenceViews")
-    @ObservationIgnored public var useSimplifiedSequenceViews: Bool = true
+    @ObservationIgnored public var _useSimplifiedSequenceViews: Bool = true
+
+    @ObservationIgnored
+    var useSimplifiedSequenceViews: Bool {
+        get {
+            access(keyPath: \.useSimplifiedSequenceViews)
+            return _useSimplifiedSequenceViews
+        }
+        set {
+            withMutation(keyPath: \.useSimplifiedSequenceViews) {
+                _useSimplifiedSequenceViews = newValue
+            }
+        }
+    }
 
     let defaults: PersistentDefaultCSUISettings = PersistentDefaultCSUISettings()
     var perSequenceUiSettings: [ChatSequenceServerID : OverrideCSUISettings] = [:]

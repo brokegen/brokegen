@@ -8,6 +8,7 @@ class PersistentDefaultCSUISettings {
     @AppStorage("defaultUiSettings.allowContinuation")
     @ObservationIgnored private var _allowContinuation: Bool = true
 
+    @ObservationIgnored
     var allowContinuation: Bool {
         get {
             access(keyPath: \.allowContinuation)
