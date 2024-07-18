@@ -500,6 +500,9 @@ struct ProSequenceView: View {
 
         if viewModel.responseInEdit != nil {
             let messageIndent = settings.showMessageHeaders ? 0.0 : 24.0
+            // Disable animation if we're rendering Markdown, because something in MarkdownUI makes it fade really poorly
+            // NB This also affects scrollToBottomOnNew
+            let shouldAnimate = settings.animateNewResponseText && !settings.renderAsMarkdown
 
             ProMessageView(
                 .temporary(viewModel.responseInEdit!),
@@ -507,7 +510,7 @@ struct ProSequenceView: View {
                 showMessageHeaders: settings.showMessageHeaders,
                 renderAsMarkdown: $settings.renderAsMarkdown
             )
-            .animation(settings.animateNewResponseText ? .easeIn : nil, value: viewModel.responseInEdit)
+            .animation(shouldAnimate ? .easeIn : nil, value: viewModel.responseInEdit)
             .padding(.leading, messageIndent)
             .id(-1)
         }
@@ -566,12 +569,18 @@ struct ProSequenceView: View {
                                     messages
                                         .fontDesign(settings.messageFontDesign)
 
-                                    if settings.showOFMPicker {
+                                    // Add a bit of scroll-past-the-bottom space
+                                    if !settings.showOFMPicker {
+                                        Text("End of messages")
+                                            .foregroundStyle(Color(.disabledControlTextColor))
+                                            .frame(height: 400)
+                                            .frame(maxWidth: .infinity)
+                                    }
+                                    else {
                                         ofmPicker(geometry)
                                     }
                                 }
                             } // ScrollView
-                            .defaultScrollAnchor(.bottom)
                             .onAppear {
                                 proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
                             }
@@ -581,7 +590,9 @@ struct ProSequenceView: View {
                                 }
                             }
                             .onChange(of: viewModel.responseInEdit?.content) {
-                                if settings.scrollToBottomOnNew {
+                                let shouldScroll = settings.scrollToBottomOnNew && !settings.renderAsMarkdown
+
+                                if shouldScroll {
                                     if viewModel.responseInEdit != nil {
                                         proxy.scrollTo(-1, anchor: .bottom)
                                     }

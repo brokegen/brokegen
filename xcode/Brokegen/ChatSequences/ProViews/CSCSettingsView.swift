@@ -245,7 +245,7 @@ struct CSCSettingsView: View {
                     "Scroll to bottom of window on new messages",
                     globalIsOn: $settings.defaults.scrollToBottomOnNew,
                     localIsOn: $settings.override.scrollToBottomOnNew,
-                    trueText: "scroll",
+                    trueText: "scroll (disabled if rendering markdown)",
                     falseText: "don't scroll"
                 )
 
@@ -296,7 +296,7 @@ struct CSCSettingsView: View {
                     "Animate (fade in) new response text",
                     globalIsOn: $settings.defaults.animateNewResponseText,
                     localIsOn: $settings.override.animateNewResponseText,
-                    trueText: "animate (snappy)",
+                    trueText: "animate (disabled if rendering markdown)",
                     falseText: "disable"
                 )
             }

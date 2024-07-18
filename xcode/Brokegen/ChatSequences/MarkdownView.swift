@@ -72,13 +72,13 @@ fileprivate struct MVCodeBlock: View {
     let configuration: CodeBlockConfiguration
     let theme: Splash.Theme
 
-    @State var blockWidth: CGFloat = 0
+    // Set an initial value because we can't figure out the render pass details
+    @State var blockWidth: CGFloat = 96
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 0) {
                 Text(configuration.language ?? "plain text")
-                    .font(.system(.caption, design: .monospaced))
                     .fontWeight(.semibold)
                     .foregroundColor(Color(theme.plainTextColor))
 
@@ -112,10 +112,9 @@ fileprivate struct MVCodeBlock: View {
             GeometryReader { geometry in
                 Spacer()
                     .onAppear {
-                        // Wait a bit for the markdown to render more.
-                        // This only applies when we're using the prerendered MarkdownContent().
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             blockWidth = geometry.size.width
+                            print("[TRACE] MVCodeBlock width: \(blockWidth)")
                         }
                     }
             }

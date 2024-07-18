@@ -130,9 +130,14 @@ struct OneSequenceView: View {
                                         .id(-1)
                                         .fontDesign(settings.messageFontDesign)
                                 }
+
+                                // Add a bit of scroll-past-the-bottom space
+                                Text("End of messages")
+                                    .foregroundStyle(Color(.disabledControlTextColor))
+                                    .frame(height: 400)
+                                    .frame(maxWidth: .infinity)
                             }
                         } // ScrollView
-                        .defaultScrollAnchor(.bottom)
                         .onAppear {
                             proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
                         }
