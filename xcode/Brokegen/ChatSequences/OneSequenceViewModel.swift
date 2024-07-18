@@ -1,6 +1,7 @@
 import Alamofire
 import Combine
 import Foundation
+import MarkdownUI
 import SwiftData
 import SwiftyJSON
 
@@ -16,6 +17,7 @@ let maxPinChatSequenceDesc = 140
 @Observable
 class OneSequenceViewModel: ObservableObject {
     var sequence: ChatSequence
+    @ObservationIgnored private var prerenderedMessages: [MessageLike : MarkdownContent] = [:]
     let chatService: ChatSyncService
     let settings: CSCSettingsService.SettingsProxy
     let chatSettingsService: CSCSettingsService
@@ -76,6 +78,8 @@ class OneSequenceViewModel: ObservableObject {
         self.settings = settings
         self.chatSettingsService = chatSettingsService
         self.appSettings = appSettings
+
+        prerenderMessages()
     }
 
     var displayHumanDesc: String {
@@ -89,6 +93,23 @@ class OneSequenceViewModel: ObservableObject {
             }
 
             return serverStatus
+        }
+    }
+
+    func prerenderMessages() {
+        for message in sequence.messages {
+            _ = lookup(message)
+        }
+    }
+
+    func lookup(_ message: MessageLike) -> MarkdownContent {
+        if let rendered = prerenderedMessages[message] {
+            return rendered
+        }
+        else {
+            let rendered = MarkdownContent(message.content)
+            prerenderedMessages[message] = rendered
+            return rendered
         }
     }
 

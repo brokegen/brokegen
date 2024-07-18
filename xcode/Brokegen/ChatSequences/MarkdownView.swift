@@ -67,10 +67,69 @@ extension CodeSyntaxHighlighter where Self == SplashCodeSyntaxHighlighter {
   }
 }
 
+/// Renders a MarkdownUI code block with a non-greedy Divider.
+fileprivate struct MVCodeBlock: View {
+    let configuration: CodeBlockConfiguration
+    let theme: Splash.Theme
+
+    @State var blockWidth: CGFloat = 0
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 0) {
+                Text(configuration.language ?? "plain text")
+                    .font(.system(.caption, design: .monospaced))
+                    .fontWeight(.semibold)
+                    .foregroundColor(Color(theme.plainTextColor))
+
+                Spacer()
+
+                Button(action: {
+                        let pasteboard = NSPasteboard.general
+                        pasteboard.clearContents()
+                        pasteboard.setString(configuration.content, forType: .string)
+                }, label: {
+                    Image(systemName: "clipboard")
+                })
+                .background(Color(.clear))
+                .buttonStyle(.borderless)
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .frame(maxWidth: blockWidth)
+
+            Divider()
+                .frame(maxWidth: blockWidth)
+
+            configuration.label
+                .monospaced()
+                .padding()
+                .markdownMargin(top: .zero, bottom: .em(0.8))
+        }
+        .overlay {
+            // Read the target width of this entire block,
+            // so we can apply it to Divider() which is otherwise greedy
+            GeometryReader { geometry in
+                Spacer()
+                    .onAppear {
+                        // Wait a bit for the markdown to render more.
+                        // This only applies when we're using the prerendered MarkdownContent().
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            blockWidth = geometry.size.width
+                        }
+                    }
+            }
+        }
+        .background(Color(theme.backgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
 struct MarkdownView: View {
     @Environment(\.colorScheme) private var colorScheme
 
-    let content: String
+    let content: MarkdownContent
+    let enableHorizontalScroll: Bool = false
 
     var body: some View {
         Markdown(content)
@@ -100,7 +159,16 @@ struct MarkdownView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .markdownMargin(top: 6)
             }
-            .markdownBlockStyle(\.codeBlock) { codeBlock($0) }
+            .markdownBlockStyle(\.codeBlock) { configuration in
+                if enableHorizontalScroll {
+                    ScrollView(.horizontal) {
+                        MVCodeBlock(configuration: configuration, theme: self.theme)
+                    }
+                }
+                else {
+                    MVCodeBlock(configuration: configuration, theme: self.theme)
+                }
+            }
             .markdownCodeSyntaxHighlighter(.splash(theme: self.theme))
             .textSelection(.enabled)
             .padding(16)
@@ -108,42 +176,6 @@ struct MarkdownView: View {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(Color(.controlBackgroundColor))
             )
-    }
-
-    @ViewBuilder
-    private func codeBlock(_ configuration: CodeBlockConfiguration) -> some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                Text(configuration.language ?? "plain text")
-                    .font(.system(.caption, design: .monospaced))
-                    .fontWeight(.semibold)
-                    .foregroundColor(Color(theme.plainTextColor))
-
-                Spacer()
-
-                Button(action: {
-                        let pasteboard = NSPasteboard.general
-                        pasteboard.clearContents()
-                        pasteboard.setString(configuration.content, forType: .string)
-                }, label: {
-                    Image(systemName: "clipboard")
-                })
-                .background(Color(.clear))
-                .buttonStyle(.borderless)
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
-
-            Divider()
-
-            configuration.label
-                .monospaced()
-                .padding()
-                .markdownMargin(top: .zero, bottom: .em(0.8))
-                .ignoresSafeArea()
-        }
-        .background(Color(theme.backgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     private var theme: Splash.Theme {
@@ -160,7 +192,7 @@ struct MarkdownView: View {
 
 #Preview(traits: .fixedLayout(width: 800, height: 800)) {
     ScrollView {
-        MarkdownView(content: """
+        MarkdownView(content: MarkdownContent("""
             ```swift
             var body: some View {
               Markdown(self.content)
@@ -190,6 +222,6 @@ struct MarkdownView: View {
             Your input will help me generate more targeted and valuable responses. Let's collaborate to create something exciting together!
 
             > Thanks.
-            """)
+            """))
     }
 }

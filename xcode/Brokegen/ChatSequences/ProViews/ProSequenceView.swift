@@ -489,6 +489,7 @@ struct ProSequenceView: View {
 
             ProMessageView(
                 message,
+                renderMessageContent: viewModel.lookup,
                 branchAction: branchAction,
                 showMessageHeaders: settings.showMessageHeaders,
                 renderAsMarkdown: $settings.renderAsMarkdown

@@ -1,7 +1,9 @@
+import MarkdownUI
 import SwiftUI
 
 struct ProMessageView: View {
     let message: MessageLike
+    let renderMessageContent: (MessageLike) -> MarkdownContent
     let sequence: ChatSequence?
     let branchAction: (() -> Void)?
     let stillExpectingUpdate: Bool
@@ -14,6 +16,9 @@ struct ProMessageView: View {
 
     init(
         _ message: MessageLike,
+        renderMessageContent: @escaping ((MessageLike) -> MarkdownContent) = {
+            MarkdownContent($0.content)
+        },
         sequence: ChatSequence? = nil,
         branchAction: (() -> Void)? = nil,
         stillUpdating stillExpectingUpdate: Bool = false,
@@ -21,6 +26,7 @@ struct ProMessageView: View {
         renderAsMarkdown defaultRenderAsMarkdown: Binding<Bool>
     ) {
         self.message = message
+        self.renderMessageContent = renderMessageContent
         self.sequence = sequence
         self.branchAction = branchAction
         self.stillExpectingUpdate = stillExpectingUpdate
@@ -138,7 +144,7 @@ struct ProMessageView: View {
             if expandContent && !message.content.isEmpty {
                 ZStack(alignment: .topTrailing) {
                     if renderAsMarkdown {
-                        MarkdownView(content: message.content)
+                        MarkdownView(content: renderMessageContent(message))
                     }
                     else {
                         Text(message.content)
