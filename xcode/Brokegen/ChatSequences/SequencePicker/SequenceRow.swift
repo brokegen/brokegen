@@ -4,15 +4,18 @@ struct SequenceRow: View {
     @EnvironmentObject private var providerService: ProviderService
 
     let sequence: ChatSequence
+    let hasPending: Bool
     let showSequenceId: Bool
     let action: (() -> Void)
 
     init(
         _ sequence: ChatSequence,
+        hasPending: Bool = false,
         showSequenceId: Bool = false,
         action: @escaping () -> Void
     ) {
         self.sequence = sequence
+        self.hasPending = hasPending
         self.showSequenceId = showSequenceId
         self.action = action
     }
@@ -88,6 +91,10 @@ struct SequenceRow: View {
                          ? "\(sequence.parentSequences!.count) chat messages"
                          : "\(sequence.messages.count) info + chat messages")
 
+                    if hasPending {
+                        Text("+1 pending message")
+                    }
+
                     if let modelName = displayInferenceModel() {
                         Spacer()
 
@@ -108,6 +115,7 @@ struct RenameableSequenceRow: View {
     @EnvironmentObject private var providerService: ProviderService
 
     let sequence: ChatSequence
+    let hasPending: Bool
     @State private var newSequenceName: String
     let action: ((String) -> Void)
 
@@ -116,9 +124,11 @@ struct RenameableSequenceRow: View {
 
     init(
         _ sequence: ChatSequence,
+        hasPending: Bool = false,
         action: @escaping (String) -> Void
     ) {
         self.sequence = sequence
+        self.hasPending = hasPending
         self.newSequenceName = sequence.humanDesc ?? ""
         self.action = action
     }
@@ -213,6 +223,10 @@ struct RenameableSequenceRow: View {
                 Text(sequence.parentSequences != nil
                      ? "\(sequence.parentSequences!.count) chat messages"
                      : "\(sequence.messages.count) info + chat messages")
+
+                if hasPending {
+                    Text("+1 pending message")
+                }
 
                 if let modelName = displayInferenceModel() {
                     Spacer()

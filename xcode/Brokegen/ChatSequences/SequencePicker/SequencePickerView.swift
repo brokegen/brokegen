@@ -244,10 +244,20 @@ struct SequencePickerView: View {
         }
     }
 
+    func hasPendingInference(_ sequence: ChatSequence) -> Bool {
+        if let existingClientModel = chatService.chatSequenceClientModels.first(where: {
+            $0.sequence == sequence
+        }) {
+            return existingClientModel.receiving
+        }
+
+        return false
+    }
+
     @ViewBuilder
     func sequenceRow(_ sequence: ChatSequence) -> some View {
         if self.isRenaming.contains(where: { $0 == sequence }) {
-            RenameableSequenceRow(sequence) { newHumanDesc in
+            RenameableSequenceRow(sequence, hasPending: hasPendingInference(sequence)) { newHumanDesc in
                 Task {
                     if let updatedSequence = await chatService.renameChatSequence(sequence, to: newHumanDesc) {
                         DispatchQueue.main.async {
@@ -259,7 +269,7 @@ struct SequencePickerView: View {
             }
         }
         else {
-            SequenceRow(sequence, showSequenceId: showSequenceIds) {
+            SequenceRow(sequence, hasPending: hasPendingInference(sequence), showSequenceId: showSequenceIds) {
                 pathHost.push(
                     chatService.clientModel(for: sequence, appSettings: appSettings, chatSettingsService: chatSettingsService)
                 )
