@@ -106,6 +106,10 @@ class ChatSequence: Identifiable {
     }
 
     func replaceServerId(_ newServerId: ChatSequenceServerID) -> ChatSequence {
+        // Manually update our local list of "parents", as needed
+        var parentSequences = self.parentSequences
+        parentSequences?.insert(newServerId, at: 0)
+
         return ChatSequence(
             clientId: self.id,
             serverId: newServerId,
@@ -115,7 +119,7 @@ class ChatSequence: Identifiable {
             messages: self.messages,
             inferenceModelId: self.inferenceModelId,
             isLeafSequence: self.isLeafSequence,
-            parentSequences: self.parentSequences
+            parentSequences: parentSequences
         )
     }
 
@@ -143,6 +147,20 @@ class ChatSequence: Identifiable {
             messages: self.messages,
             inferenceModelId: self.inferenceModelId,
             isLeafSequence: self.isLeafSequence,
+            parentSequences: self.parentSequences
+        )
+    }
+
+    func replaceIsLeaf(_ isLeafSequence: Bool) -> ChatSequence {
+        return ChatSequence(
+            clientId: self.id,
+            serverId: self.serverId,
+            humanDesc: self.humanDesc,
+            userPinned: userPinned,
+            generatedAt: self.generatedAt,
+            messages: self.messages,
+            inferenceModelId: self.inferenceModelId,
+            isLeafSequence: isLeafSequence,
             parentSequences: self.parentSequences
         )
     }

@@ -76,6 +76,7 @@ struct SequenceRow: View {
                         Text(String(describing: sequence.parentSequences!))
                             .monospaced()
                             .foregroundStyle(Color(.disabledControlTextColor))
+                            .multilineTextAlignment(.leading)
                     }
                 }
 
@@ -92,7 +93,7 @@ struct SequenceRow: View {
                          : "\(sequence.messages.count) info + chat messages")
 
                     if hasPending {
-                        Text("+1 pending message")
+                        Text("+1 pending response")
                     }
 
                     if let modelName = displayInferenceModel() {
@@ -225,7 +226,7 @@ struct RenameableSequenceRow: View {
                      : "\(sequence.messages.count) info + chat messages")
 
                 if hasPending {
-                    Text("+1 pending message")
+                    Text("+1 pending response")
                 }
 
                 if let modelName = displayInferenceModel() {

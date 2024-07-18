@@ -180,7 +180,9 @@ class OneSequenceViewModel: ObservableObject {
             let templated = TemporaryChatMessage(
                 role: "user prompt (with model template + RAG context)",
                 content: promptWithTemplating,
-                createdAt: Date.now
+                // Don't use the current time, because this comes at the end of inference,
+                // so the date provided/used is usually far later than responseInEdit, which is marked by its own start time.
+                createdAt: responseInEdit?.createdAt ?? Date.distantPast
             )
 
             sequence.messages.append(.temporary(templated))
@@ -199,10 +201,16 @@ class OneSequenceViewModel: ObservableObject {
             receivedDone += 1
         }
 
+        // NB This block is what actually marks the Sequence as "done" and gives us whatever updates we might need.
         if let replacementSequenceId: ChatSequenceServerID = jsonData["new_sequence_id"].int {
             let originalSequenceId = self.sequence.serverId
-            let updatedSequence = self.sequence.replaceServerId(replacementSequenceId)
 
+            // Set the old sequence as non-leaf
+            let nonLeafSequence = self.sequence.replaceIsLeaf(false)
+            self.chatService.loadedChatSequences[originalSequenceId] = nonLeafSequence
+
+            // And then tell everyone to point to the new sequence
+            let updatedSequence = self.sequence.replaceServerId(replacementSequenceId)
             self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: updatedSequence)
         }
 
@@ -398,9 +406,15 @@ class OneSequenceViewModel: ObservableObject {
 
             DispatchQueue.main.sync {
                 let originalSequenceId = self.sequence.serverId
-                self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: appendResult!)
-                self.promptInEdit = ""
 
+                // Set the old sequence as non-leaf
+                let nonLeafSequence = self.sequence.replaceIsLeaf(false)
+                self.chatService.loadedChatSequences[originalSequenceId] = nonLeafSequence
+
+                // And then tell everyone to point to the new sequence
+                self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: appendResult!)
+
+                self.promptInEdit = ""
                 self.stopSubmitAndReceive()
             }
         }

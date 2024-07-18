@@ -94,6 +94,10 @@ extension ChatSequence: Comparable {
             return true
         }
 
+        if lhs.lastMessageDate == rhs.lastMessageDate {
+            return lhs.parentSequences?.count ?? -1 > rhs.parentSequences?.count ?? -1
+        }
+
         return lhs.lastMessageDate! > rhs.lastMessageDate!
     }
 }
