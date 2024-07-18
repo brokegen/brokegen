@@ -173,7 +173,7 @@ struct SequencePickerView: View {
                 chatService.pinChatSequence(sequence, pinned: !sequence.userPinned)
             } label: {
                 Toggle(isOn: .constant(sequence.userPinned)) {
-                    Text("Pin ChatSequence to sidebar")
+                    Text("Keep ChatSequence pinned to sidebar")
                 }
             }
 
@@ -184,7 +184,7 @@ struct SequencePickerView: View {
                      ? "Autoname disabled (still loading)"
                      : (appSettings.preferredAutonamingModel == nil
                         ? "Autoname disabled (set a model in settings)"
-                        : "Autoname chat with \(appSettings.preferredAutonamingModel!.humanId)")
+                        : "Autoname with model: \(appSettings.preferredAutonamingModel!.humanId)")
                 )
             }
             .disabled(appSettings.preferredAutonamingModel == nil)
