@@ -167,18 +167,18 @@ class PersistentDefaultCSUISettings {
         }
     }
 
-    @AppStorage("defaultUiSettings.showOIMPicker")
-    @ObservationIgnored var _showOIMPicker: Bool = false
+    @AppStorage("defaultUiSettings.showOFMPicker")
+    @ObservationIgnored var _showOFMPicker: Bool = false
 
     @ObservationIgnored
-    var showOIMPicker: Bool {
+    var showOFMPicker: Bool {
         get {
-            access(keyPath: \.showOIMPicker)
-            return _showOIMPicker
+            access(keyPath: \.showOFMPicker)
+            return _showOFMPicker
         }
         set {
-            withMutation(keyPath: \.showOIMPicker) {
-                _showOIMPicker = newValue
+            withMutation(keyPath: \.showOFMPicker) {
+                _showOFMPicker = newValue
             }
         }
     }
@@ -212,7 +212,7 @@ struct OverrideCSUISettings {
     var scrollToBottomOnNew: Bool? = nil
     var animateNewResponseText: Bool? = nil
 
-    var showOIMPicker: Bool? = nil
+    var showOFMPicker: Bool? = nil
     var stayAwakeDuringInference: Bool? = nil
 }
 

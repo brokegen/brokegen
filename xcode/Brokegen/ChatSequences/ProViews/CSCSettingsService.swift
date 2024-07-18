@@ -18,18 +18,18 @@ class CSCSettingsService: ObservableObject {
         }
     }
 
-    @AppStorage("useSimplifiedSequenceViews")
-    @ObservationIgnored public var _useSimplifiedSequenceViews: Bool = true
+    @AppStorage("useSimplifiedOSV")
+    @ObservationIgnored public var _useSimplifiedOSV: Bool = true
 
     @ObservationIgnored
-    var useSimplifiedSequenceViews: Bool {
+    var useSimplifiedOSV: Bool {
         get {
-            access(keyPath: \.useSimplifiedSequenceViews)
-            return _useSimplifiedSequenceViews
+            access(keyPath: \.useSimplifiedOSV)
+            return _useSimplifiedOSV
         }
         set {
-            withMutation(keyPath: \.useSimplifiedSequenceViews) {
-                _useSimplifiedSequenceViews = newValue
+            withMutation(keyPath: \.useSimplifiedOSV) {
+                _useSimplifiedOSV = newValue
             }
         }
     }
@@ -107,9 +107,9 @@ class CSCSettingsService: ObservableObject {
             set { override.animateNewResponseText = newValue }
         }
 
-        var showOIMPicker: Bool {
-            get { override.showOIMPicker ?? defaults.showOIMPicker }
-            set { override.showOIMPicker = newValue }
+        var showOFMPicker: Bool {
+            get { override.showOFMPicker ?? defaults.showOFMPicker }
+            set { override.showOFMPicker = newValue }
         }
 
         var stayAwakeDuringInference: Bool {

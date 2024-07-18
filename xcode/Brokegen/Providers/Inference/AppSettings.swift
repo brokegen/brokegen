@@ -12,7 +12,7 @@ class AppSettings: ObservableObject {
     @AppStorage("fallbackInferenceModelId")
     @ObservationIgnored private var _fallbackInferenceModelId: FoundationModelRecordID = INVALID_MODEL_ID
 
-    @AppStorage("chatSummaryModelId")
+    @AppStorage("preferredAutonamingModelId")
     @ObservationIgnored private var _preferredAutonamingModelId: FoundationModelRecordID = INVALID_MODEL_ID
 
     @AppStorage("preferredEmbeddingModelId")

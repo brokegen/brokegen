@@ -122,7 +122,7 @@ struct AppSidebar: View {
 
             Divider()
 
-            Toggle(isOn: $chatSettingsService.useSimplifiedSequenceViews, label: {
+            Toggle(isOn: $chatSettingsService.useSimplifiedOSV, label: {
                 HStack(spacing: 0) {
                     Text("Use simplified chat interface")
                         .layoutPriority(0.2)

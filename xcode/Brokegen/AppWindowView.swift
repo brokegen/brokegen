@@ -60,7 +60,7 @@ struct AppWindowView: View {
                 NavigationSplitView(sidebar: {
                     sharedSidebar
                 }, detail: {
-                    if chatSettingsService.useSimplifiedSequenceViews {
+                    if chatSettingsService.useSimplifiedOSV {
                         OneSequenceView(clientModel)
                     }
                     else {

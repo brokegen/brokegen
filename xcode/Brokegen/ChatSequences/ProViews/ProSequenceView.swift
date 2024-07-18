@@ -422,7 +422,7 @@ struct ProSequenceView: View {
                 Text("Render message content as markdown")
             }
 
-            Toggle(isOn: $settings.showOIMPicker) {
+            Toggle(isOn: $settings.showOFMPicker) {
                 Text("Show InferenceModel override picker")
             }
         }
@@ -568,7 +568,7 @@ struct ProSequenceView: View {
                                     messages
                                         .fontDesign(settings.messageFontDesign)
 
-                                    if settings.showOIMPicker {
+                                    if settings.showOFMPicker {
                                         ofmPicker(geometry)
                                     }
                                 } // LazyVStack

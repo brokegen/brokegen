@@ -62,8 +62,8 @@ struct BlankProSequenceView: View {
 
             Button(action: {
                 if noInferenceModelSelected {
-                    if !viewModel.settings.showOIMPicker {
-                        withAnimation { viewModel.settings.showOIMPicker = true }
+                    if !viewModel.settings.showOFMPicker {
+                        withAnimation { viewModel.settings.showOFMPicker = true }
                     }
                     else {
                         withAnimation { showContinuationModelPicker = true }
@@ -111,8 +111,8 @@ struct BlankProSequenceView: View {
             }
             else {
                 if noInferenceModelSelected {
-                    if !viewModel.settings.showOIMPicker {
-                        withAnimation { viewModel.settings.showOIMPicker = true }
+                    if !viewModel.settings.showOFMPicker {
+                        withAnimation { viewModel.settings.showOFMPicker = true }
                     }
                     else {
                         withAnimation { showContinuationModelPicker = true }
@@ -431,7 +431,7 @@ struct BlankProSequenceView: View {
                 Text("Render message content as markdown")
             }
 
-            Toggle(isOn: $viewModel.settings.showOIMPicker) {
+            Toggle(isOn: $viewModel.settings.showOFMPicker) {
                 Text("Show InferenceModel override picker")
             }
         }
@@ -504,7 +504,7 @@ struct BlankProSequenceView: View {
                                         .id("sequence title")
                                     }
 
-                                    if viewModel.settings.showOIMPicker {
+                                    if viewModel.settings.showOFMPicker {
                                         ofmPicker(geometry)
                                     }
                                 } // LazyVStack
@@ -559,7 +559,7 @@ struct BlankProSequenceView: View {
             .onAppear {
                 if noInferenceModelSelected {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        withAnimation { viewModel.settings.showOIMPicker = true }
+                        withAnimation { viewModel.settings.showOFMPicker = true }
                     }
                 }
             }

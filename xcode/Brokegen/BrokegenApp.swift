@@ -79,7 +79,7 @@ struct BrokegenApp: App {
                 .environmentObject(appSettings)
                 .environmentObject(chatSettingsService)
                 .onReceive(chatSettingsService.objectWillChange) { entireService in
-                    print("[TRACE] useSimplifiedSequenceView: \(chatSettingsService.useSimplifiedSequenceViews)")
+                    print("[TRACE] useSimplifiedOSV: \(chatSettingsService.useSimplifiedOSV)")
                 }
         }
         .windowStyle(.hiddenTitleBar)
@@ -141,7 +141,7 @@ struct BrokegenApp: App {
                     Text("Allow non-localhost traffic\n(applies at next service launch)")
                 })
 
-                Toggle(isOn: $chatSettingsService.useSimplifiedSequenceViews) {
+                Toggle(isOn: $chatSettingsService.useSimplifiedOSV) {
                     Text("Use simplified chat interface")
                 }
 

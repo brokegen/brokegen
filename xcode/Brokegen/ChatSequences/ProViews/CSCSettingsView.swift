@@ -93,8 +93,8 @@ struct CSCSettingsView: View {
 
                     combinedGridRow(
                         "Show inference model override picker",
-                        globalIsOn: $settings.defaults.showOIMPicker,
-                        localIsOn: $settings.override.showOIMPicker,
+                        globalIsOn: $settings.defaults.showOFMPicker,
+                        localIsOn: $settings.override.showOFMPicker,
                         trueText: "show",
                         falseText: "hide picker"
                     )
