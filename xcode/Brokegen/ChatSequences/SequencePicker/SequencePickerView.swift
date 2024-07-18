@@ -196,7 +196,7 @@ struct SequencePickerView: View {
             Button {
                 self.isRenaming.append(sequence)
             } label: {
-                Text("Rename (experimental)...")
+                Text("Rename...")
             }
         }
     }
@@ -262,11 +262,13 @@ struct SequencePickerView: View {
     func sequenceRow(_ sequence: ChatSequence) -> some View {
         if self.isRenaming.contains(where: { $0 == sequence }) {
             RenameableSequenceRow(sequence, hasPending: hasPendingInference(sequence)) { newHumanDesc in
+                print("[TRACE] Starting rename from \(sequence.displayRecognizableDesc())")
                 Task {
                     if let updatedSequence = await chatService.renameChatSequence(sequence, to: newHumanDesc) {
                         DispatchQueue.main.async {
                             chatService.updateSequence(withSameId: updatedSequence)
                             self.isRenaming.removeAll { $0 == sequence }
+                            print("[TRACE] Finished rename to \(sequence.displayRecognizableDesc())")
                         }
                     }
                 }
