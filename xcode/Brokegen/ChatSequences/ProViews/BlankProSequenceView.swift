@@ -20,28 +20,7 @@ struct BlankProSequenceView: View {
     var submitButtons: some View {
         let saveButtonDisabled: Bool = viewModel.submitting || viewModel.promptInEdit.isEmpty
 
-        Button(action: {
-            Task {
-                let constructedSequence: ChatSequence? = await viewModel.requestSave()
-                if constructedSequence != nil {
-                    DispatchQueue.main.sync {
-                        viewModel.chatSettingsService.registerSettings(viewModel.settings, for: constructedSequence!.serverId)
-
-                        let newViewModel: OneSequenceViewModel = viewModel.chatService.addClientModel(fromBlank: viewModel, for: constructedSequence!)
-
-                        pathHost.push(newViewModel)
-
-                        // Once we've successfully transferred the info to a different view, clear it out for if the user starts a new chat.
-                        // Only some settings, though, since most of the other ones tend to get reused.
-                        viewModel.humanDesc = nil
-                        viewModel.promptInEdit = ""
-                        viewModel.submitting = false
-                        viewModel.submittedAssistantResponseSeed = nil
-                        viewModel.serverStatus = nil
-                    }
-                }
-            }
-        }) {
+        Button(action: requestSave) {
             Image(systemName: "tray.and.arrow.up")
                 .font(.system(size: 32))
         }
@@ -558,6 +537,30 @@ struct BlankProSequenceView: View {
             .frame(width: geometry.size.width, height: geometry.size.height)
             .background(BackgroundEffectView().ignoresSafeArea())
             .navigationTitle("Drafting new chat")
+        }
+    }
+
+    func requestSave() {
+        waitingForNavigation = true
+
+        Task {
+            let constructedSequence: ChatSequence? = await viewModel.requestSave()
+            if constructedSequence == nil {
+                DispatchQueue.main.async {
+                    waitingForNavigation = false
+                }
+            }
+            else if constructedSequence != nil {
+                DispatchQueue.main.async {
+                    viewModel.chatSettingsService.registerSettings(viewModel.settings, for: constructedSequence!.serverId)
+
+                    let newViewModel: OneSequenceViewModel = viewModel.chatService.addClientModel(fromBlank: viewModel, for: constructedSequence!)
+
+                    pathHost.push(newViewModel)
+
+                    viewModel.resetForNewChat()
+                }
+            }
         }
     }
 
