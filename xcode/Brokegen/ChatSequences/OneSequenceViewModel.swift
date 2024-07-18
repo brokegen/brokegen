@@ -94,7 +94,7 @@ class OneSequenceViewModel: ObservableObject {
     func refreshSequenceData() {
         Task {
             if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
-                DispatchQueue.main.sync {
+                DispatchQueue.main.async {
                     self.chatService.updateSequence(withSameId: refreshedSequence)
                 }
             }
@@ -404,7 +404,7 @@ class OneSequenceViewModel: ObservableObject {
             let appendResult = try? await self.save()
             guard appendResult != nil else { return }
 
-            DispatchQueue.main.sync {
+            DispatchQueue.main.async {
                 let originalSequenceId = self.sequence.serverId
 
                 // Set the old sequence as non-leaf
