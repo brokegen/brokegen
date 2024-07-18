@@ -119,18 +119,18 @@ class PersistentDefaultCSUISettings {
         }
     }
 
-    @AppStorage("defaultUiSettings.responseBufferMaxSize")
-    @ObservationIgnored var _responseBufferMaxSize: Int = 48
+    @AppStorage("defaultUiSettings.responseBufferFlushFrequencyMsec")
+    @ObservationIgnored var _responseBufferFlushFrequencyMsec: Int = 250
 
     @ObservationIgnored
-    var responseBufferMaxSize: Int {
+    var responseBufferFlushFrequencyMsec: Int {
         get {
-            access(keyPath: \.responseBufferMaxSize)
-            return _responseBufferMaxSize
+            access(keyPath: \.responseBufferFlushFrequencyMsec)
+            return _responseBufferFlushFrequencyMsec
         }
         set {
-            withMutation(keyPath: \.responseBufferMaxSize) {
-                _responseBufferMaxSize = newValue
+            withMutation(keyPath: \.responseBufferFlushFrequencyMsec) {
+                _responseBufferFlushFrequencyMsec = newValue
             }
         }
     }
@@ -152,7 +152,7 @@ class PersistentDefaultCSUISettings {
     }
 
     @AppStorage("defaultUiSettings.animateNewResponseText")
-    @ObservationIgnored var _animateNewResponseText: Bool = false
+    @ObservationIgnored var _animateNewResponseText: Bool = true
 
     @ObservationIgnored
     var animateNewResponseText: Bool {

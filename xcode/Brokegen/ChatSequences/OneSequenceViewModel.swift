@@ -26,6 +26,7 @@ class OneSequenceViewModel: ObservableObject {
 
     @ObservationIgnored var incompleteResponseData: Data? = nil
     @ObservationIgnored var bufferedResponseContent: String = ""
+    @ObservationIgnored var bufferedResponseLastFlush: Date = Date.distantPast
     var responseInEdit: TemporaryChatMessage? = nil
     @ObservationIgnored private var receivedDone: Int = 0
     var receiving: Bool {
@@ -148,10 +149,11 @@ class OneSequenceViewModel: ObservableObject {
         let messageFragment = jsonData["message"]["content"].stringValue
         bufferedResponseContent.append(messageFragment)
 
-        // TODO: This should actually be about rate of updates, not number.
-        // Time + redraw speed are what would make this choppy.
-        let bufferSize = self.settings.defaults.responseBufferMaxSize
-        if bufferedResponseContent.count > bufferSize {
+        let timeSinceFlush = Date.now.timeIntervalSince(bufferedResponseLastFlush)
+        if timeSinceFlush * 1000 > Double(settings.defaults.responseBufferFlushFrequencyMsec) {
+            print("[TRACE] Elapsed time since last response buffer flush: \(timeSinceFlush)")
+            bufferedResponseLastFlush = Date.now
+
             if self.responseInEdit == nil {
                 print("[WARNING] Should not have nil responseInEdit at this point; maintaining buffer size of \(bufferedResponseContent.count)")
 
@@ -207,7 +209,7 @@ class OneSequenceViewModel: ObservableObject {
 
             // Set the old sequence as non-leaf
             let nonLeafSequence = self.sequence.replaceIsLeaf(false)
-            self.chatService.loadedChatSequences[originalSequenceId] = nonLeafSequence
+            self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: nonLeafSequence)
 
             // And then tell everyone to point to the new sequence
             let updatedSequence = self.sequence.replaceServerId(replacementSequenceId)
@@ -409,7 +411,7 @@ class OneSequenceViewModel: ObservableObject {
 
                 // Set the old sequence as non-leaf
                 let nonLeafSequence = self.sequence.replaceIsLeaf(false)
-                self.chatService.loadedChatSequences[originalSequenceId] = nonLeafSequence
+                self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: nonLeafSequence)
 
                 // And then tell everyone to point to the new sequence
                 self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: appendResult!)

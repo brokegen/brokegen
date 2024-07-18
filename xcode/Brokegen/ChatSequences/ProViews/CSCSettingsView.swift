@@ -262,34 +262,36 @@ struct CSCSettingsView: View {
                     Text("")
 
                     HStack {
-                        Picker("", selection: $settings.defaults.responseBufferMaxSize) {
+                        Picker("", selection: $settings.defaults.responseBufferFlushFrequencyMsec) {
                             Text("disabled")
                                 .tag(0)
 
-                            Text("12")
-                                .tag(12)
+                            Text("250 msec")
+                                .tag(250)
 
-                            Text("24")
-                                .tag(24)
+                            Text("500 msec")
+                                .tag(500)
 
-                            Text("48")
-                                .tag(48)
+                            Text("1000 msec")
+                                .tag(1000)
 
-                            Text("96")
-                                .tag(96)
+                            Text("2000 msec")
+                                .tag(2000)
 
-                            Text("custom")
-                                .tag(settings.defaults.responseBufferMaxSize)
+                            if !Set([0, 250, 500, 1000, 2000]).contains(settings.defaults.responseBufferFlushFrequencyMsec) {
+                                Text("custom")
+                                    .tag(settings.defaults.responseBufferFlushFrequencyMsec)
+                            }
                         }
                         .frame(minWidth: 96)
 
-                        Text("(customize:")
+                        Text("/")
 
-                        Stepper(value: $settings.defaults.responseBufferMaxSize) {
-                            Text("\(settings.defaults.responseBufferMaxSize)")
+                        Stepper(value: $settings.defaults.responseBufferFlushFrequencyMsec, step: 50) {
+                            Text("\(settings.defaults.responseBufferFlushFrequencyMsec)")
                         }
 
-                        Text("chars)")
+                        Text("msec")
 
                         Spacer()
                     }
