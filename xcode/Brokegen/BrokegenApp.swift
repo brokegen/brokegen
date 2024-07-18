@@ -15,7 +15,7 @@ let configuration: URLSessionConfiguration = { slowTimeouts in
 
 @main
 struct BrokegenApp: App {
-    @ObservedObject private var chatService: ChatSyncService = DefaultChatSyncService(serverBaseURL, configuration: configuration)
+    @ObservedObject private var chatService: ChatSyncService
     @ObservedObject private var jobsService: JobsManagerService
     @ObservedObject private var providerService: ProviderService
 
@@ -28,24 +28,38 @@ struct BrokegenApp: App {
 
     /// We have to make a bunch of "temporary" variables to do a non-automatic init
     init() {
-        let providerService = DefaultProviderService(serverBaseURL, configuration: configuration)
-        self.providerService = providerService
-        providerService.fetchAllProviders(repeatUntilSuccess: true)
-        providerService.fetchAvailableModels(repeatUntilSuccess: true)
+        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+            chatService = ChatSyncService()
+            let providerService = ProviderService()
+            self.providerService = providerService
 
-        let appSettings = AppSettings()
-        self.appSettings = appSettings
-        appSettings.link(to: providerService)
+            let appSettings = AppSettings()
+            self.appSettings = appSettings
+            appSettings.link(to: providerService)
 
-        let jobsService = DefaultJobsManagerService(
-            startServicesImmediately: appSettings.startServicesImmediately,
-            allowExternalTraffic: appSettings.allowExternalTraffic
-        )
-        self.jobsService = jobsService
+            jobsService = JobsManagerService()
+        }
+        else {
+            chatService = DefaultChatSyncService(serverBaseURL, configuration: configuration)
+            let providerService = DefaultProviderService(serverBaseURL, configuration: configuration)
+            self.providerService = providerService
+            providerService.fetchAllProviders(repeatUntilSuccess: true)
+            providerService.fetchAvailableModels(repeatUntilSuccess: true)
 
-        NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { _ in
-            // Terminate Jobs on exit
-            jobsService.terminateAll()
+            let appSettings = AppSettings()
+            self.appSettings = appSettings
+            appSettings.link(to: providerService)
+
+            let jobsService = DefaultJobsManagerService(
+                startServicesImmediately: appSettings.startServicesImmediately,
+                allowExternalTraffic: appSettings.allowExternalTraffic
+            )
+            self.jobsService = jobsService
+
+            NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { _ in
+                // Terminate Jobs on exit
+                jobsService.terminateAll()
+            }
         }
     }
 
