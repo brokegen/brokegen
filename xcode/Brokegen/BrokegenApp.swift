@@ -64,14 +64,16 @@ struct BrokegenApp: App {
     }
 
     func resetAllUserSettings() {
-        UserDefaults.resetStandardUserDefaults()
-        // This is needed for any HTTP 301's we left lying around during testing.
-        URLCache.shared.removeAllCachedResponses()
+        DispatchQueue.main.async {
+            UserDefaults.resetStandardUserDefaults()
+            // This is needed for any HTTP 301's we left lying around during testing.
+            URLCache.shared.removeAllCachedResponses()
 
-        chatService.chatSequenceClientModels = []
-        chatService.loadedChatSequences.removeAll()
+            chatService.chatSequenceClientModels = []
+            chatService.loadedChatSequences.removeAll()
 
-        providerService.allModels = []
+            providerService.allModels = []
+        }
     }
 
     var body: some Scene {
@@ -137,11 +139,7 @@ struct BrokegenApp: App {
                     Text("Show debug sidebar items")
                 }
 
-                Button(action: {
-                    DispatchQueue.main.async {
-                        resetAllUserSettings()
-                    }
-                }, label: {
+                Button(action: resetAllUserSettings, label: {
                     Label("Reset all user settings", systemImage: "exclamationmark.fill")
                 })
 
