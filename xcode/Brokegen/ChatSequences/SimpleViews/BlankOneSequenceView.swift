@@ -6,6 +6,7 @@ struct BlankOneSequenceView: View {
 
     @FocusState private var focusTextInput: Bool
     @State private var showContinuationModelPicker: Bool = false
+    @State var waitingForNavigation: Bool = false
 
     var noInferenceModelSelected: Bool {
         return viewModel.continuationInferenceModel == nil && viewModel.appSettings.defaultInferenceModel == nil
@@ -49,7 +50,7 @@ struct BlankOneSequenceView: View {
 
             Spacer()
 
-            if viewModel.submitting {
+            if viewModel.submitting || waitingForNavigation {
                 ProgressView()
                     .progressViewStyle(.linear)
                     .frame(maxWidth: 144)
@@ -84,6 +85,9 @@ struct BlankOneSequenceView: View {
                     if viewModel.submitting {
                         return false
                     }
+                    else if waitingForNavigation {
+                        return true
+                    }
                     else {
                         return viewModel.promptInEdit.isEmpty && !viewModel.settings.allowContinuation
                     }
@@ -92,6 +96,9 @@ struct BlankOneSequenceView: View {
                 Button(action: {
                     if viewModel.submitting {
                         viewModel.stopSubmit(userRequested: true)
+                    }
+                    else if waitingForNavigation {
+                        return
                     }
                     else {
                         if noInferenceModelSelected {
@@ -170,9 +177,16 @@ struct BlankOneSequenceView: View {
     }
 
     func requestStartAndTransfer(withRetrieval: Bool) {
+        waitingForNavigation = true
+
         Task {
             let constructedSequence: ChatSequence? = await viewModel.requestSave()
-            if constructedSequence != nil {
+            if constructedSequence == nil {
+                DispatchQueue.main.async {
+                    waitingForNavigation = false
+                }
+            }
+            else if constructedSequence != nil {
                 DispatchQueue.main.async {
                     viewModel.chatSettingsService.registerSettings(viewModel.settings, for: constructedSequence!.serverId)
 
@@ -181,13 +195,7 @@ struct BlankOneSequenceView: View {
 
                     pathHost.push(continuedModel)
 
-                    // Once we've successfully transferred the info to a different view, clear it out for if the user starts a new chat.
-                    // Only some settings, though, since most of the other ones tend to get reused.
-                    viewModel.humanDesc = nil
-                    viewModel.promptInEdit = ""
-                    viewModel.submitting = false
-                    viewModel.submittedAssistantResponseSeed = nil
-                    viewModel.serverStatus = nil
+                    viewModel.resetForNewChat()
                 }
             }
         }

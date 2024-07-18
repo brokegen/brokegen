@@ -156,7 +156,6 @@ struct ProSequenceView: View {
                     .frame(alignment: useVerticalLayout ? .bottom : .center)
                     .padding(.bottom, useVerticalLayout ? 18 : 0)
                     .padding([.leading, .trailing], 12)
-                    // TODO: Sometimes, this still animates when opening the View for the first time
                     .animation(.snappy, value: useVerticalLayout)
                 }
                 .padding(.leading, 24)

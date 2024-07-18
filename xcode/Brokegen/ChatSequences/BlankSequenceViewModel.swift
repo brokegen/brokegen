@@ -43,6 +43,8 @@ class BlankSequenceViewModel: ObservableObject {
         self.settings = settings
         self.chatSettingsService = chatSettingsService
         self.appSettings = appSettings
+
+        resetForNewChat()
     }
 
     var displayHumanDesc: String {
@@ -63,6 +65,16 @@ class BlankSequenceViewModel: ObservableObject {
         }
     }
 
+    func resetForNewChat() {
+        // Once we've successfully transferred the info to a different view, clear it out for if the user starts a new chat.
+        // Only some settings, though, since most of the other ones tend to get reused.
+        humanDesc = nil
+        promptInEdit = ""
+        submitting = false
+        submittedAssistantResponseSeed = nil
+        serverStatus = nil
+    }
+
     func requestSave() async -> ChatSequence? {
         print("[INFO] BlankSequenceViewModel.requestSave()")
         if settings.stayAwakeDuringInference {
@@ -72,7 +84,7 @@ class BlankSequenceViewModel: ObservableObject {
         }
 
         guard !submitting else {
-            print("[ERROR] BlankSequenceViewModel.requestSave() during another submission")
+            print("[ERROR] BlankSequenceViewModel.requestSave() during another submission, ignoring")
             return nil
         }
 

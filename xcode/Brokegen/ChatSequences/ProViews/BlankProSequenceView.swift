@@ -6,6 +6,7 @@ struct BlankProSequenceView: View {
 
     @FocusState private var focusTextInput: Bool
     @State private var showContinuationModelPicker: Bool = false
+    @State var waitingForNavigation: Bool = false
 
     @FocusState private var focusSystemPromptOverride: Bool
     @FocusState private var focusModelTemplateOverride: Bool
@@ -100,6 +101,9 @@ struct BlankProSequenceView: View {
             if viewModel.submitting {
                 return false
             }
+            else if waitingForNavigation {
+                return true
+            }
             else {
                 return viewModel.promptInEdit.isEmpty && !viewModel.settings.allowContinuation
             }
@@ -108,6 +112,9 @@ struct BlankProSequenceView: View {
         Button(action: {
             if viewModel.submitting {
                 viewModel.stopSubmit(userRequested: true)
+            }
+            else if waitingForNavigation {
+                return
             }
             else {
                 if noInferenceModelSelected {
@@ -167,7 +174,7 @@ struct BlankProSequenceView: View {
                     .frame(alignment: useVerticalLayout ? .bottom : .center)
                     .padding(.bottom, useVerticalLayout ? 18 : 0)
                     .padding([.leading, .trailing], 12)
-                    .animation(.snappy(duration: 0.2))
+                    .animation(.snappy, value: useVerticalLayout)
                 }
                 .padding(.leading, 24)
                 .padding(.trailing, 12)
@@ -176,7 +183,7 @@ struct BlankProSequenceView: View {
     }
 
     var showStatusBar: Bool {
-        return viewModel.displayServerStatus != nil || viewModel.submitting
+        return viewModel.displayServerStatus != nil || viewModel.submitting || waitingForNavigation
     }
 
     @ViewBuilder
@@ -191,7 +198,7 @@ struct BlankProSequenceView: View {
 
             Spacer()
 
-            if viewModel.submitting {
+            if viewModel.submitting || waitingForNavigation {
                 ProgressView()
                     .progressViewStyle(.linear)
                     .frame(maxWidth: 144)
@@ -554,9 +561,16 @@ struct BlankProSequenceView: View {
     }
 
     func requestStartAndTransfer(withRetrieval: Bool) {
+        waitingForNavigation = true
+
         Task {
             let constructedSequence: ChatSequence? = await viewModel.requestSave()
-            if constructedSequence != nil {
+            if constructedSequence == nil {
+                DispatchQueue.main.async {
+                    waitingForNavigation = false
+                }
+            }
+            else if constructedSequence != nil {
                 DispatchQueue.main.async {
                     viewModel.chatSettingsService.registerSettings(viewModel.settings, for: constructedSequence!.serverId)
 
@@ -565,13 +579,7 @@ struct BlankProSequenceView: View {
 
                     pathHost.push(continuedModel)
 
-                    // Once we've successfully transferred the info to a different view, clear it out for if the user starts a new chat.
-                    // Only some settings, though, since most of the other ones tend to get reused.
-                    viewModel.humanDesc = nil
-                    viewModel.promptInEdit = ""
-                    viewModel.submitting = false
-                    viewModel.submittedAssistantResponseSeed = nil
-                    viewModel.serverStatus = nil
+                    viewModel.resetForNewChat()
                 }
             }
         }
