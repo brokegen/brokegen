@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CSCSettingsView: View {
     @ObservedObject var settings: CSCSettingsService.SettingsProxy
+    @State var appearanceWidth: CGFloat = 0
     @State var generationWidth: CGFloat = 0
 
     init(
@@ -42,60 +43,104 @@ struct CSCSettingsView: View {
     @ViewBuilder
     var appearanceOptions: some View {
         GroupBox(content: {
-            Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
-                GridRow {
-                    Spacer()
+            VStack(spacing: 24) {
+                Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
+                    GridRow {
+                        Spacer()
 
-                    Text("global")
-                        .gridColumnAlignment(.trailing)
+                        Text("global")
+                            .gridColumnAlignment(.trailing)
 
-                    Text("this sequence")
-                        .gridColumnAlignment(.center)
-                        .frame(minWidth: 288)
+                        Text("this sequence")
+                            .gridColumnAlignment(.center)
+                            .frame(minWidth: 288)
+                    }
+                    Divider()
+
+                    GridRow {
+                        Text("Pin chat name to the top of the window")
+                            .layoutPriority(0.2)
+
+                        Text("")
+
+                        Picker(selection: $settings.override.pinChatSequenceDesc, content: {
+                            Text("default behavior: pin if a name exists")
+                                .tag(nil as Bool?)
+
+                            Text("always pin")
+                                .tag(true as Bool?)
+
+                            Text("don't pin")
+                                .tag(false as Bool?)
+                        }, label: {})
+                    }
+
+                    combinedGridRow(
+                        "Show message headers",
+                        globalIsOn: $settings.defaults.showMessageHeaders,
+                        localIsOn: $settings.override.showMessageHeaders,
+                        trueText: "show",
+                        falseText: "hide headers"
+                    )
+
+                    combinedGridRow(
+                        "Render message content as markdown",
+                        globalIsOn: $settings.defaults.renderAsMarkdown,
+                        localIsOn: $settings.override.renderAsMarkdown,
+                        trueText: "as markdown",
+                        falseText: "as plaintext"
+                    )
+
+                    combinedGridRow(
+                        "Show inference model override picker",
+                        globalIsOn: $settings.defaults.showOIMPicker,
+                        localIsOn: $settings.override.showOIMPicker,
+                        trueText: "show",
+                        falseText: "hide picker"
+                    )
                 }
-                Divider()
 
-                GridRow {
-                    Text("Pin chat name to the top of the window")
+                Divider()
+                    .frame(maxWidth: generationWidth)
+
+                HStack(spacing: 0) {
+                    Text("Message font style (global)")
                         .layoutPriority(0.2)
 
-                    Text("")
+                    Spacer()
 
-                    Picker(selection: $settings.override.pinChatSequenceDesc, content: {
-                        Text("default behavior: pin if a name exists")
-                            .tag(nil as Bool?)
+                    Picker("", selection: $settings.defaults.messageFontDesign) {
+                        Text("default")
+                            .fontDesign(.default)
+                            .tag(Font.Design.default)
 
-                        Text("always pin")
-                            .tag(true as Bool?)
+                        Text("serif")
+                            .fontDesign(.serif)
+                            .tag(Font.Design.serif)
 
-                        Text("don't pin")
-                            .tag(false as Bool?)
-                    }, label: {})
+                        Text("rounded")
+                            .fontDesign(.rounded)
+                            .tag(Font.Design.rounded)
+
+                        Text("monospaced")
+                            .fontDesign(.monospaced)
+                            .tag(Font.Design.monospaced)
+
+                        Text("current: \(settings.defaults.messageFontDesign)")
+                            .fontDesign(settings.defaults.messageFontDesign)
+                            .tag(settings.defaults.messageFontDesign)
+                    }
                 }
-
-                combinedGridRow(
-                    "Show message headers",
-                    globalIsOn: $settings.defaults.showMessageHeaders,
-                    localIsOn: $settings.override.showMessageHeaders,
-                    trueText: "show",
-                    falseText: "hide headers"
-                )
-
-                combinedGridRow(
-                    "Render message content as markdown",
-                    globalIsOn: $settings.defaults.renderAsMarkdown,
-                    localIsOn: $settings.override.renderAsMarkdown,
-                    trueText: "as markdown",
-                    falseText: "as plaintext"
-                )
-
-                combinedGridRow(
-                    "Show inference model override picker",
-                    globalIsOn: $settings.defaults.showOIMPicker,
-                    localIsOn: $settings.override.showOIMPicker,
-                    trueText: "show",
-                    falseText: "hide picker"
-                )
+            }
+            .overlay {
+                // Read the target width of this entire block,
+                // so we can apply it to Divider() which is otherwise greedy
+                GeometryReader { geometry in
+                    Spacer()
+                        .onAppear {
+                            appearanceWidth = geometry.size.width
+                        }
+                }
             }
             .padding(24)
         }, label: {
