@@ -5,12 +5,6 @@ struct CSCSettingsView: View {
     @State var appearanceWidth: CGFloat = 0
     @State var generationWidth: CGFloat = 0
 
-    init(
-        _ settings: CSCSettingsService.SettingsProxy
-    ) {
-        self.settings = settings
-    }
-
     func combinedGridRow(
         _ labelText: String,
         globalIsOn: Binding<Bool>,
@@ -402,7 +396,7 @@ struct CSCSettingsView: View {
 
         var body: some View {
             ScrollView {
-                CSCSettingsView(settings)
+                CSCSettingsView(settings: settings)
             }
         }
     }

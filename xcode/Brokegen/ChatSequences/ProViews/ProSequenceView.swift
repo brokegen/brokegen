@@ -247,7 +247,7 @@ struct ProSequenceView: View {
     @ViewBuilder
     var lowerVStackOptions: some View {
         if viewModel.showUiOptions {
-            CSCSettingsView(settings)
+            CSCSettingsView(settings: settings)
         }
 
         if viewModel.showInferenceOptions {
