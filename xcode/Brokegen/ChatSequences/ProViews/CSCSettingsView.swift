@@ -1,17 +1,5 @@
 import SwiftUI
 
-extension Binding {
-    // TODO: This is here because something about PersistentDefaultCSUISettings isn't publishing correctly.
-    func propagate(to settings: CSCSettingsService.SettingsProxy) -> Binding {
-        return Binding(
-            get: { self.wrappedValue },
-            set: {
-                self.wrappedValue = $0
-                settings.objectWillChange.send()
-            })
-    }
-}
-
 struct CSCSettingsView: View {
     @ObservedObject var settings: CSCSettingsService.SettingsProxy
     @State var appearanceWidth: CGFloat = 0
@@ -89,7 +77,7 @@ struct CSCSettingsView: View {
 
                     combinedGridRow(
                         "Show message headers",
-                        globalIsOn: $settings.defaults.showMessageHeaders.propagate(to: settings),
+                        globalIsOn: $settings.defaults.showMessageHeaders,
                         localIsOn: $settings.override.showMessageHeaders,
                         trueText: "show",
                         falseText: "hide headers"
@@ -97,7 +85,7 @@ struct CSCSettingsView: View {
 
                     combinedGridRow(
                         "Render message content as markdown",
-                        globalIsOn: $settings.defaults.renderAsMarkdown.propagate(to: settings),
+                        globalIsOn: $settings.defaults.renderAsMarkdown,
                         localIsOn: $settings.override.renderAsMarkdown,
                         trueText: "as markdown",
                         falseText: "as plaintext"
@@ -105,7 +93,7 @@ struct CSCSettingsView: View {
 
                     combinedGridRow(
                         "Show inference model override picker",
-                        globalIsOn: $settings.defaults.showOIMPicker.propagate(to: settings),
+                        globalIsOn: $settings.defaults.showOIMPicker,
                         localIsOn: $settings.override.showOIMPicker,
                         trueText: "show",
                         falseText: "hide picker"
@@ -212,7 +200,7 @@ struct CSCSettingsView: View {
 
                 combinedGridRow(
                     "Allow direct continuation (model talks to itself)",
-                    globalIsOn: $settings.defaults.allowContinuation.propagate(to: settings),
+                    globalIsOn: $settings.defaults.allowContinuation,
                     localIsOn: $settings.override.allowContinuation,
                     trueText: "allow",
                     falseText: "require user prompt"
@@ -220,7 +208,7 @@ struct CSCSettingsView: View {
 
                 combinedGridRow(
                     "Show separate retrieval button",
-                    globalIsOn: $settings.defaults.showSeparateRetrievalButton.propagate(to: settings),
+                    globalIsOn: $settings.defaults.showSeparateRetrievalButton,
                     localIsOn: $settings.override.showSeparateRetrievalButton,
                     trueText: "show",
                     falseText: "combine buttons"
@@ -230,7 +218,7 @@ struct CSCSettingsView: View {
                     Text("Force retrieval-augmented generation on every query")
                         .layoutPriority(0.2)
 
-                    Toggle(isOn: $settings.defaults.forceRetrieval.propagate(to: settings)) {}
+                    Toggle(isOn: $settings.defaults.forceRetrieval) {}
                         .toggleStyle(.switch)
                         .disabled(settings.showSeparateRetrievalButton)
 
@@ -261,7 +249,7 @@ struct CSCSettingsView: View {
 
                 combinedGridRow(
                     "Scroll to bottom of window on new messages",
-                    globalIsOn: $settings.defaults.scrollToBottomOnNew.propagate(to: settings),
+                    globalIsOn: $settings.defaults.scrollToBottomOnNew,
                     localIsOn: $settings.override.scrollToBottomOnNew,
                     trueText: "scroll",
                     falseText: "don't scroll"
@@ -274,7 +262,7 @@ struct CSCSettingsView: View {
                     Text("")
 
                     HStack {
-                        Picker("", selection: $settings.defaults.responseBufferMaxSize.propagate(to: settings)) {
+                        Picker("", selection: $settings.defaults.responseBufferMaxSize) {
                             Text("disabled")
                                 .tag(0)
 
@@ -297,7 +285,7 @@ struct CSCSettingsView: View {
 
                         Text("(customize:")
 
-                        Stepper(value: $settings.defaults.responseBufferMaxSize.propagate(to: settings)) {
+                        Stepper(value: $settings.defaults.responseBufferMaxSize) {
                             Text("\(settings.defaults.responseBufferMaxSize)")
                         }
 
@@ -310,7 +298,7 @@ struct CSCSettingsView: View {
 
                 combinedGridRow(
                     "Animate (fade in) new response text",
-                    globalIsOn: $settings.defaults.animateNewResponseText.propagate(to: settings),
+                    globalIsOn: $settings.defaults.animateNewResponseText,
                     localIsOn: $settings.override.animateNewResponseText,
                     trueText: "animate (snappy)",
                     falseText: "disable"
@@ -363,7 +351,7 @@ struct CSCSettingsView: View {
 
                     combinedGridRow(
                         "Assert macOS wakelock during inference requests",
-                        globalIsOn: $settings.defaults.stayAwakeDuringInference.propagate(to: settings),
+                        globalIsOn: $settings.defaults.stayAwakeDuringInference,
                         localIsOn: $settings.override.stayAwakeDuringInference,
                         trueText: "stay awake",
                         falseText: "don't stay awake"
