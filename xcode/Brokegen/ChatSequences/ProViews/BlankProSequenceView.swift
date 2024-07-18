@@ -120,6 +120,8 @@ struct BlankProSequenceView: View {
                     return
                 }
 
+                guard !viewModel.promptInEdit.isEmpty || viewModel.settings.allowContinuation else { return }
+
                 if viewModel.settings.showSeparateRetrievalButton {
                     self.requestStartAndTransfer(withRetrieval: false)
                 }
@@ -480,81 +482,61 @@ struct BlankProSequenceView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            VStack(spacing: 0) {
-                VSplitView {
-                    VStack(spacing: 0) {
-                        if viewModel.settings.pinChatSequenceDesc {
-                            ChatNameReadOnly(
-                                Binding(
-                                    get: { viewModel.displayHumanDesc },
-                                    set: { _, _ in }),
-                                pinChatName: $viewModel.settings.pinChatSequenceDesc)
-                            .id("sequence title")
-                        }
-
-                        ScrollViewReader { proxy in
-                            ScrollView(.vertical) {
-                                VStack(alignment: .leading, spacing: 0) {
-                                    if !viewModel.settings.pinChatSequenceDesc {
-                                        ChatNameReadOnly(
-                                            Binding(
-                                                get: { viewModel.displayHumanDesc },
-                                                set: { _, _ in }),
-                                            pinChatName: $viewModel.settings.pinChatSequenceDesc)
-                                        .id("sequence title")
-                                    }
-
-                                    if viewModel.settings.showOFMPicker {
-                                        ofmPicker(geometry)
-                                    }
-                                } // LazyVStack
-                            } // ScrollView
-                            .defaultScrollAnchor(.bottom)
-                            .contextMenu {
-                                contextMenuItems
-                            }
-                        }
-                    }
-                    .frame(minHeight: 240)
-
-                    // This is a separate branch, because otherwise the statusBar is resizeable, which we don't really want.
-                    if showStatusBar && !showLowerVStack {
-                        statusBar
-                            .frame(minHeight: statusBarHeight)
-                            .frame(maxHeight: statusBarHeight)
-                    }
-                    else if showStatusBar || showLowerVStack {
-                        VStack(spacing: 0) {
-                            if showStatusBar {
-                                statusBar
-                                    .frame(minHeight: statusBarHeight)
-                                    .frame(maxHeight: statusBarHeight)
-                            }
-
-                            if showLowerVStack {
-                                lowerVStack
-                                    .frame(minHeight: 72)
-                            }
-                        }
-                    }
-
-                    if showLowerVStackOptions {
-                        GeometryReader { optionsGeometry in
-                            ScrollView {
-                                VStack(alignment: .center) {
-                                    VFlowLayout(spacing: 24) {
-                                        lowerVStackOptions
-                                    }
-                                    .frame(width: optionsGeometry.size.width)
+            VSplitView {
+                VStack(spacing: 0) {
+                    ChatNameInput($viewModel.humanDesc)
+                        .padding(.bottom, 24)
+                    
+                    ScrollViewReader { proxy in
+                        ScrollView(.vertical) {
+                            VStack(alignment: .leading, spacing: 0) {
+                                if viewModel.settings.showOFMPicker {
+                                    ofmPicker(geometry)
                                 }
-                                .frame(maxWidth: .infinity)
-                            }
-                        }
-                        .frame(idealHeight: 240)
+                            } // LazyVStack
+                        } // ScrollView
+                        .defaultScrollAnchor(.bottom)
                     }
-
-                    lowerTabBar
                 }
+                .frame(minHeight: 240)
+
+                // This is a separate branch, because otherwise the statusBar is resizeable, which we don't really want.
+                if showStatusBar && !showLowerVStack {
+                    statusBar
+                        .frame(minHeight: statusBarHeight)
+                        .frame(maxHeight: statusBarHeight)
+                }
+                else if showStatusBar || showLowerVStack {
+                    VStack(spacing: 0) {
+                        if showStatusBar {
+                            statusBar
+                                .frame(minHeight: statusBarHeight)
+                                .frame(maxHeight: statusBarHeight)
+                        }
+                        
+                        if showLowerVStack {
+                            lowerVStack
+                                .frame(minHeight: 72)
+                        }
+                    }
+                }
+                
+                if showLowerVStackOptions {
+                    GeometryReader { optionsGeometry in
+                        ScrollView {
+                            VStack(alignment: .center) {
+                                VFlowLayout(spacing: 24) {
+                                    lowerVStackOptions
+                                }
+                                .frame(width: optionsGeometry.size.width)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .frame(idealHeight: 240)
+                }
+                
+                lowerTabBar
             }
             .onAppear {
                 if noInferenceModelSelected {
@@ -562,6 +544,9 @@ struct BlankProSequenceView: View {
                         withAnimation { viewModel.settings.showOFMPicker = true }
                     }
                 }
+            }
+            .contextMenu {
+                contextMenuItems
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
             .background(BackgroundEffectView().ignoresSafeArea())

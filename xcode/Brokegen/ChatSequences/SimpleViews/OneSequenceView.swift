@@ -6,11 +6,31 @@ struct OneSequenceView: View {
     @ObservedObject var settings: CSCSettingsService.SettingsProxy
 
     @FocusState var focusTextInput: Bool
-    @State private var splitViewLoaded: Bool = false
 
     init(_ viewModel: OneSequenceViewModel) {
         self.viewModel = viewModel
         self.settings = viewModel.settings
+    }
+
+    func statusBar(_ statusText: String) -> some View {
+        HStack(alignment: .bottom, spacing: 0) {
+            Text(statusText)
+                .foregroundStyle(Color(.disabledControlTextColor))
+                .lineSpacing(9)
+                .layoutPriority(0.2)
+
+            Spacer()
+
+            if viewModel.submitting || viewModel.receiving {
+                ProgressView()
+                    .progressViewStyle(.linear)
+                    .frame(maxWidth: 144)
+                    .layoutPriority(0.2)
+            }
+        }
+        .padding([.leading, .trailing], 18)
+        .padding([.top, .bottom], 12)
+        .background(BackgroundEffectView().ignoresSafeArea())
     }
 
     var textEntryView: some View {
@@ -40,7 +60,7 @@ struct OneSequenceView: View {
                 }
             }()
 
-            HStack(spacing: 12) {
+            Group {
                 Button(action: {
                     print("[TRACE] Detected OneSequenceView submit")
 
@@ -79,112 +99,67 @@ struct OneSequenceView: View {
             VSplitView {
                 VStack(spacing: 0) {
                     if settings.pinChatSequenceDesc {
-                        HStack(spacing: 0) {
-                            Text(viewModel.displayHumanDesc)
-                                .font(.system(size: 36))
-                                .foregroundColor(.gray)
-                                .lineLimit(1)
-                                .layoutPriority(0.2)
-
-                            Spacer()
-
-                            Button(action: {
-                                settings.pinChatSequenceDesc = false
-                            }) {
-                                Image(systemName: "pin")
-                                    .font(.system(size: 24))
-                                    .padding(12)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                        }
+                        ChatNameReadOnly(
+                            .constant(viewModel.displayHumanDesc),
+                            pinChatName: $settings.pinChatSequenceDesc
+                        )
                         .id("sequence title")
-                        .padding(.bottom, 12)
-                        .padding(.leading, 24)
-                        .padding(.trailing, 24)
                     }
 
                     ScrollViewReader { proxy in
                         ScrollView(.vertical) {
                             LazyVStack(alignment: .leading, spacing: 0) {
                                 if !settings.pinChatSequenceDesc {
-                                    HStack(spacing: 0) {
-                                        Text(viewModel.displayHumanDesc)
-                                            .font(.system(size: 36))
-                                            .foregroundColor(.gray)
-                                            .lineLimit(1...10)
-                                            .layoutPriority(0.2)
-
-                                        Spacer()
-
-                                        Button(action: {
-                                            settings.pinChatSequenceDesc = true
-                                        }) {
-                                            Image(systemName: "pin.slash")
-                                                .font(.system(size: 24))
-                                                .padding(12)
-                                                .contentShape(Rectangle())
-                                                .foregroundStyle(Color(.disabledControlTextColor))
-                                        }
-                                        .buttonStyle(.plain)
-                                    }
+                                    ChatNameReadOnly(
+                                        .constant(viewModel.displayHumanDesc),
+                                        pinChatName: $settings.pinChatSequenceDesc
+                                    )
                                     .id("sequence title")
-                                    .padding(.bottom, 12)
-                                    .padding(.leading, 24)
-                                    .padding(.trailing, 24)
                                 }
 
                                 ForEach(viewModel.sequence.messages) { message in
                                     OneMessageView(message)
+                                        .id(message)
                                 }
+                                .fontDesign(settings.messageFontDesign)
 
                                 if viewModel.responseInEdit != nil {
                                     OneMessageView(.temporary(viewModel.responseInEdit!), stillUpdating: true)
+                                        .animation(settings.animateNewResponseText ? .easeIn : nil, value: viewModel.responseInEdit)
+                                        .id(-1)
+                                        .fontDesign(settings.messageFontDesign)
                                 }
                             } // LazyVStack
                         } // ScrollView
                         .defaultScrollAnchor(.bottom)
                         .onAppear {
                             proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
-
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
-                                splitViewLoaded = true
-                            }
                         }
                         .onChange(of: viewModel.sequence.messages) {
                             proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
                         }
                         .onChange(of: viewModel.responseInEdit?.content) {
-                            proxy.scrollTo(viewModel.responseInEdit, anchor: .bottom)
+                            if settings.scrollToBottomOnNew {
+                                if viewModel.responseInEdit != nil {
+                                    proxy.scrollTo(-1, anchor: .bottom)
+                                }
+                                else {
+                                    proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+                                }
+                            }
                         }
                     }
                 }
                 .frame(minHeight: 240)
 
                 VStack(spacing: 0) {
-                    HStack(alignment: .bottom, spacing: 0) {
-                        Text(viewModel.displayServerStatus ?? "Ready")
-                            .foregroundStyle(Color(.disabledControlTextColor))
-                            .lineSpacing(9)
-                            .layoutPriority(0.2)
-
-                        Spacer()
-
-                        if viewModel.submitting || viewModel.receiving {
-                            ProgressView()
-                                .progressViewStyle(.linear)
-                                .frame(maxWidth: 144)
-                                .layoutPriority(0.2)
-                        }
-                    }
-                    .padding([.leading, .trailing], 18)
-                    .padding([.top, .bottom], 12)
-                    .background(BackgroundEffectView().ignoresSafeArea())
-                    .frame(minHeight: statusBarHeight)
-                    .frame(maxHeight: statusBarHeight)
+                    statusBar(viewModel.displayServerStatus ?? "Ready")
+                        .frame(minHeight: statusBarHeight)
+                        .frame(maxHeight: statusBarHeight)
 
                     textEntryView
                         .frame(minHeight: 72)
+                        .fontDesign(settings.textEntryFontDesign)
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)

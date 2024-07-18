@@ -57,7 +57,7 @@ struct ChatNameReadOnly: View {
             Spacer()
 
             Button(action: {
-                pinChatSequenceDesc = !pinChatSequenceDesc
+                pinChatSequenceDesc.toggle()
             }) {
                 Image(systemName: pinChatSequenceDesc ? "pin" : "pin.slash")
                     .font(.system(size: 24))
@@ -73,15 +73,24 @@ struct ChatNameReadOnly: View {
 }
 
 struct ChatNameInput: View {
-    @Binding var textInEdit: String
+    let initialName: String
+    @Binding var name: String?
     @State private var isHovered: Bool = false
 
-    init(_ textInEdit: Binding<String>) {
-        _textInEdit = textInEdit
+    init(_ name: Binding<String?>, initialName: String = "Chat name (optional)") {
+        self.initialName = initialName
+        _name = name
     }
 
     var body: some View {
-        TextField("Name (optional)", text: $textInEdit, axis: .vertical)
+        TextField(
+            initialName,
+            text: Binding(
+                get: { name ?? "" },
+                set: { name = $0 }
+            ),
+            axis: .vertical
+        )
             .font(.system(size: 36))
             .foregroundColor(.gray)
             .textFieldStyle(.plain)

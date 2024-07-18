@@ -1,186 +1,193 @@
 import SwiftUI
 
 struct BlankOneSequenceView: View {
-    @EnvironmentObject private var chatService: ChatSyncService
     @EnvironmentObject private var pathHost: PathHost
-    @EnvironmentObject public var chatSettingsService: CSCSettingsService
-    @EnvironmentObject public var appSettings: AppSettings
+    @EnvironmentObject var viewModel: BlankSequenceViewModel
 
-    @State var modelSelection: FoundationModel?
-    @State var chatSequenceHumanDesc: String = ""
-    @State var submitting: Bool = false
-    @State var promptInEdit: String = ""
+    @FocusState private var focusTextInput: Bool
+    @State private var showContinuationModelPicker: Bool = false
 
-    @State var showModelPicker: Bool
-    @FocusState var focusTextInput: Bool
-    @State private var splitViewLoaded: Bool = false
+    var noInferenceModelSelected: Bool {
+        return viewModel.continuationInferenceModel == nil && viewModel.appSettings.defaultInferenceModel == nil
+    }
 
-    init(alwaysShowModelPicker: Bool = false) {
-        _showModelPicker = State(initialValue: alwaysShowModelPicker)
+    @ViewBuilder
+    func ofmPicker(_ geometry: GeometryProxy) -> some View {
+        VStack(alignment: .center) {
+            VStack(spacing: 0) {
+                if viewModel.appSettings.stillPopulating {
+                    ProgressView()
+                        .progressViewStyle(.linear)
+                }
+
+                OFMPicker(
+                    boxLabel: viewModel.continuationInferenceModel == nil && viewModel.appSettings.defaultInferenceModel != nil
+                    ? "Default inference model:"
+                    : "Select an inference model:",
+                    selectedModelBinding: Binding(
+                        get: { viewModel.continuationInferenceModel ?? viewModel.appSettings.defaultInferenceModel },
+                        set: { viewModel.continuationInferenceModel = $0 }),
+                    showModelPicker: $showContinuationModelPicker,
+                    geometry: geometry,
+                    allowClear: viewModel.continuationInferenceModel != nil)
+                .disabled(viewModel.appSettings.stillPopulating)
+                .foregroundStyle(Color(.disabledControlTextColor))
+            }
+            .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 240)
+        .padding(.bottom, 120)
+    }
+
+    func statusBar(_ statusText: String) -> some View {
+        HStack(alignment: .bottom, spacing: 0) {
+            Text(statusText)
+                .foregroundStyle(Color(.disabledControlTextColor))
+                .lineSpacing(9)
+                .layoutPriority(0.2)
+
+            Spacer()
+
+            if viewModel.submitting {
+                ProgressView()
+                    .progressViewStyle(.linear)
+                    .frame(maxWidth: 144)
+                    .layoutPriority(0.2)
+            }
+        }
+        .padding([.leading, .trailing], 18)
+        .padding([.top, .bottom], 12)
+        .background(BackgroundEffectView().ignoresSafeArea())
+    }
+
+    var textEntryView: some View {
+        HStack(spacing: 0) {
+            InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
+                .focused($focusTextInput)
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        self.focusTextInput = true
+                    }
+                }
+
+            Group {
+                let aioButtonName: String = {
+                    if viewModel.submitting {
+                        return "stop.fill"
+                    }
+
+                    return "paperplane"
+                }()
+
+                let aioButtonDisabled: Bool = {
+                    if viewModel.submitting {
+                        return false
+                    }
+                    else {
+                        return viewModel.promptInEdit.isEmpty && !viewModel.settings.allowContinuation
+                    }
+                }()
+
+                Button(action: {
+                    if viewModel.submitting {
+                        viewModel.stopSubmit(userRequested: true)
+                    }
+                    else {
+                        if noInferenceModelSelected {
+                            if !viewModel.settings.showOFMPicker {
+                                withAnimation { viewModel.settings.showOFMPicker = true }
+                            }
+                            else {
+                                withAnimation { showContinuationModelPicker = true }
+                            }
+                            return
+                        }
+
+                        guard !viewModel.promptInEdit.isEmpty || viewModel.settings.allowContinuation else { return }
+
+                        self.requestStartAndTransfer(withRetrieval: false)
+                    }
+                }) {
+                    Image(systemName: aioButtonName)
+                        .font(.system(size: 32))
+                }
+                .keyboardShortcut(.return)
+                .buttonStyle(.plain)
+                .disabled(aioButtonDisabled)
+                .modifier(ForegroundAccentColor(enabled: !aioButtonDisabled))
+            }
+            .frame(alignment: .center)
+            .padding([.leading, .trailing], 12)
+        }
+        .padding(.leading, 24)
+        .padding(.trailing, 12)
     }
 
     var body: some View {
         GeometryReader { geometry in
             VSplitView {
                 VStack(spacing: 0) {
-                    ChatNameInput($chatSequenceHumanDesc)
+                    ChatNameInput($viewModel.humanDesc)
                         .padding(.bottom, 24)
 
-                    VStack(alignment: .center, spacing: 0) {
-                        if appSettings.stillPopulating {
-                            ProgressView()
-                                .progressViewStyle(.linear)
-                                .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
-                        }
-
-                        OFMPicker(
-                            boxLabel: modelSelection == nil && appSettings.defaultInferenceModel != nil
-                            ? "Default inference model:"
-                            : "Select an inference model:",
-                            selectedModelBinding: Binding(
-                                get: { modelSelection ?? appSettings.defaultInferenceModel },
-                                set: { modelSelection = $0 }),
-                            showModelPicker: $showModelPicker,
-                            geometry: geometry,
-                            allowClear: modelSelection != nil)
-                        .disabled(appSettings.stillPopulating)
+                    ScrollViewReader { proxy in
+                        ScrollView(.vertical) {
+                            VStack(alignment: .leading, spacing: 0) {
+                                if viewModel.settings.showOFMPicker {
+                                    ofmPicker(geometry)
+                                }
+                            } // LazyVStack
+                        } // ScrollView
+                        .defaultScrollAnchor(.bottom)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, max(
-                        120,
-                        geometry.size.height * 0.2
-                    ))
-                    .padding(.bottom, 120)
                 }
+                .frame(minHeight: 240)
 
                 VStack(spacing: 0) {
-                    Divider()
+                    statusBar(viewModel.submitting ? "Submitting ChatMessage + Sequence" : "Ready")
+                        .frame(minHeight: statusBarHeight)
+                        .frame(maxHeight: statusBarHeight)
 
-                    HStack(spacing: 0) {
-                        Text(submitting ? "Submitting ChatMessage + Sequence" : "Ready")
-                            .foregroundStyle(Color(.disabledControlTextColor))
-                            .layoutPriority(0.2)
-                            .lineLimit(1, reservesSpace: true)
-
-                        Spacer()
-
-                        if submitting {
-                            ProgressView()
-                                .progressViewStyle(.linear)
-                                .frame(maxWidth: 120)
-                                .layoutPriority(0.2)
-                        }
-                    }
-                    .padding(.leading, 24)
-                    .padding(.trailing, 24)
-                    .frame(minHeight: 36)
-                    .frame(maxHeight: 36)
-
-                    HStack(spacing: 0) {
-                        InlineTextInput($promptInEdit, isFocused: $focusTextInput)
-                        .focused($focusTextInput)
-                        .onAppear {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                self.focusTextInput = true
-                            }
-                        }
-                        .backgroundStyle(inputBackgroundStyle)
-
-                        Button(action: {
-                            if !promptInEdit.isEmpty {
-                                submit(withRetrieval: true)
-                            }
-                        }) {
-                            Image(systemName: "arrow.up.doc")
-                                .font(.system(size: 32))
-                                .padding(12)
-                        }
-                        .disabled(submitting || promptInEdit.isEmpty)
-                        .modifier(ForegroundAccentColor(enabled: !submitting && !promptInEdit.isEmpty))
-                        .buttonStyle(.plain)
-
-                        Button(action: {
-                            if submitting {
-                                stopSubmitAndReceive()
-                            }
-                            else {
-                                if !promptInEdit.isEmpty {
-                                    submit(withRetrieval: false)
-                                }
-                                else {
-                                    // This is the only disabled case
-                                }
-                            }
-                        }) {
-                            Image(systemName: submitting ? "stop.fill" : "paperplane")
-                                .font(.system(size: 32))
-                                .padding(12)
-                                .padding(.trailing, 12)
-                                .padding(.leading, -6)
-                        }
-                        .keyboardShortcut(.return)
-                        .disabled(!submitting && promptInEdit.isEmpty)
-                        .modifier(ForegroundAccentColor(enabled: submitting || !promptInEdit.isEmpty))
-                        .buttonStyle(.plain)
-                    }
-                    .background(inputBackgroundStyle)
-                    .frame(minHeight: 180, maxHeight: max(
-                        180,
-                        splitViewLoaded ? geometry.size.height * 0.7 : geometry.size.height * 0.2))
+                    textEntryView
+                        .frame(minHeight: 72)
+                        .fontDesign(viewModel.settings.textEntryFontDesign)
                 }
-                .onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
-                        splitViewLoaded = true
+            }
+            .onAppear {
+                if noInferenceModelSelected {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        withAnimation { viewModel.settings.showOFMPicker = true }
                     }
                 }
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
             .background(BackgroundEffectView().ignoresSafeArea())
+            .navigationTitle("Drafting new chat")
         }
     }
 
-    func submit(withRetrieval: Bool = false) {
+    func requestStartAndTransfer(withRetrieval: Bool) {
         Task {
-            submitting = true
+            let constructedSequence: ChatSequence? = await viewModel.requestSave()
+            if constructedSequence != nil {
+                DispatchQueue.main.async {
+                    viewModel.chatSettingsService.registerSettings(viewModel.settings, for: constructedSequence!.serverId)
 
-            let messageId: ChatMessageServerID? = try? await chatService.constructChatMessage(from: TemporaryChatMessage(
-                role: "user",
-                content: promptInEdit,
-                createdAt: Date.now
-            ))
-            guard messageId != nil else {
-                submitting = false
-                print("[ERROR] Couldn't construct ChatMessage from text: \(promptInEdit)")
-                return
-            }
+                    let newViewModel: OneSequenceViewModel = viewModel.chatService.addClientModel(fromBlank: viewModel, for: constructedSequence!)
+                    let continuedModel = newViewModel.requestContinue(model: newViewModel.continuationInferenceModel?.serverId ?? viewModel.appSettings.defaultInferenceModel?.serverId, withRetrieval: withRetrieval)
 
-            let sequenceId: ChatSequenceServerID? = try? await chatService.constructNewChatSequence(messageId: messageId!, humanDesc: chatSequenceHumanDesc)
-            guard sequenceId != nil else {
-                submitting = false
-                print("[ERROR] Couldn't construct sequence from: ChatMessage#\(messageId!)")
-                return
-            }
+                    pathHost.push(continuedModel)
 
-            let nextSequence = try? await chatService.fetchChatSequenceDetails(sequenceId!)
-            guard nextSequence != nil else {
-                submitting = false
-                print("[ERROR] Couldn't fetch details for ChatSequence#\(sequenceId!)")
-                return
-            }
-
-            DispatchQueue.main.sync {
-                chatService.updateSequence(withSameId: nextSequence!)
-                
-                pathHost.push(
-                    chatService
-                        .clientModel(for: nextSequence!, appSettings: appSettings, chatSettingsService: chatSettingsService)
-                        .requestContinue(model: modelSelection?.serverId ?? appSettings.defaultInferenceModel?.serverId, withRetrieval: withRetrieval)
-                )
+                    // Once we've successfully transferred the info to a different view, clear it out for if the user starts a new chat.
+                    // Only some settings, though, since most of the other ones tend to get reused.
+                    viewModel.humanDesc = nil
+                    viewModel.promptInEdit = ""
+                    viewModel.submitting = false
+                    viewModel.submittedAssistantResponseSeed = nil
+                    viewModel.serverStatus = nil
+                }
             }
         }
-    }
-
-    func stopSubmitAndReceive() {
-        submitting = false
     }
 }

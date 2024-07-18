@@ -543,10 +543,9 @@ struct ProSequenceView: View {
                     VStack(spacing: 0) {
                         if settings.pinChatSequenceDesc {
                             ChatNameReadOnly(
-                                Binding(
-                                    get: { viewModel.displayHumanDesc },
-                                    set: { _, _ in }),
-                                pinChatName: $settings.pinChatSequenceDesc)
+                                .constant(viewModel.displayHumanDesc),
+                                pinChatName: $settings.pinChatSequenceDesc
+                            )
                             .id("sequence title")
                         }
 
@@ -555,10 +554,9 @@ struct ProSequenceView: View {
                                 LazyVStack(alignment: .leading, spacing: 0) {
                                     if !settings.pinChatSequenceDesc {
                                         ChatNameReadOnly(
-                                            Binding(
-                                                get: { viewModel.displayHumanDesc },
-                                                set: { _, _ in }),
-                                            pinChatName: $settings.pinChatSequenceDesc)
+                                            .constant(viewModel.displayHumanDesc),
+                                            pinChatName: $settings.pinChatSequenceDesc
+                                        )
                                         .id("sequence title")
                                     }
 
@@ -588,9 +586,6 @@ struct ProSequenceView: View {
                                         proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
                                     }
                                 }
-                            }
-                            .contextMenu {
-                                contextMenuItems
                             }
                         }
                     }
@@ -647,6 +642,9 @@ struct ProSequenceView: View {
 
                     lowerTabBar
                 }
+            }
+            .contextMenu {
+                contextMenuItems
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
             .background(BackgroundEffectView().ignoresSafeArea())
