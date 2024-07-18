@@ -109,7 +109,7 @@ struct OneSequenceView: View {
 
                     ScrollViewReader { proxy in
                         ScrollView(.vertical) {
-                            LazyVStack(alignment: .leading, spacing: 0) {
+                            VStack(alignment: .leading, spacing: 0) {
                                 if !settings.pinChatSequenceDesc {
                                     ChatNameReadOnly(
                                         .constant(viewModel.displayHumanDesc),
@@ -130,7 +130,7 @@ struct OneSequenceView: View {
                                         .id(-1)
                                         .fontDesign(settings.messageFontDesign)
                                 }
-                            } // LazyVStack
+                            }
                         } // ScrollView
                         .defaultScrollAnchor(.bottom)
                         .onAppear {

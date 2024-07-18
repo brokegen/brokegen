@@ -478,7 +478,7 @@ struct BlankProSequenceView: View {
                                 if viewModel.settings.showOFMPicker {
                                     ofmPicker(geometry)
                                 }
-                            } // LazyVStack
+                            }
                         } // ScrollView
                         .defaultScrollAnchor(.bottom)
                     }
