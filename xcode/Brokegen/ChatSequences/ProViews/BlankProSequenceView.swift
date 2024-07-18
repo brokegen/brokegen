@@ -523,6 +523,7 @@ struct BlankProSequenceView: View {
                         if showLowerVStack {
                             lowerVStack
                                 .frame(minHeight: 72)
+                                .fontDesign(viewModel.settings.textEntryFontDesign)
                         }
                     }
                 }

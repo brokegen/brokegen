@@ -130,7 +130,6 @@ struct InlineTextInput: View {
         TextEditor(text: $textInEdit)
             .font(.system(size: 18))
             .lineSpacing(6)
-            .monospaced()
             .padding(12)
             .scrollContentBackground(.hidden)
             .background(
