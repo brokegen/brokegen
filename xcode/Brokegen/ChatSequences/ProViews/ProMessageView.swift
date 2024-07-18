@@ -294,7 +294,7 @@ Your input will help me generate more targeted and valuable responses. Let's col
 
         ProMessageView(.temporary(message3), showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(true))
 
-        ProMessageView(.temporary(message4), showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(true))
+        ProMessageView(.temporary(message4), showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(false))
 
         Spacer()
     }

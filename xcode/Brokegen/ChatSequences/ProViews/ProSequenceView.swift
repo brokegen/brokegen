@@ -471,6 +471,50 @@ struct ProSequenceView: View {
     }
 
     @ViewBuilder
+    var messages: some View {
+        ForEach(viewModel.sequence.messages) { message in
+            let indentMessage = !settings.showMessageHeaders && message.role != "user"
+            let branchAction = {
+                if case .stored(let message) = message {
+                    Task {
+                        if let sequence = try? await viewModel.chatService.fetchChatSequenceDetails(message.hostSequenceId) {
+                            pathHost.push(
+                                viewModel.chatService.clientModel(
+                                    for: sequence,
+                                    appSettings: viewModel.appSettings,
+                                    chatSettingsService: viewModel.chatSettingsService)
+                            )
+                        }
+                    }
+                }
+            }
+
+            ProMessageView(
+                message,
+                branchAction: branchAction,
+                showMessageHeaders: settings.showMessageHeaders,
+                renderAsMarkdown: $settings.renderAsMarkdown
+            )
+            .padding(.leading, indentMessage ? 24.0 : 0.0)
+            .id(message)
+        }
+
+        if viewModel.responseInEdit != nil {
+            let messageIndent = settings.showMessageHeaders ? 0.0 : 24.0
+
+            ProMessageView(
+                .temporary(viewModel.responseInEdit!),
+                stillUpdating: true,
+                showMessageHeaders: settings.showMessageHeaders,
+                renderAsMarkdown: $settings.renderAsMarkdown
+            )
+            .animation(settings.animateNewResponseText ? .easeIn : nil, value: viewModel.responseInEdit)
+            .padding(.leading, messageIndent)
+            .id(-1)
+        }
+    }
+
+    @ViewBuilder
     func ofmPicker(_ geometry: GeometryProxy) -> some View {
         VStack(alignment: .center) {
             VStack(spacing: 0) {
@@ -521,46 +565,8 @@ struct ProSequenceView: View {
                                         .id("sequence title")
                                     }
 
-                                    ForEach(viewModel.sequence.messages) { message in
-                                        let indentMessage = !settings.showMessageHeaders && message.role != "user"
-                                        let branchAction = {
-                                            if case .stored(let message) = message {
-                                                Task {
-                                                    if let sequence = try? await viewModel.chatService.fetchChatSequenceDetails(message.hostSequenceId) {
-                                                        pathHost.push(
-                                                            viewModel.chatService.clientModel(
-                                                                for: sequence,
-                                                                appSettings: viewModel.appSettings,
-                                                                chatSettingsService: viewModel.chatSettingsService)
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        ProMessageView(
-                                            message,
-                                            branchAction: branchAction,
-                                            showMessageHeaders: settings.showMessageHeaders,
-                                            renderAsMarkdown: $settings.renderAsMarkdown
-                                        )
-                                        .padding(.leading, indentMessage ? 24.0 : 0.0)
-                                        .id(message)
-                                    }
-
-                                    if viewModel.responseInEdit != nil {
-                                        let messageIndent = settings.showMessageHeaders ? 0.0 : 24.0
-
-                                        ProMessageView(
-                                            .temporary(viewModel.responseInEdit!),
-                                            stillUpdating: true,
-                                            showMessageHeaders: settings.showMessageHeaders,
-                                            renderAsMarkdown: $settings.renderAsMarkdown
-                                        )
-                                        .animation(settings.animateNewResponseText ? .easeIn : nil, value: viewModel.responseInEdit)
-                                        .padding(.leading, messageIndent)
-                                        .id(-1)
-                                    }
+                                    messages
+                                        .fontDesign(settings.defaults.messageFontDesign)
 
                                     if settings.showOIMPicker {
                                         ofmPicker(geometry)
