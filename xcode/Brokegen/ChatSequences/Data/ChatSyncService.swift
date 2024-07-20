@@ -167,9 +167,7 @@ class ChatSyncService: ObservableObject {
         }
     }
 
-    func updateSequenceOffline(_ originalSequenceID: ChatSequenceServerID?, withReplacement updatedSequence: ChatSequence) {
-        print("[DEBUG] ChatSyncService.updateSequenceOffline(): \(originalSequenceID) => new_sequence_id=\(updatedSequence.serverId)")
-
+    func updateSequenceOffline(_ originalSequenceId: ChatSequenceServerID, withReplacement updatedSequence: ChatSequence) {
         // Keep the first ChatSequence's clientId, in case of duplicates
         let originalClientId: UUID? = loadedChatSequences[updatedSequence.serverId]?.id
         if originalClientId != nil {
@@ -181,7 +179,7 @@ class ChatSyncService: ObservableObject {
 
         // Update any clientModels that might hold it
         let matchingClientModels: [OneSequenceViewModel] = chatSequenceClientModels.filter {
-            $0.sequence.serverId == originalSequenceID
+            $0.sequence.serverId == originalSequenceId
         }
 
         for clientModel in matchingClientModels {

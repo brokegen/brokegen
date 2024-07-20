@@ -232,10 +232,12 @@ class OneSequenceViewModel: ObservableObject {
 
             // Set the old sequence as non-leaf
             let nonLeafSequence = self.sequence.replaceIsLeaf(false)
+            print("[TRACE] receiveHandler calling updateSequenceOffline: ChatSequence#\(originalSequenceId).isLeafSequence = false")
             self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: nonLeafSequence)
 
             // And then tell everyone to point to the new sequence
             let updatedSequence = self.sequence.replaceServerId(replacementSequenceId)
+            print("[TRACE] receiveHandler calling updateSequenceOffline: ChatSequence#\(originalSequenceId) => \(replacementSequenceId)")
             self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: updatedSequence)
         }
 
@@ -434,9 +436,11 @@ class OneSequenceViewModel: ObservableObject {
 
                 // Set the old sequence as non-leaf
                 let nonLeafSequence = self.sequence.replaceIsLeaf(false)
+                print("[TRACE] requestSave calling updateSequenceOffline: ChatSequence#\(originalSequenceId).isLeafSequence = false")
                 self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: nonLeafSequence)
 
                 // And then tell everyone to point to the new sequence
+                print("[TRACE] requestSave calling updateSequenceOffline: ChatSequence#\(originalSequenceId) => \(appendResult!.serverId)")
                 self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: appendResult!)
 
                 self.promptInEdit = ""
@@ -528,6 +532,7 @@ class OneSequenceViewModel: ObservableObject {
 
             DispatchQueue.main.sync {
                 let originalSequenceId = self.sequence.serverId
+                print("[TRACE] requestExtend calling updateSequenceOffline: ChatSequence#\(originalSequenceId) => \(appendResult!.serverId)")
                 self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: appendResult!)
 
                 self.serverStatus = "/sequences/\(self.sequence.serverId)/continue: submitting request"
