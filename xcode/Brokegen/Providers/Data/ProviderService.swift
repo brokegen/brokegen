@@ -92,7 +92,7 @@ class DefaultProviderService: ProviderService {
                 case .success(let data):
                     continuation.resume(returning: data)
                 case .failure(let error):
-                    print("[ERROR] GET \(endpoint) failed, " + error.localizedDescription)
+                    print("[ERROR] Failed GET \(endpoint), \"\(error.localizedDescription)\"")
                     continuation.resume(returning: nil)
                 }
             }
@@ -112,11 +112,14 @@ class DefaultProviderService: ProviderService {
     }
 
     override func fetchAvailableModels(repeatUntilSuccess: Bool) {
-        print("[TRACE] DefaultProviderService.fetchAvailableModels() starting")
-        guard modelFetcher == nil else { return }
+        guard modelFetcher == nil else {
+            print("[WARNING] DefaultProviderService.fetchAvailableModels() request already pending, ignoring this call")
+            return
+        }
 
         if !repeatUntilSuccess {
             modelFetcher = Task {
+                print("[TRACE] DefaultProviderService.fetchAvailableModels(repeatUntilSuccess: \(repeatUntilSuccess)) starting")
                 try? await doFetchAvailableModels()
 
                 DispatchQueue.main.async {
@@ -128,8 +131,10 @@ class DefaultProviderService: ProviderService {
             modelFetcher = Task {
                 do {
                     try await doFetchAvailableModels()
+                    print("[TRACE] DefaultProviderService.fetchAvailableModels() succeeded")
                 }
                 catch ProviderServiceError.noResponseContentReturned {
+                    print("[ERROR] No content from DefaultProviderService.fetchAvailableModels(), will retry")
                     try? await Task.sleep(nanoseconds: 5_000_000_000)
 
                     DispatchQueue.main.async {
@@ -138,7 +143,7 @@ class DefaultProviderService: ProviderService {
                     }
                 }
                 catch {
-                    print("[ERROR] Couldn't fetchAvailableModels(): \(error)")
+                    print("[ERROR] Failed DefaultProviderService.fetchAvailableModels(), stopping (\(error))")
                 }
             }
         }
