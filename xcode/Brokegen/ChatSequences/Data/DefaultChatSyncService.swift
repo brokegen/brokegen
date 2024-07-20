@@ -141,7 +141,7 @@ extension DefaultChatSyncService {
     }
 
     func postDataBlocking(_ httpBody: Data?, endpoint: String) async throws -> Data {
-        print("[TRACE] POST \(endpoint)")
+        print("[TRACE] Sending POST \(endpoint) <= \(httpBody?.count ?? 0) bytes")
         var responseStatusCode: Int? = nil
 
         let receiveQueue = DispatchQueue(label: "brokegen server", qos: .background, attributes: .concurrent)
