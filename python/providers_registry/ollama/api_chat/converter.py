@@ -26,7 +26,9 @@ async def translate_generate_to_chat(
             'content': safe_get(chunk_json, 'response'),
             'role': 'assistant',
         }
-        del chunk_json['response']
+        # TODO: This fails in error cases, but we need to repro/debug those.
+        if 'response' in chunk_json:
+            del chunk_json['response']
 
         yield chunk_json
 
