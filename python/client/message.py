@@ -48,6 +48,9 @@ class ChatMessageOrm(Base):
         ])
 
     def __str__(self) -> str:
+        return f"ChatMessage#{self.id}"
+
+    def __repr__(self) -> str:
         return f"<ChatMessage#{self.id} role={self.role} content={self.content}>"
 
 

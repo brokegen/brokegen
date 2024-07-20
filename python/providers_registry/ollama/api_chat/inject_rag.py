@@ -10,13 +10,11 @@ from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import PromptText, TemplatedPromptText
 from audit.http import AuditDB
 from client.database import HistoryDB
-from client.sequence import ChatSequenceOrm
 from inference.iterators import decode_from_bytes, stream_str_to_json
 from inference.prompting.templating import apply_llm_template
 from providers.foundation_models.orm import InferenceReason, FoundationModelRecordOrm
 from providers.registry import InferenceOptions
 from providers_registry.ollama.api_chat.converter import convert_chat_to_generate
-from providers_registry.ollama.api_chat.intercept import do_capture_chat_messages
 from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON, ollama_log_indexer
 from providers_registry.ollama.api_generate import do_generate_raw_templated
 from retrieval.faiss.knowledge import get_knowledge

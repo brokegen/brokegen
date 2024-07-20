@@ -6,9 +6,9 @@ from sqlalchemy import select
 
 from _util.json import safe_get, JSONArray, safe_get_arrayed
 from _util.typing import PromptText
+from client.database import HistoryDB
 from client.message import ChatMessage, lookup_chat_message, ChatMessageOrm
 from client.sequence import ChatSequenceOrm
-from client.database import HistoryDB
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 def do_capture_chat_messages(
         chat_messages: JSONArray,
         history_db: HistoryDB,
+        commit_system_messages_as_new: bool = False,
 ) -> tuple[
     Annotated[ChatSequenceOrm | None, "prior_sequence"],
     Annotated[PromptText | None, "system_message"],
@@ -53,25 +54,42 @@ def do_capture_chat_messages(
             history_db.commit()
 
         # And then check for Sequences that might already exist, because we want to surface the new chat in every app
-        sequence_in: ChatSequenceOrm | None = history_db.execute(
-            select(ChatSequenceOrm)
-            .where(ChatSequenceOrm.current_message == message_in_orm.id)
-            .order_by(ChatSequenceOrm.generated_at.desc())
-            .limit(1)
-        ).scalar_one_or_none()
-        if sequence_in is not None:
-            # This check will _only_ match against prior sequences if the histories match exactly.
-            # Each sequence encompasses all parent sequences, so we really just have to check the latest one.
-            if (
-                    (prior_sequence is None and sequence_in.parent_sequence is None)
-                    or (prior_sequence is not None and sequence_in.parent_sequence == prior_sequence.id)
-            ):
-                logger.debug(f"Reusing prior {sequence_in=} due to matching histories")
-                prior_sequence = sequence_in
-                continue
+        if message_in.role == "system" and commit_system_messages_as_new:
+            # Ollama requests to /api/chat send messages labeled "system"; don't reuse those sequences
+            sequence_in = None
 
-        logger.debug(f"Constructing new ChatSequence from ChatMessage#{message_in_orm.id}"
-                     f" because {sequence_in=} and {prior_sequence=}")
+        else:
+            sequence_in: ChatSequenceOrm | None = history_db.execute(
+                select(ChatSequenceOrm)
+                .where(ChatSequenceOrm.current_message == message_in_orm.id)
+                .order_by(ChatSequenceOrm.generated_at.desc())
+                .limit(1)
+            ).scalar_one_or_none()
+            if sequence_in is not None:
+                # This check will _only_ match against prior sequences if the histories match exactly.
+                # Each sequence encompasses all parent sequences, so we really just have to check the latest one.
+                if (
+                        (prior_sequence is None and sequence_in.parent_sequence is None)
+                        or (prior_sequence is not None and sequence_in.parent_sequence == prior_sequence.id)
+                ):
+                    msg_descriptor = ""
+                    if message_in.role:
+                        msg_descriptor = f"{" " * (9 - len(message_in.role))}{message_in.role} message "
+
+                    logger.debug(f"Found matching histories, reusing {msg_descriptor}{sequence_in=}")
+                    prior_sequence = sequence_in
+                    continue
+
+        # /api/chat will re-send the same system message as the first message,
+        # and in that case we do not want to duplicate messages.
+        if index == 1 and safe_get_arrayed(chat_messages, 0, "role") == "system":
+            # To avoid infinite recursion, only recursive-call if we're not in that recursion case.
+            if not commit_system_messages_as_new:
+                logger.debug(
+                    f"First non-system message is new, starting over with new ChatSequence despite re-using a system message")
+                return do_capture_chat_messages(chat_messages, history_db, commit_system_messages_as_new=True)
+
+        logger.debug(f"Constructing new ChatSequence from {message_in_orm=}")
 
         sequence_in = ChatSequenceOrm(
             user_pinned=False,

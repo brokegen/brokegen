@@ -5,8 +5,8 @@ from pydantic import BaseModel, ConfigDict, PositiveInt
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, select
 
 from _util.typing import ChatSequenceID, ChatMessageID, FoundationModelRecordID, RoleName, PromptText
-from .message import ChatMessage, ChatMessageResponse
 from .database import Base, HistoryDB
+from .message import ChatMessage, ChatMessageResponse
 
 
 class ChatSequence(BaseModel):
@@ -65,16 +65,16 @@ class ChatSequenceOrm(Base):
     current_message: ChatMessageID = Column(Integer, nullable=False)
     parent_sequence: ChatSequenceID = Column(Integer)
 
-    generated_at = Column(DateTime)
-    generation_complete = Column(Boolean)
+    generated_at: datetime = Column(DateTime)
+    generation_complete: bool = Column(Boolean)
     inference_job_id = Column(Integer)  # InferenceEventOrm.id
-    inference_error = Column(String)
+    inference_error: str = Column(String)
 
     def __str__(self) -> str:
         return f"<ChatSequence#{self.id}>"
 
     def __repr__(self) -> str:
-        return f"<ChatSequence#{self.id} current_message={self.current_message} parent_sequence={self.parent_sequence}>"
+        return f"<ChatSequence#{self.id} current_message={self.current_message} parent_sequence={self.parent_sequence} inference_job_id={self.inference_job_id}>"
 
 
 def lookup_sequence_parents(
