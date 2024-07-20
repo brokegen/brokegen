@@ -1,21 +1,33 @@
 import SwiftUI
 
+extension OneSequenceViewModel: CustomStringConvertible {
+    var description: String {
+        return "OneSequenceViewModel: \(self.sequence.serverId)"
+    }
+}
+
 @Observable
 class PathHost: ObservableObject {
     var path: NavigationPath = NavigationPath()
+    var inspectablePathItems: [any Hashable] = []
 
     public func printIt(_ prefix: String = "") {
-        print(prefix + String(describing: path))
+        print(prefix)
+        for item in inspectablePathItems {
+            print("- \(String(describing: item))")
+        }
     }
 
     public func push<V>(_ pather: V) -> Void where V:Hashable {
         path.append(pather)
-        printIt("[DEBUG] PathHost.push ")
+        inspectablePathItems.append(pather)
+        printIt("[DEBUG] PathHost.push(), \(path.count) items total")
     }
 
     public func pop(_ k: Int = 1) {
-        printIt("[DEBUG] PathHost.pop ")
-        return path.removeLast(k)
+        printIt("[DEBUG] About to PathHost.pop(), currently \(path.count) items")
+        inspectablePathItems.removeLast(k)
+        path.removeLast(k)
     }
 }
 
