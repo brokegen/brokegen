@@ -5,8 +5,6 @@ struct VFlowLayout: Layout {
     let spacingY: CGFloat
 
     init(spacing: CGFloat = 0) {
-        // TODO: See what if there's an equivalent to Alignment()
-        // that allows for more complex spacing considerations.
         self.spacingX = spacing
         self.spacingY = spacing
     }

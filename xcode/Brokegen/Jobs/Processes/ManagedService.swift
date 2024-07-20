@@ -85,7 +85,6 @@ class ManagedService: Job {
             guard dataAsString != nil else { return }
             guard dataAsString!.count > 0 else { return }
 
-            // TODO: Should this be .sync?
             DispatchQueue.main.async {
                 // Truncate the output to 64k characters, because we rarely care about history.
                 if self.displayedOutput.count > 64_000 {

@@ -325,7 +325,7 @@ class OneSequenceViewModel: ObservableObject {
                         if dataChunk == "\n".data(using: .utf8) {
                         }
                         else {
-                            // TODO: Reaching here means we couldn't parse a newline-delimited chunk.
+                            // Reaching here means we couldn't parse a newline-delimited chunk.
                             // Need to fix it ourselves; newlines shouldn't be in encoded JSON
                             print(
                                 "[ERROR] OneSequenceViewModel.receiveHandler: Failed to parse, dropping "

@@ -131,9 +131,6 @@ public enum JSONObject: Codable {
     case null
 }
 
-/// TODO: Replace use of Codable with SwiftyJSON
-/// This makes more sense for very-variable JSON blobs, particularly those that don't have explicit typing
-/// (i.e. those not under our control, like whatever fields come down for provider/modelIdentifiers).
 extension JSON {
     public var isoDate: Date? {
         get {

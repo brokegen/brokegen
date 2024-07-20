@@ -118,7 +118,6 @@ struct BrokegenApp: App {
                 .keyboardShortcut("n", modifiers: [.command])
                 .disabled(
                     windowState == nil
-                    // TODO: Also disable if the top-most controller is a BLANK_CHAT
                 )
             }
 

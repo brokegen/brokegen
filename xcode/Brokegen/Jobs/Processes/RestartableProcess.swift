@@ -58,7 +58,6 @@ class RestartableProcess: Job {
             guard dataAsString != nil else { return }
             guard dataAsString!.count > 0 else { return }
 
-            // TODO: Should this handler be .sync?
             DispatchQueue.main.async {
                 if self.displayedOutput.count > 256_000 {
                     self.displayedOutput = String(self.displayedOutput.suffix(128_000))

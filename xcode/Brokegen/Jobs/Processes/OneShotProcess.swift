@@ -61,7 +61,6 @@ class OneShotProcess: Job {
             guard dataAsString != nil else { return }
             guard dataAsString!.count > 0 else { return }
 
-            // TODO: Should this be .sync?
             DispatchQueue.main.async {
                 self.displayedOutput += dataAsString!
                 self.status = .startedWithOutput

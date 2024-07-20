@@ -16,9 +16,9 @@ class StayAwake {
     /// `caffeinate -dut 3600` works to keep the system awake for a while, but can we avoid keeping the display on?
     ///
     /// - kIOPMAssertionTypePreventUserIdleSystemSleep: in testing, previous iteration had a double-init error
-    /// - kIOPMAssertionTypeNoIdleSleep: TODO
-    /// - kIOPMAssertionTypeNoDisplaySleep: TODO
-    /// - kIOPMAssertionTypePreventUserIdleDisplaySleep: TODO
+    /// - kIOPMAssertionTypeNoIdleSleep: not used
+    /// - kIOPMAssertionTypeNoDisplaySleep: not used
+    /// - kIOPMAssertionTypePreventUserIdleDisplaySleep: not used
     ///
     func createAssertion(reason: String) -> (Bool, IOReturn?) {
         guard !assertionIsActive else { return (false, nil) }

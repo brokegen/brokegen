@@ -173,7 +173,6 @@ struct AppSidebar: View {
                             ASRow("ChatSequences", showChevron: true)
                         }
 
-                        // TODO: Hide these, because they aren't implemented
                         if appSettings.showDebugSidebarItems {
                             Divider()
 
