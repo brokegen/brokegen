@@ -126,7 +126,7 @@ func sectionedSequences(
     let elapsedMsec = Date.now.timeIntervalSince(startTime) * 1000
     if elapsedMsec > 8.333 {
         let args: String = onlyUserPinned ? "onlyUserPinned: true" : ""
-        print("[TRACE] ChatSyncService.sectionedSequences(\(args)) generation time: \(String(format: "%.3f", elapsedMsec)) msecs for \(loadedChatSequences.count) rows")
+        print("[TRACE] ChatSyncService.sectionedSequences(\(args)) generation time: \(String(format: "%.3f", elapsedMsec)) msec for \(loadedChatSequences.count) rows")
     }
 
     return result

@@ -343,7 +343,7 @@ extension DefaultChatSyncService {
 
             let elapsedMsec = Date.now.timeIntervalSince(startTime) * 1000
             if elapsedMsec > 8.333 {
-                print("[TRACE] DefaultChatSyncService.fetchRecents() update time: \(String(format: "%.3f", elapsedMsec)) msecs for \(sequenceUpdates.count) sequences")
+                print("[TRACE] DefaultChatSyncService.fetchRecents() update time: \(String(format: "%.3f", elapsedMsec)) msec for \(sequenceUpdates.count) sequences")
             }
         }
     }
