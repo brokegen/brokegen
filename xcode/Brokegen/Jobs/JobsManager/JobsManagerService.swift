@@ -66,7 +66,7 @@ class DefaultJobsManagerService: JobsManagerService {
                 "OLLAMA_HOST": "127.0.0.1:11434",
                 "OLLAMA_NUM_PARALLEL": "3",
                 "OLLAMA_MAX_LOADED_MODELS": "3",
-                "OLLAMA_KEEP_ALIVE": "4h",
+                "OLLAMA_KEEP_ALIVE": "168h",
                 "OLLAMA_DEBUG": "1",
             ],
             sidebarTitle: "ollama v0.2.5\n(embedded binary)",
