@@ -4,8 +4,8 @@ from typing import AsyncGenerator, Self, AsyncIterator, Awaitable, Optional
 
 from pydantic import BaseModel
 
-from _util.json import JSONDict
-from _util.status import ServerStatusHolder
+from _util.json import JSONDict, safe_get
+from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import ChatSequenceID, PromptText, TemplatedPromptText
 from audit.http import AuditDB
 from client.database import HistoryDB
@@ -138,6 +138,53 @@ class BaseProvider:
     ) -> AsyncGenerator[JSONDict, None]:
         raise NotImplementedError()
 
+    async def autoname_sequence(
+            self,
+            messages_list: list[ChatMessage],
+            autonaming_model: FoundationModelRecordOrm,
+            status_holder: ServerStatusHolder,
+            history_db: HistoryDB,
+            audit_db: AuditDB,
+    ) -> PromptText:
+        with (StatusContext(
+                f"Autonaming ChatSequence with {len(messages_list)} messages => {autonaming_model}",
+                status_holder)):
+            # Construct a new prompt that hopefully reuses context.
+            new_message = (
+                "Summarize the above messages, suitable as a short description for a tab title. "
+                "Answer with that title only, do not provide additional information. Reply with exactly one title.\n\n"
+            )
+            messages_list.append(
+                ChatMessage(role="user", content=new_message)
+            )
+
+            iter0: AsyncIterator[JSONDict] = await self.do_chat_nolog(
+                messages_list,
+                autonaming_model,
+                InferenceOptions(seed_assistant_response="Tab title: "),
+                status_holder,
+                history_db,
+                audit_db,
+            )
+
+            def autoname_consolidator(chunk: JSONDict, consolidated_response: dict):
+                if not consolidated_response:
+                    return chunk
+
+                for k, v in chunk.items():
+                    if k not in consolidated_response:
+                        consolidated_response[k] = v
+                        continue
+
+                    if k == 'message':
+                        consolidated_response[k]['content'] += v['content']
+
+            consolidated_response = {}
+            async for chunk in iter0:
+                autoname_consolidator(chunk, consolidated_response)
+
+            return safe_get(consolidated_response, 'message', 'content')
+
 
 class ProviderFactory:
     @abstractmethod
@@ -205,7 +252,7 @@ class ProviderRegistry(_Borg):
     def provider_from(
             self,
             inference_model: FoundationModelRecord | FoundationModelResponse,
-    ) -> ProviderLabel | None:
+    ) -> BaseProvider | None:
         matching_provider: BaseProvider | None = None
         for provider_record, provider in self.by_record.items():
             if inference_model.provider_identifiers == provider_record.identifiers:

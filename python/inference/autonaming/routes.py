@@ -16,6 +16,7 @@ from _util.json_streaming import JSONStreamingResponse
 from _util.json_streaming import emit_keepalive_chunks
 from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, PromptText, FoundationModelRecordID
+from audit.http import AuditDB, get_db as get_audit_db
 from client.database import HistoryDB, get_db as get_history_db
 from client.sequence import ChatSequenceOrm
 from providers.registry import ProviderRegistry
@@ -34,6 +35,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             stream: bool = False,
             wait_for_response: bool = False,
             history_db: HistoryDB = Depends(get_history_db),
+            audit_db: AuditDB = Depends(get_audit_db),
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ):
         match_object = history_db.execute(
@@ -48,6 +50,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         async def do_autoname(
                 sequence: ChatSequenceOrm,
                 history_db: HistoryDB,
+                audit_db: AuditDB,
         ) -> PromptText | None:
             autoname: PromptText | None
 
@@ -57,6 +60,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                     preferred_autonaming_model,
                     status_holder,
                     history_db,
+                    audit_db,
                     registry,
                 )
             except (RuntimeError, ValueError, HTTPException):
@@ -100,7 +104,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
         if wait_for_response:
             if stream:
-                awaitable: Awaitable[PromptText | None] = do_autoname(match_object, history_db)
+                awaitable: Awaitable[PromptText | None] = do_autoname(match_object, history_db, audit_db)
                 iter0: AsyncIterator[JSONDict] = nonblocking_response_maker(awaitable)
                 iter1: AsyncIterator[JSONDict] = do_keepalive(iter0)
                 return JSONStreamingResponse(
@@ -109,12 +113,12 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 )
             else:
                 return {
-                    "autoname": await do_autoname(match_object, history_db),
+                    "autoname": await do_autoname(match_object, history_db, audit_db),
                     "done": True,
                 }
 
         else:
             return starlette.responses.Response(
                 status_code=starlette.status.HTTP_202_ACCEPTED,
-                background=BackgroundTask(lambda: do_autoname(match_object, history_db)),
+                background=BackgroundTask(lambda: do_autoname(match_object, history_db, audit_db)),
             )

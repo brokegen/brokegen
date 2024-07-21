@@ -8,12 +8,13 @@ from sqlalchemy import select
 import providers_registry.ollama.sequence_autoname
 from _util.status import ServerStatusHolder
 from _util.typing import PromptText, FoundationModelRecordID
+from audit.http import AuditDB
+from client.database import HistoryDB
 from client.message import ChatMessage
 from client.sequence import ChatSequenceOrm
-from client.database import HistoryDB
 from providers.foundation_models.orm import FoundationModelRecordOrm
 from providers.orm import ProviderLabel
-from providers.registry import ProviderRegistry
+from providers.registry import ProviderRegistry, BaseProvider
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ async def autoname_sequence(
         preferred_autonaming_model: FoundationModelRecordID,
         status_holder: ServerStatusHolder,
         history_db: HistoryDB,
+        audit_db: AuditDB,
         registry: ProviderRegistry,
 ) -> PromptText | None:
     # Decide how to continue inference for this sequence
@@ -33,11 +35,12 @@ async def autoname_sequence(
     if autonaming_model is None:
         return None
 
-    provider_label: ProviderLabel | None = registry.provider_label_from(autonaming_model)
-    # Special case, for the custom implementation we already have.
     # TODO: Remove it once we have better abstractions, since this import breaks everything.
+    from client.sequence_get import fetch_messages_for_sequence
+
+    # Special case, for the custom implementation we already have.
+    provider_label: ProviderLabel | None = registry.provider_label_from(autonaming_model)
     if provider_label is not None and provider_label.type == "ollama":
-        from client.sequence_get import fetch_messages_for_sequence
         import providers_registry
 
         messages_list: list[ChatMessage] = \
@@ -48,8 +51,13 @@ async def autoname_sequence(
             status_holder,
         )
 
-    await asyncio.sleep(10)
-    return f"[mock autoname for ChatSequence#{sequence.id} -- {datetime.now(tz=timezone.utc)}]"
+    provider: BaseProvider | None = registry.provider_from(autonaming_model)
+    if provider is not None:
+        messages_list: list[ChatMessage] = \
+            fetch_messages_for_sequence(sequence.id, history_db, include_model_info_diffs=False)
+        return await provider.autoname_sequence(messages_list, autonaming_model, status_holder, history_db, audit_db)
+
+    return None
 
 
 def train_autonaming():

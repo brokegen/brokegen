@@ -418,7 +418,7 @@ class LlamaCppProvider(BaseProvider):
             audit_db: AuditDB,
     ) -> AsyncIterator[JSONDict]:
         iter3: AsyncIterator[JSONDict]
-        _, iter3 = self._do_chat_nolog(
+        _, iter3 = await self._do_chat_nolog(
             messages_list, inference_model, inference_options, status_holder, history_db, audit_db,
         )
         return iter3
