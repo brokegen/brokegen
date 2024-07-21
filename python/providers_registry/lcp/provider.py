@@ -7,7 +7,8 @@ from typing import AsyncGenerator, AsyncIterator, Iterator
 import llama_cpp
 import orjson
 import sqlalchemy
-from llama_cpp import ChatCompletionRequestMessage, CreateCompletionResponse, CreateCompletionStreamResponse
+from llama_cpp import ChatCompletionRequestMessage, CreateCompletionResponse, CreateCompletionStreamResponse, \
+    ChatCompletionRequestSystemMessage
 from llama_cpp.llama_chat_format import ChatFormatter, ChatFormatterResponse
 from sqlalchemy import select
 
@@ -200,6 +201,20 @@ class _OneModel:
             bos_token=bos_token,
             stop_token_ids=[eos_token_id],
         )
+
+        # Prepend the system message, as needed
+        if inference_options.override_system_prompt:
+            system_message = ChatCompletionRequestSystemMessage(
+                role="system",
+                content=inference_options.override_system_prompt,
+            )
+
+            if safe_get_arrayed(messages, 0, "role") == "system":
+                logger.warning("Got multiple system messages, keeping all of them")
+
+            new_messages = [system_message]
+            new_messages.extend(messages)
+            messages = new_messages
 
         # Apply the template
         cfr: ChatFormatterResponse = templator(
