@@ -162,6 +162,15 @@ class OneSequenceViewModel: ObservableObject {
         }
     }
 
+    private func flushResponseBuffer() {
+        guard self.responseInEdit != nil else { return }
+        guard !bufferedResponseContent.isEmpty else { return }
+
+        self.responseInEdit!.content!.append(bufferedResponseContent)
+        bufferedResponseContent = ""
+        bufferedResponseLastFlush = Date.now
+    }
+
     private func _parseJSONChunk(_ jsonData: JSON) {
         if let status = jsonData["status"].string {
             serverStatus = status
@@ -175,7 +184,6 @@ class OneSequenceViewModel: ObservableObject {
             if !bufferedResponseContent.isEmpty {
                 print("[TRACE] Flushing response buffer: \(bufferedResponseContent.count) chars after \(String(format: "%.3f", timeSinceFlush)) seconds")
             }
-            bufferedResponseLastFlush = Date.now
 
             if self.responseInEdit == nil {
                 print("[WARNING] responseInEdit is already nil, did we pre-parse packets too early?")
@@ -197,10 +205,8 @@ class OneSequenceViewModel: ObservableObject {
                 submittedAssistantResponseSeed = nil
                 submitting = false
             }
-            else {
-                self.responseInEdit!.content!.append(bufferedResponseContent)
-                bufferedResponseContent = ""
-            }
+
+            flushResponseBuffer()
         }
 
         if let promptWithTemplating = jsonData["prompt_with_templating"].string {
@@ -216,20 +222,17 @@ class OneSequenceViewModel: ObservableObject {
 
             // If we get this end-of-prompt field, flush the response content buffer.
             // (We're probably done rendering, just autonaming left.)
-            if !bufferedResponseContent.isEmpty {
-                responseInEdit?.content?.append(bufferedResponseContent)
-                if !(responseInEdit?.content?.isEmpty ?? false) {
-                    bufferedResponseContent = ""
-                }
-            }
+            flushResponseBuffer()
         }
 
         if jsonData["done"].boolValue {
             receivedDone += 1
+            flushResponseBuffer()
         }
 
         // NB This block is what actually marks the Sequence as "done" and gives us whatever updates we might need.
         if let replacementSequenceId: ChatSequenceServerID = jsonData["new_sequence_id"].int {
+            flushResponseBuffer()
             let originalSequenceId = self.sequence.serverId
 
             // Set the old sequence as non-leaf
@@ -244,6 +247,7 @@ class OneSequenceViewModel: ObservableObject {
         }
 
         if let newMessageId: ChatMessageServerID = jsonData["new_message_id"].int {
+            flushResponseBuffer()
             if responseInEdit != nil {
                 responseInEdit!.content = (responseInEdit?.content ?? "")
                 responseInEdit!.content!.append(bufferedResponseContent)
