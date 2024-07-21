@@ -74,7 +74,7 @@ def do_capture_chat_messages(
                 ):
                     msg_descriptor = ""
                     if message_in.role:
-                        msg_descriptor = f"{" " * (9 - len(message_in.role))}{message_in.role} message "
+                        msg_descriptor = f"{' ' * (9 - len(message_in.role))}{message_in.role} message "
 
                     logger.debug(f"Found matching histories, reusing {msg_descriptor}{sequence_in=}")
                     prior_sequence = sequence_in
