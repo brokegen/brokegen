@@ -55,7 +55,7 @@ class BaseProvider:
                 self.cached_model_infos.append(model_info)
 
     @abstractmethod
-    async def chat_from(
+    async def do_chat_nolog(
             self,
             messages_list: list[ChatMessage],
             inference_model: FoundationModelRecordOrm,
@@ -66,6 +66,7 @@ class BaseProvider:
     ) -> AsyncIterator[JSONDict]:
         """
         Dump a sequence of JSON blobs, roughly equivalent to the Ollama output format.
+        Note that the concrete Providers are expected to record an InferenceEvent, and by extension the ChatMessage/ChatSequence.
 
         Key differences:
 
@@ -78,6 +79,18 @@ class BaseProvider:
         """
         raise NotImplementedError()
 
+    @abstractmethod
+    async def do_chat_logged(
+            self,
+            sequence_id: ChatSequenceID,
+            inference_model: FoundationModelRecordOrm,
+            inference_options: InferenceOptions,
+            status_holder: ServerStatusHolder,
+            history_db: HistoryDB,
+            audit_db: AuditDB,
+    ) -> AsyncIterator[JSONDict]:
+        raise NotImplementedError()
+
     async def chat(
             self,
             sequence_id: ChatSequenceID,
@@ -88,19 +101,30 @@ class BaseProvider:
             history_db: HistoryDB,
             audit_db: AuditDB,
     ) -> AsyncIterator[JSONDict]:
-        messages_list: list[ChatMessage] = fetch_messages_for_sequence(sequence_id, history_db)
-
         # NB This isn't used anywhere, yet, so we don't care
         await retrieval_context
 
-        return await self.chat_from(
-            messages_list,
-            inference_model,
-            inference_options,
-            status_holder,
-            history_db,
-            audit_db,
-        )
+        try:
+            return await self.do_chat_logged(
+                sequence_id,
+                inference_model,
+                inference_options,
+                status_holder,
+                history_db,
+                audit_db,
+            )
+
+        except NotImplementedError:
+            messages_list: list[ChatMessage] = fetch_messages_for_sequence(sequence_id, history_db)
+
+            return await self.do_chat_nolog(
+                messages_list,
+                inference_model,
+                inference_options,
+                status_holder,
+                history_db,
+                audit_db,
+            )
 
     @abstractmethod
     def generate(

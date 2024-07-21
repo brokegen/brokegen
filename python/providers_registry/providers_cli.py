@@ -55,7 +55,7 @@ async def chat(
             ChatMessage(role="user", content=prompt)
         )
 
-        streaming_result = provider.chat_from(
+        streaming_result = provider.do_chat_nolog(
             messages_list, inference_model, inference_options, status_holder, history_db, audit_db
         )
 

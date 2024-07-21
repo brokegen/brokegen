@@ -11,7 +11,7 @@ import starlette.requests
 from fastapi import Depends, Body
 
 from _util.json import JSONDict
-from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks
+from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks, NDJSONStreamingResponse
 from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import ChatSequenceID, PromptText
 from audit.http import AuditDB
@@ -114,10 +114,10 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 if chunk is None:
                     current_time = datetime.now(tz=timezone.utc)
                     yield {
-                        "done": False,
-                        "status": status_holder.get(),
                         "created_at": current_time.isoformat() + "Z",
                         "elapsed": str(current_time - start_time),
+                        "done": False,
+                        "status": status_holder.get(),
                     }
 
                 else:
@@ -129,7 +129,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         awaitable: Awaitable[AsyncIterator[JSONDict]] = real_response_maker()
         iter0: AsyncIterator[JSONDict] = nonblocking_response_maker(awaitable)
         iter1: AsyncIterator[JSONDict] = do_keepalive(iter0)
-        return JSONStreamingResponse(
+        return NDJSONStreamingResponse(
             content=iter1,
             status_code=218,
         )

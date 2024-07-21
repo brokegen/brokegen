@@ -203,7 +203,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             history_db: HistoryDB = Depends(get_history_db),
             audit_db: AuditDB = Depends(get_audit_db),
             registry: ProviderRegistry = Depends(ProviderRegistry),
-    ) -> JSONStreamingResponse | RedirectResponse:
+    ) -> JSONStreamingResponse | RedirectResponse | starlette.responses.JSONResponse:
         original_sequence = history_db.execute(
             select(ChatSequenceOrm)
             .filter_by(id=sequence_id)
@@ -233,21 +233,35 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             preferred_embedding_model=params.preferred_embedding_model,
         )
 
-        return await keepalive_wrapper(
-            inference_model.human_id,
-            do_continuation(
-                messages_list=messages_list,
-                original_sequence=original_sequence,
-                inference_model=inference_model,
-                inference_options=params,
-                autonaming_options=params,
-                retrieval_label=retrieval_label,
-                status_holder=status_holder,
-                empty_request=request,
-                history_db=history_db,
-                audit_db=audit_db,
-            ),
-            status_holder,
-            request,
-            allow_non_ollama_fields=True,
-        )
+        try:
+            return await keepalive_wrapper(
+                inference_model.human_id,
+                do_continuation(
+                    messages_list=messages_list,
+                    original_sequence=original_sequence,
+                    inference_model=inference_model,
+                    inference_options=params,
+                    autonaming_options=params,
+                    retrieval_label=retrieval_label,
+                    status_holder=status_holder,
+                    empty_request=request,
+                    history_db=history_db,
+                    audit_db=audit_db,
+                ),
+                status_holder,
+                request,
+                allow_non_ollama_fields=True,
+            )
+
+        except fastapi.HTTPException as e:
+            return starlette.responses.JSONResponse(
+                content={
+                    "model": inference_model.human_id,
+                    "message": {
+                        "role": "assistant",
+                        "content": str(e),
+                    },
+                    "done": True,
+                },
+                status_code=e.status_code,
+            )

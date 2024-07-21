@@ -3,12 +3,13 @@ import logging
 from datetime import datetime, timezone
 from typing import AsyncIterator, Awaitable, AsyncGenerator
 
+import fastapi
 import httpx
 import orjson
 import sqlalchemy
 import starlette.requests
 import starlette.responses
-from fastapi import FastAPI, APIRouter, Depends, HTTPException
+from fastapi import FastAPI, APIRouter, Depends
 
 from _util.json import safe_get, JSONDict, safe_get_arrayed, JSONArray
 from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks
@@ -194,7 +195,7 @@ async def do_api_chat(
                 request,
             )
 
-    except HTTPException as e:
+    except fastapi.HTTPException as e:
         return starlette.responses.JSONResponse(
             content={
                 "model": inference_model_human_id,

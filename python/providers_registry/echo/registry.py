@@ -109,7 +109,7 @@ class EchoProvider(BaseProvider):
 
             yield FoundationModelRecord.model_validate(new_model)
 
-    async def chat_from(
+    async def do_chat_nolog(
             self,
             messages_list: list[ChatMessage],
             inference_model: FoundationModelRecordOrm,

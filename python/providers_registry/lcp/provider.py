@@ -10,11 +10,14 @@ from sqlalchemy import select
 
 from _util.json import JSONDict, safe_get, safe_get_arrayed
 from _util.status import ServerStatusHolder
-from _util.typing import FoundationModelRecordID
+from _util.typing import FoundationModelRecordID, PromptText, ChatSequenceID
 from audit.http import AuditDB
 from client.database import HistoryDB, get_db as get_history_db
-from client.message import ChatMessage
-from inference.iterators import to_async, consolidate_and_call
+from client.message import ChatMessage, ChatMessageOrm
+from client.sequence import ChatSequenceOrm
+from client.sequence_get import fetch_messages_for_sequence
+from inference.iterators import to_async, consolidate_and_yield
+from inference.logging import construct_assistant_message
 from providers.foundation_models.orm import FoundationModelRecord, FoundationModelAddRequest, \
     lookup_foundation_model_detailed, FoundationModelRecordOrm, InferenceEventOrm
 from providers.orm import ProviderRecord, ProviderRecordOrm
@@ -22,6 +25,18 @@ from providers.registry import BaseProvider, InferenceOptions
 from providers_registry._util import local_provider_identifiers, local_fetch_machine_info
 
 logger = logging.getLogger(__name__)
+
+
+def log_indexer(
+        chunk_json: JSONDict,
+) -> PromptText:
+    response_choices = safe_get(chunk_json, "choices")
+    if len(response_choices) > 1:
+        logger.warning(f"Received {len(response_choices)=}, ignoring all but the first")
+
+    # TODO: Confirm that this is just an "OpenAI-compatible" output.
+    extracted_content: str | None = safe_get_arrayed(response_choices, 0, 'delta', 'content')
+    return extracted_content or ""
 
 
 class _OneModel:
@@ -64,7 +79,7 @@ class _OneModel:
             )
         except ValueError as e:
             # Exception usually happens because we loaded an invalid .gguf file; ignore it.
-            # logger.debug(e)
+            logger.warning(e)
             return False
 
         tokenized: list[int] = just_tokens.tokenize(sample_text)
@@ -233,7 +248,8 @@ class LlamaCppProvider(BaseProvider):
                 yield model_info
                 self.cached_model_infos.append(model_info)
 
-    async def chat_from(
+    # region Actual chat completion endpoints
+    async def do_chat_nolog(
             self,
             messages_list: list[ChatMessage],
             inference_model: FoundationModelRecordOrm,
@@ -264,13 +280,54 @@ class LlamaCppProvider(BaseProvider):
                 orjson.loads(inference_options.inference_options)
             )
 
-        def content_extractor(chunk: JSONDict) -> JSONDict:
+        def choice0_extractor(chunk: JSONDict) -> JSONDict:
             response_choices = safe_get(chunk, "choices")
             if len(response_choices) > 1:
                 logger.warning(f"Received {len(response_choices)=}, ignoring all but the first")
 
             return response_choices[0]
 
+        async def format_response(primordial: AsyncIterator[JSONDict]) -> AsyncIterator[JSONDict]:
+            async for chunk in primordial:
+                # Duplicate the output into the field we expected.
+                chunk['message'] = {
+                    "role": "assistant",
+                    "content": log_indexer(chunk),
+                }
+
+                yield chunk
+
+        # Main function body: wrap up
+        iterator_or_completion: (
+                llama_cpp.CreateChatCompletionResponse | Iterator[llama_cpp.CreateChatCompletionStreamResponse])
+        iterator_or_completion = underlying_model.create_chat_completion(
+            messages=[m.model_dump() for m in messages_list],
+            stream=True,
+            **maybe_inference_options,
+        )
+
+        if isinstance(iterator_or_completion, Iterator):
+            iter0: Iterator[JSONDict] = iterator_or_completion
+            iter1: AsyncIterator[JSONDict] = to_async(iter0)
+        else:
+            async def async_wrapper() -> AsyncIterator[JSONDict]:
+                yield choice0_extractor(iterator_or_completion)
+
+            iter1: AsyncIterator[JSONDict] = async_wrapper()
+
+        iter2: AsyncIterator[JSONDict] = format_response(iter1)
+
+        return iter2
+
+    async def do_chat_logged(
+            self,
+            sequence_id: ChatSequenceID,
+            inference_model: FoundationModelRecordOrm,
+            inference_options: InferenceOptions,
+            status_holder: ServerStatusHolder,
+            history_db: HistoryDB,
+            audit_db: AuditDB,
+    ) -> AsyncIterator[JSONDict]:
         def content_consolidator(chunk: JSONDict, response: JSONDict) -> JSONDict:
             for k, v in chunk.items():
                 if k not in response:
@@ -315,23 +372,7 @@ class LlamaCppProvider(BaseProvider):
 
             return response
 
-        async def format_response(primordial: AsyncIterator[JSONDict]) -> AsyncIterator[JSONDict]:
-            async for chunk in primordial:
-                response_choices = safe_get(chunk, "choices")
-                if len(response_choices) > 1:
-                    logger.warning(f"Received {len(response_choices)=}, ignoring all but the first")
-
-                # Duplicate the output into the field we expected.
-                # TODO: Confirm that this is just an "OpenAI-compatible" output.
-                extracted_content: str = safe_get_arrayed(response_choices, 0, 'delta', 'content')
-                chunk['message'] = {
-                    "role": "assistant",
-                    "content": extracted_content,
-                }
-
-                yield chunk
-
-        async def record_inference_event(consolidated_response: JSONDict):
+        async def record_inference_event(consolidated_response: JSONDict) -> AsyncIterator[JSONDict]:
             inference_event = InferenceEventOrm(
                 model_record_id=inference_model.id,
                 prompt_with_templating=None,
@@ -351,27 +392,76 @@ class LlamaCppProvider(BaseProvider):
                 logger.exception(f"Failed to commit {inference_event}")
                 history_db.rollback()
 
-        # Main function body: wrap up
-        iterator_or_completion: (
-                llama_cpp.CreateChatCompletionResponse | Iterator[llama_cpp.CreateChatCompletionStreamResponse])
-        iterator_or_completion = underlying_model.create_chat_completion(
-            messages=[m.model_dump() for m in messages_list],
-            stream=True,
-            **maybe_inference_options,
+        async def append_response_chunk(consolidated_response: JSONDict) -> AsyncIterator[JSONDict]:
+            # And now, construct the ChatSequence (which references the InferenceEvent, actually)
+            try:
+                response_message: ChatMessageOrm | None = construct_assistant_message(
+                    inference_options.seed_assistant_response,
+                    log_indexer(consolidated_response),
+                    datetime.now(tz=timezone.utc),
+                    history_db,
+                )
+                if not response_message:
+                    return
+
+                original_sequence: ChatSequenceOrm = history_db.execute(
+                    select(ChatSequenceOrm)
+                    .where(ChatSequenceOrm.id == sequence_id)
+                ).scalar_one()
+
+                # TODO: Replace with `construct_new_sequence_from`
+                response_sequence = ChatSequenceOrm(
+                    human_desc=original_sequence.human_desc,
+                    user_pinned=False,
+                    current_message=response_message.id,
+                    parent_sequence=original_sequence.id,
+                    generated_at=datetime.now(tz=timezone.utc),
+                    generation_complete=True,
+                    inference_job_id=None,
+                    inference_error="[lcp inference events not implemented]",
+                )
+
+                history_db.add(response_sequence)
+                history_db.commit()
+
+                # Return fields that the client probably cares about
+                yield {
+                    "new_message_id": response_sequence.current_message,
+                    "new_sequence_id": response_sequence.id,
+                    "done": True,
+                }
+
+            except sqlalchemy.exc.SQLAlchemyError:
+                logger.exception(f"Failed to create add-on ChatSequence from {consolidated_response}")
+                history_db.rollback()
+                status_holder.set(f"Failed to create add-on ChatSequence from {consolidated_response}")
+                yield {
+                    "error": "Failed to create add-on ChatSequence",
+                    "done": True,
+                }
+
+            except Exception:
+                logger.exception(f"Failed to create add-on ChatSequence from {consolidated_response}")
+                status_holder.set(f"Failed to create add-on ChatSequence from {consolidated_response}")
+                yield {
+                    "error": "Failed to create add-on ChatSequence",
+                    "done": True,
+                }
+
+        messages_list: list[ChatMessage] = fetch_messages_for_sequence(sequence_id, history_db)
+
+        iter3: AsyncIterator[JSONDict] = await self.do_chat_nolog(
+            messages_list,
+            inference_model,
+            inference_options,
+            status_holder,
+            history_db,
+            audit_db,
         )
+        iter4: AsyncIterator[JSONDict] = consolidate_and_yield(
+            iter3, content_consolidator, {},
+            record_inference_event, append_response_chunk)
 
-        if isinstance(iterator_or_completion, Iterator):
-            iter0: Iterator[JSONDict] = iterator_or_completion
-            iter1: AsyncIterator[JSONDict] = to_async(iter0)
-        else:
-            async def async_wrapper() -> AsyncIterator[JSONDict]:
-                yield content_extractor(iterator_or_completion)
+        return iter4
 
-            iter1: AsyncIterator[JSONDict] = async_wrapper()
-
-        iter2: AsyncIterator[JSONDict] = consolidate_and_call(
-            iter1, content_consolidator, {},
-            record_inference_event)
-        iter3: AsyncIterator[JSONDict] = format_response(iter2)
-
-        return iter3
+# endregion
