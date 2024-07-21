@@ -1,3 +1,4 @@
+import functools
 import logging
 import os
 from datetime import datetime, timezone
@@ -6,17 +7,19 @@ from typing import AsyncGenerator, AsyncIterator, Iterator
 import llama_cpp
 import orjson
 import sqlalchemy
+from llama_cpp import ChatCompletionRequestMessage, CreateCompletionResponse, CreateCompletionStreamResponse
+from llama_cpp.llama_chat_format import ChatFormatter, ChatFormatterResponse
 from sqlalchemy import select
 
 from _util.json import JSONDict, safe_get, safe_get_arrayed
 from _util.status import ServerStatusHolder
-from _util.typing import FoundationModelRecordID, PromptText, ChatSequenceID
+from _util.typing import FoundationModelRecordID, ChatSequenceID, TemplatedPromptText
 from audit.http import AuditDB
 from client.database import HistoryDB, get_db as get_history_db
 from client.message import ChatMessage, ChatMessageOrm
 from client.sequence import ChatSequenceOrm
 from client.sequence_get import fetch_messages_for_sequence
-from inference.iterators import to_async, consolidate_and_yield, consolidate_and_call
+from inference.iterators import to_async, consolidate_and_yield
 from inference.logging import construct_assistant_message
 from providers.foundation_models.orm import FoundationModelRecord, FoundationModelAddRequest, \
     lookup_foundation_model_detailed, FoundationModelRecordOrm, InferenceEventOrm
@@ -47,7 +50,7 @@ class _OneModel:
             n_gpu_layers=-1,
             verbose=verbose,
             # TODO: Figure out a more elegant way to decide the max.
-            n_ctx=32_768,
+            # n_ctx=32_768,
         )
 
         # DEBUG: Check the contents of this, decide whether to put it in storage
@@ -152,6 +155,73 @@ class _OneModel:
 
             return FoundationModelRecord.model_validate(new_model)
 
+    async def generate(
+            self,
+            prompt: TemplatedPromptText,
+            lcp_inference_options: dict,
+    ) -> CreateCompletionResponse | Iterator[CreateCompletionStreamResponse]:
+        await self.launch()
+        tokenized_prompt: list[int] = self.underlying_model.tokenize(
+            prompt.encode('utf-8'),
+        )
+
+        return self.underlying_model.create_completion(
+            tokenized_prompt,
+            **lcp_inference_options,
+        )
+
+    async def convert_chat_to_generate(
+            self,
+            messages: list[ChatCompletionRequestMessage],
+            inference_options: InferenceOptions,
+    ) -> (ChatFormatterResponse, Iterator[CreateCompletionStreamResponse]):
+        # Read a template from… somewhere.
+        alternative_template_choices = dict(
+            (name[10:], template)
+            for name, template in self.underlying_model.metadata.items()
+            if name.startswith("tokenizer.chat_template."))
+        if len(alternative_template_choices) > 0:
+            logger.warning(f"{alternative_template_choices.keys()=}")
+
+        template = (
+                inference_options.override_model_template
+                or self.underlying_model.metadata["tokenizer.chat_template"]
+        )
+
+        eos_token_id = self.underlying_model.token_eos()
+        bos_token_id = self.underlying_model.token_bos()
+
+        eos_token = self.underlying_model._model.token_get_text(eos_token_id) if eos_token_id != -1 else ""
+        bos_token = self.underlying_model._model.token_get_text(bos_token_id) if bos_token_id != -1 else ""
+
+        logger.debug(f"{self.underlying_model.chat_format=}")
+        templator: ChatFormatter = llama_cpp.llama_chat_format.Jinja2ChatFormatter(
+            template=template,
+            eos_token=eos_token,
+            bos_token=bos_token,
+            stop_token_ids=[eos_token_id],
+        )
+
+        # Apply the template
+        cfr: ChatFormatterResponse = templator(
+            messages=messages,
+        )
+
+        # Update default inference options with the provided values.
+        lcp_inference_options = {
+            "max_tokens": None,
+            "stream": True,
+        }
+        lcp_inference_options.update(
+            orjson.loads(inference_options.inference_options or "{}")
+        )
+
+        result: Iterator[CreateCompletionStreamResponse] = await self.generate(
+            cfr.prompt,
+            lcp_inference_options,
+        )
+        return cfr, result
+
 
 class LlamaCppProvider(BaseProvider):
     search_dir: str
@@ -237,7 +307,7 @@ class LlamaCppProvider(BaseProvider):
                 self.cached_model_infos.append(model_info)
 
     # region Actual chat completion endpoints
-    async def do_chat_nolog(
+    async def _do_chat_nolog(
             self,
             messages_list: list[ChatMessage],
             inference_model: FoundationModelRecordOrm,
@@ -245,7 +315,8 @@ class LlamaCppProvider(BaseProvider):
             status_holder: ServerStatusHolder,
             history_db: HistoryDB,
             audit_db: AuditDB,
-    ) -> AsyncIterator[JSONDict]:
+            use_custom_templater: bool = True,
+    ) -> (ChatFormatterResponse, AsyncIterator[JSONDict]):
         if inference_model.id not in self.loaded_models:
             new_model: _OneModel = _OneModel(
                 os.path.abspath(os.path.join(self.search_dir,
@@ -260,13 +331,6 @@ class LlamaCppProvider(BaseProvider):
             self.loaded_models[inference_model.id] = new_model
 
         await self.loaded_models[inference_model.id].launch()
-        underlying_model: llama_cpp.Llama = self.loaded_models[inference_model.id].underlying_model
-
-        maybe_inference_options: dict = {}
-        if inference_options.inference_options:
-            maybe_inference_options.update(
-                orjson.loads(inference_options.inference_options)
-            )
 
         def choice0_extractor(chunk: JSONDict) -> JSONDict:
             response_choices = safe_get(chunk, "choices")
@@ -282,7 +346,12 @@ class LlamaCppProvider(BaseProvider):
                     logger.warning(f"Received {len(response_choices)=}, ignoring all but the first")
 
                 # TODO: Confirm that this is just an "OpenAI-compatible" output.
-                extracted_content: str | None = safe_get_arrayed(response_choices, 0, 'delta', 'content')
+                extracted_content: str | None = (
+                    # This is for chat completions
+                        safe_get_arrayed(response_choices, 0, 'delta', 'content')
+                        # This is for normal, template pre-applied completions
+                        or safe_get_arrayed(response_choices, 0, 'text')
+                )
 
                 # Duplicate the output into the field we expected.
                 chunk['message'] = {
@@ -293,26 +362,61 @@ class LlamaCppProvider(BaseProvider):
                 yield chunk
 
         # Main function body: wrap up
-        iterator_or_completion: (
-                llama_cpp.CreateChatCompletionResponse | Iterator[llama_cpp.CreateChatCompletionStreamResponse])
-        iterator_or_completion = underlying_model.create_chat_completion(
-            messages=[m.model_dump() for m in messages_list],
-            stream=True,
-            **maybe_inference_options,
-        )
+        if not use_custom_templater:
+            # This branch unwraps the code within llama_cpp, so we can do our custom assistant response seed etc etc
+            cfr: ChatFormatterResponse
+            iter0: Iterator[JSONDict]
 
-        if isinstance(iterator_or_completion, Iterator):
-            iter0: Iterator[JSONDict] = iterator_or_completion
+            cfr, iter0 = await self.loaded_models[inference_model.id].convert_chat_to_generate(
+                messages=[m.model_dump() for m in messages_list],
+                inference_options=inference_options,
+            )
             iter1: AsyncIterator[JSONDict] = to_async(iter0)
-        else:
-            async def async_wrapper() -> AsyncIterator[JSONDict]:
-                yield choice0_extractor(iterator_or_completion)
 
-            iter1: AsyncIterator[JSONDict] = async_wrapper()
+        else:
+            cfr: ChatFormatterResponse = ChatFormatterResponse(prompt="")
+
+            lcp_inference_options: dict = {}
+            if inference_options.inference_options:
+                lcp_inference_options.update(
+                    orjson.loads(inference_options.inference_options)
+                )
+
+            iterator_or_completion: \
+                llama_cpp.CreateChatCompletionResponse | Iterator[llama_cpp.CreateChatCompletionStreamResponse]
+            underlying_model: llama_cpp.Llama = self.loaded_models[inference_model.id].underlying_model
+            iterator_or_completion = underlying_model.create_chat_completion(
+                messages=[m.model_dump() for m in messages_list],
+                stream=True,
+                **lcp_inference_options,
+            )
+
+            if isinstance(iterator_or_completion, Iterator):
+                iter0: Iterator[JSONDict] = iterator_or_completion
+                iter1: AsyncIterator[JSONDict] = to_async(iter0)
+            else:
+                async def async_wrapper() -> AsyncIterator[JSONDict]:
+                    yield choice0_extractor(iterator_or_completion)
+
+                iter1: AsyncIterator[JSONDict] = async_wrapper()
 
         iter2: AsyncIterator[JSONDict] = format_response(iter1)
+        return cfr, iter2
 
-        return iter2
+    async def do_chat_nolog(
+            self,
+            messages_list: list[ChatMessage],
+            inference_model: FoundationModelRecordOrm,
+            inference_options: InferenceOptions,
+            status_holder: ServerStatusHolder,
+            history_db: HistoryDB,
+            audit_db: AuditDB,
+    ) -> AsyncIterator[JSONDict]:
+        iter3: AsyncIterator[JSONDict]
+        _, iter3 = self._do_chat_nolog(
+            messages_list, inference_model, inference_options, status_holder, history_db, audit_db,
+        )
+        return iter3
 
     async def do_chat_logged(
             self,
@@ -367,9 +471,13 @@ class LlamaCppProvider(BaseProvider):
 
             return response
 
-        def record_inference_event(consolidated_response: JSONDict) -> InferenceEventOrm:
+        def record_inference_event(
+                consolidated_response: JSONDict,
+                cfr: ChatFormatterResponse,
+        ) -> InferenceEventOrm:
             inference_event = InferenceEventOrm(
                 model_record_id=inference_model.id,
+                prompt_with_templating=cfr.prompt,
                 response_created_at=datetime.now(tz=timezone.utc),
                 response_error="[LlamaCppProvider inference events not implemented]",
                 reason="LlamaCppProvider.chat_from",
@@ -385,10 +493,19 @@ class LlamaCppProvider(BaseProvider):
 
             return inference_event
 
-        async def append_response_chunk(consolidated_response: JSONDict) -> AsyncIterator[JSONDict]:
+        async def append_response_chunk(
+                consolidated_response: JSONDict,
+                cfr: ChatFormatterResponse,
+        ) -> AsyncIterator[JSONDict]:
             # And now, construct the ChatSequence (which references the InferenceEvent, actually)
             try:
-                inference_event: InferenceEventOrm = record_inference_event(consolidated_response)
+                inference_event: InferenceEventOrm = record_inference_event(consolidated_response, cfr)
+
+                # Return a chunk that includes the entire context-y prompt.
+                # This is marked a separate packet to guard against overflows and similar.
+                yield {
+                    "prompt_with_templating": cfr.prompt,
+                }
 
                 response_message: ChatMessageOrm | None = construct_assistant_message(
                     inference_options.seed_assistant_response,
@@ -455,7 +572,8 @@ class LlamaCppProvider(BaseProvider):
 
         messages_list: list[ChatMessage] = fetch_messages_for_sequence(sequence_id, history_db)
 
-        iter3: AsyncIterator[JSONDict] = await self.do_chat_nolog(
+        iter3: AsyncIterator[JSONDict]
+        cfr, iter3 = await self._do_chat_nolog(
             messages_list,
             inference_model,
             inference_options,
@@ -465,7 +583,7 @@ class LlamaCppProvider(BaseProvider):
         )
         iter5: AsyncIterator[JSONDict] = consolidate_and_yield(
             iter3, content_consolidator, {},
-            append_response_chunk)
+            functools.partial(append_response_chunk, cfr=cfr))
 
         return iter5
 
