@@ -18,9 +18,11 @@ from _util.status import ServerStatusHolder
 from _util.typing import ChatSequenceID, PromptText, FoundationModelRecordID
 from audit.http import AuditDB, get_db as get_audit_db
 from client.database import HistoryDB, get_db as get_history_db
+from client.message import ChatMessage
 from client.sequence import ChatSequenceOrm
-from providers.registry import ProviderRegistry
-from .bridge import autoname_sequence
+from client.sequence_get import fetch_messages_for_sequence
+from providers.foundation_models.orm import FoundationModelRecordOrm
+from providers.registry import ProviderRegistry, BaseProvider
 
 logger = logging.getLogger(__name__)
 
@@ -54,16 +56,26 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         ) -> PromptText | None:
             autoname: PromptText | None
 
+            # Decide how to continue inference for this sequence
+            autonaming_model: FoundationModelRecordOrm | None = history_db.execute(
+                select(FoundationModelRecordOrm)
+                .where(FoundationModelRecordOrm.id == preferred_autonaming_model)
+            ).scalar_one_or_none()
+            if autonaming_model is None:
+                return None
+
+            provider: BaseProvider | None = registry.provider_from(autonaming_model)
+            if provider is None:
+                return None
+
             try:
-                autoname = await autoname_sequence(
-                    sequence,
-                    preferred_autonaming_model,
-                    status_holder,
-                    history_db,
-                    audit_db,
-                    registry,
-                )
+                messages_list: list[ChatMessage] = \
+                    fetch_messages_for_sequence(sequence.id, history_db, include_model_info_diffs=False)
+                autoname = await provider.autoname_sequence(
+                    messages_list, autonaming_model, status_holder, history_db, audit_db)
+
             except (RuntimeError, ValueError, HTTPException):
+                logger.exception(f"Autoname failed with model {repr(autonaming_model)}")
                 autoname = None
 
             if autoname is not None:

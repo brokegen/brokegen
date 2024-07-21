@@ -32,7 +32,7 @@ from .api_chat.inject_rag import do_proxy_chat_rag
 from .api_chat.logging import ollama_response_consolidator, \
     OllamaResponseContentJSON, finalize_inference_job, ollama_log_indexer
 from .json import keepalive_wrapper
-from .sequence_autoname import autoname_sequence
+from .sequence_autoname import ollama_autoname_sequence
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +119,7 @@ async def do_continuation(
             consolidated_messages = list(messages_list)
             consolidated_messages.append(ChatMessage.model_validate(response_message))
 
-            name = await autoname_sequence(consolidated_messages, inference_model, status_holder)
+            name = await ollama_autoname_sequence(consolidated_messages, inference_model, status_holder)
             logger.info(f"Auto-generated chat title is {len(name)} chars: {name=}")
             response_sequence.human_desc = name
 

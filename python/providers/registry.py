@@ -4,7 +4,7 @@ from typing import AsyncGenerator, Self, AsyncIterator, Awaitable, Optional
 
 from pydantic import BaseModel
 
-from _util.json import JSONDict, safe_get
+from _util.json import JSONDict, safe_get_arrayed, safe_get
 from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import ChatSequenceID, PromptText, TemplatedPromptText
 from audit.http import AuditDB
@@ -146,9 +146,9 @@ class BaseProvider:
             history_db: HistoryDB,
             audit_db: AuditDB,
     ) -> PromptText:
-        with (StatusContext(
+        with ((StatusContext(
                 f"Autonaming ChatSequence with {len(messages_list)} messages => {autonaming_model}",
-                status_holder)):
+                status_holder))):
             # Construct a new prompt that hopefully reuses context.
             new_message = (
                 "Summarize the above messages, suitable as a short description for a tab title. "
@@ -179,11 +179,22 @@ class BaseProvider:
                     if k == 'message':
                         consolidated_response[k]['content'] += v['content']
 
+                    if k == 'choices':
+                        for choice_index in chunk[k]:
+                            if safe_get_arrayed(chunk, k, choice_index, 'delta', 'content'):
+                                consolidated_response[k][choice_index]['delta']['content'] \
+                                    += safe_get_arrayed(chunk, k, choice_index, 'delta', 'content')
+                            if safe_get_arrayed(chunk, k, choice_index, 'text'):
+                                consolidated_response[k][choice_index]['text'] \
+                                    += safe_get_arrayed(chunk, k, choice_index, 'text')
+
             consolidated_response = {}
             async for chunk in iter0:
                 autoname_consolidator(chunk, consolidated_response)
 
-            return safe_get(consolidated_response, 'message', 'content')
+            return safe_get(chunk, 'message', 'content') \
+                or safe_get_arrayed(chunk, 'choices', 0, 'delta', 'content') \
+                or safe_get_arrayed(chunk, 'choices', 0, 'text')
 
 
 class ProviderFactory:

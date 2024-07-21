@@ -6,13 +6,18 @@ import httpx
 import orjson
 from sqlalchemy import select
 
+from _util.status import ServerStatusHolder
+from _util.typing import PromptText
+
 from audit.http import get_db as get_audit_db, AuditDB
 from client.database import HistoryDB, get_db as get_history_db
-from providers.foundation_models.orm import FoundationModelRecord
+from client.message import ChatMessage
+from providers.foundation_models.orm import FoundationModelRecord, FoundationModelRecordOrm
 from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord, ProviderType
 from providers.registry import ProviderRegistry, BaseProvider, ProviderFactory
 from providers_registry._util import local_provider_identifiers, local_fetch_machine_info
 from providers_registry.ollama.models.list import do_list_available_models
+from providers_registry.ollama.sequence_autoname import ollama_autoname_sequence
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +90,16 @@ class ExternalOllamaProvider(BaseProvider):
 
         async for model in do_list_available_models(self, history_db, audit_db):
             yield model
+
+    async def autoname_sequence(
+            self,
+            messages_list: list[ChatMessage],
+            autonaming_model: FoundationModelRecordOrm,
+            status_holder: ServerStatusHolder,
+            history_db: HistoryDB,
+            audit_db: AuditDB,
+    ) -> PromptText:
+        return await ollama_autoname_sequence(messages_list, autonaming_model, status_holder)
 
 
 class ExternalOllamaFactory(ProviderFactory):

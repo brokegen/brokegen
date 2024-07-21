@@ -16,17 +16,17 @@ from .api_generate import do_generate_raw_templated
 
 
 async def do_autoname_sequence(
-        inference_model: FoundationModelRecordOrm,
+        autonaming_model: FoundationModelRecordOrm,
         inference_reason: InferenceReason,
         system_message: PromptText | None,
         user_prompt: PromptText | None,
         assistant_response: PromptText | None,
 ) -> PromptText:
-    model_template = safe_get(inference_model.combined_inference_parameters, 'template')
+    model_template = safe_get(autonaming_model.combined_inference_parameters, 'template')
 
     final_system_message = (
             system_message
-            or safe_get(inference_model.combined_inference_parameters, 'system')
+            or safe_get(autonaming_model.combined_inference_parameters, 'system')
             or None
     )
 
@@ -39,7 +39,7 @@ async def do_autoname_sequence(
 
     response0: starlette.responses.StreamingResponse = await do_generate_raw_templated(
         request_content={
-            'model': inference_model.human_id,
+            'model': autonaming_model.human_id,
             'prompt': templated_query,
             'raw': False,
             'stream': True,
@@ -60,16 +60,16 @@ async def do_autoname_sequence(
     return ollama_log_indexer(consolidated_response)
 
 
-async def autoname_sequence(
+async def ollama_autoname_sequence(
         messages_list: list[ChatMessage],
-        inference_model: FoundationModelRecordOrm,
+        autonaming_model: FoundationModelRecordOrm,
         status_holder: ServerStatusHolder,
 ) -> PromptText:
     with StatusContext(
-            f"Autonaming ChatSequence with {len(messages_list)} messages => ollama {inference_model.human_id}",
+            f"Autonaming ChatSequence with {len(messages_list)} messages => ollama {autonaming_model.human_id}",
             status_holder):
         name: str = await do_autoname_sequence(
-            inference_model,
+            autonaming_model,
             inference_reason=f"ChatSequence autoname",
             system_message=None,
             user_prompt="Summarize the provided messages, suitable as a short description for a tab title. " +
