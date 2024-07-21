@@ -50,7 +50,7 @@ class _OneModel:
             n_gpu_layers=-1,
             verbose=verbose,
             # TODO: Figure out a more elegant way to decide the max.
-            # n_ctx=32_768,
+            n_ctx=4_096,
         )
 
         # DEBUG: Check the contents of this, decide whether to put it in storage
@@ -194,7 +194,6 @@ class _OneModel:
         eos_token = self.underlying_model._model.token_get_text(eos_token_id) if eos_token_id != -1 else ""
         bos_token = self.underlying_model._model.token_get_text(bos_token_id) if bos_token_id != -1 else ""
 
-        logger.debug(f"{self.underlying_model.chat_format=}")
         templator: ChatFormatter = llama_cpp.llama_chat_format.Jinja2ChatFormatter(
             template=template,
             eos_token=eos_token,
@@ -207,10 +206,16 @@ class _OneModel:
             messages=messages,
         )
 
+        # Given how most .gguf templates seem to work, we can just append the seed response,
+        # instead of doing anything fancy like embedding a magic token and then truncating the templated text there.
+        cfr.prompt += inference_options.seed_assistant_response
+
         # Update default inference options with the provided values.
         lcp_inference_options = {
             "max_tokens": None,
             "stream": True,
+            "stop": cfr.stop,
+            "stopping_criteria": cfr.stopping_criteria,
         }
         lcp_inference_options.update(
             orjson.loads(inference_options.inference_options or "{}")
@@ -362,7 +367,7 @@ class LlamaCppProvider(BaseProvider):
                 yield chunk
 
         # Main function body: wrap up
-        if not use_custom_templater:
+        if use_custom_templater:
             # This branch unwraps the code within llama_cpp, so we can do our custom assistant response seed etc etc
             cfr: ChatFormatterResponse
             iter0: Iterator[JSONDict]
@@ -479,7 +484,8 @@ class LlamaCppProvider(BaseProvider):
                 model_record_id=inference_model.id,
                 prompt_with_templating=cfr.prompt,
                 response_created_at=datetime.now(tz=timezone.utc),
-                response_error="[LlamaCppProvider inference events not implemented]",
+                response_error="[not implemented yet]",
+                response_info=consolidated_response,
                 reason="LlamaCppProvider.chat_from",
             )
 

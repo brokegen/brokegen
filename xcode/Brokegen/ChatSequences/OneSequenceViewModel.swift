@@ -598,6 +598,9 @@ class OneSequenceViewModel: ObservableObject {
             else if !(responseInEdit!.content ?? "").isEmpty {
                 if receivedDone != 1 {
                     responseInEdit!.role = "partial assistant response"
+
+                    // Show the "partially hidden" message, if needed.
+                    settings.showMessageHeaders = true
                 }
                 sequence.messages.append(.temporary(responseInEdit!))
             }
