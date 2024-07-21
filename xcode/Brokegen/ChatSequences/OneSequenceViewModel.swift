@@ -178,7 +178,9 @@ class OneSequenceViewModel: ObservableObject {
             bufferedResponseLastFlush = Date.now
 
             if self.responseInEdit == nil {
-                print("[WARNING] Should not have nil responseInEdit at this point; maintaining buffer size of \(bufferedResponseContent.count)")
+                print("[WARNING] responseInEdit is already nil, did we pre-parse packets too early?")
+                print("- current buffer content: \"\(bufferedResponseContent)\"")
+                print("- received chunk: \(jsonData)")
 
                 // DEBUG: There's a race condition somewhere that lets you continue submitting while still receiving.
                 // For now, just duplicate the code from receiveHandler().
@@ -585,8 +587,6 @@ class OneSequenceViewModel: ObservableObject {
             submitting = false
         }
 
-        receivedDone = 0
-        incompleteResponseData = nil
         if !bufferedResponseContent.isEmpty {
             responseInEdit?.content?.append(bufferedResponseContent)
             bufferedResponseContent = ""
@@ -604,6 +604,9 @@ class OneSequenceViewModel: ObservableObject {
 
             responseInEdit = nil
         }
+
+        receivedDone = 0
+        incompleteResponseData = nil
     }
 }
 

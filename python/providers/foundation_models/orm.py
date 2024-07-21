@@ -232,7 +232,10 @@ class InferenceEventOrm(Base):
 
     parent_sequence: ChatSequenceID = Column(Integer)
     """
-    Useful for collating information across several inference jobs, to determine \"actual\" cost of a query
+    Useful for collating information across several inference jobs, to determine \"actual\" cost of a query.
+    Note that this is a circular reference, so is usually set in a second pass.
+
+    TODO: Use SQLAlchemy correctly and set it in one pass.
     """
     reason: InferenceReason = Column(String)
     """

@@ -16,7 +16,7 @@ from client.database import HistoryDB, get_db as get_history_db
 from client.message import ChatMessage, ChatMessageOrm
 from client.sequence import ChatSequenceOrm
 from client.sequence_get import fetch_messages_for_sequence
-from inference.iterators import to_async, consolidate_and_yield
+from inference.iterators import to_async, consolidate_and_yield, consolidate_and_call
 from inference.logging import construct_assistant_message
 from providers.foundation_models.orm import FoundationModelRecord, FoundationModelAddRequest, \
     lookup_foundation_model_detailed, FoundationModelRecordOrm, InferenceEventOrm
@@ -25,18 +25,6 @@ from providers.registry import BaseProvider, InferenceOptions
 from providers_registry._util import local_provider_identifiers, local_fetch_machine_info
 
 logger = logging.getLogger(__name__)
-
-
-def log_indexer(
-        chunk_json: JSONDict,
-) -> PromptText:
-    response_choices = safe_get(chunk_json, "choices")
-    if len(response_choices) > 1:
-        logger.warning(f"Received {len(response_choices)=}, ignoring all but the first")
-
-    # TODO: Confirm that this is just an "OpenAI-compatible" output.
-    extracted_content: str | None = safe_get_arrayed(response_choices, 0, 'delta', 'content')
-    return extracted_content or ""
 
 
 class _OneModel:
@@ -48,7 +36,7 @@ class _OneModel:
 
     async def launch(
             self,
-            verbose: bool = False,
+            verbose: bool = True,
     ):
         if self.underlying_model is not None:
             return
@@ -289,10 +277,17 @@ class LlamaCppProvider(BaseProvider):
 
         async def format_response(primordial: AsyncIterator[JSONDict]) -> AsyncIterator[JSONDict]:
             async for chunk in primordial:
+                response_choices = safe_get(chunk, "choices")
+                if len(response_choices) > 1:
+                    logger.warning(f"Received {len(response_choices)=}, ignoring all but the first")
+
+                # TODO: Confirm that this is just an "OpenAI-compatible" output.
+                extracted_content: str | None = safe_get_arrayed(response_choices, 0, 'delta', 'content')
+
                 # Duplicate the output into the field we expected.
                 chunk['message'] = {
                     "role": "assistant",
-                    "content": log_indexer(chunk),
+                    "content": extracted_content or "",
                 }
 
                 yield chunk
@@ -372,12 +367,12 @@ class LlamaCppProvider(BaseProvider):
 
             return response
 
-        async def record_inference_event(consolidated_response: JSONDict) -> AsyncIterator[JSONDict]:
+        def record_inference_event(consolidated_response: JSONDict) -> InferenceEventOrm:
             inference_event = InferenceEventOrm(
                 model_record_id=inference_model.id,
-                prompt_with_templating=None,
-                reason="LlamaCppProvider.chat_from",
                 response_created_at=datetime.now(tz=timezone.utc),
+                response_error="[LlamaCppProvider inference events not implemented]",
+                reason="LlamaCppProvider.chat_from",
             )
 
             if safe_get(consolidated_response, "usage", "prompt_tokens"):
@@ -385,20 +380,20 @@ class LlamaCppProvider(BaseProvider):
             if safe_get(consolidated_response, "usage", "completion_tokens"):
                 inference_event.response_tokens = safe_get(consolidated_response, "usage", "completion_tokens")
 
-            try:
-                history_db.add(inference_event)
-                history_db.commit()
-            except sqlalchemy.exc.SQLAlchemyError:
-                logger.exception(f"Failed to commit {inference_event}")
-                history_db.rollback()
+            history_db.add(inference_event)
+            history_db.commit()
+
+            return inference_event
 
         async def append_response_chunk(consolidated_response: JSONDict) -> AsyncIterator[JSONDict]:
             # And now, construct the ChatSequence (which references the InferenceEvent, actually)
             try:
+                inference_event: InferenceEventOrm = record_inference_event(consolidated_response)
+
                 response_message: ChatMessageOrm | None = construct_assistant_message(
                     inference_options.seed_assistant_response,
-                    log_indexer(consolidated_response),
-                    datetime.now(tz=timezone.utc),
+                    safe_get(consolidated_response, "message", "content"),
+                    inference_event.response_created_at,
                     history_db,
                 )
                 if not response_message:
@@ -415,13 +410,23 @@ class LlamaCppProvider(BaseProvider):
                     user_pinned=False,
                     current_message=response_message.id,
                     parent_sequence=original_sequence.id,
-                    generated_at=datetime.now(tz=timezone.utc),
-                    generation_complete=True,
-                    inference_job_id=None,
-                    inference_error="[lcp inference events not implemented]",
                 )
 
                 history_db.add(response_sequence)
+
+                response_sequence.generated_at = inference_event.response_created_at
+                response_sequence.generation_complete = True
+                response_sequence.inference_job_id = inference_event.id
+                if inference_event.response_error:
+                    response_sequence.inference_error = inference_event.response_error
+
+                history_db.commit()
+
+                # And complete the circular reference that really should be handled in the SQLAlchemy ORM
+                inference_job = history_db.merge(inference_event)
+                inference_job.parent_sequence = response_sequence.id
+
+                history_db.add(inference_job)
                 history_db.commit()
 
                 # Return fields that the client probably cares about
@@ -458,10 +463,10 @@ class LlamaCppProvider(BaseProvider):
             history_db,
             audit_db,
         )
-        iter4: AsyncIterator[JSONDict] = consolidate_and_yield(
+        iter5: AsyncIterator[JSONDict] = consolidate_and_yield(
             iter3, content_consolidator, {},
-            record_inference_event, append_response_chunk)
+            append_response_chunk)
 
-        return iter4
+        return iter5
 
 # endregion
