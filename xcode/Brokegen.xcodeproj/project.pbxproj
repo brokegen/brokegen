@@ -28,6 +28,7 @@
 		CE66FB132C16968C00BD8745 /* ChatMessageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE66FAFF2C16915C00BD8745 /* ChatMessageTests.swift */; };
 		CE6807C22C35D9F500B0053A /* DefaultChatSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6807C12C35D9F400B0053A /* DefaultChatSyncService.swift */; };
 		CE6D8A7F2BF6DF1800A7934D /* RibbonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */; };
+		CE727B372C4F07D4000D3F64 /* PersistentCSUISettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE727B362C4F07D4000D3F64 /* PersistentCSUISettings.swift */; };
 		CE7FFE142C04435D00DB7CFA /* ProviderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE132C04435D00DB7CFA /* ProviderService.swift */; };
 		CE7FFE162C04482900DB7CFA /* ModelPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE152C04482900DB7CFA /* ModelPickerView.swift */; };
 		CE7FFE182C06772400DB7CFA /* BlankOneSequenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE172C06772400DB7CFA /* BlankOneSequenceView.swift */; };
@@ -111,6 +112,7 @@
 		CE66FB0A2C16966900BD8745 /* BrokegenTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BrokegenTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE6807C12C35D9F400B0053A /* DefaultChatSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultChatSyncService.swift; sourceTree = "<group>"; };
 		CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RibbonView.swift; sourceTree = "<group>"; };
+		CE727B362C4F07D4000D3F64 /* PersistentCSUISettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistentCSUISettings.swift; sourceTree = "<group>"; };
 		CE7FFE132C04435D00DB7CFA /* ProviderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderService.swift; sourceTree = "<group>"; };
 		CE7FFE152C04482900DB7CFA /* ModelPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelPickerView.swift; sourceTree = "<group>"; };
 		CE7FFE172C06772400DB7CFA /* BlankOneSequenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankOneSequenceView.swift; sourceTree = "<group>"; };
@@ -197,6 +199,7 @@
 				CEF73F2A2C1BE32200C46AA5 /* CSCSettings.swift */,
 				CEFA69442C14AE67007EEF8D /* CSCSettingsService.swift */,
 				CEFA694A2C14C7BC007EEF8D /* CSCSettingsView.swift */,
+				CE727B362C4F07D4000D3F64 /* PersistentCSUISettings.swift */,
 			);
 			path = ProViews;
 			sourceTree = "<group>";
@@ -522,6 +525,7 @@
 				CE8229AF2BF7306000029DC2 /* JobsManagerService.swift in Sources */,
 				CEFEB4782BFDA6C900334522 /* TimeJob.swift in Sources */,
 				CEE99E652C0E8378008E1B07 /* JobPickerView.swift in Sources */,
+				CE727B372C4F07D4000D3F64 /* PersistentCSUISettings.swift in Sources */,
 				CE4634ED2BFAE3020063142E /* RestartableProcess.swift in Sources */,
 				CE7FFE162C04482900DB7CFA /* ModelPickerView.swift in Sources */,
 				CEAEF07E2C49B02B00281578 /* MarkdownView.swift in Sources */,
