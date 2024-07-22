@@ -4,7 +4,7 @@ import Foundation
 import SwiftUI
 import SwiftyJSON
 
-struct ChatMessage: Equatable {
+struct ChatMessage {
     let serverId: ChatMessageServerID
     let hostSequenceId: ChatSequenceServerID
 
@@ -13,9 +13,17 @@ struct ChatMessage: Equatable {
     let createdAt: Date
 }
 
-extension ChatMessage: Hashable, Identifiable {
-    var id: Self {
-        self
+extension ChatMessage: Identifiable, Equatable, Hashable {
+    var id: ChatMessageServerID {
+        serverId
+    }
+
+    public static func == (lhs: ChatMessage, rhs: ChatMessage) -> Bool {
+        return lhs.serverId == rhs.serverId
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(serverId)
     }
 }
 
@@ -29,7 +37,8 @@ extension ChatMessage: Decodable {
     }
 }
 
-struct TemporaryChatMessage: Equatable, Hashable {
+struct TemporaryChatMessage: Identifiable {
+    let id: UUID = UUID()
     public var role: String
     public var content: String?
     public var createdAt: Date
@@ -41,9 +50,33 @@ struct TemporaryChatMessage: Equatable, Hashable {
     }
 }
 
+extension TemporaryChatMessage: Equatable, Hashable {
+    public static func == (lhs: TemporaryChatMessage, rhs: TemporaryChatMessage) -> Bool {
+        if lhs.id != rhs.id {
+            return false
+        }
+        if lhs.role != rhs.role {
+            return false
+        }
+        if lhs.content != rhs.content {
+            return false
+        }
+
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}
+
 extension TemporaryChatMessage: Encodable {
     func asJsonData() throws -> Data {
         return try jsonEncoder.encode(self)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case role, content, createdAt
     }
 }
 
