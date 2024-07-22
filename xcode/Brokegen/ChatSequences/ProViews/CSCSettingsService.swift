@@ -72,17 +72,17 @@ class CSCSettingsService: ObservableObject {
         }
 
         var showMessageHeaders: Bool {
-            get { override.showMessageHeaders ?? defaults.showMessageHeaders }
+            get { override.showMessageHeaders ?? defaults.cached_showMessageHeaders }
             set { override.showMessageHeaders = newValue }
         }
 
         var renderAsMarkdown: Bool {
-            get { override.renderAsMarkdown ?? defaults.renderAsMarkdown }
+            get { override.renderAsMarkdown ?? defaults.cached_renderAsMarkdown }
             set { override.renderAsMarkdown = newValue }
         }
 
         var messageFontDesign: Font.Design {
-            get { Font.Design.fromString(defaults.messageFontDesign) }
+            get { Font.Design.fromString(defaults.cached_messageFontDesign) }
             set {
                 defaults.messageFontDesign = newValue.toString()
                 objectWillChange.send()

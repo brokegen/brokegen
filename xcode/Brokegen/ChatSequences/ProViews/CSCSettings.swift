@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 
 /// @AppStorage needs a bit of manual plumbing to make it compatible with @Observable.
@@ -5,6 +6,37 @@ import SwiftUI
 ///
 @Observable
 class PersistentDefaultCSUISettings {
+    public var cached_showMessageHeaders: Bool = false
+    public var cached_renderAsMarkdown: Bool = false
+    public var cached_messageFontDesign: String = ""
+
+    @ObservationIgnored private var counter = PassthroughSubject<Int, Never>()
+    @ObservationIgnored private var subscriber: AnyCancellable?
+
+    func startUpdater() {
+        self.counter.send(-1)
+
+        DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 0.3) {
+            self.startUpdater()
+        }
+    }
+
+    init() {
+        // https://stackoverflow.com/questions/63678438/swiftui-updating-ui-with-high-frequency-data
+        subscriber = counter
+            // Drop updates in the background
+            .throttle(for: 1.1, scheduler: DispatchQueue.global(qos: .background), latest: true)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                guard self != nil else { return }
+                self!.cached_showMessageHeaders = self!.showMessageHeaders
+                self!.cached_renderAsMarkdown = self!.renderAsMarkdown
+                self!.cached_messageFontDesign = self!.messageFontDesign
+            }
+
+        startUpdater()
+    }
+
     @AppStorage("defaultUiSettings.allowContinuation")
     @ObservationIgnored private var stored_allowContinuation: Bool = true
 
@@ -38,7 +70,7 @@ class PersistentDefaultCSUISettings {
     }
 
     @AppStorage("defaultUiSettings.forceRetrieval")
-    @ObservationIgnored var stored_forceRetrieval: Bool = false
+    @ObservationIgnored private var stored_forceRetrieval: Bool = false
 
     @ObservationIgnored
     var forceRetrieval: Bool {
@@ -54,7 +86,7 @@ class PersistentDefaultCSUISettings {
     }
 
     @AppStorage("defaultUiSettings.showMessageHeaders")
-    @ObservationIgnored var stored_showMessageHeaders: Bool = false
+    @ObservationIgnored private var stored_showMessageHeaders: Bool = false
 
     @ObservationIgnored
     var showMessageHeaders: Bool {
@@ -65,12 +97,13 @@ class PersistentDefaultCSUISettings {
         set {
             withMutation(keyPath: \.showMessageHeaders) {
                 stored_showMessageHeaders = newValue
+                cached_showMessageHeaders = newValue
             }
         }
     }
 
     @AppStorage("defaultUiSettings.renderAsMarkdown")
-    @ObservationIgnored var stored_renderAsMarkdown: Bool = true
+    @ObservationIgnored private var stored_renderAsMarkdown: Bool = true
 
     @ObservationIgnored
     var renderAsMarkdown: Bool {
@@ -81,13 +114,14 @@ class PersistentDefaultCSUISettings {
         set {
             withMutation(keyPath: \.renderAsMarkdown) {
                 stored_renderAsMarkdown = newValue
+                cached_renderAsMarkdown = newValue
             }
         }
     }
 
     // NB This is the stringified name for a Font.Design
     @AppStorage("defaultUiSettings.messageFontDesign")
-    @ObservationIgnored var stored_messageFontDesign: String = ""
+    @ObservationIgnored private var stored_messageFontDesign: String = ""
 
     @ObservationIgnored
     var messageFontDesign: String {
@@ -98,13 +132,14 @@ class PersistentDefaultCSUISettings {
         set {
             withMutation(keyPath: \.messageFontDesign) {
                 stored_messageFontDesign = newValue
+                cached_messageFontDesign = newValue
             }
         }
     }
 
     // NB This is the stringified name for a Font.Design
     @AppStorage("defaultUiSettings.textEntryFontDesign")
-    @ObservationIgnored var stored_textEntryFontDesign: String = ""
+    @ObservationIgnored private var stored_textEntryFontDesign: String = ""
 
     @ObservationIgnored
     var textEntryFontDesign: String {
@@ -120,7 +155,7 @@ class PersistentDefaultCSUISettings {
     }
 
     @AppStorage("defaultUiSettings.responseBufferFlushFrequencyMsec")
-    @ObservationIgnored var stored_responseBufferFlushFrequencyMsec: Int = 250
+    @ObservationIgnored private var stored_responseBufferFlushFrequencyMsec: Int = 250
 
     @ObservationIgnored
     var responseBufferFlushFrequencyMsec: Int {
@@ -136,7 +171,7 @@ class PersistentDefaultCSUISettings {
     }
 
     @AppStorage("defaultUiSettings.scrollToBottomOnNew")
-    @ObservationIgnored var stored_scrollToBottomOnNew: Bool = true
+    @ObservationIgnored private var stored_scrollToBottomOnNew: Bool = true
 
     @ObservationIgnored
     var scrollToBottomOnNew: Bool {
@@ -152,7 +187,7 @@ class PersistentDefaultCSUISettings {
     }
 
     @AppStorage("defaultUiSettings.animateNewResponseText")
-    @ObservationIgnored var stored_animateNewResponseText: Bool = true
+    @ObservationIgnored private var stored_animateNewResponseText: Bool = true
 
     @ObservationIgnored
     var animateNewResponseText: Bool {
@@ -168,7 +203,7 @@ class PersistentDefaultCSUISettings {
     }
 
     @AppStorage("defaultUiSettings.showOFMPicker")
-    @ObservationIgnored var stored_showOFMPicker: Bool = false
+    @ObservationIgnored private var stored_showOFMPicker: Bool = false
 
     @ObservationIgnored
     var showOFMPicker: Bool {
@@ -184,7 +219,7 @@ class PersistentDefaultCSUISettings {
     }
 
     @AppStorage("defaultUiSettings.stayAwakeDuringInference")
-    @ObservationIgnored var stored_stayAwakeDuringInference: Bool = true
+    @ObservationIgnored private var stored_stayAwakeDuringInference: Bool = true
 
     @ObservationIgnored
     var stayAwakeDuringInference: Bool {
