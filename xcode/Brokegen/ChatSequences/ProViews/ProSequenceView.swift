@@ -7,6 +7,7 @@ struct ProSequenceView: View {
     @EnvironmentObject private var pathHost: PathHost
     @ObservedObject var viewModel: OneSequenceViewModel
     @ObservedObject var settings: CSCSettingsService.SettingsProxy
+    @State private var lastScrollOnNewText: Date = Date.distantPast
 
     @FocusState private var focusTextInput: Bool
     @State private var showContinuationModelPicker: Bool = false
@@ -427,9 +428,21 @@ struct ProSequenceView: View {
 
         Divider()
 
-        Section(header: Text("UI Behaviors")) {
-            Toggle(isOn: $settings.scrollToBottomOnNew) {
-                Text("Scroll to bottom of window on new messages")
+        Section(header: Text("UI Performance Tweaks (global)")) {
+            Toggle(isOn: $settings.responseBufferFlush) {
+                Text(
+                    viewModel.settings.responseBufferFlush
+                    ? "Buffer inference output: update every \(viewModel.settings.responseBufferFlushFrequencyMsec) msec"
+                    : "Buffer inference output: update every \(PersistentDefaultCSUISettings.default_responseBufferFlushFrequencyMsec) msec"
+                )
+            }
+
+            Toggle(isOn: $settings.scrollOnNewText) {
+                Text(
+                    viewModel.settings.scrollOnNewText
+                    ? "Scroll to bottom of window on new response text: check every \(viewModel.settings.scrollOnNewTextFrequencyMsec) msec"
+                    : "Scroll to bottom of window on new response text: check every \(PersistentDefaultCSUISettings.default_scrollOnNewTextFrequencyMsec) msec"
+                )
             }
 
             Toggle(isOn: $settings.animateNewResponseText) {
@@ -580,23 +593,43 @@ struct ProSequenceView: View {
                                     }
                                 }
                             } // ScrollView
+                            // When the View appears, scroll to the bottom
+                            .defaultScrollAnchor(.bottom)
                             .onAppear {
                                 proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+                                lastScrollOnNewText = Date.now
                             }
                             .onChange(of: viewModel.sequence.messages) {
-                                if settings.scrollToBottomOnNew {
-                                    proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+                                let timeSinceScroll = Date.now.timeIntervalSince(lastScrollOnNewText)
+                                let shouldScroll = (
+                                    settings.scrollOnNewText
+                                    && !settings.renderAsMarkdown
+                                    && timeSinceScroll * 1000 > Double(settings.scrollOnNewTextFrequencyMsec)
+                                )
+
+                                if shouldScroll {
+                                    withAnimation {
+                                        proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+                                    }
+                                    lastScrollOnNewText = Date.now
                                 }
                             }
                             .onChange(of: viewModel.responseInEdit?.content) {
-                                let shouldScroll = settings.scrollToBottomOnNew && !settings.renderAsMarkdown
+                                let timeSinceScroll = Date.now.timeIntervalSince(lastScrollOnNewText)
+                                let shouldScroll = (
+                                    settings.scrollOnNewText
+                                    && !settings.renderAsMarkdown
+                                    && timeSinceScroll * 1000 > Double(settings.scrollOnNewTextFrequencyMsec)
+                                )
 
                                 if shouldScroll {
                                     if viewModel.responseInEdit != nil {
                                         proxy.scrollTo(-1, anchor: .bottom)
+                                        lastScrollOnNewText = Date.now
                                     }
                                     else {
                                         proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+                                        lastScrollOnNewText = Date.now
                                     }
                                 }
                             }

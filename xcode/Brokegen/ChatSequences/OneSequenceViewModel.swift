@@ -182,7 +182,7 @@ class OneSequenceViewModel: ObservableObject {
         let timeSinceFlush = Date.now.timeIntervalSince(bufferedResponseLastFlush)
         if timeSinceFlush * 1000 > Double(settings.defaults.responseBufferFlushFrequencyMsec) {
             if !bufferedResponseContent.isEmpty {
-                print("[TRACE] Flushing response buffer: \(bufferedResponseContent.count) chars after \(String(format: "%.3f", timeSinceFlush)) seconds")
+                //print("[TRACE] Flushing response buffer: \(bufferedResponseContent.count) chars after \(String(format: "%.3f", timeSinceFlush)) seconds")
             }
 
             if self.responseInEdit == nil {

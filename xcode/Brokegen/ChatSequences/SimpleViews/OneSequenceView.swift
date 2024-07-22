@@ -4,6 +4,7 @@ import SwiftUI
 struct OneSequenceView: View {
     @ObservedObject var viewModel: OneSequenceViewModel
     @ObservedObject var settings: CSCSettingsService.SettingsProxy
+    @State private var lastScrollOnNewText: Date = Date.distantPast
 
     @FocusState var focusTextInput: Bool
 
@@ -138,19 +139,41 @@ struct OneSequenceView: View {
                                     .frame(maxWidth: .infinity)
                             }
                         } // ScrollView
+                        // When the View appears, scroll to the bottom
+                        .defaultScrollAnchor(.bottom)
                         .onAppear {
                             proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+                            lastScrollOnNewText = Date.now
                         }
                         .onChange(of: viewModel.sequence.messages) {
-                            proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+                            let timeSinceScroll = Date.now.timeIntervalSince(lastScrollOnNewText)
+                            let shouldScroll = (
+                                settings.scrollOnNewText
+                                && timeSinceScroll * 1000 > Double(settings.scrollOnNewTextFrequencyMsec)
+                            )
+
+                            if shouldScroll {
+                                withAnimation {
+                                    proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+                                }
+                                lastScrollOnNewText = Date.now
+                            }
                         }
                         .onChange(of: viewModel.responseInEdit?.content) {
-                            if settings.scrollToBottomOnNew {
+                            let timeSinceScroll = Date.now.timeIntervalSince(lastScrollOnNewText)
+                            let shouldScroll = (
+                                settings.scrollOnNewText
+                                && timeSinceScroll * 1000 > Double(settings.scrollOnNewTextFrequencyMsec)
+                            )
+
+                            if shouldScroll {
                                 if viewModel.responseInEdit != nil {
                                     proxy.scrollTo(-1, anchor: .bottom)
+                                    lastScrollOnNewText = Date.now
                                 }
                                 else {
                                     proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
+                                    lastScrollOnNewText = Date.now
                                 }
                             }
                         }

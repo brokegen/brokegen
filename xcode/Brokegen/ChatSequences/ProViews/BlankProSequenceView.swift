@@ -424,9 +424,21 @@ struct BlankProSequenceView: View {
 
         Divider()
 
-        Section(header: Text("UI Behaviors")) {
-            Toggle(isOn: $viewModel.settings.scrollToBottomOnNew) {
-                Text("Scroll to bottom of window on new messages")
+        Section(header: Text("UI Performance Tweaks (global)")) {
+            Toggle(isOn: $viewModel.settings.responseBufferFlush) {
+                Text(
+                    viewModel.settings.responseBufferFlush
+                    ? "Buffer inference output: update every \(viewModel.settings.responseBufferFlushFrequencyMsec) msec"
+                    : "Buffer inference output: update every \(PersistentDefaultCSUISettings.default_responseBufferFlushFrequencyMsec) msec"
+                )
+            }
+
+            Toggle(isOn: $viewModel.settings.scrollOnNewText) {
+                Text(
+                    viewModel.settings.scrollOnNewText
+                    ? "Scroll to bottom of window on new response text: check every \(viewModel.settings.scrollOnNewTextFrequencyMsec) msec"
+                    : "Scroll to bottom of window on new response text: check every \(PersistentDefaultCSUISettings.default_scrollOnNewTextFrequencyMsec) msec"
+                )
             }
 
             Toggle(isOn: $viewModel.settings.animateNewResponseText) {

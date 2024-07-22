@@ -85,6 +85,7 @@ class CSCSettingsService: ObservableObject {
             get { Font.Design.fromString(defaults.cached_messageFontDesign) }
             set {
                 defaults.messageFontDesign = newValue.toString()
+                // TODO: Confirm whether we still need these Observable kicks
                 objectWillChange.send()
             }
         }
@@ -93,18 +94,56 @@ class CSCSettingsService: ObservableObject {
             get { Font.Design.fromString(defaults.textEntryFontDesign) }
             set {
                 defaults.textEntryFontDesign = newValue.toString()
+                // TODO: Confirm whether we still need these Observable kicks
                 objectWillChange.send()
             }
         }
 
-        var scrollToBottomOnNew: Bool {
-            get { override.scrollToBottomOnNew ?? defaults.scrollToBottomOnNew }
-            set { override.scrollToBottomOnNew = newValue }
+        var responseBufferFlushFrequencyMsec: Int {
+            get { defaults.cached_responseBufferFlushFrequencyMsec }
+            set {
+                defaults.responseBufferFlushFrequencyMsec = newValue
+                // TODO: Confirm whether we still need these Observable kicks
+                objectWillChange.send()
+            }
+        }
+
+        var responseBufferFlush: Bool {
+            get { defaults.cached_responseBufferFlushFrequencyMsec > 0 }
+            set {
+                defaults.responseBufferFlushFrequencyMsec = newValue
+                ? PersistentDefaultCSUISettings.default_responseBufferFlushFrequencyMsec
+                : 0
+            }
+        }
+
+        var scrollOnNewTextFrequencyMsec: Int {
+            get { defaults.cached_scrollOnNewTextFrequencyMsec }
+            set {
+                defaults.scrollOnNewTextFrequencyMsec = newValue
+                // TODO: Confirm whether we still need these Observable kicks
+                objectWillChange.send()
+            }
+        }
+
+        var scrollOnNewText: Bool {
+            get { defaults.cached_scrollOnNewTextFrequencyMsec >= 0 }
+            set {
+                defaults.scrollOnNewTextFrequencyMsec = newValue
+                ? PersistentDefaultCSUISettings.default_scrollOnNewTextFrequencyMsec
+                : -1
+                // TODO: Confirm whether we still need these Observable kicks
+                objectWillChange.send()
+            }
         }
 
         var animateNewResponseText: Bool {
-            get { override.animateNewResponseText ?? defaults.animateNewResponseText }
-            set { override.animateNewResponseText = newValue }
+            get { defaults.cached_animateNewResponseText }
+            set {
+                defaults.animateNewResponseText = newValue
+                // TODO: Confirm whether we still need these Observable kicks
+                objectWillChange.send()
+            }
         }
 
         var showOFMPicker: Bool {

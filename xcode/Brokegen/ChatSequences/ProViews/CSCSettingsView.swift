@@ -238,26 +238,27 @@ struct CSCSettingsView: View {
                         }, label: {})
                     }
                 }
+            }
+            .padding(24)
+        }, label: {
+            Text("ChatSequence UI Behaviors")
+                .font(.system(size: 12).lowercaseSmallCaps())
+                .gridCellColumns(3)
+                .padding(.top, 24)
+        })
+    }
 
-                Divider()
-
-                combinedGridRow(
-                    "Scroll to bottom of window on new messages",
-                    globalIsOn: $settings.defaults.scrollToBottomOnNew,
-                    localIsOn: $settings.override.scrollToBottomOnNew,
-                    trueText: "scroll (disabled if rendering markdown)",
-                    falseText: "don't scroll"
-                )
-
+    @ViewBuilder
+    var performanceOptions: some View {
+        GroupBox(content: {
+            Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
                 GridRow {
-                    Text("Buffer inference results for more responsive UI")
+                    Text("Buffer inference output: UI update frequency")
                         .layoutPriority(0.2)
 
-                    Text("")
-
                     HStack {
-                        Picker("", selection: $settings.defaults.responseBufferFlushFrequencyMsec) {
-                            Text("disabled")
+                        Picker("", selection: $settings.responseBufferFlushFrequencyMsec) {
+                            Text("immediately")
                                 .tag(0)
 
                             Text("250 msec")
@@ -272,37 +273,83 @@ struct CSCSettingsView: View {
                             Text("2000 msec")
                                 .tag(2000)
 
-                            if !Set([0, 250, 500, 1000, 2000]).contains(settings.defaults.responseBufferFlushFrequencyMsec) {
+                            if !Set([0, 250, 500, 1000, 2000]).contains(settings.responseBufferFlushFrequencyMsec) {
                                 Text("custom")
-                                    .tag(settings.defaults.responseBufferFlushFrequencyMsec)
+                                    .tag(settings.responseBufferFlushFrequencyMsec)
                             }
                         }
                         .frame(minWidth: 96)
 
                         Text("/")
 
-                        Stepper(value: $settings.defaults.responseBufferFlushFrequencyMsec, step: 50) {
-                            Text("\(settings.defaults.responseBufferFlushFrequencyMsec)")
+                        Stepper(value: $settings.responseBufferFlushFrequencyMsec, step: 50) {
+                            Text("\(settings.responseBufferFlushFrequencyMsec)")
                         }
 
                         Text("msec")
 
                         Spacer()
                     }
-                    .padding(.leading, -8)
                 }
 
-                combinedGridRow(
-                    "Animate (fade in) new response text",
-                    globalIsOn: $settings.defaults.animateNewResponseText,
-                    localIsOn: $settings.override.animateNewResponseText,
-                    trueText: "animate (disabled if rendering markdown)",
-                    falseText: "disable"
-                )
+                GridRow {
+                    Text("Scroll to bottom of window on new response text: UI update frequency"
+                         + "\n(ignored if rendering message as markdown)")
+                        .layoutPriority(0.2)
+
+                    HStack {
+                        Picker("", selection: $settings.scrollOnNewTextFrequencyMsec) {
+                            Text("disabled")
+                                .tag(-1)
+
+                            Text("immediately")
+                                .tag(0)
+
+                            Text("1000 msec")
+                                .tag(1000)
+
+                            Text("2000 msec")
+                                .tag(2000)
+
+                            Text("5000 msec")
+                                .tag(2000)
+
+                            if !Set([-1, 0, 1000, 2000, 5000]).contains(settings.scrollOnNewTextFrequencyMsec) {
+                                Text("custom")
+                                    .tag(settings.scrollOnNewTextFrequencyMsec)
+                            }
+                        }
+                        .frame(minWidth: 96)
+
+                        Text("/")
+
+                        Stepper(value: $settings.responseBufferFlushFrequencyMsec, step: 50) {
+                            Text("\(settings.responseBufferFlushFrequencyMsec)")
+                        }
+
+                        Text("msec")
+
+                        Spacer()
+                    }
+                }
+
+                GridRow {
+                    Text("Animate (fade in) new response text"
+                         + "\n(ignored if rendering message as markdown)")
+                        .layoutPriority(0.2)
+
+                    Picker("", selection: $settings.animateNewResponseText) {
+                        Text("animate")
+                            .tag(true)
+
+                        Text("don't animate")
+                            .tag(false)
+                    }
+                }
             }
             .padding(24)
         }, label: {
-            Text("ChatSequence UI Behaviors")
+            Text("UI performance tweaks for new inference text (global)")
                 .font(.system(size: 12).lowercaseSmallCaps())
                 .gridCellColumns(3)
                 .padding(.top, 24)
@@ -378,6 +425,8 @@ struct CSCSettingsView: View {
 
         behaviorOptions
 
+        performanceOptions
+
         generationOptions
     }
 }
@@ -395,7 +444,7 @@ struct CSCSettingsView: View {
         }
 
         var body: some View {
-            ScrollView {
+            List {
                 CSCSettingsView(settings: settings)
             }
         }

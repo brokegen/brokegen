@@ -10,6 +10,12 @@ class PersistentDefaultCSUISettings {
     public var cached_renderAsMarkdown: Bool = false
     public var cached_messageFontDesign: String = ""
 
+    public static let default_responseBufferFlushFrequencyMsec: Int = 250
+    public var cached_responseBufferFlushFrequencyMsec: Int = default_responseBufferFlushFrequencyMsec
+    public static let default_scrollOnNewTextFrequencyMsec: Int = 600
+    public var cached_scrollOnNewTextFrequencyMsec: Int = default_scrollOnNewTextFrequencyMsec
+    public var cached_animateNewResponseText: Bool = false
+
     @ObservationIgnored private var counter = PassthroughSubject<Int, Never>()
     @ObservationIgnored private var subscriber: AnyCancellable?
 
@@ -23,6 +29,10 @@ class PersistentDefaultCSUISettings {
 
     init() {
         // https://stackoverflow.com/questions/63678438/swiftui-updating-ui-with-high-frequency-data
+        //
+        // NB We're implementing a (not-optimal) multi-step approach, where
+        // the extra variables are a read-only cache that reads from system preferences once every second or so.
+        //
         subscriber = counter
             // Drop updates in the background
             .throttle(for: 1.1, scheduler: DispatchQueue.global(qos: .background), latest: true)
@@ -32,6 +42,10 @@ class PersistentDefaultCSUISettings {
                 self!.cached_showMessageHeaders = self!.showMessageHeaders
                 self!.cached_renderAsMarkdown = self!.renderAsMarkdown
                 self!.cached_messageFontDesign = self!.messageFontDesign
+
+                self!.cached_responseBufferFlushFrequencyMsec = self!.responseBufferFlushFrequencyMsec
+                self!.cached_scrollOnNewTextFrequencyMsec = self!.scrollOnNewTextFrequencyMsec
+                self!.cached_animateNewResponseText = self!.animateNewResponseText
             }
 
         startUpdater()
@@ -155,7 +169,7 @@ class PersistentDefaultCSUISettings {
     }
 
     @AppStorage("defaultUiSettings.responseBufferFlushFrequencyMsec")
-    @ObservationIgnored private var stored_responseBufferFlushFrequencyMsec: Int = 250
+    @ObservationIgnored private var stored_responseBufferFlushFrequencyMsec: Int = default_responseBufferFlushFrequencyMsec
 
     @ObservationIgnored
     var responseBufferFlushFrequencyMsec: Int {
@@ -166,22 +180,25 @@ class PersistentDefaultCSUISettings {
         set {
             withMutation(keyPath: \.responseBufferFlushFrequencyMsec) {
                 stored_responseBufferFlushFrequencyMsec = newValue
+                cached_responseBufferFlushFrequencyMsec = newValue
             }
         }
     }
 
-    @AppStorage("defaultUiSettings.scrollToBottomOnNew")
-    @ObservationIgnored private var stored_scrollToBottomOnNew: Bool = true
+    @AppStorage("defaultUiSettings.scrollOnNewTextFrequencyMsec")
+    @ObservationIgnored private var stored_scrollOnNewTextFrequencyMsec: Int = default_scrollOnNewTextFrequencyMsec
 
+    /// NB Value of 0 means scrolling is immediate, values less than 0 mean disabled.
     @ObservationIgnored
-    var scrollToBottomOnNew: Bool {
+    var scrollOnNewTextFrequencyMsec: Int {
         get {
-            access(keyPath: \.scrollToBottomOnNew)
-            return stored_scrollToBottomOnNew
+            access(keyPath: \.scrollOnNewTextFrequencyMsec)
+            return stored_scrollOnNewTextFrequencyMsec
         }
         set {
-            withMutation(keyPath: \.scrollToBottomOnNew) {
-                stored_scrollToBottomOnNew = newValue
+            withMutation(keyPath: \.scrollOnNewTextFrequencyMsec) {
+                stored_scrollOnNewTextFrequencyMsec = newValue
+                cached_scrollOnNewTextFrequencyMsec = newValue
             }
         }
     }
@@ -198,6 +215,7 @@ class PersistentDefaultCSUISettings {
         set {
             withMutation(keyPath: \.animateNewResponseText) {
                 stored_animateNewResponseText = newValue
+                cached_animateNewResponseText = newValue
             }
         }
     }
@@ -243,9 +261,6 @@ struct OverrideCSUISettings {
     var pinChatSequenceDesc: Bool? = nil
     var showMessageHeaders: Bool? = nil
     var renderAsMarkdown: Bool? = nil
-
-    var scrollToBottomOnNew: Bool? = nil
-    var animateNewResponseText: Bool? = nil
 
     var showOFMPicker: Bool? = nil
     var stayAwakeDuringInference: Bool? = nil

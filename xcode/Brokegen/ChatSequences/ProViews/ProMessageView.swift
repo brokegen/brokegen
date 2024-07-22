@@ -157,7 +157,7 @@ struct ProMessageView: View {
                                     .fill(Color(.controlBackgroundColor))
                             )
                     }
-                    
+
                     if !showMessageHeaders && isHovered {
                         buttons
                             .padding(16)
