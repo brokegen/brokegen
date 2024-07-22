@@ -6,195 +6,195 @@ import SwiftUI
 @Observable
 class PersistentDefaultCSUISettings {
     @AppStorage("defaultUiSettings.allowContinuation")
-    @ObservationIgnored private var _allowContinuation: Bool = true
+    @ObservationIgnored private var stored_allowContinuation: Bool = true
 
     @ObservationIgnored
     var allowContinuation: Bool {
         get {
             access(keyPath: \.allowContinuation)
-            return _allowContinuation
+            return stored_allowContinuation
         }
         set {
             withMutation(keyPath: \.allowContinuation) {
-                _allowContinuation = newValue
+                stored_allowContinuation = newValue
             }
         }
     }
 
     @AppStorage("defaultUiSettings.showSeparateRetrievalButton")
-    @ObservationIgnored private var _showSeparateRetrievalButton: Bool = true
+    @ObservationIgnored private var stored_showSeparateRetrievalButton: Bool = true
 
     @ObservationIgnored
     var showSeparateRetrievalButton: Bool {
         get {
             access(keyPath: \.showSeparateRetrievalButton)
-            return _showSeparateRetrievalButton
+            return stored_showSeparateRetrievalButton
         }
         set {
             withMutation(keyPath: \.showSeparateRetrievalButton) {
-                _showSeparateRetrievalButton = newValue
+                stored_showSeparateRetrievalButton = newValue
             }
         }
     }
 
     @AppStorage("defaultUiSettings.forceRetrieval")
-    @ObservationIgnored var _forceRetrieval: Bool = false
+    @ObservationIgnored var stored_forceRetrieval: Bool = false
 
     @ObservationIgnored
     var forceRetrieval: Bool {
         get {
             access(keyPath: \.forceRetrieval)
-            return _forceRetrieval
+            return stored_forceRetrieval
         }
         set {
             withMutation(keyPath: \.forceRetrieval) {
-                _forceRetrieval = newValue
+                stored_forceRetrieval = newValue
             }
         }
     }
 
     @AppStorage("defaultUiSettings.showMessageHeaders")
-    @ObservationIgnored var _showMessageHeaders: Bool = false
+    @ObservationIgnored var stored_showMessageHeaders: Bool = false
 
     @ObservationIgnored
     var showMessageHeaders: Bool {
         get {
             access(keyPath: \.showMessageHeaders)
-            return _showMessageHeaders
+            return stored_showMessageHeaders
         }
         set {
             withMutation(keyPath: \.showMessageHeaders) {
-                _showMessageHeaders = newValue
+                stored_showMessageHeaders = newValue
             }
         }
     }
 
     @AppStorage("defaultUiSettings.renderAsMarkdown")
-    @ObservationIgnored var _renderAsMarkdown: Bool = true
+    @ObservationIgnored var stored_renderAsMarkdown: Bool = true
 
     @ObservationIgnored
     var renderAsMarkdown: Bool {
         get {
             access(keyPath: \.renderAsMarkdown)
-            return _renderAsMarkdown
+            return stored_renderAsMarkdown
         }
         set {
             withMutation(keyPath: \.renderAsMarkdown) {
-                _renderAsMarkdown = newValue
+                stored_renderAsMarkdown = newValue
             }
         }
     }
 
     // NB This is the stringified name for a Font.Design
     @AppStorage("defaultUiSettings.messageFontDesign")
-    @ObservationIgnored var _messageFontDesign: String = ""
+    @ObservationIgnored var stored_messageFontDesign: String = ""
 
     @ObservationIgnored
     var messageFontDesign: String {
         get {
             access(keyPath: \.messageFontDesign)
-            return _messageFontDesign
+            return stored_messageFontDesign
         }
         set {
             withMutation(keyPath: \.messageFontDesign) {
-                _messageFontDesign = newValue
+                stored_messageFontDesign = newValue
             }
         }
     }
 
     // NB This is the stringified name for a Font.Design
     @AppStorage("defaultUiSettings.textEntryFontDesign")
-    @ObservationIgnored var _textEntryFontDesign: String = ""
+    @ObservationIgnored var stored_textEntryFontDesign: String = ""
 
     @ObservationIgnored
     var textEntryFontDesign: String {
         get {
             access(keyPath: \.textEntryFontDesign)
-            return _textEntryFontDesign
+            return stored_textEntryFontDesign
         }
         set {
             withMutation(keyPath: \.textEntryFontDesign) {
-                _textEntryFontDesign = newValue
+                stored_textEntryFontDesign = newValue
             }
         }
     }
 
     @AppStorage("defaultUiSettings.responseBufferFlushFrequencyMsec")
-    @ObservationIgnored var _responseBufferFlushFrequencyMsec: Int = 250
+    @ObservationIgnored var stored_responseBufferFlushFrequencyMsec: Int = 250
 
     @ObservationIgnored
     var responseBufferFlushFrequencyMsec: Int {
         get {
             access(keyPath: \.responseBufferFlushFrequencyMsec)
-            return _responseBufferFlushFrequencyMsec
+            return stored_responseBufferFlushFrequencyMsec
         }
         set {
             withMutation(keyPath: \.responseBufferFlushFrequencyMsec) {
-                _responseBufferFlushFrequencyMsec = newValue
+                stored_responseBufferFlushFrequencyMsec = newValue
             }
         }
     }
 
     @AppStorage("defaultUiSettings.scrollToBottomOnNew")
-    @ObservationIgnored var _scrollToBottomOnNew: Bool = true
+    @ObservationIgnored var stored_scrollToBottomOnNew: Bool = true
 
     @ObservationIgnored
     var scrollToBottomOnNew: Bool {
         get {
             access(keyPath: \.scrollToBottomOnNew)
-            return _scrollToBottomOnNew
+            return stored_scrollToBottomOnNew
         }
         set {
             withMutation(keyPath: \.scrollToBottomOnNew) {
-                _scrollToBottomOnNew = newValue
+                stored_scrollToBottomOnNew = newValue
             }
         }
     }
 
     @AppStorage("defaultUiSettings.animateNewResponseText")
-    @ObservationIgnored var _animateNewResponseText: Bool = true
+    @ObservationIgnored var stored_animateNewResponseText: Bool = true
 
     @ObservationIgnored
     var animateNewResponseText: Bool {
         get {
             access(keyPath: \.animateNewResponseText)
-            return _animateNewResponseText
+            return stored_animateNewResponseText
         }
         set {
             withMutation(keyPath: \.animateNewResponseText) {
-                _animateNewResponseText = newValue
+                stored_animateNewResponseText = newValue
             }
         }
     }
 
     @AppStorage("defaultUiSettings.showOFMPicker")
-    @ObservationIgnored var _showOFMPicker: Bool = false
+    @ObservationIgnored var stored_showOFMPicker: Bool = false
 
     @ObservationIgnored
     var showOFMPicker: Bool {
         get {
             access(keyPath: \.showOFMPicker)
-            return _showOFMPicker
+            return stored_showOFMPicker
         }
         set {
             withMutation(keyPath: \.showOFMPicker) {
-                _showOFMPicker = newValue
+                stored_showOFMPicker = newValue
             }
         }
     }
 
     @AppStorage("defaultUiSettings.stayAwakeDuringInference")
-    @ObservationIgnored var _stayAwakeDuringInference: Bool = true
+    @ObservationIgnored var stored_stayAwakeDuringInference: Bool = true
 
     @ObservationIgnored
     var stayAwakeDuringInference: Bool {
         get {
             access(keyPath: \.stayAwakeDuringInference)
-            return _stayAwakeDuringInference
+            return stored_stayAwakeDuringInference
         }
         set {
             withMutation(keyPath: \.stayAwakeDuringInference) {
-                _stayAwakeDuringInference = newValue
+                stored_stayAwakeDuringInference = newValue
             }
         }
     }
