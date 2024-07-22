@@ -197,9 +197,9 @@ def run_proxy(
             request: starlette.requests.Request,
             exc,
     ):
-        return starlette.responses.PlainTextResponse(
+        return starlette.responses.JSONResponse(
             jsonable_encoder({"detail": exc.errors(), "body": exc.body}),
-            status_code=exc.status_code,
+            status_code=fastapi.status.HTTP_400_BAD_REQUEST,
         )
 
     @app.exception_handler(starlette.exceptions.HTTPException)
