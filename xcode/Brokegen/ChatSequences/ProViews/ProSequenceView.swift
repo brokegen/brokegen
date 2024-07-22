@@ -556,8 +556,7 @@ struct ProSequenceView: View {
 
                         ScrollViewReader { proxy in
                             ScrollView(.vertical) {
-                                // This used to be a LazyVStack, but Markdown rendering gets choppy and weird.
-                                VStack(alignment: .leading, spacing: 0) {
+                                LazyVStack(alignment: .leading, spacing: 0) {
                                     if !settings.pinChatSequenceDesc {
                                         ChatNameReadOnly(
                                             .constant(viewModel.displayHumanDesc),
