@@ -9,9 +9,15 @@ logger = logging.getLogger(__name__)
 
 class LlamaCppProviderFactory(ProviderFactory):
     search_dirs: list[str]
+    cache_dir: str | None
 
-    def __init__(self, search_dirs: list[str] | None = None):
+    def __init__(
+            self,
+            search_dirs: list[str] | None = None,
+            cache_dir: str | None = None,
+    ):
         self.search_dirs = search_dirs or []
+        self.cache_dir = cache_dir
 
     async def try_make(self, label: ProviderLabel) -> BaseProvider | None:
         if label.type != "lcp":
@@ -26,7 +32,7 @@ class LlamaCppProviderFactory(ProviderFactory):
             import llama_cpp
             from .provider import LlamaCppProvider
 
-            new_provider: BaseProvider = LlamaCppProvider(search_dir=label.id)
+            new_provider: BaseProvider = LlamaCppProvider(search_dir=label.id, cache_dir=self.cache_dir)
             if await new_provider.available():
                 return new_provider
             else:

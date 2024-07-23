@@ -609,6 +609,13 @@ class OneSequenceViewModel: ObservableObject {
                 sequence.messages.append(.temporary(responseInEdit!))
             }
 
+            if userRequested {
+                serverStatus = "\(Date.now) [WARNING] User requested stop, but server will not actually stop inference"
+            }
+            else {
+                serverStatus = nil
+            }
+
             responseInEdit = nil
         }
 

@@ -2,25 +2,25 @@ import functools
 import logging
 import os
 from datetime import datetime, timezone
-from typing import AsyncGenerator, AsyncIterator, Iterator
+from typing import AsyncGenerator, AsyncIterator, Iterator, TypeVar, Any, Callable, Union
 
 import llama_cpp
 import orjson
 import sqlalchemy
 from llama_cpp import ChatCompletionRequestMessage, CreateCompletionResponse, CreateCompletionStreamResponse, \
-    ChatCompletionRequestSystemMessage
+    BaseLlamaCache, LlamaRAMCache, LlamaDiskCache
 from llama_cpp.llama_chat_format import ChatFormatter, ChatFormatterResponse
 from sqlalchemy import select
 
 from _util.json import JSONDict, safe_get, safe_get_arrayed
-from _util.status import ServerStatusHolder
-from _util.typing import FoundationModelRecordID, ChatSequenceID, TemplatedPromptText
+from _util.status import ServerStatusHolder, StatusContext
+from _util.typing import FoundationModelRecordID, ChatSequenceID, TemplatedPromptText, FoundationModelHumanID
 from audit.http import AuditDB
 from client.database import HistoryDB, get_db as get_history_db
 from client.message import ChatMessage, ChatMessageOrm
 from client.sequence import ChatSequenceOrm
 from client.sequence_get import fetch_messages_for_sequence
-from inference.iterators import to_async, consolidate_and_yield
+from inference.iterators import to_async, consolidate_and_yield, tee_to_console_output
 from inference.logging import construct_assistant_message
 from providers.foundation_models.orm import FoundationModelRecord, FoundationModelAddRequest, \
     lookup_foundation_model_detailed, FoundationModelRecordOrm, InferenceEventOrm
@@ -31,12 +31,135 @@ from providers_registry._util import local_provider_identifiers, local_fetch_mac
 logger = logging.getLogger(__name__)
 
 
+class TemplateApplier(ChatFormatter):
+    """
+    The contents of this mirror llama_cpp.Llama.create_chat_completion.
+    This is necessary because we provide a template override.
+
+    # If we don't have any overrides set, prefer to just use whatever `llama-cpp-python` provides.
+    # Note that we are undoing all the work it does to wrap formatters as completions
+    # in order to get our own copy of the template-applied prompt.
+
+    Note that this is extremely messy, since we're re-implementing a lot of custom tweaks.
+    """
+
+    underlying_model: llama_cpp.Llama
+    inference_options: InferenceOptions
+
+    jinja_templator: ChatFormatter
+
+    def __init__(
+            self,
+            underlying_model: llama_cpp.Llama,
+            inference_options: InferenceOptions,
+    ):
+        self.underlying_model = underlying_model
+        self.inference_options = inference_options
+
+        # Read a template from… somewhere.
+        alternative_template_choices = dict(
+            (name[10:], template)
+            for name, template in self.underlying_model.metadata.items()
+            if name.startswith("tokenizer.chat_template."))
+        if len(alternative_template_choices) > 0:
+            logger.warning(f"{alternative_template_choices.keys()=}")
+
+        template = (
+                self.inference_options.override_model_template
+                or self.underlying_model.metadata["tokenizer.chat_template"]
+        )
+
+        eos_token_id = self.underlying_model.token_eos()
+        bos_token_id = self.underlying_model.token_bos()
+
+        jinja_formatter_kwargs = {
+            "template": template,
+            "eos_token": self.underlying_model._model.token_get_text(eos_token_id) if eos_token_id != -1 else "",
+            "bos_token": self.underlying_model._model.token_get_text(bos_token_id) if bos_token_id != -1 else "",
+            "stop_token_ids": [eos_token_id],
+        }
+
+        self.jinja_templator = llama_cpp.llama_chat_format.Jinja2ChatFormatter(**jinja_formatter_kwargs)
+
+    @staticmethod
+    def chat_formatter_for(chat_format: str) -> Union[Callable, None]:
+        """
+        This scans for most of the functions annotated with `@register_chat_format`
+        """
+        formatter_name: str = f"format_{chat_format}"
+        names_to_check = [
+            formatter_name,
+            formatter_name.replace("-", ""),
+            formatter_name.replace("-", "_"),
+        ]
+        for name in names_to_check:
+            if hasattr(llama_cpp.llama_chat_format, name):
+                logger.debug(f"Found built-in chat format handler: {name}")
+                formatter_fn = getattr(llama_cpp.llama_chat_format, name)
+                return formatter_fn
+
+    def llama_cpp_templating(
+            self,
+            messages: list[ChatCompletionRequestMessage],
+    ) -> ChatFormatterResponse | None:
+        cfr: ChatFormatterResponse | None = None
+
+        formatter_fn = TemplateApplier.chat_formatter_for(self.underlying_model.chat_format)
+        if formatter_fn is not None:
+            cfr = formatter_fn(messages)
+
+        cfr.prompt += self.inference_options.seed_assistant_response
+        return cfr
+
+    def custom_templating(
+            self,
+            messages: list[ChatCompletionRequestMessage],
+    ) -> ChatFormatterResponse:
+        cfr: ChatFormatterResponse = self.jinja_templator(messages=messages)
+
+        # Build custom args for different `@register_chat_formats` formats.
+        if self.underlying_model.chat_format == "llama-3":
+            cfr.stop = "<|eot_id|>"
+
+        # Given how most .gguf templates seem to work, we can just append the seed response,
+        # instead of doing anything fancy like embedding a magic token and then truncating the templated text there.
+        cfr.prompt += self.inference_options.seed_assistant_response
+
+        return cfr
+
+
+    def __call__(
+            self,
+            *,
+            messages: list[ChatCompletionRequestMessage],
+            **kwargs: Any,
+    ) -> ChatFormatterResponse:
+        if self.inference_options.override_model_template or self.inference_options.override_system_prompt:
+            logger.debug(f"Found custom inference options, switching to custom templating: {self.underlying_model.chat_format}")
+            return self.custom_templating(messages)
+        else:
+            maybe_cfr: ChatFormatterResponse | None = self.llama_cpp_templating(messages)
+            if maybe_cfr is not None:
+                return maybe_cfr
+            else:
+                logger.debug(f"Couldn't find chat format handler, falling back to .gguf template for: {self.underlying_model.chat_format}")
+                cfr: ChatFormatterResponse = self.jinja_templator(messages=messages)
+                cfr.prompt += self.inference_options.seed_assistant_response
+                return cfr
+
+
 class _OneModel:
     model_path: str
+    shared_cache: BaseLlamaCache | None
     underlying_model: llama_cpp.Llama | None = None
 
-    def __init__(self, model_path: str):
+    def __init__(
+            self,
+            model_path: str,
+            shared_cache: BaseLlamaCache | None = None,
+    ):
         self.model_path = model_path
+        self.shared_cache = shared_cache
 
     async def launch(
             self,
@@ -54,8 +177,7 @@ class _OneModel:
             n_ctx=4_096,
         )
 
-        # DEBUG: Check the contents of this, decide whether to put it in storage
-        print(llama_cpp.llama_print_system_info().decode("utf-8"))
+        self.underlying_model.set_cache(self.shared_cache)
 
     async def available(self) -> bool:
         # Do a quick tokenize/detokenize test run
@@ -156,74 +278,45 @@ class _OneModel:
 
             return FoundationModelRecord.model_validate(new_model)
 
-    async def generate(
+    @property
+    def model_name(self) -> FoundationModelHumanID | None:
+        if self.underlying_model is None:
+            return None
+
+        return (
+                safe_get(self.underlying_model.metadata, "general.name")
+                or os.path.basename(self.model_path)
+        )
+
+    async def do_completion(
             self,
             prompt: TemplatedPromptText,
             lcp_inference_options: dict,
     ) -> CreateCompletionResponse | Iterator[CreateCompletionStreamResponse]:
         await self.launch()
+
         tokenized_prompt: list[int] = self.underlying_model.tokenize(
             prompt.encode('utf-8'),
         )
+        logger.debug(f"LlamaCppProvider starting inference on model \"{self.model_name}\""
+                     f" with prompt size of {len(tokenized_prompt)} tokens")
 
+        # TODO: Confirm that reset_timings clears the `load time` from output stats.
+        llama_cpp.llama_reset_timings(self.underlying_model.ctx)
+
+        # Then return something that can kickstart generation
         return self.underlying_model.create_completion(
             tokenized_prompt,
             **lcp_inference_options,
         )
 
-    async def convert_chat_to_generate(
+    async def convert_chat_to_completion(
             self,
             messages: list[ChatCompletionRequestMessage],
             inference_options: InferenceOptions,
     ) -> (ChatFormatterResponse, Iterator[CreateCompletionStreamResponse]):
-        # Read a template from… somewhere.
-        alternative_template_choices = dict(
-            (name[10:], template)
-            for name, template in self.underlying_model.metadata.items()
-            if name.startswith("tokenizer.chat_template."))
-        if len(alternative_template_choices) > 0:
-            logger.warning(f"{alternative_template_choices.keys()=}")
-
-        template = (
-                inference_options.override_model_template
-                or self.underlying_model.metadata["tokenizer.chat_template"]
-        )
-
-        eos_token_id = self.underlying_model.token_eos()
-        bos_token_id = self.underlying_model.token_bos()
-
-        eos_token = self.underlying_model._model.token_get_text(eos_token_id) if eos_token_id != -1 else ""
-        bos_token = self.underlying_model._model.token_get_text(bos_token_id) if bos_token_id != -1 else ""
-
-        templator: ChatFormatter = llama_cpp.llama_chat_format.Jinja2ChatFormatter(
-            template=template,
-            eos_token=eos_token,
-            bos_token=bos_token,
-            stop_token_ids=[eos_token_id],
-        )
-
-        # Prepend the system message, as needed
-        if inference_options.override_system_prompt:
-            system_message = ChatCompletionRequestSystemMessage(
-                role="system",
-                content=inference_options.override_system_prompt,
-            )
-
-            if safe_get_arrayed(messages, 0, "role") == "system":
-                logger.warning("Got multiple system messages, keeping all of them")
-
-            new_messages = [system_message]
-            new_messages.extend(messages)
-            messages = new_messages
-
-        # Apply the template
-        cfr: ChatFormatterResponse = templator(
-            messages=messages,
-        )
-
-        # Given how most .gguf templates seem to work, we can just append the seed response,
-        # instead of doing anything fancy like embedding a magic token and then truncating the templated text there.
-        cfr.prompt += inference_options.seed_assistant_response
+        templator = TemplateApplier(self.underlying_model, inference_options)
+        cfr: ChatFormatterResponse = templator(messages=messages)
 
         # Update default inference options with the provided values.
         lcp_inference_options = {
@@ -236,11 +329,12 @@ class _OneModel:
             orjson.loads(inference_options.inference_options or "{}")
         )
 
-        result: Iterator[CreateCompletionStreamResponse] = await self.generate(
+        token_generator: Iterator[CreateCompletionStreamResponse] = await self.do_completion(
             cfr.prompt,
             lcp_inference_options,
         )
-        return cfr, result
+
+        return cfr, token_generator
 
 
 class LlamaCppProvider(BaseProvider):
@@ -249,13 +343,23 @@ class LlamaCppProvider(BaseProvider):
     loaded_models: dict[FoundationModelRecordID, _OneModel] = {}
     max_loaded_models: int
 
+    shared_cache: BaseLlamaCache | None = None
+
     def __init__(
             self,
             search_dir: str,
+            cache_dir: str | None,
             max_loaded_models: int = 3,
     ):
         self.search_dir = search_dir
         self.max_loaded_models = max_loaded_models
+
+        if LlamaCppProvider.shared_cache is None:
+            # TODO: These may not be thread/process safe, but whether _that_ matters depends on the ASGI framework
+            if cache_dir is not None and os.path.isdir(cache_dir):
+                LlamaCppProvider.shared_cache = LlamaDiskCache(cache_dir, capacity_bytes=32 * (1 << 30))
+            else:
+                LlamaCppProvider.shared_cache = LlamaRAMCache(capacity_bytes=4 * (1 << 30))
 
     async def available(self) -> bool:
         return os.path.exists(self.search_dir)
@@ -326,21 +430,16 @@ class LlamaCppProvider(BaseProvider):
                 yield model_info
                 self.cached_model_infos.append(model_info)
 
-    # region Actual chat completion endpoints
-    async def _do_chat_nolog(
+    async def _load_model(
             self,
-            messages_list: list[ChatMessage],
             inference_model: FoundationModelRecordOrm,
-            inference_options: InferenceOptions,
             status_holder: ServerStatusHolder,
-            history_db: HistoryDB,
-            audit_db: AuditDB,
-            use_custom_templater: bool = True,
-    ) -> (ChatFormatterResponse, AsyncIterator[JSONDict]):
+    ) -> _OneModel:
         if inference_model.id not in self.loaded_models:
             new_model: _OneModel = _OneModel(
                 os.path.abspath(os.path.join(self.search_dir,
-                                             safe_get(inference_model.model_identifiers, "path")))
+                                             safe_get(inference_model.model_identifiers, "path"))),
+                shared_cache=LlamaCppProvider.shared_cache,
             )
             while len(self.loaded_models) >= self.max_loaded_models:
                 # Use this elaborate syntax so we delete the _oldest_ item.
@@ -350,53 +449,84 @@ class LlamaCppProvider(BaseProvider):
 
             self.loaded_models[inference_model.id] = new_model
 
-        await self.loaded_models[inference_model.id].launch()
+        if self.loaded_models[inference_model.id].underlying_model is None:
+            with StatusContext(f"{self.loaded_models[inference_model.id].model_name}: loading model", status_holder):
+                await self.loaded_models[inference_model.id].launch()
 
-        def choice0_extractor(chunk: JSONDict) -> JSONDict:
+        return self.loaded_models[inference_model.id]
+
+    # region Actual chat completion endpoints
+    async def _do_chat_nolog(
+            self,
+            messages_list: list[ChatMessage],
+            loaded_model: _OneModel,
+            inference_options: InferenceOptions,
+            status_holder: ServerStatusHolder,
+    ) -> (ChatFormatterResponse, AsyncIterator[JSONDict]):
+        def chat_completion_choice0_extractor(chunk: JSONDict) -> str:
             response_choices = safe_get(chunk, "choices")
             if len(response_choices) > 1:
                 logger.warning(f"Received {len(response_choices)=}, ignoring all but the first")
 
-            return response_choices[0]
+            return safe_get_arrayed(response_choices, 0, 'delta', 'content')
 
-        async def format_response(primordial: AsyncIterator[JSONDict]) -> AsyncIterator[JSONDict]:
-            async for chunk in primordial:
-                response_choices = safe_get(chunk, "choices")
-                if len(response_choices) > 1:
-                    logger.warning(f"Received {len(response_choices)=}, ignoring all but the first")
+        def normal_completion_choice0_extractor(chunk: JSONDict) -> str:
+            response_choices = safe_get(chunk, "choices")
+            if len(response_choices) > 1:
+                logger.warning(f"Received {len(response_choices)=}, ignoring all but the first")
 
-                # TODO: Confirm that this is just an "OpenAI-compatible" output.
-                extracted_content: str | None = (
-                    # This is for chat completions
-                        safe_get_arrayed(response_choices, 0, 'delta', 'content')
-                        # This is for normal, template pre-applied completions
-                        or safe_get_arrayed(response_choices, 0, 'text')
-                )
+            return safe_get_arrayed(response_choices, 0, 'text')
 
-                # Duplicate the output into the field we expected.
-                chunk['message'] = {
-                    "role": "assistant",
-                    "content": extracted_content or "",
+        async def format_response(primordial: AsyncIterator[str]) -> AsyncIterator[JSONDict]:
+            async for extracted_content in primordial:
+                yield {
+                    "message": {
+                        "role": "assistant",
+                        "content": extracted_content,
+                    },
+                    "done": False,
+                    "status": status_holder.get(),
                 }
 
+        T = TypeVar('T')
+
+        async def update_status_and_log_info(primordial: AsyncIterator[T]) -> AsyncIterator[T]:
+            async for chunk in primordial:
                 yield chunk
 
-        # Main function body: wrap up
-        if use_custom_templater:
+                timings: llama_cpp.llama_timings = llama_cpp.llama_get_timings(loaded_model.underlying_model.ctx)
+                status_holder.set(f"{loaded_model.model_name}: {timings.n_p_eval} new prompt tokens"
+                                  f" => {timings.n_eval} tokens generated in {timings.t_eval_ms / 1000:_.3f} seconds")
+
+            if self.shared_cache is not None:
+                logger.debug(f"Updated LlamaCache size: {self.shared_cache.cache_size:_} bytes")
+
+        # Main function body: maybe apply templating + kick off inference
+        use_custom_templator: bool = True
+        for message in messages_list:
+            # TODO: Update this once we have an actual format for storing image uploads
+            if hasattr(message, "images"):
+                use_custom_templator = False
+
+        if use_custom_templator:
             # This branch unwraps the code within llama_cpp, so we can do our custom assistant response seed etc etc
             cfr: ChatFormatterResponse
             iter0: Iterator[JSONDict]
 
-            cfr, iter0 = await self.loaded_models[inference_model.id].convert_chat_to_generate(
+            cfr, iter0 = await loaded_model.convert_chat_to_completion(
                 messages=[m.model_dump() for m in messages_list],
                 inference_options=inference_options,
             )
-            iter1: AsyncIterator[JSONDict] = to_async(iter0)
+            iter1: Iterator[str] = map(normal_completion_choice0_extractor, iter0)
+            iter2: AsyncIterator[str] = to_async(iter1)
 
         else:
             cfr: ChatFormatterResponse = ChatFormatterResponse(prompt="")
 
-            lcp_inference_options: dict = {}
+            lcp_inference_options: dict = {
+                # Stream by default; we can handle non-streaming with the same infrastructure, just not as pretty.
+                "stream": True,
+            }
             if inference_options.inference_options:
                 lcp_inference_options.update(
                     orjson.loads(inference_options.inference_options)
@@ -404,24 +534,27 @@ class LlamaCppProvider(BaseProvider):
 
             iterator_or_completion: \
                 llama_cpp.CreateChatCompletionResponse | Iterator[llama_cpp.CreateChatCompletionStreamResponse]
-            underlying_model: llama_cpp.Llama = self.loaded_models[inference_model.id].underlying_model
+            underlying_model: llama_cpp.Llama = loaded_model.underlying_model
             iterator_or_completion = underlying_model.create_chat_completion(
                 messages=[m.model_dump() for m in messages_list],
-                stream=True,
                 **lcp_inference_options,
             )
 
             if isinstance(iterator_or_completion, Iterator):
                 iter0: Iterator[JSONDict] = iterator_or_completion
-                iter1: AsyncIterator[JSONDict] = to_async(iter0)
+                iter1: Iterator[str] = map(normal_completion_choice0_extractor, iter0)
+                iter2: AsyncIterator[str] = to_async(iter1)
             else:
-                async def async_wrapper() -> AsyncIterator[JSONDict]:
-                    yield choice0_extractor(iterator_or_completion)
+                async def one_chunk_to_async() -> AsyncIterator[str]:
+                    yield chat_completion_choice0_extractor(iterator_or_completion)
 
-                iter1: AsyncIterator[JSONDict] = async_wrapper()
+                iter2: AsyncIterator[str] = one_chunk_to_async()
 
-        iter2: AsyncIterator[JSONDict] = format_response(iter1)
-        return cfr, iter2
+        iter3: AsyncIterator[JSONDict] = format_response(iter2)
+        iter4: AsyncIterator[JSONDict] = tee_to_console_output(iter3,
+                                                               lambda chunk: safe_get(chunk, "message", "content"))
+        iter5: AsyncIterator[JSONDict] = update_status_and_log_info(iter4)
+        return cfr, iter5
 
     async def do_chat_nolog(
             self,
@@ -434,8 +567,12 @@ class LlamaCppProvider(BaseProvider):
     ) -> AsyncIterator[JSONDict]:
         iter3: AsyncIterator[JSONDict]
         _, iter3 = await self._do_chat_nolog(
-            messages_list, inference_model, inference_options, status_holder, history_db, audit_db,
+            messages_list,
+            await self._load_model(inference_model, status_holder),
+            inference_options,
+            status_holder,
         )
+
         return iter3
 
     async def do_chat_logged(
@@ -449,30 +586,10 @@ class LlamaCppProvider(BaseProvider):
     ) -> AsyncIterator[JSONDict]:
         def content_consolidator(chunk: JSONDict, response: JSONDict) -> JSONDict:
             for k, v in chunk.items():
-                if k not in response:
+                if k == 'status':
+                    continue
+                elif k not in response:
                     response[k] = v
-                elif k == 'choices':
-                    if len(v) > 1:
-                        logger.warning(f"Received {len(v)} choices, ignoring all but the first")
-                    for k3, v3 in v[0].items():
-                        if k3 not in response[k]:
-                            response[k][0][k3] = v3
-                        elif k3 == 'delta':
-                            for k4, v4 in v3.items():
-                                if k4 not in response[k][0][k3]:
-                                    response[k][0][k3][k4] = v4
-                                elif k4 == 'content':
-                                    if response[k][0][k3][k4] is None:
-                                        response[k][0][k3][k4] = safe_get_arrayed(chunk, k, 0, k3, k4)
-                                    else:
-                                        response[k][0][k3][k4] += safe_get_arrayed(chunk, k, 0, k3, k4) or ""
-                                else:
-                                    if response[k][0][k3][k4] != v4:
-                                        logger.debug(f"Didn't handle duplicate field: {k}[0].{k3}.{k4}={v4}")
-                        else:
-                            if response[k][k3] != v3:
-                                logger.debug(f"Didn't handle duplicate field: {k}.{k3}={v3}")
-                # TODO: Figure out why this field exists, shouldn't the order of calls prevent this?
                 elif k == 'message':
                     for k2, v2 in v.items():
                         if k2 not in response[k]:
@@ -499,15 +616,17 @@ class LlamaCppProvider(BaseProvider):
                 model_record_id=inference_model.id,
                 prompt_with_templating=cfr.prompt,
                 response_created_at=datetime.now(tz=timezone.utc),
-                response_error="[not implemented yet]",
                 response_info=consolidated_response,
-                reason="LlamaCppProvider.chat_from",
+                reason="LlamaCppProvider.do_chat_logged",
             )
 
-            if safe_get(consolidated_response, "usage", "prompt_tokens"):
-                inference_event.prompt_tokens = safe_get(consolidated_response, "usage", "prompt_tokens")
-            if safe_get(consolidated_response, "usage", "completion_tokens"):
-                inference_event.response_tokens = safe_get(consolidated_response, "usage", "completion_tokens")
+            timings: llama_cpp.llama_timings = llama_cpp.llama_get_timings(
+                self.loaded_models[inference_model.id].underlying_model.ctx)
+
+            inference_event.prompt_tokens = timings.n_p_eval
+            inference_event.prompt_eval_time = timings.t_p_eval_ms / 1000.
+            inference_event.response_tokens = timings.n_eval
+            inference_event.response_eval_time = timings.t_eval_ms / 1000.
 
             history_db.add(inference_event)
             history_db.commit()
@@ -596,11 +715,9 @@ class LlamaCppProvider(BaseProvider):
         iter3: AsyncIterator[JSONDict]
         cfr, iter3 = await self._do_chat_nolog(
             messages_list,
-            inference_model,
+            await self._load_model(inference_model, status_holder),
             inference_options,
             status_holder,
-            history_db,
-            audit_db,
         )
         iter5: AsyncIterator[JSONDict] = consolidate_and_yield(
             iter3, content_consolidator, {},
