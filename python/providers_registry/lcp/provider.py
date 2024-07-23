@@ -127,7 +127,7 @@ class TemplateApplier(ChatFormatter):
         else:
             basename: str = safe_get(self.underlying_model.metadata, "general.basename")
             if basename == "Meta-Llama-3.1":
-                cfr.stop = "<|eot_id|>"
+                cfr.stop = ["<|eot_id|>", "<|eot_id>"]
 
         # Given how most .gguf templates seem to work, we can just append the seed response,
         # instead of doing anything fancy like embedding a magic token and then truncating the templated text there.
@@ -318,7 +318,6 @@ class _OneModel:
         logger.debug(f"LlamaCppProvider starting inference on model \"{self.model_name}\""
                      f" with prompt size of {len(tokenized_prompt)} tokens")
 
-        # TODO: Confirm that reset_timings clears the `load time` from output stats.
         llama_cpp.llama_reset_timings(self.underlying_model.ctx)
 
         # Then return something that can kickstart generation
@@ -388,7 +387,9 @@ class LlamaCppProvider(BaseProvider):
         provider_identifiers_dict = {
             "name": "lcp",
             "directory": self.search_dir,
-            "version_info": f"llama_cpp v{llama_cpp.__version__}",
+            # We intentionally don't attach a version number because we don't want to invalidate old versions.
+            # Additionally, it doesn't tell us anything about the underlying llama.cpp version, anyway.
+            "version_info": f"llama_cpp_python",
         }
 
         provider_identifiers_dict.update(local_provider_identifiers())
@@ -592,6 +593,8 @@ class LlamaCppProvider(BaseProvider):
         iter4: AsyncIterator[JSONDict] = tee_to_console_output(iter3,
                                                                lambda chunk: safe_get(chunk, "message", "content"))
         iter5: AsyncIterator[JSONDict] = update_status_and_log_info(iter4)
+
+        status_holder.set(f"{loaded_model.model_name} loaded, starting inference")
         return cfr, iter5
 
     async def do_chat_nolog(
