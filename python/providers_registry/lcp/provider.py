@@ -121,9 +121,13 @@ class TemplateApplier(ChatFormatter):
     ) -> ChatFormatterResponse:
         cfr: ChatFormatterResponse = self.jinja_templator(messages=messages)
 
-        # Build custom args for different `@register_chat_formats` formats.
         if self.underlying_model.chat_format == "llama-3":
             cfr.stop = "<|eot_id|>"
+
+        else:
+            basename: str = safe_get(self.underlying_model.metadata, "general.basename")
+            if basename == "Meta-Llama-3.1":
+                cfr.stop = "<|eot_id|>"
 
         # Given how most .gguf templates seem to work, we can just append the seed response,
         # instead of doing anything fancy like embedding a magic token and then truncating the templated text there.
@@ -138,18 +142,26 @@ class TemplateApplier(ChatFormatter):
             messages: list[ChatCompletionRequestMessage],
             **kwargs: Any,
     ) -> ChatFormatterResponse:
-        if self.inference_options.override_model_template or self.inference_options.override_system_prompt:
-            logger.debug(f"Found custom inference options, switching to custom templating: {self.underlying_model.chat_format}")
+        use_custom_template = self.inference_options.override_model_template or self.inference_options.override_system_prompt
+        basename: str = safe_get(self.underlying_model.metadata, "general.basename")
+        if basename == "Meta-Llama-3.1":
+            use_custom_template = True
+
+        # First option: use our custom overrides
+        if use_custom_template:
+            logger.debug(f"Switching to custom templating: {self.underlying_model.chat_format}")
             return self.custom_templating(messages)
-        else:
-            maybe_cfr: ChatFormatterResponse | None = self.llama_cpp_templating(messages)
-            if maybe_cfr is not None:
-                return maybe_cfr
-            else:
-                logger.debug(f"Couldn't find chat format handler, falling back to .gguf template for: {self.underlying_model.chat_format}")
-                cfr: ChatFormatterResponse = self.jinja_templator(messages=messages)
-                cfr.prompt += self.inference_options.seed_assistant_response
-                return cfr
+
+        # Second: pick up whatever llama_cpp_python has
+        maybe_cfr: ChatFormatterResponse | None = self.llama_cpp_templating(messages)
+        if maybe_cfr is not None:
+            return maybe_cfr
+
+        # Third: read settings from .gguf file
+        logger.debug(f"Couldn't find chat format handler, falling back to .gguf template for: {self.underlying_model.chat_format}")
+        cfr: ChatFormatterResponse = self.jinja_templator(messages=messages)
+        cfr.prompt += self.inference_options.seed_assistant_response
+        return cfr
 
 
 class _OneModel:
@@ -172,7 +184,7 @@ class _OneModel:
         if self.underlying_model is not None:
             return
 
-        logger.info(f"Loading llama_cpp model: {self.model_path}")
+        logger.info(f"Loading llama_cpp model: {self.model_name}")
         self.underlying_model = llama_cpp.Llama(
             model_path=self.model_path,
             n_gpu_layers=-1,
@@ -181,6 +193,7 @@ class _OneModel:
             n_ctx=131_072,
         )
 
+        logger.debug(f"Chat format for {self.model_name}: {self.underlying_model.chat_format}")
         self.underlying_model.set_cache(self.shared_cache)
 
     async def available(self) -> bool:
@@ -275,7 +288,7 @@ class _OneModel:
             return FoundationModelRecord.model_validate(maybe_model)
 
         else:
-            logger.info(f"lcp constructed a new FoundationModelRecord: {model_in.model_dump_json()}")
+            logger.info(f"lcp constructed a new FoundationModelRecord: {model_in.model_dump_json(indent=2)}")
             new_model = FoundationModelRecordOrm(**model_in.model_dump())
             history_db.add(new_model)
             history_db.commit()
@@ -285,7 +298,7 @@ class _OneModel:
     @property
     def model_name(self) -> FoundationModelHumanID | None:
         if self.underlying_model is None:
-            return None
+            return os.path.basename(self.model_path)
 
         return (
                 safe_get(self.underlying_model.metadata, "general.name")

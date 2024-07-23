@@ -193,7 +193,7 @@ class LlamafileProvider(BaseProvider):
             yield FoundationModelRecord.model_validate(maybe_model)
 
         else:
-            logger.info(f".llamafile constructed a new FoundationModelRecord: {model_in.model_dump_json()}")
+            logger.info(f".llamafile constructed a new FoundationModelRecord: {model_in.model_dump_json(indent=2)}")
             new_model = FoundationModelRecordOrm(**model_in.model_dump())
             history_db.add(new_model)
             history_db.commit()
