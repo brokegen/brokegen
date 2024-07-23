@@ -175,8 +175,8 @@ class _OneModel:
             model_path=self.model_path,
             n_gpu_layers=-1,
             verbose=verbose,
-            # TODO: Figure out a more elegant way to decide the max.
-            n_ctx=4_096,
+            # TODO: The more elegant way to do this is with llama_cpp contexts, but this works for now.
+            n_ctx=131_072,
         )
 
         self.underlying_model.set_cache(self.shared_cache)
