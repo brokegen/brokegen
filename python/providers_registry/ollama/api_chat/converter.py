@@ -50,7 +50,7 @@ async def convert_chat_to_generate(
             or ''
     )
     if not model_template:
-        logger.error(f"No ollama template info for {inference_model.human_id}, call /api/show to populate it")
+        logger.error(f"No ollama template info for {inference_model}, call /api/show to populate it")
         raise HTTPException(500, "No model template available, confirm that FoundationModelRecords are complete")
 
     system_message = (

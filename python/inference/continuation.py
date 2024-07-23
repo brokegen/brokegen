@@ -27,7 +27,7 @@ def select_continuation_model(
         requested_model_id: FoundationModelRecordID | None,
         fallback_model_id: FoundationModelRecordID | None,
         history_db: HistoryDB,
-) -> InferenceEventOrm:
+) -> FoundationModelRecordOrm:
     if requested_model_id is not None:
         # TODO: Take this opportunity to confirm the FoundationModel is online.
         #       Though, maybe the inference events later on should be robust enough to handle errors.

@@ -130,6 +130,9 @@ class FoundationModelRecordOrm(Base):
                          name="all columns"),
     )
 
+    def __str__(self):
+        return f"<FoundationModelRecordOrm#{self.id} human_id={self.human_id}>"
+
     def merge_in_updates(self, model_in: FoundationModelRecord | FoundationModelAddRequest) -> Self:
         # Update the last-seen date, if needed
         if model_in.first_seen_at is not None:

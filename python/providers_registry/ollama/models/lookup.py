@@ -25,13 +25,12 @@ async def lookup_model_offline(
         raise RuntimeError("No Provider loaded")
 
     provider_record = await provider.make_record()
-    model = lookup_foundation_model(model_name, provider_record.identifiers, history_db)
+    model: FoundationModelRecordOrm = lookup_foundation_model(model_name, provider_record.identifiers, history_db)
     if not model:
         raise ValueError("Trying to look up model that doesn't exist, you should create it first")
     if not safe_get(model.combined_inference_parameters, 'template'):
-        logger.error(f"No ollama template info for {model.human_id}, call /api/show to populate it")
-        raise RuntimeError(
-            f"No model template available for {model_name}, confirm that FoundationModelRecords are complete")
+        logger.error(f"No ollama template info for {model}, call /api/show to populate it")
+        raise RuntimeError(f"No model template available, confirm that FoundationModelRecords are complete")
 
     return model, provider_record
 
