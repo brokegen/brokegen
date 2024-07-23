@@ -25,7 +25,10 @@ class InferenceOptions(BaseModel):
 
 
 class BaseProvider:
-    cached_model_infos: list[FoundationModelRecord] = []
+    cached_model_infos: list[FoundationModelRecord]
+
+    def __init__(self):
+        self.cached_model_infos = []
 
     @abstractmethod
     async def available(self) -> bool:

@@ -34,6 +34,7 @@ class LMStudioProvider(BaseProvider):
             base_url: str,
             apply_our_own_templating: bool = False,
     ):
+        super().__init__()
         self.server_comms = httpx.AsyncClient(
             base_url=base_url,
             http2=True,

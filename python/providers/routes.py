@@ -90,7 +90,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 label: ProviderLabel,
                 provider: BaseProvider,
         ) -> list[tuple[FoundationModelRecord, ProviderLabel]]:
-            list_maker: AsyncIterable[FoundationModelRecord] = provider.list_models_nocache()
+            list_maker: AsyncGenerator[FoundationModelRecord, None] = provider.list_models()
             available_models = [(model, label) async for model in list_maker]
 
             logger.info(f"{len(available_models)} available FoundationModels <= from {label}")
@@ -130,7 +130,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 label: ProviderLabel,
                 provider: BaseProvider,
         ) -> list[tuple[FoundationModelRecord, ProviderLabel]]:
-            list_maker: AsyncGenerator[FoundationModelRecord] = provider.list_models_nocache()
+            list_maker: AsyncGenerator[FoundationModelRecord, None] = provider.list_models()
             return [(model, label) async for model in list_maker]
 
         async def list_models() -> AsyncIterable[FoundationModelRecord]:
@@ -154,7 +154,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             label = ProviderLabel(type=provider_type, id=provider_id)
             provider = registry.by_label[label]
 
-            list_maker: AsyncIterable[FoundationModelRecord] = provider.list_models_nocache()
+            list_maker: AsyncGenerator[FoundationModelRecord, None] = provider.list_models()
             for model in await list_maker:
                 yield inject_inference_stats(model, label, history_db)
 

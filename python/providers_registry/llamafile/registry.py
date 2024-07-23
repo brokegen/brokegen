@@ -42,6 +42,7 @@ class LlamafileProvider(BaseProvider):
             target_host: str = "127.0.0.1",
             target_port: str = "1822",
     ):
+        super().__init__()
         self.filename = filename
         self.server_process_cmdline = (
             f"{filename} --server --nobrowser "

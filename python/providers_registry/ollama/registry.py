@@ -27,6 +27,7 @@ class ExternalOllamaProvider(BaseProvider):
     client: httpx.AsyncClient
 
     def __init__(self, base_url: str):
+        super().__init__()
         self.base_url = base_url
         self.client = httpx.AsyncClient(
             base_url=self.base_url,

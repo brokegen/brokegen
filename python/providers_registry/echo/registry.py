@@ -69,6 +69,7 @@ def echo_consolidator(chunk: JSONDict, consolidated_response: JSONDict) -> JSOND
 
 class EchoProvider(BaseProvider):
     def __init__(self, provider_id: ProviderID):
+        super().__init__()
         self.provider_id = provider_id
 
     async def available(self) -> bool:
