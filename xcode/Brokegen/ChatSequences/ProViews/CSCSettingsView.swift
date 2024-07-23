@@ -312,7 +312,7 @@ struct CSCSettingsView: View {
                                 .tag(2000)
 
                             Text("5000 msec")
-                                .tag(2000)
+                                .tag(5000)
 
                             if !Set([-1, 0, 1000, 2000, 5000]).contains(settings.scrollOnNewTextFrequencyMsec) {
                                 Text("custom")
@@ -323,8 +323,8 @@ struct CSCSettingsView: View {
 
                         Text("/")
 
-                        Stepper(value: $settings.responseBufferFlushFrequencyMsec, step: 50) {
-                            Text("\(settings.responseBufferFlushFrequencyMsec)")
+                        Stepper(value: $settings.scrollOnNewTextFrequencyMsec, step: 100) {
+                            Text("\(settings.scrollOnNewTextFrequencyMsec)")
                         }
 
                         Text("msec")
