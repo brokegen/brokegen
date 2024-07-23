@@ -29,7 +29,7 @@ def select_continuation_model(
         history_db: HistoryDB,
 ) -> InferenceEventOrm:
     if requested_model_id is not None:
-        # TODO: Take this opportunity to confirm the InferenceModel is online.
+        # TODO: Take this opportunity to confirm the FoundationModel is online.
         #       Though, maybe the inference events later on should be robust enough to handle errors.
         return history_db.execute(
             select(FoundationModelRecordOrm)
