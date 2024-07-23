@@ -90,5 +90,5 @@ dist/mxbai-embed-large-v1-f16.llamafile:
 #
 dist/ollama-darwin:
 	cd "$(dir $@)" \
-		&& curl -L -O https://github.com/ollama/ollama/releases/download/v0.2.5/ollama-darwin
+		&& curl -L -O https://github.com/ollama/ollama/releases/download/v0.2.8/ollama-darwin
 	chmod +x "$@"
