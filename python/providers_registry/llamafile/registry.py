@@ -247,7 +247,7 @@ class LlamafileFactory(ProviderFactory):
     def __init__(self, search_dirs: list[str] | None = None):
         self.search_dirs = search_dirs or []
 
-    async def try_make(self, label: ProviderLabel) -> LlamafileProvider | None:
+    async def try_make_nocache(self, label: ProviderLabel) -> LlamafileProvider | None:
         if label.type != 'llamafile':
             return None
 

@@ -420,7 +420,9 @@ class LlamaCppProvider(BaseProvider):
     async def list_models_nocache(
             self,
     ) -> AsyncGenerator[FoundationModelRecord, None]:
-        """Caching version."""
+        """
+        Caching version. The `_nocache` suffix in the title
+        """
         if self.cached_model_infos:
             for model_info in self.cached_model_infos:
                 yield model_info

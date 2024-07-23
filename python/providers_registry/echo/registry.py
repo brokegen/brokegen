@@ -151,7 +151,7 @@ class EchoProvider(BaseProvider):
 
 
 class EchoProviderFactory(ProviderFactory):
-    async def try_make(self, label: ProviderLabel) -> BaseProvider | None:
+    async def try_make_nocache(self, label: ProviderLabel) -> BaseProvider | None:
         if label.type == "echo":
             return EchoProvider(provider_id=label.id)
 

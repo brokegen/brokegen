@@ -103,7 +103,7 @@ class ExternalOllamaProvider(BaseProvider):
 
 
 class ExternalOllamaFactory(ProviderFactory):
-    async def try_make(self, label: ProviderLabel) -> ExternalOllamaProvider | None:
+    async def try_make_nocache(self, label: ProviderLabel) -> ExternalOllamaProvider | None:
         if label.type != 'ollama':
             return None
 

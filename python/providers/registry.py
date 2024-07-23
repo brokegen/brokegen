@@ -199,7 +199,7 @@ class BaseProvider:
 
 class ProviderFactory:
     @abstractmethod
-    async def try_make(self, label: ProviderLabel) -> BaseProvider | None:
+    async def try_make_nocache(self, label: ProviderLabel) -> BaseProvider | None:
         """
         Try start + start is a single combined function because Providers are expected to be low overhead.
         In cases where we manage our own servers (llamafile, llama.cpp), we expect those Providers to quietly manage resources.
@@ -247,7 +247,7 @@ class ProviderRegistry(_Borg):
 
         for factory in self.factories:
             try:
-                result = await factory.try_make(label)
+                result = await factory.try_make_nocache(label)
                 if result is not None:
                     logger.debug(f"ProviderRegistry.make succeeded: {label}")
 

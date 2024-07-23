@@ -150,7 +150,7 @@ class LMStudioProvider(BaseProvider):
 
 
 class LMStudioFactory(ProviderFactory):
-    async def try_make(self, label: ProviderLabel) -> LMStudioProvider | None:
+    async def try_make_nocache(self, label: ProviderLabel) -> LMStudioProvider | None:
         if label.type != 'lm_studio':
             return None
 

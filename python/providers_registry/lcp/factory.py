@@ -19,7 +19,7 @@ class LlamaCppProviderFactory(ProviderFactory):
         self.search_dirs = search_dirs or []
         self.cache_dir = cache_dir
 
-    async def try_make(self, label: ProviderLabel) -> BaseProvider | None:
+    async def try_make_nocache(self, label: ProviderLabel) -> BaseProvider | None:
         if label.type != "lcp":
             return None
 
