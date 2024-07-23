@@ -68,8 +68,10 @@ class TemplateApplier(ChatFormatter):
 
         template = (
                 self.inference_options.override_model_template
-                or self.underlying_model.metadata["tokenizer.chat_template"]
+                or safe_get(self.underlying_model.metadata, "tokenizer.chat_template")
         )
+        if template is None:
+            raise ValueError(f"No chat_template found for {self.underlying_model}")
 
         eos_token_id = self.underlying_model.token_eos()
         bos_token_id = self.underlying_model.token_bos()
@@ -135,7 +137,6 @@ class TemplateApplier(ChatFormatter):
 
         return cfr
 
-
     def __call__(
             self,
             *,
@@ -158,7 +159,8 @@ class TemplateApplier(ChatFormatter):
             return maybe_cfr
 
         # Third: read settings from .gguf file
-        logger.debug(f"Couldn't find chat format handler, falling back to .gguf template for: {self.underlying_model.chat_format}")
+        logger.debug(
+            f"Couldn't find chat format handler, falling back to .gguf template for: {self.underlying_model.chat_format}")
         cfr: ChatFormatterResponse = self.jinja_templator(messages=messages)
         cfr.prompt += self.inference_options.seed_assistant_response
         return cfr
@@ -497,14 +499,14 @@ class LlamaCppProvider(BaseProvider):
             if len(response_choices) > 1:
                 logger.warning(f"Received {len(response_choices)=}, ignoring all but the first")
 
-            return safe_get_arrayed(response_choices, 0, 'delta', 'content')
+            return safe_get_arrayed(response_choices, 0, 'delta', 'content') or ""
 
         def normal_completion_choice0_extractor(chunk: JSONDict) -> str:
             response_choices = safe_get(chunk, "choices")
             if len(response_choices) > 1:
                 logger.warning(f"Received {len(response_choices)=}, ignoring all but the first")
 
-            return safe_get_arrayed(response_choices, 0, 'text')
+            return safe_get_arrayed(response_choices, 0, 'text') or ""
 
         async def format_response(primordial: AsyncIterator[str]) -> AsyncIterator[JSONDict]:
             async for extracted_content in primordial:
@@ -555,8 +557,8 @@ class LlamaCppProvider(BaseProvider):
                 custom_templatoor_succeeded = True
 
             except ValueError as e:
-                status_holder.push(f"Failed to apply custom chat template! Continuing with default: {e}")
-                logger.error(f"Failed to apply custom chat template! Continuing with default: {e}")
+                status_holder.push(f"Failed to apply custom chat template: {e}")
+                logger.error(f"Failed to apply custom chat template: {e}")
 
         # Otherwise, just fall back to llama-cpp-python's built-in chat formatters, end-to-end.
         if not custom_templatoor_succeeded:
@@ -581,7 +583,7 @@ class LlamaCppProvider(BaseProvider):
 
             if isinstance(iterator_or_completion, Iterator):
                 iter0: Iterator[JSONDict] = iterator_or_completion
-                iter1: Iterator[str] = map(normal_completion_choice0_extractor, iter0)
+                iter1: Iterator[str] = map(chat_completion_choice0_extractor, iter0)
                 iter2: AsyncIterator[str] = to_async(iter1)
             else:
                 async def one_chunk_to_async() -> AsyncIterator[str]:
