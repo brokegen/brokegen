@@ -108,7 +108,9 @@ class TemplateApplier(ChatFormatter):
         if formatter_fn is not None:
             cfr = formatter_fn(messages)
 
-        cfr.prompt += self.inference_options.seed_assistant_response
+        if cfr is not None:
+            cfr.prompt += self.inference_options.seed_assistant_response
+
         return cfr
 
     def custom_templating(
@@ -351,6 +353,7 @@ class LlamaCppProvider(BaseProvider):
             cache_dir: str | None,
             max_loaded_models: int = 3,
     ):
+        super().__init__()
         self.search_dir = search_dir
         self.max_loaded_models = max_loaded_models
 
