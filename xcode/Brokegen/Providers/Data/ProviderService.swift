@@ -132,6 +132,10 @@ class DefaultProviderService: ProviderService {
                 do {
                     try await doFetchAvailableModels()
                     print("[TRACE] DefaultProviderService.fetchAvailableModels() succeeded")
+
+                    DispatchQueue.main.async {
+                        self.modelFetcher = nil
+                    }
                 }
                 catch ProviderServiceError.noResponseContentReturned {
                     print("[ERROR] No content from DefaultProviderService.fetchAvailableModels(), will retry")
@@ -165,6 +169,10 @@ class DefaultProviderService: ProviderService {
             providerFetcher = Task {
                 do {
                     try await doFetchAllProviders()
+
+                    DispatchQueue.main.async {
+                        self.providerFetcher = nil
+                    }
                 }
                 catch ProviderServiceError.noResponseContentReturned {
                     try? await Task.sleep(nanoseconds: 7_000_000_000)
