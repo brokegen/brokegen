@@ -150,10 +150,10 @@ class OneSequenceViewModel: ObservableObject {
                     String(data: errorAndData.data ?? Data(), encoding: .utf8)
                     ?? errorAndData.localizedDescription
                 )
-                serverStatus = "[\(Date.now)] \(endpoint) failure: " + errorDesc
+                serverStatus = "[\(Date.now)] \(endpoint) network error: " + errorDesc
 
                 let errorMessage = TemporaryChatMessage(
-                    role: "[ERROR] \(callerName): \(errorAndData.localizedDescription)",
+                    role: "\(callerName) \(endpoint) network error: \(errorAndData.localizedDescription)",
                     content: responseInEdit?.content ?? errorDesc,
                     createdAt: Date.now
                 )
@@ -228,6 +228,27 @@ class OneSequenceViewModel: ObservableObject {
         if jsonData["done"].boolValue {
             receivedDone += 1
             flushResponseBuffer()
+        }
+
+        if let errorDesc = jsonData["error"].string {
+            serverStatus = "[\(Date.now)] server error: " + errorDesc
+
+            if !(responseInEdit?.content ?? "").isEmpty {
+                let savedResponse = TemporaryChatMessage(
+                    role: "partial assistant response",
+                    content: responseInEdit?.content!,
+                    createdAt: responseInEdit?.createdAt ?? Date.now
+                )
+                sequence.messages.append(.temporary(savedResponse))
+            }
+
+            let errorMessage = TemporaryChatMessage(
+                role: "server error",
+                content: errorDesc,
+                createdAt: Date.now
+            )
+            sequence.messages.append(.temporary(errorMessage))
+            settings.showMessageHeaders = true
         }
 
         // NB This block is what actually marks the Sequence as "done" and gives us whatever updates we might need.
@@ -602,8 +623,6 @@ class OneSequenceViewModel: ObservableObject {
             else if !(responseInEdit!.content ?? "").isEmpty {
                 if receivedDone != 1 {
                     responseInEdit!.role = "partial assistant response"
-
-                    // Show the "partially hidden" message, if needed.
                     settings.showMessageHeaders = true
                 }
                 sequence.messages.append(.temporary(responseInEdit!))

@@ -140,7 +140,7 @@ async def do_continuation(
         done_signaled: int = 0
 
         async for chunk_json in primordial:
-            if chunk_json["done"]:
+            if safe_get(chunk_json, "done"):
                 done_signaled += 1
                 chunk_json["done"] = False
 
