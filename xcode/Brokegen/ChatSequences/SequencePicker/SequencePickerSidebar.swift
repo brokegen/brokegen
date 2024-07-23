@@ -197,7 +197,7 @@ struct MiniSequencePickerSidebar: View {
                     chatService.pinChatSequence(sequence, pinned: !sequence.userPinned)
                 } label: {
                     Toggle(isOn: .constant(sequence.userPinned)) {
-                        Text("Keep ChatSequence pinned to sidebar")
+                        Text("Pin ChatSequence in sidebar")
                     }
                 }
 

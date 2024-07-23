@@ -410,7 +410,7 @@ struct ProSequenceView: View {
 
         Section(header: Text("UI Appearance")) {
             Toggle(isOn: $settings.pinChatSequenceDesc) {
-                Text("Pin chat name to top of window")
+                Text("Keep chat name pinned to top of window")
             }
 
             Toggle(isOn: $settings.showMessageHeaders) {
@@ -457,7 +457,7 @@ struct ProSequenceView: View {
                 viewModel.chatService.pinChatSequence(viewModel.sequence, pinned: !viewModel.sequence.userPinned)
             } label: {
                 Toggle(isOn: .constant(viewModel.sequence.userPinned)) {
-                    Text("Keep ChatSequence pinned to sidebar")
+                    Text("Pin ChatSequence in sidebar")
                 }
             }
 

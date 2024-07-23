@@ -406,7 +406,7 @@ struct BlankProSequenceView: View {
 
         Section(header: Text("UI Appearance")) {
             Toggle(isOn: $viewModel.settings.pinChatSequenceDesc) {
-                Text("Pin chat name to top of window")
+                Text("Keep chat name pinned to top of window")
             }
 
             Toggle(isOn: $viewModel.settings.showMessageHeaders) {

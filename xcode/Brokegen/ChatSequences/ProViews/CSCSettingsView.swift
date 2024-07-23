@@ -52,7 +52,7 @@ struct CSCSettingsView: View {
                     Divider()
 
                     GridRow {
-                        Text("Pin chat name to the top of the window")
+                        Text("Keep chat name pinned to top of window")
                             .layoutPriority(0.2)
 
                         Text("")
