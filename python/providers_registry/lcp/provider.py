@@ -1,4 +1,5 @@
 import functools
+import json
 import logging
 import os
 from datetime import datetime, timezone
@@ -10,6 +11,7 @@ import sqlalchemy
 from llama_cpp import ChatCompletionRequestMessage, CreateCompletionResponse, CreateCompletionStreamResponse, \
     BaseLlamaCache, LlamaRAMCache, LlamaDiskCache
 from llama_cpp.llama_chat_format import ChatFormatter, ChatFormatterResponse
+import psutil
 from sqlalchemy import select
 
 from _util.json import JSONDict, safe_get, safe_get_arrayed
@@ -452,6 +454,14 @@ class LlamaCppProvider(BaseProvider):
                     next(iter(self.loaded_models))
                 ]
 
+            # TODO: Check whether we're running out of resources. Preemptively.
+            # Instead, print something about RAM, and hope for VRAM in the future.
+            logger.debug(
+                json.dumps(dict(
+                    psutil.virtual_memory()._asdict()
+                ), indent=4)
+            )
+
             self.loaded_models[inference_model.id] = new_model
 
         if self.loaded_models[inference_model.id].underlying_model is None:
@@ -507,25 +517,35 @@ class LlamaCppProvider(BaseProvider):
                 logger.debug(f"Updated LlamaCache size: {self.shared_cache.cache_size:_} bytes")
 
         # Main function body: maybe apply templating + kick off inference
-        use_custom_templator: bool = True
+        try_custom_templatoor: bool = True
+        custom_templatoor_succeeded: bool = False
+
         for message in messages_list:
             # TODO: Update this once we have an actual format for storing image uploads
             if hasattr(message, "images"):
-                use_custom_templator = False
+                try_custom_templatoor = False
 
-        if use_custom_templator:
-            # This branch unwraps the code within llama_cpp, so we can do our custom assistant response seed etc etc
-            cfr: ChatFormatterResponse
-            iter0: Iterator[JSONDict]
+        if try_custom_templatoor:
+            try:
+                # This branch unwraps the code within llama_cpp, so we can do our custom assistant response seed etc etc
+                cfr: ChatFormatterResponse
+                iter0: Iterator[JSONDict]
 
-            cfr, iter0 = await loaded_model.convert_chat_to_completion(
-                messages=[m.model_dump() for m in messages_list],
-                inference_options=inference_options,
-            )
-            iter1: Iterator[str] = map(normal_completion_choice0_extractor, iter0)
-            iter2: AsyncIterator[str] = to_async(iter1)
+                cfr, iter0 = await loaded_model.convert_chat_to_completion(
+                    messages=[m.model_dump() for m in messages_list],
+                    inference_options=inference_options,
+                )
+                iter1: Iterator[str] = map(normal_completion_choice0_extractor, iter0)
+                iter2: AsyncIterator[str] = to_async(iter1)
 
-        else:
+                custom_templatoor_succeeded = True
+
+            except ValueError as e:
+                status_holder.push(f"Failed to apply custom chat template! Continuing with default: {e}")
+                logger.error(f"Failed to apply custom chat template! Continuing with default: {e}")
+
+        # Otherwise, just fall back to llama-cpp-python's built-in chat formatters, end-to-end.
+        if not custom_templatoor_succeeded:
             cfr: ChatFormatterResponse = ChatFormatterResponse(prompt="")
 
             lcp_inference_options: dict = {
