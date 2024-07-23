@@ -246,6 +246,10 @@ def run_proxy(
 
         app.include_router(terminate_router)
 
+    lcp_cache_dir: str = f"{data_dir}/llama_cache"
+    if not os.path.isdir(lcp_cache_dir):
+        os.mkdir(lcp_cache_dir)
+
     (
         ProviderRegistry()
         .register_factory(providers_registry.echo.registry.EchoProviderFactory())
@@ -255,7 +259,7 @@ def run_proxy(
         .register_factory(
             providers_registry.lcp.factory.LlamaCppProviderFactory(
                 [data_dir],
-                cache_dir=f"{data_dir}/llama_cache",
+                cache_dir=lcp_cache_dir,
             ))
     )
 
