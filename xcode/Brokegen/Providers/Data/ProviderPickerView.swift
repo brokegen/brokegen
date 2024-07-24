@@ -37,6 +37,55 @@ struct RefreshingRow: View {
 struct ProvidersSidebar: View {
     @ObservedObject var providerService: ProviderService
 
+    @ViewBuilder
+    func providerDetail(_ provider: ProviderClientModel) -> some View {
+        VFlowLayout(spacing: 24) {
+            GroupBox(content: {
+                Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
+                    GridRow {
+                        Text("Type")
+                        Text(provider.label.type)
+                    }
+                    GridRow {
+                        Text("ID")
+                        Text(provider.label.id)
+                    }
+                }
+            }, label: {
+                Text("Provider label")
+                    .font(.system(size: 24).lowercaseSmallCaps())
+                    .gridCellColumns(2)
+            })
+            .frame(maxWidth: 800)
+
+            GroupBox(content: {
+                Grid(alignment: .topLeading, horizontalSpacing: 24, verticalSpacing: 12) {
+                    GridRow {
+                        Text("identifiers")
+                        Text(provider.identifiers?.description ?? "[no identifiers]")
+                    }
+                    GridRow {
+                        Text("machine info")
+                        Text(provider.machineInfo?.description ?? "[no machineInfo]")
+                            .frame(maxHeight: .infinity)
+                    }
+                    GridRow {
+                        Text("human info")
+                        Text(provider.humanInfo?.description ?? "[no humanInfo]")
+                    }
+                }
+            }, label: {
+                Text("Provider detail")
+                    .font(.system(size: 24).lowercaseSmallCaps())
+                    .gridCellColumns(2)
+            })
+            .frame(maxWidth: 800, maxHeight: .infinity)
+        }
+        .lineLimit(nil)
+        .monospaced()
+        .font(.system(size: 18))
+    }
+
     var body: some View {
         NavigationSplitView(sidebar: {
             AppSidebarSection(label: {
@@ -55,8 +104,7 @@ struct ProvidersSidebar: View {
                     LazyVStack(spacing: 24) {
                         ForEach(providerService.availableProviders) { provider in
                             NavigationLink(destination: {
-                                Text(provider.label.type)
-                                Text(provider.label.id)
+                                providerDetail(provider)
                             }, label: {
                                 RefreshingRow(providerType: provider.label.type, providerId: provider.label.id)
                             })
@@ -73,10 +121,12 @@ struct ProvidersSidebar: View {
             Spacer()
         }, detail: {
             ProviderPickerView(providerService: providerService)
+                .font(.system(size: 36))
         })
     }
 }
 
+// TODO: Rename this to something more fitting, like CombinedProviderList
 struct ProviderPickerView: View {
     @ObservedObject var providerService: ProviderService
 

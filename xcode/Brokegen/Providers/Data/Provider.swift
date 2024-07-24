@@ -24,8 +24,8 @@ struct ProviderClientModel: Identifiable { //: Equatable, Hashable {
 }
 
 extension ProviderClientModel {
-    static func fromJson(_ json: JSON) throws -> ProviderClientModel {
-        let labelJson = json[0]
+    static func fromJson(_ combinedJson: JSON) throws -> ProviderClientModel {
+        let labelJson = combinedJson[0]
         guard labelJson["type"].string != nil else {
             throw ProviderServiceError.invalidResponseContentReturned
         }
@@ -34,16 +34,19 @@ extension ProviderClientModel {
         }
 
         let label = ProviderLabel(
-            type: json[0]["type"].string!,
-            id: json[0]["id"].string!
+            type: labelJson["type"].string!,
+            id: labelJson["id"].string!
         )
 
+        print("[TRACE] ProviderClientModel.fromJson() <= \(combinedJson.description)")
+
+        let recordJson = combinedJson[1]
         return ProviderClientModel(
             label: label,
-            identifiers: labelJson["identifiers"].string,
-            createdAt: labelJson["created_at"].isoDate,
-            machineInfo: labelJson["machine_info"],
-            humanInfo: labelJson["human_info"]
+            identifiers: recordJson["identifiers"].string,
+            createdAt: recordJson["created_at"].isoDate,
+            machineInfo: recordJson["machine_info"],
+            humanInfo: recordJson["human_info"]
         )
     }
 }
@@ -53,13 +56,14 @@ extension DefaultProviderService {
         let providersData: Data? = await getDataBlocking("/providers/any/.discover")
         guard providersData != nil else { throw ProviderServiceError.noResponseContentReturned }
 
-        for (_, providerJson) in JSON(providersData!) {
-            let newProvider = try ProviderClientModel.fromJson(providerJson)
+        for (_, combinedJson) in JSON(providersData!) {
+            let newProvider = try ProviderClientModel.fromJson(combinedJson)
             allProviders.removeAll {
                 $0.label.id == newProvider.label.id
                 && $0.label.type == newProvider.label.type
             }
             allProviders.append(newProvider)
+            print("[TRACE] newProvider = \(newProvider)")
         }
     }
 }
