@@ -149,9 +149,25 @@ class BaseProvider:
             history_db: HistoryDB,
             audit_db: AuditDB,
     ) -> PromptText:
-        with ((StatusContext(
+        def autoname_consolidator(chunk: JSONDict, consolidated_response: str):
+            for k, v in chunk.items():
+                if k == 'message':
+                    consolidated_response += v['content']
+                    continue
+
+                elif k == 'choices':
+                    if len(chunk[k]) > 0:
+                        choice_index = 0
+                        if safe_get_arrayed(chunk, k, choice_index, 'delta', 'content'):
+                            consolidated_response += safe_get_arrayed(chunk, k, choice_index, 'delta', 'content')
+                        if safe_get_arrayed(chunk, k, choice_index, 'text'):
+                            consolidated_response += safe_get_arrayed(chunk, k, choice_index, 'text')
+
+            return consolidated_response
+
+        with StatusContext(
                 f"Autonaming ChatSequence with {len(messages_list)} messages => {autonaming_model}",
-                status_holder))):
+                status_holder):
             # Construct a new prompt that hopefully reuses context.
             new_message = (
                 "Summarize the above messages, suitable as a short description for a tab title. "
@@ -170,34 +186,11 @@ class BaseProvider:
                 audit_db,
             )
 
-            def autoname_consolidator(chunk: JSONDict, consolidated_response: dict):
-                if not consolidated_response:
-                    return chunk
-
-                for k, v in chunk.items():
-                    if k not in consolidated_response:
-                        consolidated_response[k] = v
-                        continue
-
-                    if k == 'message':
-                        consolidated_response[k]['content'] += v['content']
-
-                    if k == 'choices':
-                        for choice_index in chunk[k]:
-                            if safe_get_arrayed(chunk, k, choice_index, 'delta', 'content'):
-                                consolidated_response[k][choice_index]['delta']['content'] \
-                                    += safe_get_arrayed(chunk, k, choice_index, 'delta', 'content')
-                            if safe_get_arrayed(chunk, k, choice_index, 'text'):
-                                consolidated_response[k][choice_index]['text'] \
-                                    += safe_get_arrayed(chunk, k, choice_index, 'text')
-
-            consolidated_response = {}
+            consolidated_response: str = ""
             async for chunk in iter0:
-                autoname_consolidator(chunk, consolidated_response)
+                consolidated_response = autoname_consolidator(chunk, consolidated_response)
 
-            return safe_get(chunk, 'message', 'content') \
-                or safe_get_arrayed(chunk, 'choices', 0, 'delta', 'content') \
-                or safe_get_arrayed(chunk, 'choices', 0, 'text')
+            return consolidated_response
 
 
 class ProviderFactory:
