@@ -25,6 +25,7 @@ def finalize_inference_job(
 ) -> None:
     logger.debug(f"Finalizing InferenceEvent {inference_event.id} with {response_content.keys()=}")
 
+    # Note that Ollama reports the total size of the prompt, but time is based on just the not-cached number.
     if safe_get(response_content, 'prompt_eval_count'):
         inference_event.prompt_tokens = safe_get(response_content, 'prompt_eval_count')
     if safe_get(response_content, 'prompt_eval_duration'):
