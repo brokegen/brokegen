@@ -5,6 +5,7 @@ import os
 from datetime import datetime, timezone
 from typing import AsyncGenerator, AsyncIterator, Iterator, TypeVar, Any, Callable, Union
 
+import diskcache
 import llama_cpp
 import orjson
 import sqlalchemy
@@ -368,6 +369,8 @@ class LlamaCppProvider(BaseProvider):
             search_dir: str,
             cache_dir: str | None,
             max_loaded_models: int = 3,
+            disk_capacity: int = 32 * (1 << 30),
+            ram_capacity: int = 4 * (1 << 30),
     ):
         super().__init__()
         self.search_dir = search_dir
@@ -375,10 +378,18 @@ class LlamaCppProvider(BaseProvider):
 
         if LlamaCppProvider.shared_cache is None:
             # TODO: These may not be thread/process safe, but whether _that_ matters depends on the ASGI framework
-            if cache_dir is not None and os.path.isdir(cache_dir):
-                LlamaCppProvider.shared_cache = LlamaDiskCache(cache_dir, capacity_bytes=32 * (1 << 30))
+            if cache_dir is not None and os.path.isdir(cache_dir) and False:
+                LlamaCppProvider.shared_cache = LlamaDiskCache(cache_dir, capacity_bytes=disk_capacity)
+                # TODO: llama_cpp_python doesn't actually set the cache settings correctly, upstream these changes.
+                # - Note that the disk capacity is not changed later on, since the initial capacity is stored in the db?
+                LlamaCppProvider.shared_cache.cache = diskcache.Cache(
+                    cache_dir=cache_dir,
+                    statistics=True,
+                    size_limit=disk_capacity,
+                    sqlite_synchronous=False,
+                )
             else:
-                LlamaCppProvider.shared_cache = LlamaRAMCache(capacity_bytes=4 * (1 << 30))
+                LlamaCppProvider.shared_cache = LlamaRAMCache(capacity_bytes=ram_capacity)
 
     async def available(self) -> bool:
         return os.path.exists(self.search_dir)
