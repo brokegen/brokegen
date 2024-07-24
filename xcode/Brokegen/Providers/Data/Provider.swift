@@ -55,6 +55,10 @@ extension DefaultProviderService {
 
         for (_, providerJson) in JSON(providersData!) {
             let newProvider = try ProviderClientModel.fromJson(providerJson)
+            allProviders.removeAll {
+                $0.label.id == newProvider.label.id
+                && $0.label.type == newProvider.label.type
+            }
             allProviders.append(newProvider)
         }
     }
