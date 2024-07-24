@@ -369,6 +369,9 @@ class LlamaCppProvider(BaseProvider):
             search_dir: str,
             cache_dir: str | None,
             max_loaded_models: int = 3,
+            # Nevermind, just outright disable the cache.
+            # Gathering LLM state takes too much time and makes everything seem slow.
+            enable_cache: bool = False,
             disk_capacity: int = 32 * (1 << 30),
             ram_capacity: int = 4 * (1 << 30),
     ):
@@ -376,10 +379,11 @@ class LlamaCppProvider(BaseProvider):
         self.search_dir = search_dir
         self.max_loaded_models = max_loaded_models
 
-        if LlamaCppProvider.shared_cache is None:
+        if enable_cache and LlamaCppProvider.shared_cache is None:
             # TODO: These may not be thread/process safe, but whether _that_ matters depends on the ASGI framework
             if cache_dir is not None and os.path.isdir(cache_dir) and False:
                 LlamaCppProvider.shared_cache = LlamaDiskCache(cache_dir, capacity_bytes=disk_capacity)
+
                 # TODO: llama_cpp_python doesn't actually set the cache settings correctly, upstream these changes.
                 # - Note that the disk capacity is not changed later on, since the initial capacity is stored in the db?
                 LlamaCppProvider.shared_cache.cache = diskcache.Cache(
