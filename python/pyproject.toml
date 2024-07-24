@@ -29,6 +29,7 @@ inference = [
     # But also optional (Python code checks for ImportError), in case we can't build it.
     # 'llama-cpp-python',
     'orjson',
+    'psutil',
     'simsimd==3.7.7',
     'SQLAlchemy',
     'tqdm',
