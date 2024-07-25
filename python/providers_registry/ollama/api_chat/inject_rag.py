@@ -116,9 +116,9 @@ async def do_proxy_chat_rag(
                 chat_messages, generate_helper_fn, status_holder,
             )
 
-    status_desc = f"Forwarding ChatMessage to ollama /api/generate {safe_get(request_content_json, 'model')}"
+    status_desc = f"[ollama] {safe_get(request_content_json, 'model')}: forwarding one message to /api/generate"
     if len(chat_messages) > 1:
-        status_desc = f"Forwarding {len(chat_messages)} messages to ollama /api/generate {safe_get(request_content_json, 'model')}"
+        status_desc = f"[ollama] {safe_get(request_content_json, 'model')}: forwarding {len(chat_messages)} messages to /api/generate"
     if prompt_override is not None:
         status_desc += f" (with retrieval context of {len(prompt_override):_} chars)"
 

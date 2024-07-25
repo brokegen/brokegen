@@ -157,6 +157,26 @@ async def do_continuation(
         if not done_signaled:
             logger.warning(f"ollama /api/chat: Finished streaming response without hitting `done=True`")
 
+    async def update_status(
+            primordial: AsyncIterator[JSONDict],
+    ) -> AsyncIterator[JSONDict]:
+        chunk_number: int = 0
+
+        async for chunk in primordial:
+            # In this rare instance, we update `status_holder` first so any downstream iterator-processors read it.
+            # (Otherwise, we usually try to yield the chunk asap, so client appears more responsive.)
+            chunk_number += 1
+            status_holder.set(f"[ollama] {inference_model.human_id}: received response chunk #{chunk_number}")
+
+            # For the most part, the upstream chunk generators are forwarded straight from ollama.
+            # We don't expect any of them to have the "status" set, but check anyway.
+            if "status" not in chunk:
+                chunk["status"] = status_holder.get()
+
+            yield chunk
+
+        status_holder.set(f"[ollama] {inference_model.human_id}: done with inference")
+
     constructed_ollama_request_content_json = {
         "messages": messages_list,
         "model": inference_model.human_id,
@@ -178,16 +198,17 @@ async def do_continuation(
 
     # Convert to JSON chunks
     iter1: AsyncIterator[JSONDict] = proxied_response._content_iterable
-    iter2: AsyncIterator[JSONDict] = tee_to_console_output(iter1, ollama_log_indexer)
+    iter2: AsyncIterator[JSONDict] = update_status(iter1)
+    iter3: AsyncIterator[JSONDict] = tee_to_console_output(iter2, ollama_log_indexer)
 
     # All for the sake of consolidate + add "new_sequence_id" chunk
-    iter3: AsyncIterator[JSONDict] = hide_done(iter2)
-    iter4: AsyncIterator[JSONDict] = consolidate_and_yield(
-        iter3, ollama_response_consolidator, {},
+    iter4: AsyncIterator[JSONDict] = hide_done(iter3)
+    iter5: AsyncIterator[JSONDict] = consolidate_and_yield(
+        iter4, ollama_response_consolidator, {},
         functools.partial(append_response_chunk, prompt_with_templating=prompt_with_templating),
     )
 
-    proxied_response._content_iterable = iter4
+    proxied_response._content_iterable = iter5
     return proxied_response
 
 
@@ -223,8 +244,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 .include_query_params(parameters=params)
             )
 
-        status_holder = ServerStatusHolder(
-            f"/sequences/{sequence_id}/continue: processing on {inference_model.human_id}")
+        status_holder = ServerStatusHolder(f"[ollama] {inference_model.human_id}: starting /sequences/{sequence_id}/continue")
 
         # And RetrievalLabel
         retrieval_label = RetrievalLabel(

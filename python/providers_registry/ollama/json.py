@@ -69,6 +69,8 @@ async def keepalive_wrapper(
             if await request.is_disconnected():
                 logger.fatal(f"Detected client disconnection! Ignoring, because we want inference to continue.")
 
+        logger.debug("ollama keepalive_wrapper(): detected end of inference chunks")
+
     return NDJSONStreamingResponse(
         content=do_keepalive(nonblocking_response_maker()),
         status_code=218,

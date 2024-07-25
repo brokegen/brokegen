@@ -173,6 +173,7 @@ class OneSequenceViewModel: ObservableObject {
 
     private func _parseJSONChunk(_ jsonData: JSON) {
         if let status = jsonData["status"].string {
+            //print("[TRACE] new server status: \(status)")
             serverStatus = status
         }
 

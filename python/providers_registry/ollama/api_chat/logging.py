@@ -74,11 +74,14 @@ def ollama_response_consolidator(
         return chunk
 
     for k, v in chunk.items():
-        if k not in consolidated_response:
+        if k == "status":
+            pass
+
+        elif k not in consolidated_response:
             consolidated_response[k] = v
             continue
 
-        if k == 'created_at':
+        elif k == 'created_at':
             consolidated_response['terminal_created_at'] = v
             continue
 

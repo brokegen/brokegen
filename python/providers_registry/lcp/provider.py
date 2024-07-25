@@ -1,3 +1,4 @@
+import asyncio
 import functools
 import json
 import logging
@@ -303,7 +304,7 @@ class _OneModel:
         if self.underlying_model is None:
             return os.path.basename(self.model_path)
 
-        return (
+        return "[lcp] " + (
                 safe_get(self.underlying_model.metadata, "general.name")
                 or os.path.basename(self.model_path)
         )
@@ -473,6 +474,8 @@ class LlamaCppProvider(BaseProvider):
             inference_model: FoundationModelRecordOrm,
             status_holder: ServerStatusHolder,
     ) -> _OneModel:
+        target_model: _OneModel
+
         if inference_model.id not in self.loaded_models:
             new_model: _OneModel = _OneModel(
                 os.path.abspath(os.path.join(self.search_dir,
@@ -494,10 +497,13 @@ class LlamaCppProvider(BaseProvider):
             )
 
             self.loaded_models[inference_model.id] = new_model
+            target_model = new_model
+        else:
+            target_model = self.loaded_models[inference_model.id]
 
-        if self.loaded_models[inference_model.id].underlying_model is None:
-            with StatusContext(f"{self.loaded_models[inference_model.id].model_name}: loading model", status_holder):
-                await self.loaded_models[inference_model.id].launch()
+        if target_model.underlying_model is None:
+            with StatusContext(f"{target_model.model_name}: loading model", status_holder):
+                await target_model.launch()
 
         return self.loaded_models[inference_model.id]
 
