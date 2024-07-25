@@ -240,7 +240,19 @@ extension Font.Design {
         case .monospaced:
             "monospaced"
         @unknown default:
-            ""
+            String(describing: self)
         }
+    }
+}
+
+extension Font.Design: CaseIterable {
+    public static var allCases: [Font.Design] {
+        return [.serif, .rounded, .monospaced, .default]
+    }
+}
+
+extension Font.Design: Identifiable {
+    public var id: String {
+        return self.toString()
     }
 }

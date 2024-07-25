@@ -2,8 +2,6 @@ import SwiftUI
 
 struct CSCSettingsView: View {
     @ObservedObject var settings: CSCSettingsService.SettingsProxy
-    @State var appearanceWidth: CGFloat = 0
-    @State var generationWidth: CGFloat = 0
 
     func combinedGridRow(
         _ labelText: String,
@@ -95,76 +93,33 @@ struct CSCSettingsView: View {
                 }
 
                 Divider()
-                    .frame(maxWidth: generationWidth)
 
                 Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
                     GridRow {
-                        Text("Font for rendering messages (global)")
+                        Text("[global] Font for rendering messages")
                             .layoutPriority(0.2)
 
-                        Spacer()
-
                         Picker("", selection: $settings.messageFontDesign) {
-                            Text("default")
-                                .fontDesign(.default)
-                                .tag(Font.Design.default)
-
-                            Text("serif")
-                                .fontDesign(.serif)
-                                .tag(Font.Design.serif)
-
-                            Text("rounded")
-                                .fontDesign(.rounded)
-                                .tag(Font.Design.rounded)
-
-                            Text("monospaced")
-                                .fontDesign(.monospaced)
-                                .tag(Font.Design.monospaced)
-
-                            Text("current: \(settings.messageFontDesign)")
-                                .fontDesign(settings.messageFontDesign)
-                                .tag(settings.messageFontDesign)
+                            ForEach(Font.Design.allCases) { fontDesign in
+                                // TODO: Make the Picker render items in the selected font
+                                Text(fontDesign.toString())
+                                    .tag(fontDesign)
+                            }
                         }
                     }
 
                     GridRow {
-                        Text("Font for entering prompt text (global)")
+                        Text("[global] Font for entering prompt text")
                             .layoutPriority(0.2)
 
-                        Spacer()
-
                         Picker("", selection: $settings.textEntryFontDesign) {
-                            Text("default")
-                                .fontDesign(.default)
-                                .tag(Font.Design.default)
-
-                            Text("serif")
-                                .fontDesign(.serif)
-                                .tag(Font.Design.serif)
-
-                            Text("rounded")
-                                .fontDesign(.rounded)
-                                .tag(Font.Design.rounded)
-
-                            Text("monospaced")
-                                .fontDesign(.monospaced)
-                                .tag(Font.Design.monospaced)
-
-                            Text("current: \(settings.textEntryFontDesign)")
-                                .fontDesign(settings.textEntryFontDesign)
-                                .tag(settings.textEntryFontDesign)
+                            ForEach(Font.Design.allCases) { fontDesign in
+                                // TODO: Make the Picker render items in the selected font
+                                Text(fontDesign.toString())
+                                    .tag(fontDesign)
+                            }
                         }
                     }
-                }
-            }
-            .overlay {
-                // Read the target width of this entire block,
-                // so we can apply it to Divider() which is otherwise greedy
-                GeometryReader { geometry in
-                    Spacer()
-                        .onAppear {
-                            appearanceWidth = geometry.size.width
-                        }
                 }
             }
             .padding(24)
@@ -357,29 +312,9 @@ struct CSCSettingsView: View {
     }
 
     @ViewBuilder
-    var generationOptions: some View {
+    var inferenceOptions: some View {
         GroupBox(content: {
             VStack(spacing: 24) {
-                Picker("Chat autonaming policy (global)", selection: $settings.autonamingPolicy) {
-                    Text("server default")
-                        .tag(CSInferenceSettings.AutonamingPolicy.serverDefault)
-
-                    Text("disable")
-                        .tag(CSInferenceSettings.AutonamingPolicy.disable)
-
-                    Text("summarize after inference (asynchronous)")
-                        .tag(CSInferenceSettings.AutonamingPolicy.summarizeAfterAsync)
-
-                    Text("summarize before inference")
-                        .tag(CSInferenceSettings.AutonamingPolicy.summarizeBefore)
-                }
-                .pickerStyle(.inline)
-                // TODO: Re-enable once we plumb this through on the server
-                .disabled(true)
-
-                Divider()
-                    .frame(maxWidth: generationWidth)
-
                 Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
                     GridRow {
                         Spacer()
@@ -400,15 +335,23 @@ struct CSCSettingsView: View {
                         falseText: "don't stay awake"
                     )
                 }
-            }
-            .overlay {
-                // Read the target width of this entire block,
-                // so we can apply it to Divider() which is otherwise greedy
-                GeometryReader { geometry in
-                    Spacer()
-                        .onAppear {
-                            generationWidth = geometry.size.width
+
+                Divider()
+
+                Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
+                    GridRow {
+                        Text("[global] Chat autonaming policy")
+                            .layoutPriority(0.2)
+
+                        Picker("", selection: $settings.autonamingPolicy) {
+                            ForEach(CSInferenceSettings.AutonamingPolicy.allCases) { policy in
+                                Text(policy.toDesc())
+                                    .tag(policy)
+                            }
                         }
+                        // TODO: Re-enable once we plumb this through on the server
+                        .disabled(true)
+                    }
                 }
             }
             .padding(24)
@@ -427,11 +370,11 @@ struct CSCSettingsView: View {
 
         performanceOptions
 
-        generationOptions
+        inferenceOptions
     }
 }
 
-#Preview(traits: .fixedLayout(width: 1280, height: 1280)) {
+#Preview(traits: .fixedLayout(width: 800, height: 1280)) {
     struct ViewHolder: View {
         @State var settings: CSCSettingsService.SettingsProxy
 
@@ -444,7 +387,7 @@ struct CSCSettingsView: View {
         }
 
         var body: some View {
-            List {
+            ScrollView {
                 CSCSettingsView(settings: settings)
             }
         }

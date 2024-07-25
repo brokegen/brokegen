@@ -50,8 +50,25 @@ struct OverrideCSUISettings {
 }
 
 struct CSInferenceSettings {
-    enum AutonamingPolicy: String {
+    enum AutonamingPolicy: String, CaseIterable, Identifiable {
         case serverDefault, disable, summarizeAfterAsync, summarizeBefore
+
+        func toDesc() -> String {
+            switch(self) {
+            case .serverDefault:
+                "server default"
+            case .disable:
+                "disable"
+            case .summarizeAfterAsync:
+                "summarize after inference (asynchronous)"
+            case .summarizeBefore:
+                "summarize before inference"
+            }
+        }
+
+        var id: String {
+            self.rawValue
+        }
     }
 
     var inferenceOptions: String? = nil
