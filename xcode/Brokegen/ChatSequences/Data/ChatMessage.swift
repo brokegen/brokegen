@@ -81,15 +81,12 @@ extension TemporaryChatMessage: Encodable {
 }
 
 enum MessageLike: Equatable, Hashable {
-    case legacy(Message)
     case stored(ChatMessage)
     case temporary(TemporaryChatMessage)
 
     var messageIdString: String {
         get {
             switch(self) {
-            case .legacy(let m):
-                m.serverId == nil ? "[unknown ChatMessage]" : "ChatMessage#\(m.serverId!)"
             case .stored(let m):
                 "ChatMessage#\(m.serverId)"
             case .temporary(_):
@@ -112,8 +109,6 @@ enum MessageLike: Equatable, Hashable {
     var role: String {
         get {
             switch(self) {
-            case .legacy(let m):
-                m.role
             case .stored(let m):
                 m.role
             case .temporary(let m):
@@ -125,8 +120,6 @@ enum MessageLike: Equatable, Hashable {
     var content: String {
         get {
             switch(self) {
-            case .legacy(let m):
-                m.content
             case .stored(let m):
                 m.content
             case .temporary(let m):
@@ -138,9 +131,6 @@ enum MessageLike: Equatable, Hashable {
     var createdAt: Date? {
         get {
             switch(self) {
-            case .legacy(let m):
-                m.createdAt
-
             case .stored(let m):
                 m.createdAt
 
@@ -153,13 +143,6 @@ enum MessageLike: Equatable, Hashable {
     var createdAtString: String {
         get {
             switch(self) {
-            case .legacy(let m):
-                if m.createdAt != nil {
-                    String(describing: m.createdAt!)
-                }
-                else {
-                    "[unknown date]"
-                }
             case .stored(let m):
                 String(describing: m.createdAt)
             case .temporary(let m):

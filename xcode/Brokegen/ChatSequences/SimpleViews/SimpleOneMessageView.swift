@@ -97,13 +97,13 @@ struct SimpleOneMessageView: View {
 
 #Preview(traits: .fixedLayout(width: 800, height: 800)) {
     struct ViewHolder: View {
-        @State var updatingMessage = Message(role: "assistant 2", content: "", createdAt: Date.distantFuture)
+        @State var updatingMessage = TemporaryChatMessage(role: "assistant 2", content: "", createdAt: Date.distantFuture)
         @State var nextMessage: Int = 4
 
         var body: some View {
             return VStack(spacing: 0) {
                 Button(action: {
-                    updatingMessage = updatingMessage.appendContent("\(nextMessage) ")
+                    updatingMessage.content! += " \(nextMessage)"
                     nextMessage += 1
                 }) {
                     Text("add text")
@@ -111,12 +111,12 @@ struct SimpleOneMessageView: View {
                 }
 
                 SimpleOneMessageView(
-                    .legacy(Message(role: "assistant 1", content: "This is a response continuation, 1 2 3-", createdAt: Date.distantFuture)),
+                    .temporary(TemporaryChatMessage(role: "assistant 1", content: "This is a response continuation, 1 2 3-", createdAt: Date.distantFuture)),
                     stillUpdating: true
                 )
 
                 SimpleOneMessageView(
-                    .legacy(updatingMessage),
+                    .temporary(updatingMessage),
                     stillUpdating: true
                 )
 
@@ -129,7 +129,7 @@ struct SimpleOneMessageView: View {
 }
 
 #Preview(traits: .fixedLayout(width: 800, height: 800)) {
-    let message3 = Message(role: "user", content: """
+    let message3 = TemporaryChatMessage(role: "user", content: """
 Thank you for the warm welcome! I'm an AI designed to generate human-like text based on the input I receive. I don't have a specific prompt in mind yet, but I'd love your help in shaping one.
 
 I've been trained on a vast amount of text data and can produce responses in various styles and formats. However, I'd like to focus on creating content that's engaging, informative, or entertaining for humans.
@@ -145,12 +145,12 @@ Your input will help me generate more targeted and valuable responses. Let's col
 
     return VStack {
         SimpleOneMessageView(
-            .legacy(Message(role: "user", content: "Hello this is a prompt", createdAt: Date(timeIntervalSinceNow: -604_800))))
+            .temporary(TemporaryChatMessage(role: "user", content: "Hello this is a prompt", createdAt: Date(timeIntervalSinceNow: -604_800))))
 
         SimpleOneMessageView(
-            .legacy(Message(role: "clown", content: "Hello! How can I help you today with your prompt? Please provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now)))
+            .temporary(TemporaryChatMessage(role: "clown", content: "Hello! How can I help you today with your prompt? Please provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now)))
 
-        SimpleOneMessageView(.legacy(message3))
+        SimpleOneMessageView(.temporary(message3))
 
         Spacer()
     }

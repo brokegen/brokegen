@@ -5,7 +5,6 @@ import SwiftData
 import SwiftyJSON
 
 struct ChatSequenceParameters: Encodable, Hashable {
-    var nextMessage: Message? = nil
     var continuationModelId: FoundationModelRecordID? = nil
     var fallbackModelId: FoundationModelRecordID? = nil
 

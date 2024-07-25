@@ -299,15 +299,11 @@ class OneSequenceViewModel: ObservableObject {
 
     private func receiveHandler(
         caller callerName: String,
-        endpoint: String,
-        maybeNextMessage: Message? = nil
+        endpoint: String
     ) -> ((Data) -> Void) {
         return { [self] newData in
             // On first data received, end "submitting" phase
             if submitting {
-                if maybeNextMessage != nil {
-                    sequence.messages.append(.legacy(maybeNextMessage!))
-                }
                 promptInEdit = ""
 
                 receivedDone = 0
@@ -506,7 +502,6 @@ class OneSequenceViewModel: ObservableObject {
         Task {
             receivingStreamer = await chatService.sequenceContinue(
                 ChatSequenceParameters(
-                    nextMessage: nil,
                     continuationModelId: continuationModelId,
                     fallbackModelId: appSettings.fallbackInferenceModel?.serverId,
                     inferenceOptions: settings.inferenceOptions,
@@ -571,7 +566,6 @@ class OneSequenceViewModel: ObservableObject {
 
             receivingStreamer = await chatService.sequenceContinue(
                 ChatSequenceParameters(
-                    nextMessage: nil,
                     continuationModelId: continuationModelId,
                     fallbackModelId: appSettings.fallbackInferenceModel?.serverId,
                     inferenceOptions: settings.inferenceOptions,

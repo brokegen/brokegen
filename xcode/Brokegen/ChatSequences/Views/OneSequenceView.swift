@@ -710,10 +710,10 @@ struct OneSequenceView: View {
 
 #Preview(traits: .fixedLayout(width: 800, height: 800)) {
     let messages: [MessageLike] = [
-        .legacy(Message(role: "user", content: "First message", createdAt: Date.distantPast)),
-        .legacy(Message(role: "clown", content: "Second message", createdAt: Date.distantPast)),
-        .legacy(Message(role: "user", content: "Third message", createdAt: Date.now)),
-        .legacy(Message(role: "user", content: "Fourth message", createdAt: Date(timeIntervalSinceNow: +5)))
+        .temporary(TemporaryChatMessage(role: "user", content: "First message", createdAt: Date.distantPast)),
+        .temporary(TemporaryChatMessage(role: "clown", content: "Second message", createdAt: Date.distantPast)),
+        .temporary(TemporaryChatMessage(role: "user", content: "Third message", createdAt: Date.now)),
+        .temporary(TemporaryChatMessage(role: "user", content: "Fourth message", createdAt: Date(timeIntervalSinceNow: +5)))
     ]
     
     let chatService = ChatSyncService()
