@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import cast, Generator, AsyncGenerator
 
@@ -36,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 async def do_list_available_models(
-        # TODO :circular import
+        # TODO: circular import
         provider: "providers.ollama.ExternalOllamaProvider",
         history_db: HistoryDB,
         audit_db: AuditDB,
@@ -80,6 +81,9 @@ async def do_list_available_models(
 
     async for amodel in api_show_injector(available_models_generator):
         yield amodel
+
+        # Allow a coro context switch, so server is more responsive during enumeration.
+        await asyncio.sleep(0)
 
 
 async def do_api_tags(

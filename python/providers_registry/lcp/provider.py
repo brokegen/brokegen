@@ -1,3 +1,4 @@
+import asyncio
 import functools
 import json
 import logging
@@ -452,6 +453,10 @@ class LlamaCppProvider(BaseProvider):
             temp_model_response = await temp_model.as_info(provider_record, os.path.abspath(self.search_dir))
             if temp_model_response is not None:
                 yield temp_model_response
+
+                # Manually add a yield-ish block, to remain more responsive during loading.
+                # This lets the client load ChatSequences while we're enumerating available .gguf files.
+                await asyncio.sleep(0)
 
     async def list_models_nocache(
             self,
