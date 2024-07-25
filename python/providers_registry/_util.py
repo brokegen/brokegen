@@ -1,8 +1,7 @@
 import asyncio
-import functools
 import logging
 import platform
-import uuid
+from typing import TypeAlias
 
 import orjson
 
@@ -10,57 +9,76 @@ from _util.json import safe_get_arrayed
 
 logger = logging.getLogger(__name__)
 
+DataType: TypeAlias = str
+InfoCacheKey: TypeAlias = tuple[DataType, bool]
 
-@functools.lru_cache
-def local_provider_identifiers() -> dict:
+info_cache: dict[InfoCacheKey, dict] = {}
+"""
+We can't just use `functools.lru_cache` because these functions are all `async`.
+"""
+
+
+async def _fetch_macos_info(
+        data_type: str,
+        # We typically don't need any of the identifiers; serial number doesn't matter because
+        # inference results should be identical for identical hardware.
+        include_personal_information: bool = False,
+        system_profiler_timeout: float | None = 5.0,
+) -> dict | None:
+    info_cache_key: InfoCacheKey = (data_type, include_personal_information)
+    if info_cache_key in info_cache:
+        return info_cache[info_cache_key]
+
+    sp_args = ["/usr/sbin/system_profiler", "-json"]
+    if include_personal_information:
+        sp_args.extend(["-detailLevel", "full"])
+    else:
+        sp_args.extend(["-detailLevel", "mini"])
+
+    sp_awaitable = asyncio.create_subprocess_exec(
+        *sp_args, data_type,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.DEVNULL,
+    )
+
+    sp_hw_process = await asyncio.wait_for(sp_awaitable, system_profiler_timeout)
+    sp_stdout, _ = await sp_hw_process.communicate()
+    if sp_stdout is None:
+        logger.warning(f"Failed to run `system_profiler {data_type}`")
+        return None
+
+    try:
+        result = orjson.loads(sp_stdout)
+        info_cache[info_cache_key] = result
+        return result
+
+    except ValueError:
+        return None
+
+
+async def local_provider_identifiers() -> dict:
     provider_identifiers_dict = {
         'platform': platform.platform(),
-        # https://docs.python.org/3/library/uuid.html#uuid.getnode
-        # This is based on the MAC address of a network interface on the host system; the important
-        # thing is that the ProviderConfigRecord differs when the setup might give different results.
-        'node_id': uuid.getnode(),
     }
+
+    hardware_dict = await _fetch_macos_info("SPHardwareDataType")
+    if hardware_dict is not None:
+        provider_identifiers_dict.update(hardware_dict)
+
     return provider_identifiers_dict
 
 
-async def local_fetch_machine_info(
-        include_personal_information: bool = True,
-        system_profiler_timeout: float | None = 5.0,
-):
-    sp_args = ["/usr/sbin/system_profiler", "-json"]
-    if include_personal_information:
-        sp_args.extend(["-detailLevel", "mini"])
-
+async def local_fetch_machine_info() -> dict:
     combined_dict = {}
 
-    sp_hw_awaitable = asyncio.create_subprocess_exec(
-        *sp_args, "SPHardwareDataType",
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.DEVNULL,
-    )
-
-    sp_hw_process = await asyncio.wait_for(sp_hw_awaitable, system_profiler_timeout)
-    stdout_hw, _ = await sp_hw_process.communicate()
-    if stdout_hw is None:
-        logger.info("Failed to run system_profiler SPHardwareDataType, continuing without")
-    else:
-        hardware_dict = orjson.loads(stdout_hw)
+    hardware_dict = await _fetch_macos_info("SPHardwareDataType")
+    if hardware_dict is not None:
         combined_dict.update(hardware_dict)
 
-    sp_sw_awaitable = asyncio.create_subprocess_exec(
-        *sp_args, "SPSoftwareDataType",
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.DEVNULL,
-    )
-
-    sp_sw_process = await asyncio.wait_for(sp_sw_awaitable, system_profiler_timeout)
-    stdout_sw, _ = await sp_sw_process.communicate()
-    if stdout_sw is None:
-        logger.info("Failed to run system_profiler SPSoftwareDataType, continuing without")
-    else:
-        software_dict = orjson.loads(stdout_sw)
-        if safe_get_arrayed(software_dict, 'SPSoftwareDataType', 0, 'uptime'):
-            # Delete this entry, since it's always changing and doesn't uniquely identify anyone
+    software_dict = await _fetch_macos_info("SPSoftwareDataType")
+    if software_dict is not None:
+        # Delete this entry, since it's always changing and doesn't uniquely identify anyone
+        if safe_get_arrayed(software_dict, 'SPSoftwareDataType', 0, 'uptime') is not None:
             del software_dict["SPSoftwareDataType"][0]["uptime"]
 
         combined_dict.update(software_dict)

@@ -410,7 +410,7 @@ class LlamaCppProvider(BaseProvider):
             "version_info": f"llama_cpp_python",
         }
 
-        provider_identifiers_dict.update(local_provider_identifiers())
+        provider_identifiers_dict.update(await local_provider_identifiers())
         provider_identifiers = orjson.dumps(provider_identifiers_dict, option=orjson.OPT_SORT_KEYS)
 
         # Check for existing matches

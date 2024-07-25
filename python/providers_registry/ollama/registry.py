@@ -8,7 +8,6 @@ from sqlalchemy import select
 
 from _util.status import ServerStatusHolder
 from _util.typing import PromptText
-
 from audit.http import get_db as get_audit_db, AuditDB
 from client.database import HistoryDB, get_db as get_history_db
 from client.message import ChatMessage
@@ -59,12 +58,13 @@ class ExternalOllamaProvider(BaseProvider):
         history_db: HistoryDB = next(get_history_db())
 
         provider_identifiers_dict = {
-            # TODO: Sometime between 0.1.41 and 0.1.47, the /api/show endpoint started listing way more detail
-            # We need to be able to figure out the ollama server version from some endpoint. But for now, bump version for everyone.
-            "name": "ollama v0.1.47+",
+            "name": "ollama",
             "endpoint": self.base_url,
+            # Sometime between 0.1.41 and 0.1.47, the /api/show endpoint started listing way more detail.
+            # TODO: Check the actual version number of the server, in case it's running pre-0.1.47.
+            "version_info": "v0.1.47+"
         }
-        provider_identifiers_dict.update(local_provider_identifiers())
+        provider_identifiers_dict.update(await local_provider_identifiers())
         provider_identifiers = orjson.dumps(provider_identifiers_dict, option=orjson.OPT_SORT_KEYS)
 
         # Check for existing matches

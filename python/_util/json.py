@@ -39,7 +39,7 @@ def safe_get(
 def safe_get_arrayed(
         parent_json_ish: JSONDict | JSONArray | None,
         *keys: JSONDictKey | int,
-):
+) -> JSONObject | None:
     if not parent_json_ish:
         return None
 

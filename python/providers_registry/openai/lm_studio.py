@@ -73,7 +73,7 @@ class LMStudioProvider(BaseProvider):
             "name": "lm_studio",
             "endpoint": str(self.server_comms.base_url),
         }
-        provider_identifiers_dict.update(local_provider_identifiers())
+        provider_identifiers_dict.update(await local_provider_identifiers())
 
         provider_identifiers = orjson.dumps(provider_identifiers_dict, option=orjson.OPT_SORT_KEYS)
 
