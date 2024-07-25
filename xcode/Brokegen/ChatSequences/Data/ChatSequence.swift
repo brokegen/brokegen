@@ -175,10 +175,15 @@ class ChatSequence: Identifiable {
     }
 
     func displayRecognizableDesc(
-        displayLimit: Int? = 140
+        displayLimit: Int? = 140,
+        replaceNewlines: Bool = false
     ) -> String {
         if !(humanDesc ?? "").isEmpty {
-            let fullString = "\(displayServerId()): \(humanDesc!)"
+            var fullString = "\(displayServerId()): \(humanDesc!)"
+            if replaceNewlines {
+                fullString = fullString.replacingOccurrences(of: "\n", with: "\\n")
+            }
+
             if displayLimit != nil {
                 return String(fullString.prefix(displayLimit!))
             }

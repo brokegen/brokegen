@@ -55,13 +55,17 @@ class DefaultChatSyncService: ChatSyncService {
     }
 
     override func renameChatSequence(_ sequence: ChatSequence, to newHumanDesc: String?) async -> ChatSequence? {
-        guard newHumanDesc != sequence.humanDesc else { return nil }
+        do {
+            _ = try await self.postDataBlocking(
+                nil,
+                endpoint: "/sequences/\(sequence.serverId)/human_desc?value=\(newHumanDesc ?? "")")
 
-        _ = try? await self.postDataBlocking(
-            nil,
-            endpoint: "/sequences/\(sequence.serverId)/human_desc?value=\(newHumanDesc ?? "")")
-
-        return sequence.replaceHumanDesc(desc: newHumanDesc)
+            return sequence.replaceHumanDesc(desc: newHumanDesc)
+        }
+        catch {
+            print("[WARNING] Failed to upload ChatSequence rename, returning nil")
+            return nil
+        }
     }
 
     override func pinChatSequence(

@@ -123,7 +123,6 @@ class ChatSyncService: ObservableObject {
     }
 
     func renameChatSequence(_ sequence: ChatSequence, to newHumanDesc: String?) async -> ChatSequence? {
-        guard newHumanDesc != sequence.humanDesc else { return nil }
         return sequence.replaceHumanDesc(desc: newHumanDesc)
     }
 
