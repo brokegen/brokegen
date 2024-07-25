@@ -88,7 +88,7 @@ class LMStudioProvider(BaseProvider):
         new_provider = ProviderRecordOrm(
             identifiers=provider_identifiers,
             created_at=datetime.now(tz=timezone.utc),
-            machine_info=await local_fetch_machine_info(),
+            machine_info = await local_fetch_machine_info(),
         )
         history_db.add(new_provider)
         history_db.commit()

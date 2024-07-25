@@ -181,7 +181,7 @@ class _OneModel:
         self.model_path = model_path
         self.shared_cache = shared_cache
 
-    async def launch(
+    def launch(
             self,
             verbose: bool = True,
     ):
@@ -200,7 +200,7 @@ class _OneModel:
         logger.debug(f"Chat format for {self.model_name}: {self.underlying_model.chat_format}")
         self.underlying_model.set_cache(self.shared_cache)
 
-    async def available(self) -> bool:
+    def available(self) -> bool:
         # Do a quick tokenize/detokenize test run
         sample_text_str = "✎👍 ｃｏｍｐｌｅｘ UTF-8 𝓉𝑒𝓍𝓉, but mostly em🍪jis  🎀  🐔 ⋆ 🐞"
         sample_text: bytes = sample_text_str.encode('utf-8')
@@ -222,7 +222,7 @@ class _OneModel:
 
         return sample_text == detokenized
 
-    async def as_info(
+    def as_info(
             self,
             provider_record: ProviderRecord,
             path_prefix: str,
@@ -309,12 +309,12 @@ class _OneModel:
                 or os.path.basename(self.model_path)
         )
 
-    async def do_completion(
+    def do_completion(
             self,
             prompt: TemplatedPromptText,
             lcp_inference_options: dict,
     ) -> CreateCompletionResponse | Iterator[CreateCompletionStreamResponse]:
-        await self.launch()
+        self.launch()
 
         tokenized_prompt: list[int] = self.underlying_model.tokenize(
             prompt.encode('utf-8'),
@@ -330,7 +330,7 @@ class _OneModel:
             **lcp_inference_options,
         )
 
-    async def convert_chat_to_completion(
+    def convert_chat_to_completion(
             self,
             messages: list[ChatCompletionRequestMessage],
             inference_options: InferenceOptions,
@@ -349,7 +349,7 @@ class _OneModel:
             orjson.loads(inference_options.inference_options or "{}")
         )
 
-        token_generator: Iterator[CreateCompletionStreamResponse] = await self.do_completion(
+        token_generator: Iterator[CreateCompletionStreamResponse] = self.do_completion(
             cfr.prompt,
             lcp_inference_options,
         )
@@ -446,17 +446,13 @@ class LlamaCppProvider(BaseProvider):
 
         for model_path in _generate_filenames(self.search_dir):
             temp_model: _OneModel = _OneModel(model_path)
-            if not await temp_model.available():
+            if not temp_model.available():
                 continue
 
             temp_model_response: FoundationModelRecord | None
-            temp_model_response = await temp_model.as_info(provider_record, os.path.abspath(self.search_dir))
+            temp_model_response = temp_model.as_info(provider_record, os.path.abspath(self.search_dir))
             if temp_model_response is not None:
                 yield temp_model_response
-
-                # Manually add a yield-ish block, to remain more responsive during loading.
-                # This lets the client load ChatSequences while we're enumerating available .gguf files.
-                await asyncio.sleep(0)
 
     async def list_models_nocache(
             self,
@@ -464,16 +460,14 @@ class LlamaCppProvider(BaseProvider):
         """
         Caching version. The `_nocache` suffix in the title
         """
-        if self.cached_model_infos:
-            for model_info in self.cached_model_infos:
-                yield model_info
+        async for model_info in self._check_and_list_models():
+            yield model_info
 
-        else:
-            async for model_info in self._check_and_list_models():
-                yield model_info
-                self.cached_model_infos.append(model_info)
+            # Manually add a yield-ish block, to remain more responsive during loading.
+            # This lets the client load ChatSequences while we're enumerating available .gguf files.
+            await asyncio.sleep(0)
 
-    async def _load_model(
+    def _load_model(
             self,
             inference_model: FoundationModelRecordOrm,
             status_holder: ServerStatusHolder,
@@ -507,7 +501,7 @@ class LlamaCppProvider(BaseProvider):
 
         if target_model.underlying_model is None:
             with StatusContext(f"{target_model.model_name}: loading model", status_holder):
-                await target_model.launch()
+                target_model.launch()
 
         return self.loaded_models[inference_model.id]
 
@@ -572,7 +566,7 @@ class LlamaCppProvider(BaseProvider):
                 cfr: ChatFormatterResponse
                 iter0: Iterator[JSONDict]
 
-                cfr, iter0 = await loaded_model.convert_chat_to_completion(
+                cfr, iter0 = loaded_model.convert_chat_to_completion(
                     messages=[m.model_dump() for m in messages_list],
                     inference_options=inference_options,
                 )
@@ -636,7 +630,7 @@ class LlamaCppProvider(BaseProvider):
         iter3: AsyncIterator[JSONDict]
         _, iter3 = await self._do_chat_nolog(
             messages_list,
-            await self._load_model(inference_model, status_holder),
+            self._load_model(inference_model, status_holder),
             inference_options,
             status_holder,
         )
@@ -783,7 +777,7 @@ class LlamaCppProvider(BaseProvider):
         iter3: AsyncIterator[JSONDict]
         cfr, iter3 = await self._do_chat_nolog(
             messages_list,
-            await self._load_model(inference_model, status_holder),
+            self._load_model(inference_model, status_holder),
             inference_options,
             status_holder,
         )
