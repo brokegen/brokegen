@@ -1,7 +1,9 @@
+import json
 import logging
 from typing import AsyncIterator, AsyncGenerator
 
 import httpx
+import orjson
 import starlette.requests
 from starlette.exceptions import HTTPException
 
@@ -144,6 +146,13 @@ async def convert_chat_to_generate(
     generate_request_content = dict(chat_request_content)
     generate_request_content['prompt'] = '\n'.join(templated_messages)
     generate_request_content['raw'] = True
+    if inference_options.inference_options:
+        try:
+            generate_request_content['options'] = orjson.loads(inference_options.inference_options)
+            logger.debug(f"Using provided inference options:\n{json.dumps(generate_request_content['options'], indent=2)}")
+
+        except ValueError:
+            logger.error(f"Failed to parse, ignoring provided inference options: {inference_options.inference_options}")
 
     for unsupported_field in ['messages', 'template', 'system', 'context']:
         if unsupported_field in generate_request_content:
