@@ -1,4 +1,5 @@
 import asyncio
+import ctypes
 import functools
 import json
 import logging
@@ -244,6 +245,7 @@ class _OneModel:
         if model_name[-5:] == '.gguf':
             model_name = model_name[:-5]
 
+        # Read the model_identifiers
         model_identifiers = info_only.metadata
         # TODO: This shouldn't be part of the unique identifiers, but then, what would?
         model_identifiers["path"] = os.path.relpath(self.model_path, path_prefix)
@@ -252,23 +254,43 @@ class _OneModel:
             orjson.dumps(model_identifiers, option=orjson.OPT_SORT_KEYS)
         )
 
-        inference_params = dict([
+        # Read the model_params into combined_inference_params, since they only affect inference, but don't impact the model
+        model_params = dict([
             (field, getattr(info_only.model_params, field))
             for field, _ in info_only.model_params._fields_
         ])
-        for k, v in list(inference_params.items()):
-            if isinstance(v, (bool, int)):
-                inference_params[k] = v
-            elif k in ("kv_overrides", "tensor_split"):
-                inference_params[k] = getattr(info_only, k)
+        for k, v in list(model_params.items()):
+            if v is None:
+                model_params[k] = None
+            elif isinstance(v, (bool, int)):
+                model_params[k] = v
+            elif k == "tensor_split":
+                if v:
+                    v: ctypes.Array[ctypes.c_float]
+                    # TODO: Verify that this evaluates correctly
+                    model_params[k] = list(v)
+                else:
+                    model_params[k] = None
+            elif k == "kv_overrides":
+                if v:
+                    v: ctypes.Array[llama_cpp.llama_model_kv_override]
+                    # TODO: Verify that this evaluates correctly
+                    model_params[k] = list(v)
+                else:
+                    model_params[k] = None
+            # Delete runtime properties
             elif k in ("progress_callback", "progress_callback_user_data"):
-                del inference_params[k]
+                del model_params[k]
             else:
-                inference_params[k] = str(v)
+                model_params[k] = str(v)
 
-        inference_params = orjson.loads(
-            # Keep these sorted in alphabetical order, for consistency
-            orjson.dumps(inference_params, option=orjson.OPT_SORT_KEYS)
+        # Feed them into combined_inference_params
+        combined_inference_params = {
+            "model_params": model_params,
+        }
+        combined_inference_params = orjson.loads(
+            # Keep these sorted, so we can actually uniquely identify them in the DB
+            orjson.dumps(combined_inference_params, option=orjson.OPT_SORT_KEYS)
         )
 
         access_time = datetime.now(tz=timezone.utc)
@@ -278,7 +300,7 @@ class _OneModel:
             last_seen=access_time,
             provider_identifiers=provider_record.identifiers,
             model_identifiers=model_identifiers,
-            combined_inference_parameters=inference_params,
+            combined_inference_parameters=combined_inference_params,
         )
 
         history_db: HistoryDB = next(get_history_db())
