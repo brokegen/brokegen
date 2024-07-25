@@ -184,8 +184,8 @@ struct BlankProSequenceView: View {
                     .layoutPriority(0.2)
             }
         }
-        .padding([.leading, .trailing], 18)
-        .padding([.top, .bottom], 12)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 12)
         .background(BackgroundEffectView().ignoresSafeArea())
     }
 
@@ -274,7 +274,7 @@ struct BlankProSequenceView: View {
     }
 
     @ViewBuilder
-    var lowerTabBar: some View {
+    func lowerTabBar(height lowerTabBarHeight: CGFloat?) -> some View {
         HStack(spacing: 0) {
             Button(action: {
                 viewModel.showTextEntryView.toggle()
@@ -282,9 +282,8 @@ struct BlankProSequenceView: View {
                 Image(systemName: viewModel.promptInEdit.isEmpty ? "bubble" : "bubble.fill")
                     .padding(.leading, 12)
                     .padding(.trailing, 12)
-                    .frame(height: 48)
+                    .frame(height: lowerTabBarHeight)
             })
-            .buttonStyle(.plain)
             .background(viewModel.showTextEntryView ? Color(.selectedControlColor) : Color(.clear))
 
             Button(action: {
@@ -293,9 +292,8 @@ struct BlankProSequenceView: View {
                 Image(systemName: "gear")
                     .padding(.leading, 12)
                     .padding(.trailing, 12)
-                    .frame(height: 48)
+                    .frame(height: lowerTabBarHeight)
             })
-            .buttonStyle(.plain)
             .background(viewModel.showUiOptions ? Color(.selectedControlColor) : Color(.clear))
 
             Divider()
@@ -318,11 +316,10 @@ struct BlankProSequenceView: View {
                         .font(.system(size: 12))
                         .padding(.leading, 12)
                         .padding(.trailing, 12)
-                        .frame(height: 48)
                 }
+                .frame(height: lowerTabBarHeight)
                 .contentShape(Rectangle())
             })
-            .buttonStyle(.plain)
             .background(viewModel.showSystemPromptOverride ? Color(.selectedControlColor) : Color(.clear))
 
             Button(action: {
@@ -339,11 +336,10 @@ struct BlankProSequenceView: View {
                         .font(.system(size: 12))
                         .padding(.leading, 12)
                         .padding(.trailing, 12)
-                        .frame(height: 48)
                 }
+                .frame(height: lowerTabBarHeight)
                 .contentShape(Rectangle())
             })
-            .buttonStyle(.plain)
             .background(viewModel.showAssistantResponseSeed ? Color(.selectedControlColor) : Color(.clear))
 
             Button(action: {
@@ -354,10 +350,9 @@ struct BlankProSequenceView: View {
                     .font(.system(size: 12))
                     .padding(.leading, 12)
                     .padding(.trailing, 12)
-                    .frame(height: 48)
+                    .frame(height: lowerTabBarHeight)
                     .contentShape(Rectangle())
             })
-            .buttonStyle(.plain)
             .background(viewModel.showInferenceOptions ? Color(.selectedControlColor) : Color(.clear))
 
             Button(action: {
@@ -368,10 +363,9 @@ struct BlankProSequenceView: View {
                     .font(.system(size: 12))
                     .padding(.leading, 12)
                     .padding(.trailing, 12)
-                    .frame(height: 48)
+                    .frame(height: lowerTabBarHeight)
                     .contentShape(Rectangle())
             })
-            .buttonStyle(.plain)
             .background(viewModel.showRetrievalOptions ? Color(.selectedControlColor) : Color(.clear))
 
             Spacer()
@@ -388,14 +382,15 @@ struct BlankProSequenceView: View {
                         viewModel.settings.stayAwakeDuringInference ? Color(.controlTextColor) : .red)
                 .padding(.leading, 12)
                 .padding(.trailing, 12)
-                .frame(height: 48)
+                .frame(height: lowerTabBarHeight)
             })
             .help("Keep macOS system awake during an inference request")
-            .buttonStyle(.plain)
         }
+        .frame(height: lowerTabBarHeight)
         .toggleStyle(.button)
+        .buttonStyle(.plain)
         .font(.system(size: 24))
-        .frame(height: tabBarHeight)
+        .minimumScaleFactor(0.5)
     }
 
     @ViewBuilder
@@ -497,28 +492,21 @@ struct BlankProSequenceView: View {
                 }
                 .frame(minHeight: 240)
 
-                // This is a separate branch, because otherwise the statusBar is resizeable, which we don't really want.
-                if showStatusBar && !showLowerVStack {
-                    statusBar
-                        .frame(minHeight: statusBarHeight)
-                        .frame(maxHeight: statusBarHeight)
-                }
-                else if showStatusBar || showLowerVStack {
+                if showStatusBar || showLowerVStack {
                     VStack(spacing: 0) {
                         if showStatusBar {
                             statusBar
-                                .frame(minHeight: statusBarHeight)
-                                .frame(maxHeight: statusBarHeight)
+                                .frame(minHeight: minStatusBarHeight)
                         }
-                        
+
                         if showLowerVStack {
                             lowerVStack
-                                .frame(minHeight: 72)
+                                .frame(minHeight: tabBarHeight + 24)
                                 .fontDesign(viewModel.settings.textEntryFontDesign)
                         }
                     }
                 }
-                
+
                 if showLowerVStackOptions {
                     GeometryReader { optionsGeometry in
                         ScrollView {
@@ -531,10 +519,9 @@ struct BlankProSequenceView: View {
                             .frame(maxWidth: .infinity)
                         }
                     }
-                    .frame(idealHeight: 240)
                 }
                 
-                lowerTabBar
+                lowerTabBar(height: tabBarHeight)
             }
             .onAppear {
                 if noInferenceModelSelected {

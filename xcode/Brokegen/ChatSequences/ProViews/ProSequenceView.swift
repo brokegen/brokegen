@@ -1,7 +1,6 @@
 import SwiftUI
 
 let tabBarHeight: CGFloat = 48
-let statusBarHeight: CGFloat = 36
 
 let statusBarVPadding: CGFloat = 12
 let minStatusBarHeight: CGFloat = statusBarVPadding + 12 + statusBarVPadding

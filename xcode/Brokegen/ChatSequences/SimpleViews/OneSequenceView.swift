@@ -29,8 +29,8 @@ struct OneSequenceView: View {
                     .layoutPriority(0.2)
             }
         }
-        .padding([.leading, .trailing], 18)
-        .padding([.top, .bottom], 12)
+        .padding(.horizontal, 18)
+        .padding(.vertical, statusBarVPadding)
         .background(BackgroundEffectView().ignoresSafeArea())
     }
 
@@ -183,11 +183,10 @@ struct OneSequenceView: View {
 
                 VStack(spacing: 0) {
                     statusBar(viewModel.displayServerStatus ?? "Ready")
-                        .frame(minHeight: statusBarHeight)
-                        .frame(maxHeight: statusBarHeight)
+                        .frame(minHeight: minStatusBarHeight)
 
                     textEntryView
-                        .frame(minHeight: 72)
+                        .frame(minHeight: 24)
                         .fontDesign(settings.textEntryFontDesign)
                 }
             }
