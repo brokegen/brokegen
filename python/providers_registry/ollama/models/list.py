@@ -75,6 +75,10 @@ async def do_list_available_models(
         for inference_model in inference_models:
             try:
                 yield await do_api_show(inference_model.human_id, history_db, audit_db)
+
+                # Allow a coro context switch, so server is more responsive during enumeration.
+                await asyncio.sleep(0)
+
             except RuntimeError as e:
                 logger.warning(f"Skipping {inference_model} in listing, {e}")
                 yield inference_model
@@ -147,6 +151,9 @@ async def do_api_show(
         # https://github.com/encode/httpx/discussions/2959
         # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
         headers=[('Connection', 'close')],
+        # Increase the timeout for /api/show requests, because we generally call it async
+        # (which means a lot of coro switching, which makes this call timeout when using `asyncio.sleep(0)`).
+        timeout=httpx.Timeout(10.0, read=None),
     )
     response: httpx.Response = await provider.client.send(upstream_request)
     if response.status_code != 200:
