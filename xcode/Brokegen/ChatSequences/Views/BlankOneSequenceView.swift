@@ -11,6 +11,8 @@ struct BlankOneSequenceView: View {
     @FocusState private var focusSystemPromptOverride: Bool
     @FocusState private var focusModelTemplateOverride: Bool
     @FocusState private var focusAssistantResponseSeed: Bool
+    @FocusState private var focusInferenceOptions: Bool
+    @FocusState private var focusRetrievalOptions: Bool
 
     var noInferenceModelSelected: Bool {
         return viewModel.continuationInferenceModel == nil && viewModel.appSettings.defaultInferenceModel == nil
@@ -249,11 +251,12 @@ struct BlankOneSequenceView: View {
 
         if viewModel.showInferenceOptions {
             GroupBox(content: {
-                TextEditor(text: $viewModel.settings.inferenceOptions)
+                InlineTextInput($viewModel.settings.inferenceOptions, isFocused: $focusInferenceOptions)
+                    .focused($focusInferenceOptions)
                     .frame(width: 360, height: 36)
                     .lineLimit(4...12)
             }, label: {
-                Text("inferenceOptions")
+                Text("Inference options (JSON, passed directly to provider)")
             })
         }
 

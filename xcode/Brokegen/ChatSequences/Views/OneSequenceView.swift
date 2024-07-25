@@ -17,6 +17,8 @@ struct OneSequenceView: View {
     @FocusState private var focusSystemPromptOverride: Bool
     @FocusState private var focusModelTemplateOverride: Bool
     @FocusState private var focusAssistantResponseSeed: Bool
+    @FocusState private var focusInferenceOptions: Bool
+    @FocusState private var focusRetrievalOptions: Bool
 
     init(_ viewModel: OneSequenceViewModel) {
         self.viewModel = viewModel
@@ -255,11 +257,12 @@ struct OneSequenceView: View {
 
         if viewModel.showInferenceOptions {
             GroupBox(content: {
-                TextEditor(text: $settings.inferenceOptions)
-                    .frame(width: 360, height: 36)
+                InlineTextInput($settings.inferenceOptions, isFocused: $focusInferenceOptions)
+                    .focused($focusInferenceOptions)
+                    .frame(width: 800, height: 144)
                     .lineLimit(4...12)
             }, label: {
-                Text("inferenceOptions")
+                Text("Inference options (JSON, passed directly to provider)")
             })
         }
 
