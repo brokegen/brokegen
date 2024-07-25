@@ -288,6 +288,9 @@ class OneSequenceViewModel: ObservableObject {
 
         let autoname: String = jsonData["autoname"].stringValue
         if !autoname.isEmpty && autoname != sequence.humanDesc {
+            // If this is the first time we're getting a name, pin the title at the top (non persistent setting)
+            settings.pinChatSequenceDesc = settings.pinChatSequenceDesc || (sequence.humanDesc ?? "").isEmpty
+
             let renamedSequence = sequence.replaceHumanDesc(desc: autoname)
             self.chatService.updateSequence(withSameId: renamedSequence)
         }
