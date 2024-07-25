@@ -68,7 +68,7 @@ struct ChatNameReadOnly: View {
             .buttonStyle(.plain)
         }
         .padding(.bottom, 12)
-        .padding([.leading, .trailing], 24)
+        .padding(.horizontal, 24)
     }
 }
 

@@ -677,7 +677,8 @@ struct ProSequenceView: View {
                                 }
                             }
                         }
-                        .frame(idealHeight: 240)
+                        // Set a min height so we don't accidentally make a 0-height SplitView pane
+                        .frame(minHeight: 72)
                     }
 
                     lowerTabBar(height: tabBarHeight)
