@@ -4,7 +4,7 @@ import Foundation
 import SwiftData
 import SwiftyJSON
 
-struct ChatSequenceParameters: Encodable, Hashable {
+struct ContinueParameters: Encodable, Hashable {
     var continuationModelId: FoundationModelRecordID? = nil
     var fallbackModelId: FoundationModelRecordID? = nil
 
@@ -40,7 +40,7 @@ struct AFErrorAndData: Error {
 /// Finally, something to submit new chat requests
 extension DefaultChatSyncService {
     public func doSequenceContinue(
-        _ params: ChatSequenceParameters
+        _ params: ContinueParameters
     ) async -> AnyPublisher<Data, AFErrorAndData> {
         guard params.sequenceId != nil else {
             let error: AFError = AFError.invalidURL(url: "/sequences/???/continue")

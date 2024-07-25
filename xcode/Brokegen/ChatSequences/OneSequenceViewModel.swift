@@ -501,7 +501,7 @@ class OneSequenceViewModel: ObservableObject {
 
         Task {
             receivingStreamer = await chatService.sequenceContinue(
-                ChatSequenceParameters(
+                ContinueParameters(
                     continuationModelId: continuationModelId,
                     fallbackModelId: appSettings.fallbackInferenceModel?.serverId,
                     inferenceOptions: settings.inferenceOptions,
@@ -565,7 +565,7 @@ class OneSequenceViewModel: ObservableObject {
             }
 
             receivingStreamer = await chatService.sequenceContinue(
-                ChatSequenceParameters(
+                ContinueParameters(
                     continuationModelId: continuationModelId,
                     fallbackModelId: appSettings.fallbackInferenceModel?.serverId,
                     inferenceOptions: settings.inferenceOptions,

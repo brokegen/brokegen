@@ -189,7 +189,7 @@ class ChatSyncService: ObservableObject {
     }
 
     // MARK: - ChatSequence continue
-    public func sequenceContinue(_ params: ChatSequenceParameters) async -> AnyPublisher<Data, AFErrorAndData> {
+    public func sequenceContinue(_ params: ContinueParameters) async -> AnyPublisher<Data, AFErrorAndData> {
         let error: AFError = AFError.sessionTaskFailed(error: ChatSyncServiceError.callingAbstractBaseMethod)
         return Fail(error: AFErrorAndData(error: error, data: nil))
             .eraseToAnyPublisher()

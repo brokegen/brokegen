@@ -99,7 +99,7 @@ class DefaultChatSyncService: ChatSyncService {
     }
 
     // MARK: - ChatSequence continue
-    override public func sequenceContinue(_ params: ChatSequenceParameters) async -> AnyPublisher<Data, AFErrorAndData> {
+    override public func sequenceContinue(_ params: ContinueParameters) async -> AnyPublisher<Data, AFErrorAndData> {
         return await doSequenceContinue(params)
     }
 }
