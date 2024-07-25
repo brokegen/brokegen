@@ -82,9 +82,6 @@ async def do_list_available_models(
     async for amodel in api_show_injector(available_models_generator):
         yield amodel
 
-        # Allow a coro context switch, so server is more responsive during enumeration.
-        await asyncio.sleep(0)
-
 
 async def do_api_tags(
         original_request: Request,
