@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from typing import AsyncGenerator, AsyncIterator, Iterator, TypeVar, Any, Callable, Union
 
 import diskcache
+import jinja2.exceptions
 import llama_cpp
 import orjson
 import sqlalchemy
@@ -600,6 +601,10 @@ class LlamaCppProvider(BaseProvider):
             except ValueError as e:
                 status_holder.push(f"Failed to apply custom chat template: {e}")
                 logger.error(f"Failed to apply custom chat template: {e}")
+
+            except jinja2.exceptions.TemplateSyntaxError as e:
+                status_holder.push(f"Failed to apply custom chat template: {e}")
+                logger.exception(f"Failed to apply custom chat template: {e}")
 
         # Otherwise, just fall back to llama-cpp-python's built-in chat formatters, end-to-end.
         if not custom_templatoor_succeeded:
