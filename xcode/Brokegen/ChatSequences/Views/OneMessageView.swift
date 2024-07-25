@@ -145,6 +145,9 @@ struct OneMessageView: View {
                 ZStack(alignment: .topTrailing) {
                     if renderAsMarkdown {
                         MarkdownView(content: renderMessageContent(message))
+                        // https://stackoverflow.com/questions/56505929/the-text-doesnt-get-wrapped-in-swift-ui
+                        // Render faster
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     else {
                         Text(message.content)
@@ -156,6 +159,9 @@ struct OneMessageView: View {
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                                     .fill(Color(.controlBackgroundColor))
                             )
+                        // https://stackoverflow.com/questions/56505929/the-text-doesnt-get-wrapped-in-swift-ui
+                        // Render faster
+                            .fixedSize(horizontal: false, vertical: true)
                     }
 
                     if !showMessageHeaders && isHovered {

@@ -60,7 +60,6 @@ struct SequenceRow: View {
                         }
 
                         Text(showSequenceId ? sequence.displayRecognizableDesc() : sequence.displayHumanDesc())
-                            .minimumScaleFactor(0.33)
                             .lineLimit(1...4)
                             .multilineTextAlignment(.leading)
                     }
