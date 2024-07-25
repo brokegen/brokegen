@@ -102,8 +102,8 @@ struct ChatNameInput: View {
             .lineLimit(1...10)
             .scrollDisabled(false)
             .background(isHovered ? Color(.selectedControlColor) : Color.clear)
-        // Add the tiniest of padding, so the background doesn't go out of the safe area.
-            .padding(.top, 1)
+        // Add the tiniest of .top padding, so the background doesn't go out of the safe area.
+            .safeAreaPadding(.top, 1)
             .padding([.leading, .trailing], 24)
             .frame(maxWidth: .infinity)
             .onHover { isHovered in

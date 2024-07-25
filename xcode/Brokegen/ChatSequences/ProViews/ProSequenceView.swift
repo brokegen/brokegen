@@ -3,6 +3,9 @@ import SwiftUI
 let tabBarHeight: CGFloat = 48
 let statusBarHeight: CGFloat = 36
 
+let statusBarVPadding: CGFloat = 12
+let minStatusBarHeight: CGFloat = statusBarVPadding + 12 + statusBarVPadding
+
 struct ProSequenceView: View {
     @EnvironmentObject private var pathHost: PathHost
     @ObservedObject var viewModel: OneSequenceViewModel
@@ -188,8 +191,8 @@ struct ProSequenceView: View {
                     .layoutPriority(0.2)
             }
         }
-        .padding([.leading, .trailing], 18)
-        .padding([.top, .bottom], 12)
+        .padding(.horizontal, 18)
+        .padding(.vertical, statusBarVPadding)
         .background(BackgroundEffectView().ignoresSafeArea())
     }
 
@@ -278,7 +281,7 @@ struct ProSequenceView: View {
     }
 
     @ViewBuilder
-    var lowerTabBar: some View {
+    func lowerTabBar(height lowerTabBarHeight: CGFloat?) -> some View {
         HStack(spacing: 0) {
             Button(action: {
                 viewModel.showTextEntryView.toggle()
@@ -286,9 +289,8 @@ struct ProSequenceView: View {
                 Image(systemName: viewModel.promptInEdit.isEmpty ? "bubble" : "bubble.fill")
                     .padding(.leading, 12)
                     .padding(.trailing, 12)
-                    .frame(height: 48)
+                    .frame(height: lowerTabBarHeight)
             })
-            .buttonStyle(.plain)
             .background(viewModel.showTextEntryView ? Color(.selectedControlColor) : Color(.clear))
 
             Button(action: {
@@ -297,9 +299,8 @@ struct ProSequenceView: View {
                 Image(systemName: "gear")
                     .padding(.leading, 12)
                     .padding(.trailing, 12)
-                    .frame(height: 48)
+                    .frame(height: lowerTabBarHeight)
             })
-            .buttonStyle(.plain)
             .background(viewModel.showUiOptions ? Color(.selectedControlColor) : Color(.clear))
 
             Divider()
@@ -322,11 +323,10 @@ struct ProSequenceView: View {
                         .font(.system(size: 12))
                         .padding(.leading, 12)
                         .padding(.trailing, 12)
-                        .frame(height: 48)
                 }
+                .frame(height: lowerTabBarHeight)
                 .contentShape(Rectangle())
             })
-            .buttonStyle(.plain)
             .background(viewModel.showSystemPromptOverride ? Color(.selectedControlColor) : Color(.clear))
 
             Button(action: {
@@ -343,11 +343,10 @@ struct ProSequenceView: View {
                         .font(.system(size: 12))
                         .padding(.leading, 12)
                         .padding(.trailing, 12)
-                        .frame(height: 48)
                 }
+                .frame(height: lowerTabBarHeight)
                 .contentShape(Rectangle())
             })
-            .buttonStyle(.plain)
             .background(viewModel.showAssistantResponseSeed ? Color(.selectedControlColor) : Color(.clear))
 
             Button(action: {
@@ -358,10 +357,9 @@ struct ProSequenceView: View {
                     .font(.system(size: 12))
                     .padding(.leading, 12)
                     .padding(.trailing, 12)
-                    .frame(height: 48)
+                    .frame(height: lowerTabBarHeight)
                     .contentShape(Rectangle())
             })
-            .buttonStyle(.plain)
             .background(viewModel.showInferenceOptions ? Color(.selectedControlColor) : Color(.clear))
 
             Button(action: {
@@ -372,10 +370,9 @@ struct ProSequenceView: View {
                     .font(.system(size: 12))
                     .padding(.leading, 12)
                     .padding(.trailing, 12)
-                    .frame(height: 48)
+                    .frame(height: lowerTabBarHeight)
                     .contentShape(Rectangle())
             })
-            .buttonStyle(.plain)
             .background(viewModel.showRetrievalOptions ? Color(.selectedControlColor) : Color(.clear))
 
             Spacer()
@@ -392,14 +389,18 @@ struct ProSequenceView: View {
                         settings.stayAwakeDuringInference ? Color(.controlTextColor) : .red)
                 .padding(.leading, 12)
                 .padding(.trailing, 12)
-                .frame(height: 48)
+                .frame(height: lowerTabBarHeight)
             })
             .help("Keep macOS system awake during an inference request")
-            .buttonStyle(.plain)
         }
+        // Set a specific size for the tab bar.
+        // We still have to set it on the Button's Images, so their backgrounds fill the entire space.
+        .frame(height: lowerTabBarHeight)
         .toggleStyle(.button)
+        .buttonStyle(.plain)
+        // Set the default font size for Images (Text views override with a smaller size)
         .font(.system(size: 24))
-        .frame(height: tabBarHeight)
+        .minimumScaleFactor(0.5)
     }
 
     @ViewBuilder
@@ -637,23 +638,16 @@ struct ProSequenceView: View {
                     }
                     .frame(minHeight: 240)
 
-                    // This is a separate branch, because otherwise the statusBar is resizeable, which we don't really want.
-                    if showStatusBar && !showLowerVStack {
-                        statusBar
-                            .frame(minHeight: statusBarHeight)
-                            .frame(maxHeight: statusBarHeight)
-                    }
-                    else if showStatusBar || showLowerVStack {
+                    if showStatusBar || showLowerVStack {
                         VStack(spacing: 0) {
                             if showStatusBar {
                                 statusBar
-                                    .frame(minHeight: statusBarHeight)
-                                    .frame(maxHeight: statusBarHeight)
+                                    .frame(minHeight: minStatusBarHeight)
                             }
 
                             if showLowerVStack {
                                 lowerVStack
-                                    .frame(minHeight: 72)
+                                    .frame(minHeight: tabBarHeight + 24)
                                     .fontDesign(settings.textEntryFontDesign)
                             }
                         }
@@ -686,7 +680,7 @@ struct ProSequenceView: View {
                         .frame(idealHeight: 240)
                     }
 
-                    lowerTabBar
+                    lowerTabBar(height: tabBarHeight)
                 }
             }
             .contextMenu {
@@ -700,7 +694,7 @@ struct ProSequenceView: View {
     }
 }
 
-#Preview(traits: .fixedLayout(width: 800, height: 800)) {
+#Preview(traits: .fixedLayout(width: 1280, height: 800)) {
     let chatService = ChatSyncService()
     let sequence = ChatSequence(
         serverId: -1,
@@ -709,6 +703,7 @@ struct ProSequenceView: View {
         messages: []
     )
     let viewModel = OneSequenceViewModel(sequence, chatService: chatService, appSettings: AppSettings(), chatSettingsService: CSCSettingsService())
+    viewModel.settings.pinChatSequenceDesc = true
 
     return ProSequenceView(viewModel)
 }
@@ -729,5 +724,8 @@ struct ProSequenceView: View {
         messages: messages
     )
     let viewModel = OneSequenceViewModel(sequence, chatService: chatService, appSettings: AppSettings(), chatSettingsService: CSCSettingsService())
+    viewModel.serverStatus = "[test status to show bar.]\nyeah"
+    viewModel.submitting = true
+
     return ProSequenceView(viewModel)
 }
