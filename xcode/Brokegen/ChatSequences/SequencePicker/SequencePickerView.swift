@@ -233,7 +233,7 @@ struct SequencePickerView: View {
             if showNewChatButton {
                 NavigationLink(destination: {
                     if chatSettingsService.useSimplifiedBlankOSV {
-                        BlankOneSequenceView()
+                        BlankSimpleOneSequenceView()
                     }
                     else {
                         BlankProSequenceView()

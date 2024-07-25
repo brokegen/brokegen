@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct OneMessageView: View {
+struct SimpleOneMessageView: View {
     let message: MessageLike
     let sequence: ChatSequence?
     let stillExpectingUpdate: Bool
@@ -110,12 +110,12 @@ struct OneMessageView: View {
                         .padding(24)
                 }
 
-                OneMessageView(
+                SimpleOneMessageView(
                     .legacy(Message(role: "assistant 1", content: "This is a response continuation, 1 2 3-", createdAt: Date.distantFuture)),
                     stillUpdating: true
                 )
 
-                OneMessageView(
+                SimpleOneMessageView(
                     .legacy(updatingMessage),
                     stillUpdating: true
                 )
@@ -144,13 +144,13 @@ Your input will help me generate more targeted and valuable responses. Let's col
 """, createdAt: Date(timeIntervalSinceNow: +5))
 
     return VStack {
-        OneMessageView(
+        SimpleOneMessageView(
             .legacy(Message(role: "user", content: "Hello this is a prompt", createdAt: Date(timeIntervalSinceNow: -604_800))))
 
-        OneMessageView(
+        SimpleOneMessageView(
             .legacy(Message(role: "clown", content: "Hello! How can I help you today with your prompt? Please provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now)))
 
-        OneMessageView(.legacy(message3))
+        SimpleOneMessageView(.legacy(message3))
 
         Spacer()
     }

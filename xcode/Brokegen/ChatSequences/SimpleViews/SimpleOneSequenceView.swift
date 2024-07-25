@@ -1,7 +1,7 @@
 import Combine
 import SwiftUI
 
-struct OneSequenceView: View {
+struct SimpleOneSequenceView: View {
     @ObservedObject var viewModel: OneSequenceViewModel
     @ObservedObject var settings: CSCSettingsService.SettingsProxy
     @State private var lastScrollOnNewText: Date = Date.distantPast
@@ -120,13 +120,13 @@ struct OneSequenceView: View {
                                 }
 
                                 ForEach(viewModel.sequence.messages) { message in
-                                    OneMessageView(message)
+                                    SimpleOneMessageView(message)
                                         .id(message)
                                 }
                                 .fontDesign(settings.messageFontDesign)
 
                                 if viewModel.responseInEdit != nil {
-                                    OneMessageView(.temporary(viewModel.responseInEdit!), stillUpdating: true)
+                                    SimpleOneMessageView(.temporary(viewModel.responseInEdit!), stillUpdating: true)
                                         .animation(settings.animateNewResponseText ? .easeIn : nil, value: viewModel.responseInEdit)
                                         .id(-1)
                                         .fontDesign(settings.messageFontDesign)
@@ -214,5 +214,5 @@ struct OneSequenceView: View {
         messages: messages
     )
     let viewModel = OneSequenceViewModel(sequence, chatService: chatService, appSettings: AppSettings(), chatSettingsService: CSCSettingsService())
-    return OneSequenceView(viewModel)
+    return SimpleOneSequenceView(viewModel)
 }

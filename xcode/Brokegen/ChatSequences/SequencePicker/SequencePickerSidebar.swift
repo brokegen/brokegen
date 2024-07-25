@@ -41,7 +41,7 @@ struct MiniSequencePickerSidebar: View {
         }) {
             NavigationLink(destination: {
                 if chatSettingsService.useSimplifiedBlankOSV {
-                    BlankOneSequenceView()
+                    BlankSimpleOneSequenceView()
                 }
                 else {
                     BlankProSequenceView()

@@ -73,7 +73,7 @@ struct AppWindowView: View {
                     sharedSidebar
                 }, detail: {
                     if chatSettingsService.useSimplifiedOSV {
-                        OneSequenceView(clientModel)
+                        SimpleOneSequenceView(clientModel)
                     }
                     else {
                         ProSequenceView(clientModel)
@@ -85,7 +85,7 @@ struct AppWindowView: View {
                     sharedSidebar
                 }, detail: {
                     if chatSettingsService.useSimplifiedBlankOSV {
-                        BlankOneSequenceView()
+                        BlankSimpleOneSequenceView()
                     }
                     else {
                         BlankProSequenceView()
