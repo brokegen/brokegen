@@ -203,7 +203,7 @@ struct ProSequenceView: View {
     @ViewBuilder
     var lowerVStack: some View {
         if viewModel.showSystemPromptOverride {
-            HStack {
+            HStack(spacing: 0) {
                 ZStack {
                     Rectangle()
                         .fill(Color.red.opacity(0.2))
