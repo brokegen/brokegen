@@ -44,7 +44,7 @@ struct MiniSequencePickerSidebar: View {
                     BlankSimpleOneSequenceView()
                 }
                 else {
-                    BlankProSequenceView()
+                    BlankOneSequenceView()
                 }
             }) {
                 HStack {

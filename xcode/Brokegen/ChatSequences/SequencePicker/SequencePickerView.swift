@@ -236,7 +236,7 @@ struct SequencePickerView: View {
                         BlankSimpleOneSequenceView()
                     }
                     else {
-                        BlankProSequenceView()
+                        BlankOneSequenceView()
                     }
                 }) {
                     Label("New Chat...", systemImage: "plus")

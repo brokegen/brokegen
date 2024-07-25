@@ -76,7 +76,7 @@ struct AppWindowView: View {
                         SimpleOneSequenceView(clientModel)
                     }
                     else {
-                        ProSequenceView(clientModel)
+                        OneSequenceView(clientModel)
                     }
                 })
             }
@@ -88,7 +88,7 @@ struct AppWindowView: View {
                         BlankSimpleOneSequenceView()
                     }
                     else {
-                        BlankProSequenceView()
+                        BlankOneSequenceView()
                     }
                 })
             }

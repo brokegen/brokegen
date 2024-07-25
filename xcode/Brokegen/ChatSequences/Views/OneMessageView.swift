@@ -1,7 +1,7 @@
 import MarkdownUI
 import SwiftUI
 
-struct ProMessageView: View {
+struct OneMessageView: View {
     let message: MessageLike
     let renderMessageContent: (MessageLike) -> MarkdownContent
     let sequence: ChatSequence?
@@ -253,20 +253,20 @@ Your input will help me generate more targeted and valuable responses. Let's col
     let showMessageHeaders = true
 
     return VStack(alignment: .leading, spacing: 0) {
-        ProMessageView(
+        OneMessageView(
             .temporary(TemporaryChatMessage(
                 role: "user",
                 content: "Hello this is a prompt",
                 createdAt: Date(timeIntervalSinceNow: -604_800))),
             showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(false))
 
-        ProMessageView(
+        OneMessageView(
             .temporary(TemporaryChatMessage(role: "clown", content: "Hello! How can I help you today with your prompt? Please provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now)),
             showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(false))
 
-        ProMessageView(.temporary(message3), showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(true))
+        OneMessageView(.temporary(message3), showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(true))
 
-        ProMessageView(.temporary(message4), showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(false))
+        OneMessageView(.temporary(message4), showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(false))
 
         Spacer()
     }

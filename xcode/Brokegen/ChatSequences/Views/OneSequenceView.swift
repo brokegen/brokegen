@@ -5,7 +5,7 @@ let tabBarHeight: CGFloat = 48
 let statusBarVPadding: CGFloat = 12
 let minStatusBarHeight: CGFloat = statusBarVPadding + 12 + statusBarVPadding
 
-struct ProSequenceView: View {
+struct OneSequenceView: View {
     @EnvironmentObject private var pathHost: PathHost
     @ObservedObject var viewModel: OneSequenceViewModel
     @ObservedObject var settings: CSCSettingsService.SettingsProxy
@@ -24,7 +24,7 @@ struct ProSequenceView: View {
     }
 
     func aioSubmit() {
-        print("[TRACE] Detected ProSequenceView.aioSubmit()")
+        print("[TRACE] Detected OneSequenceView.aioSubmit()")
 
         if viewModel.submitting || viewModel.receiving {
             viewModel.stopSubmitAndReceive(userRequested: true)
@@ -500,7 +500,7 @@ struct ProSequenceView: View {
                 }
             }
 
-            ProMessageView(
+            OneMessageView(
                 message,
                 renderMessageContent: viewModel.lookup,
                 branchAction: branchAction,
@@ -517,7 +517,7 @@ struct ProSequenceView: View {
             // NB This also affects scrollToBottomOnNew
             let shouldAnimate = settings.animateNewResponseText && !settings.renderAsMarkdown
 
-            ProMessageView(
+            OneMessageView(
                 .temporary(viewModel.responseInEdit!),
                 stillUpdating: true,
                 showMessageHeaders: settings.showMessageHeaders,
@@ -705,7 +705,7 @@ struct ProSequenceView: View {
     let viewModel = OneSequenceViewModel(sequence, chatService: chatService, appSettings: AppSettings(), chatSettingsService: CSCSettingsService())
     viewModel.settings.pinChatSequenceDesc = true
 
-    return ProSequenceView(viewModel)
+    return OneSequenceView(viewModel)
 }
 
 #Preview(traits: .fixedLayout(width: 800, height: 800)) {
@@ -727,5 +727,5 @@ struct ProSequenceView: View {
     viewModel.serverStatus = "[test status to show bar.]\nyeah"
     viewModel.submitting = true
 
-    return ProSequenceView(viewModel)
+    return OneSequenceView(viewModel)
 }

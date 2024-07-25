@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct BlankProSequenceView: View {
+struct BlankOneSequenceView: View {
     @EnvironmentObject private var pathHost: PathHost
     @EnvironmentObject var viewModel: BlankSequenceViewModel
 
