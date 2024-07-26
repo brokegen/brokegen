@@ -5,6 +5,63 @@ let tabBarHeight: CGFloat = 48
 let statusBarVPadding: CGFloat = 12
 let minStatusBarHeight: CGFloat = statusBarVPadding + 12 + statusBarVPadding
 
+// TODO: Figure out how to make this a context menu and not a button.
+// As-is, the TextEditor eats the right click and shows editing options, instead.
+struct ContextualTextInput: View {
+    let desc: String
+    @Binding var finalString: String
+
+    let historical: [StoredTemplate]
+    let saveAction: (String) -> ()
+
+    @FocusState private var isFocused: Bool
+    @State private var isHovered: Bool = false
+
+    var body: some View {
+        InlineTextInput(self.$finalString, isFocused: $isFocused)
+            .overlay(alignment: .center) {
+                Text(self.desc)
+                    .foregroundStyle(Color(.disabledControlTextColor))
+                    .opacity(self.finalString.isEmpty ? 1.0 : 0.0)
+            }
+            .overlay(alignment: .topLeading) {
+                Menu {
+                    Button {
+                        self.saveAction(self.finalString)
+                    } label: {
+                        Text("Save current template")
+                    }
+
+                    if !self.historical.isEmpty {
+                        Divider()
+                    }
+
+                    ForEach(self.historical) { template in
+                        Button {
+                            self.finalString = template.content
+                        } label: {
+                            Text(template.content)
+                        }
+                    }
+                } label: {
+                    Image(systemName: "clock")
+                        .font(.system(size: 32))
+                        .padding(12)
+                        .background(
+                            Rectangle()
+                                .fill(isHovered ? Color(.selectedControlColor) : Color.clear)
+                        )
+                }
+                .onHover { isHovered in
+                    self.isHovered = isHovered
+                }
+                .padding(24)
+                .menuStyle(.borderedButton)
+                .fixedSize()
+            }
+    }
+}
+
 struct OneSequenceView: View {
     @EnvironmentObject private var pathHost: PathHost
     @Environment(Templates.self) private var templates: Templates
@@ -16,7 +73,6 @@ struct OneSequenceView: View {
     @State private var showContinuationModelPicker: Bool = false
 
     @FocusState private var focusSystemPromptOverride: Bool
-    @FocusState private var focusModelTemplateOverride: Bool
     @FocusState private var focusAssistantResponseSeed: Bool
     @FocusState private var focusInferenceOptions: Bool
     @FocusState private var focusRetrievalOptions: Bool
@@ -217,31 +273,14 @@ struct OneSequenceView: View {
                         .opacity(settings.overrideSystemPrompt.isEmpty ? 1.0 : 0.0)
                 }
 
-                ZStack {
-                    InlineTextInput($settings.overrideModelTemplate, isFocused: $focusModelTemplateOverride)
-                    // TODO: Show this context menu in more than just the random border
-                        .contextMenu {
-                            Button {
-                                templates.add(
-                                    template: settings.overrideModelTemplate,
-                                    model: viewModel.sequence.serverId)
-                            } label: {
-                                Text("Save current template")
-                            }
-
-                            ForEach(templates.recentTemplates(viewModel.sequence.serverId)) { template in
-                                Button {
-                                    settings.overrideModelTemplate = template.content
-                                } label: {
-                                    Text(template.content)
-                                }
-                            }
-                        }
-
-                    Text("Override Model Template")
-                        .foregroundStyle(Color(.disabledControlTextColor))
-                        .opacity(settings.overrideModelTemplate.isEmpty ? 1.0 : 0.0)
-                }
+                ContextualTextInput(
+                    desc: "Override Model Template",
+                    finalString: $settings.overrideModelTemplate,
+                    historical: templates.recentTemplates(viewModel.sequence.serverId)) {
+                        templates.add(
+                            template: $0,
+                            model: viewModel.sequence.serverId)
+                    }
             }
         }
 

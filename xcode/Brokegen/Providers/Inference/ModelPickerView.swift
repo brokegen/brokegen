@@ -69,7 +69,7 @@ struct ModelPickerView: View {
     }
 
     var body: some View {
-        ZStack(alignment: Alignment(horizontal: .trailing, vertical: .top)) {
+        ZStack(alignment: .topTrailing) {
             ScrollView {
                 VStack(spacing: 0) {
                     if !usedModels.isEmpty {
