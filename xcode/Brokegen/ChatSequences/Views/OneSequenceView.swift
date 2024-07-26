@@ -286,7 +286,7 @@ struct OneSequenceView: View {
     func lowerTabBar(height lowerTabBarHeight: CGFloat?) -> some View {
         HStack(spacing: 0) {
             Button(action: {
-                viewModel.showTextEntryView.toggle()
+                withAnimation { viewModel.showTextEntryView.toggle() }
             }, label: {
                 Image(systemName: viewModel.promptInEdit.isEmpty ? "bubble" : "bubble.fill")
                     .padding(.leading, 12)
@@ -296,7 +296,7 @@ struct OneSequenceView: View {
             .background(viewModel.showTextEntryView ? Color(.selectedControlColor) : Color(.clear))
 
             Button(action: {
-                viewModel.showUiOptions.toggle()
+                withAnimation { viewModel.showUiOptions.toggle() }
             }, label: {
                 Image(systemName: "gear")
                     .padding(.leading, 12)
@@ -309,7 +309,7 @@ struct OneSequenceView: View {
                 .padding(.trailing, 12)
 
             Button(action: {
-                viewModel.showSystemPromptOverride.toggle()
+                withAnimation { viewModel.showSystemPromptOverride.toggle() }
             }, label: {
                 HStack(spacing: 0) {
                     Image(systemName: settings.overrideSystemPrompt.isEmpty ? "shield" : "shield.fill")
@@ -332,7 +332,7 @@ struct OneSequenceView: View {
             .background(viewModel.showSystemPromptOverride ? Color(.selectedControlColor) : Color(.clear))
 
             Button(action: {
-                viewModel.showAssistantResponseSeed.toggle()
+                withAnimation { viewModel.showAssistantResponseSeed.toggle() }
             }, label: {
                 HStack(spacing: 0) {
                     Image(systemName: settings.seedAssistantResponse.isEmpty ? "bubble.right" : "bubble.right.fill")
@@ -352,7 +352,7 @@ struct OneSequenceView: View {
             .background(viewModel.showAssistantResponseSeed ? Color(.selectedControlColor) : Color(.clear))
 
             Button(action: {
-                viewModel.showInferenceOptions.toggle()
+                withAnimation { viewModel.showInferenceOptions.toggle() }
             }, label: {
                 Text("Inference Options")
                     .lineLimit(1...3)
@@ -365,7 +365,7 @@ struct OneSequenceView: View {
             .background(viewModel.showInferenceOptions ? Color(.selectedControlColor) : Color(.clear))
 
             Button(action: {
-                viewModel.showRetrievalOptions.toggle()
+                withAnimation { viewModel.showRetrievalOptions.toggle() }
             }, label: {
                 Text("Retrieval Options")
                     .lineLimit(1...3)
@@ -380,7 +380,7 @@ struct OneSequenceView: View {
             Spacer()
 
             Button(action: {
-                settings.stayAwakeDuringInference.toggle()
+                withAnimation { settings.stayAwakeDuringInference.toggle() }
             }, label: {
                 Image(systemName:
                         viewModel.currentlyAwakeDuringInference
