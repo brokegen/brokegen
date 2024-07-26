@@ -2,19 +2,48 @@ import SwiftData
 import SwiftUI
 
 enum StoredTextType: Codable, Hashable {
+    case systemPromptOverride
     case modelTemplate
+    case assistantResponseSeed
+    case inferenceOptions
+    case retrievalOptions
+    case invalid
 }
 
 @Model
 class StoredText {
-    var content: String
-    var createdAt: Date
-
-    struct Key: Codable, Hashable {
+    @Model
+    class Key: Codable, Hashable {
         var contentType: StoredTextType
         var targetModel: FoundationModelRecordID?
+
+        init(
+            contentType: StoredTextType,
+            targetModel: FoundationModelRecordID?
+        ) {
+            self.contentType = contentType
+            self.targetModel = targetModel
+        }
+
+        enum CodingKeys: CodingKey {
+            case contentType, targetModel
+        }
+
+        required init(from decoder: Decoder) {
+            let container = try? decoder.container(keyedBy: CodingKeys.self)
+            contentType = (try? container?.decodeIfPresent(StoredTextType.self, forKey: .contentType)) ?? .invalid
+            targetModel = try? container?.decodeIfPresent(FoundationModelRecordID.self, forKey: .targetModel)
+        }
+
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(contentType, forKey: .contentType)
+            try container.encode(targetModel, forKey: .targetModel)
+        }
     }
 
+    var content: String
+    var createdAt: Date
     var key: Key
 
     init(
@@ -37,7 +66,8 @@ class Templates {
     // - if value is nil, it means nothing was loaded
     // - if value is empty list, we tried loading, and nothing existed
     //
-    var loadedTemplates: [StoredText.Key : [StoredText]] = [:]
+    @ObservationIgnored @Published
+    private var loadedTemplates: [StoredText.Key : [StoredText]] = [:]
 
     public init(_ modelContext: ModelContext) {
         self.modelContext = modelContext
@@ -47,14 +77,19 @@ class Templates {
         key: StoredText.Key,
         n: Int
     ) {
-        let sortDescriptor = SortDescriptor(\StoredText.createdAt, order: .reverse)
-        let fetchDescriptor = FetchDescriptor<StoredText>(sortBy: [sortDescriptor])
+        let fetchDescriptor = FetchDescriptor<StoredText>(
+            predicate: #Predicate<StoredText>{
+                $0.key.contentType == key.contentType
+                && $0.key.targetModel == key.targetModel
+            },
+            sortBy: [SortDescriptor(\StoredText.createdAt, order: .reverse)]
+        )
+
+        if loadedTemplates[key] == nil {
+            loadedTemplates[key] = []
+        }
 
         if let results = try? self.modelContext.fetch(fetchDescriptor) {
-            if loadedTemplates[key] == nil {
-                loadedTemplates[key] = []
-            }
-
             loadedTemplates[key]!.append(contentsOf: results)
         }
     }
@@ -85,11 +120,18 @@ class Templates {
             createdAt: Date.now,
             key: key)
 
-        print("[TRACE] Saving new template: \(templateModel)")
         modelContext.insert(templateModel)
-
         if modelContext.hasChanges {
-            try? modelContext.save()
+            do {
+                try modelContext.save()
+                print("[TRACE] Saved new template: \(templateModel.content)")
+            }
+            catch {
+                print("[ERROR] Failed to save new template: \(templateModel.content)")
+            }
+        }
+        else {
+            print("[TRACE] Ignoring new template (no changes): \(templateModel.content)")
         }
 
         // Save it to list of loadedTemplates

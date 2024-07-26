@@ -262,28 +262,31 @@ struct OneSequenceView: View {
     var lowerVStack: some View {
         if viewModel.showSystemPromptOverride {
             HStack(spacing: 0) {
-                ZStack {
-                    Rectangle()
-                        .fill(Color.red.opacity(0.2))
-
-                    InlineTextInput($settings.overrideSystemPrompt, isFocused: $focusSystemPromptOverride)
-
-                    Text("Override System Prompt")
-                        .foregroundStyle(Color(.disabledControlTextColor))
-                        .opacity(settings.overrideSystemPrompt.isEmpty ? 1.0 : 0.0)
+                ContextualTextInput(
+                    desc: "Override system prompt",
+                    finalString: $settings.overrideSystemPrompt,
+                    historical: templates.recents(
+                        type: .systemPromptOverride,
+                        model: viewModel.sequence.serverId))
+                {
+                    templates.add(
+                        $0,
+                        type: .systemPromptOverride,
+                        model: viewModel.sequence.serverId)
                 }
 
                 ContextualTextInput(
-                    desc: "Override Model Template",
+                    desc: "Override model template",
                     finalString: $settings.overrideModelTemplate,
                     historical: templates.recents(
                         type: .modelTemplate,
-                        model: viewModel.sequence.serverId)) {
-                        templates.add(
-                            $0,
-                            type: .modelTemplate,
-                            model: viewModel.sequence.serverId)
-                    }
+                        model: viewModel.sequence.serverId))
+                {
+                    templates.add(
+                        $0,
+                        type: .modelTemplate,
+                        model: viewModel.sequence.serverId)
+                }
             }
         }
 
