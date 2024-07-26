@@ -1,20 +1,30 @@
 import SwiftData
 import SwiftUI
 
+enum StoredTextType: Codable, Hashable {
+    case modelTemplate
+}
+
 @Model
-class StoredTemplate {
+class StoredText {
     var content: String
-    var targetModel: FoundationModelRecordID?
     var createdAt: Date
+
+    struct Key: Codable, Hashable {
+        var contentType: StoredTextType
+        var targetModel: FoundationModelRecordID?
+    }
+
+    var key: Key
 
     init(
         content: String,
-        targetModel: FoundationModelRecordID?,
-        createdAt: Date
+        createdAt: Date,
+        key: Key
     ) {
         self.content = content
-        self.targetModel = targetModel
         self.createdAt = createdAt
+        self.key = key
     }
 }
 
@@ -27,53 +37,55 @@ class Templates {
     // - if value is nil, it means nothing was loaded
     // - if value is empty list, we tried loading, and nothing existed
     //
-    var loadedTemplates: [FoundationModelRecordID? : [StoredTemplate]] = [:]
+    var loadedTemplates: [StoredText.Key : [StoredText]] = [:]
 
     public init(_ modelContext: ModelContext) {
         self.modelContext = modelContext
     }
 
-    func loadTemplates(
-        model: FoundationModelRecordID? = nil,
+    func load(
+        key: StoredText.Key,
         n: Int
     ) {
-        let sortDescriptor = SortDescriptor(\StoredTemplate.createdAt, order: .reverse)
-        let fetchDescriptor = FetchDescriptor<StoredTemplate>(sortBy: [sortDescriptor])
+        let sortDescriptor = SortDescriptor(\StoredText.createdAt, order: .reverse)
+        let fetchDescriptor = FetchDescriptor<StoredText>(sortBy: [sortDescriptor])
 
         if let results = try? self.modelContext.fetch(fetchDescriptor) {
-            if loadedTemplates[model] == nil {
-                loadedTemplates[model] = []
+            if loadedTemplates[key] == nil {
+                loadedTemplates[key] = []
             }
 
-            for result in results {
-                print("[TRACE] Loaded template \"\(result.content)\"")
-            }
-
-            loadedTemplates[model]!.append(contentsOf: results)
+            loadedTemplates[key]!.append(contentsOf: results)
         }
     }
 
-    func recentTemplates(
-        _ model: FoundationModelRecordID? = nil,
+    func recents(
+        type: StoredTextType,
+        model: FoundationModelRecordID?,
         n: Int = 8
-    ) -> [StoredTemplate] {
-        if loadedTemplates[model] == nil {
-            loadTemplates(model: model, n: n)
+    ) -> [StoredText] {
+        let key = StoredText.Key(contentType: type, targetModel: model)
+
+        if loadedTemplates[key] == nil {
+            load(key: key, n: n)
         }
 
-        return loadedTemplates[model]!
+        return loadedTemplates[key]!
     }
 
     func add(
-        template: String,
+        _ content: String,
+        type: StoredTextType,
         model: FoundationModelRecordID?
     ) {
-        let templateModel = StoredTemplate(
-            content: template,
-            targetModel: model,
-            createdAt: Date.now)
+        let key = StoredText.Key(contentType: type, targetModel: model)
 
-        print("[TRACE] Saving new template: \(template)")
+        let templateModel = StoredText(
+            content: content,
+            createdAt: Date.now,
+            key: key)
+
+        print("[TRACE] Saving new template: \(templateModel)")
         modelContext.insert(templateModel)
 
         if modelContext.hasChanges {
@@ -81,10 +93,10 @@ class Templates {
         }
 
         // Save it to list of loadedTemplates
-        if loadedTemplates[model] == nil {
-            loadedTemplates[model] = []
+        if loadedTemplates[key] == nil {
+            loadedTemplates[key] = []
         }
 
-        loadedTemplates[model]!.append(templateModel)
+        loadedTemplates[key]!.append(templateModel)
     }
 }

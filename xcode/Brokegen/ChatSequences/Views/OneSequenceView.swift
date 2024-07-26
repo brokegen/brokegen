@@ -11,7 +11,7 @@ struct ContextualTextInput: View {
     let desc: String
     @Binding var finalString: String
 
-    let historical: [StoredTemplate]
+    let historical: [StoredText]
     let saveAction: (String) -> ()
 
     @FocusState private var isFocused: Bool
@@ -276,9 +276,12 @@ struct OneSequenceView: View {
                 ContextualTextInput(
                     desc: "Override Model Template",
                     finalString: $settings.overrideModelTemplate,
-                    historical: templates.recentTemplates(viewModel.sequence.serverId)) {
+                    historical: templates.recents(
+                        type: .modelTemplate,
+                        model: viewModel.sequence.serverId)) {
                         templates.add(
-                            template: $0,
+                            $0,
+                            type: .modelTemplate,
                             model: viewModel.sequence.serverId)
                     }
             }

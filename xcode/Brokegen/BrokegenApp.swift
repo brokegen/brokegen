@@ -29,13 +29,13 @@ struct BrokegenApp: App {
     private var templates: Templates
 
     var modelData: ModelContainer = {
-        let schema = Schema([StoredTemplate.self])
+        let schema = Schema([StoredText.self])
         let modelConfiguration = ModelConfiguration(
             schema: schema,
             url: URL.applicationSupportDirectory.appending(path: "brokegen.sqlite"))
 
         do {
-            return try ModelContainer(for: Schema([StoredTemplate.self]), configurations: [modelConfiguration])
+            return try ModelContainer(for: Schema([StoredText.self]), configurations: [modelConfiguration])
         } catch {
             fatalError("[ERROR] Could not create ModelContainer: \(error)")
         }
