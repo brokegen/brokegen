@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import SwiftData
 import SwiftUI
 
 let serverBaseURL: String = "http://127.0.0.1:6635"
@@ -25,6 +26,20 @@ struct BrokegenApp: App {
 
     @Environment(\.openWindow) var openWindow
     @FocusedObject private var windowState: WindowViewModel?
+    private var templates: Templates
+
+    var modelData: ModelContainer = {
+        let schema = Schema([StoredTemplate.self])
+        let modelConfiguration = ModelConfiguration(
+            schema: schema,
+            url: URL.applicationSupportDirectory.appending(path: "brokegen.sqlite"))
+
+        do {
+            return try ModelContainer(for: Schema([StoredTemplate.self]), configurations: [modelConfiguration])
+        } catch {
+            fatalError("[ERROR] Could not create ModelContainer: \(error)")
+        }
+    }()
 
     /// We have to make a bunch of "temporary" variables to do a non-automatic init
     init() {
@@ -61,6 +76,8 @@ struct BrokegenApp: App {
                 jobsService.terminateAll()
             }
         }
+
+        self.templates = Templates(modelData.mainContext)
     }
 
     func resetAllUserSettings() {
@@ -97,6 +114,7 @@ struct BrokegenApp: App {
                 .onReceive(chatSettingsService.objectWillChange) { entireService in
                     print("[TRACE] useSimplifiedOSV: \(chatSettingsService.useSimplifiedOSV)")
                 }
+                .environment(templates)
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1080, height: 1800)

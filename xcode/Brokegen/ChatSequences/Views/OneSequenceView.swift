@@ -7,6 +7,7 @@ let minStatusBarHeight: CGFloat = statusBarVPadding + 12 + statusBarVPadding
 
 struct OneSequenceView: View {
     @EnvironmentObject private var pathHost: PathHost
+    @Environment(Templates.self) private var templates: Templates
     @ObservedObject var viewModel: OneSequenceViewModel
     @ObservedObject var settings: CSCSettingsService.SettingsProxy
     @State private var lastScrollOnNewText: Date = Date.distantPast
@@ -218,6 +219,24 @@ struct OneSequenceView: View {
 
                 ZStack {
                     InlineTextInput($settings.overrideModelTemplate, isFocused: $focusModelTemplateOverride)
+                    // TODO: Show this context menu in more than just the random border
+                        .contextMenu {
+                            Button {
+                                templates.add(
+                                    template: settings.overrideModelTemplate,
+                                    model: viewModel.sequence.serverId)
+                            } label: {
+                                Text("Save current template")
+                            }
+
+                            ForEach(templates.recentTemplates(viewModel.sequence.serverId)) { template in
+                                Button {
+                                    settings.overrideModelTemplate = template.content
+                                } label: {
+                                    Text(template.content)
+                                }
+                            }
+                        }
 
                     Text("Override Model Template")
                         .foregroundStyle(Color(.disabledControlTextColor))
