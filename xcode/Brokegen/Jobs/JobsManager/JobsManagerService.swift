@@ -37,51 +37,55 @@ class DefaultJobsManagerService: JobsManagerService {
         super.init()
         let dataDir = createDataDir()
 
-        let server = ManagedService(
-            Bundle.main.url(forResource: "brokegen-server", withExtension: nil)!,
-            [
-                "--data-dir",
-                dataDir,
-                "--log-level=debug",
-                "--bind-host",
-                allowExternalTraffic ? "0.0.0.0" : "127.0.0.1",
-                "--bind-port",
-                "6635",
-                "--install-terminate-endpoint",
-                "true",
-            ],
-            sidebarTitle: "brokegen-server\n(embedded x86 binary)",
-            pingEndpoint: "http://localhost:6635",
-            pingInterval: 23,
-            terminateEndpoint: "http://localhost:6635/terminate"
-        )
-        if startServicesImmediately {
-            _ = server.launch()
+        var importantJobs: [Job] = []
+
+        if let serverUrl = Bundle.main.url(forResource: "brokegen-server", withExtension: nil) {
+            let server = ManagedService(
+                serverUrl,
+                [
+                    "--data-dir",
+                    dataDir,
+                    "--log-level=debug",
+                    "--bind-host",
+                    allowExternalTraffic ? "0.0.0.0" : "127.0.0.1",
+                    "--bind-port",
+                    "6635",
+                    "--install-terminate-endpoint",
+                    "true",
+                ],
+                sidebarTitle: "brokegen-server\n(embedded x86 binary)",
+                pingEndpoint: "http://localhost:6635",
+                pingInterval: 23,
+                terminateEndpoint: "http://localhost:6635/terminate"
+            )
+            if startServicesImmediately {
+                _ = server.launch()
+            }
+            importantJobs.append(server)
         }
 
-        let ollama = ManagedService(
-            Bundle.main.url(forResource: "ollama-darwin", withExtension: nil)!,
-            ["serve"],
-            environment: [
-                "OLLAMA_HOST": "127.0.0.1:11434",
-                "OLLAMA_NUM_PARALLEL": "3",
-                "OLLAMA_MAX_LOADED_MODELS": "3",
-                "OLLAMA_KEEP_ALIVE": "168h",
-                "OLLAMA_DEBUG": "1",
-            ],
-            sidebarTitle: "ollama v0.2.8\n(embedded binary)",
-            pingEndpoint: "http://localhost:11434",
-            pingInterval: 13
-        )
-        if startServicesImmediately {
-            _ = ollama.launch()
+        if let ollamaUrl = Bundle.main.url(forResource: "ollama-darwin", withExtension: nil) {
+            let ollama = ManagedService(
+                ollamaUrl,
+                ["serve"],
+                environment: [
+                    "OLLAMA_HOST": "127.0.0.1:11434",
+                    "OLLAMA_NUM_PARALLEL": "3",
+                    "OLLAMA_MAX_LOADED_MODELS": "3",
+                    "OLLAMA_KEEP_ALIVE": "168h",
+                    "OLLAMA_DEBUG": "1",
+                ],
+                sidebarTitle: "ollama v0.2.8\n(embedded binary)",
+                pingEndpoint: "http://localhost:11434",
+                pingInterval: 13
+            )
+            if startServicesImmediately {
+                _ = ollama.launch()
+            }
+            importantJobs.append(ollama)
         }
 
-        let importantJobs = [
-            server,
-            ollama,
-            StayAwakeService(),
-        ]
+        importantJobs.append(StayAwakeService())
 
         self.sidebarRenderableJobs = importantJobs
         self.storedJobs = importantJobs + [
