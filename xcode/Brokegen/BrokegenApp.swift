@@ -30,13 +30,21 @@ struct BrokegenApp: App {
 
     @MainActor
     var modelData: ModelContainer = {
-        let schema = Schema([StoredTextKey.self, StoredText.self])
-        let modelConfiguration = ModelConfiguration(
-            schema: schema,
-            url: URL.applicationSupportDirectory.appending(path: "brokegen.sqlite"))
+        let schema = Schema([
+            StoredTextKey.self,
+            StoredText.self,
+        ])
+        let storePath = URL.applicationSupportDirectory
+        // We manually append the path component because unsigned apps get special problems.
+            .appendingPathComponent(Bundle.main.bundleIdentifier!)
+            .appending(path: "brokegen.sqlite")
 
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try ModelContainer(
+                for: schema,
+                configurations: [
+                    ModelConfiguration(schema: schema, url: storePath),
+                ])
         } catch {
             fatalError("[ERROR] Could not create ModelContainer: \(error)")
         }

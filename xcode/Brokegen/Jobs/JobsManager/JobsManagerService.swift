@@ -20,15 +20,16 @@ class JobsManagerService: Observable, ObservableObject {
 
 class DefaultJobsManagerService: JobsManagerService {
     func createDataDir() -> String {
-        let fileManager = FileManager.default
-        let applicationSupportDirectory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let bundleName = Bundle.main.bundleIdentifier!
+        let directoryPath = URL.applicationSupportDirectory
+        // We manually append the path component because unsigned apps get special problems
+            .appendingPathComponent(Bundle.main.bundleIdentifier!)
 
-        let directoryPath = applicationSupportDirectory.appendingPathComponent(bundleName)
-
-        // We return true regardless of whether the data directory was created.
-        // It's on the other app to deal with missing data/dirs.
-        try? fileManager.createDirectory(at: directoryPath, withIntermediateDirectories: true, attributes: nil)
+        // We continue regardless of whether the data directory was created;
+        // it's on the other apps to deal with missing data/dirs.
+        try? FileManager.default.createDirectory(
+            at: directoryPath,
+            withIntermediateDirectories: true,
+            attributes: nil)
 
         return directoryPath.path(percentEncoded: false)
     }
