@@ -17,8 +17,6 @@ dist-xcode: build/xcode-macos-export-options.plist
 	# TODO: This clean-up should be less manual. Or within the xcode build.
 	rm dist/Brokegen.app/Contents/Resources/brokegen-server
 	rm dist/Brokegen.app/Contents/Resources/ollama-darwin
-	rm -rf dist/"Brokegen (Debug)".app
-	mv dist/Brokegen.app dist/"Brokegen (Debug)".app
 
 .PHONY: build-xcode
 build: build-xcode
@@ -34,18 +32,18 @@ build-xcode:
 		-derivedDataPath build/xcode-derived-data/ \
 		-destination 'generic/platform=macOS'
 
-.PHONY: dist-xcode-release
-dist: dist-xcode-release
-dist-xcode-release: build-xcode-release
-dist-xcode-release: build/xcode-macos-export-options.plist
+.PHONY: dist/Brokegen.app.tzst
+dist: dist/Brokegen.app.tzst
+dist/Brokegen.app.tzst: build-xcode-release
+dist/Brokegen.app.tzst: build/xcode-macos-export-options.plist
 	xcodebuild -quiet \
 		-exportArchive \
 		-archivePath build/"macOS App (Release).xcarchive" \
 		-exportPath dist/ \
 		-exportOptionsPlist build/xcode-macos-export-options.plist
-	# TODO: This clean-up should be less manual. Or within the xcode build.
-	rm -rf dist/"Brokegen (Release)".app
-	mv dist/Brokegen.app dist/"Brokegen (Release)".app
+	cd dist \
+		&& tar cvf Brokegen.app.tzst --zstd --options zstd:compression-level=22 Brokegen.app
+	rm -rf dist/Brokegen.app
 
 .PHONY: build-xcode-release
 build: build-xcode-release
