@@ -228,6 +228,7 @@ struct BlankOneSequenceView: View {
                         contentType: .modelTemplate,
                         targetModel: nil)
                 }
+                .monospaced()
             }
         }
 
@@ -279,7 +280,8 @@ struct BlankOneSequenceView: View {
                         contentType: .inferenceOptions,
                         targetModel: nil)
                 }
-                .frame(width: 800, height: 144)
+                .monospaced()
+                .frame(width: 480, height: 144)
                 .background(Color(.controlBackgroundColor))
 
             }, label: {
@@ -291,31 +293,34 @@ struct BlankOneSequenceView: View {
 
         if viewModel.showRetrievalOptions {
             GroupBox(content: {
-                Picker("Retrieval policy", selection: $viewModel.settings.retrievalPolicy) {
-                    Text("skip")
-                        .tag("skip")
+                VStack(spacing: 24) {
+                    Picker("Retrieval policy", selection: $viewModel.settings.retrievalPolicy) {
+                        Text("skip")
+                            .tag("skip")
 
-                    Text("simple")
-                        .tag("simple")
+                        Text("simple")
+                            .tag("simple")
 
-                    Text("summarizing")
-                        .tag("summarizing")
+                        Text("summarizing")
+                            .tag("summarizing")
+                    }
+
+                    ContextualTextInput(
+                        desc: "Retrieval-augmented generation (RAG) search args\n(JSON, passed directly to RetrievalPolicy)",
+                        finalString: $viewModel.settings.retrievalSearchArgs,
+                        historical: templates.recents(
+                            type: .retrievalSearchArgs))
+                    {
+                        _ = templates.add(
+                            content: $0,
+                            contentType: .retrievalSearchArgs,
+                            targetModel: nil)
+                    }
+                    .monospaced()
+                    .frame(width: 480, height: 144)
+                    .background(Color(.controlBackgroundColor))
                 }
-
-                ContextualTextInput(
-                    desc: "Retrieval-augmented generation (RAG) search args\n(JSON, passed directly to RetrievalPolicy)",
-                    finalString: $viewModel.settings.retrievalSearchArgs,
-                    historical: templates.recents(
-                        type: .retrievalSearchArgs))
-                {
-                    _ = templates.add(
-                        content: $0,
-                        contentType: .retrievalSearchArgs,
-                        targetModel: nil)
-                }
-                .frame(width: 360, height: 144)
-                .background(Color(.controlBackgroundColor))
-
+                .padding(24)
             }, label: {
                 Text("Retrieval options")
                     .font(.system(size: 12).lowercaseSmallCaps())
@@ -574,7 +579,7 @@ struct BlankOneSequenceView: View {
                     // since that's what VSplitView uses to read proportions.
                     .frame(minHeight: 144)
                 }
-                
+
                 lowerTabBar(height: tabBarHeight)
             }
             .onAppear {
