@@ -27,6 +27,7 @@ class OneSequenceViewModel: ObservableObject {
     var submitting: Bool = false
 
     @ObservationIgnored var incompleteResponseData: Data? = nil
+    @ObservationIgnored var bufferedServerStatus: String = ""
     @ObservationIgnored var bufferedResponseContent: String = ""
     @ObservationIgnored var bufferedResponseLastFlush: Date = Date.distantPast
     var responseInEdit: TemporaryChatMessage? = nil
@@ -172,16 +173,22 @@ class OneSequenceViewModel: ObservableObject {
     }
 
     private func _parseJSONChunk(_ jsonData: JSON) {
+        let timeSinceFlush = Date.now.timeIntervalSince(bufferedResponseLastFlush)
+        let flushBufferedUpdates = timeSinceFlush * 1000 > Double(settings.defaults.responseBufferFlushFrequencyMsec)
+
         if let status = jsonData["status"].string {
             //print("[TRACE] new server status: \(status)")
-            serverStatus = status
+            bufferedServerStatus = status
+
+            if flushBufferedUpdates {
+                serverStatus = bufferedServerStatus
+            }
         }
 
         let messageFragment = jsonData["message"]["content"].stringValue
         bufferedResponseContent.append(messageFragment)
 
-        let timeSinceFlush = Date.now.timeIntervalSince(bufferedResponseLastFlush)
-        if timeSinceFlush * 1000 > Double(settings.defaults.responseBufferFlushFrequencyMsec) {
+        if flushBufferedUpdates {
             if !bufferedResponseContent.isEmpty {
                 //print("[TRACE] Flushing response buffer: \(bufferedResponseContent.count) chars after \(String(format: "%.3f", timeSinceFlush)) seconds")
             }
