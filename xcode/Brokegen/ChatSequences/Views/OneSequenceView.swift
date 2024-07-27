@@ -5,63 +5,6 @@ let tabBarHeight: CGFloat = 48
 let statusBarVPadding: CGFloat = 12
 let minStatusBarHeight: CGFloat = statusBarVPadding + 12 + statusBarVPadding
 
-// TODO: Figure out how to make this a context menu and not a button.
-// As-is, the TextEditor eats the right click and shows editing options, instead.
-struct ContextualTextInput: View {
-    let desc: String
-    @Binding var finalString: String
-
-    let historical: [StoredText]
-    let saveAction: (String) -> ()
-
-    @FocusState private var isFocused: Bool
-    @State private var isHovered: Bool = false
-
-    var body: some View {
-        InlineTextInput(self.$finalString, isFocused: $isFocused)
-            .overlay(alignment: .center) {
-                Text(self.desc)
-                    .foregroundStyle(Color(.disabledControlTextColor))
-                    .opacity(self.finalString.isEmpty ? 1.0 : 0.0)
-            }
-            .overlay(alignment: .topLeading) {
-                Menu {
-                    Button {
-                        self.saveAction(self.finalString)
-                    } label: {
-                        Text("Save current template")
-                    }
-
-                    if !self.historical.isEmpty {
-                        Divider()
-                    }
-
-                    ForEach(self.historical) { template in
-                        Button {
-                            self.finalString = template.content
-                        } label: {
-                            Text(template.content)
-                        }
-                    }
-                } label: {
-                    Image(systemName: "clock")
-                        .font(.system(size: 32))
-                        .padding(12)
-                        .background(
-                            Rectangle()
-                                .fill(isHovered ? Color(.selectedControlColor) : Color.clear)
-                        )
-                }
-                .onHover { isHovered in
-                    self.isHovered = isHovered
-                }
-                .padding(24)
-                .menuStyle(.borderedButton)
-                .fixedSize()
-            }
-    }
-}
-
 struct OneSequenceView: View {
     @EnvironmentObject private var pathHost: PathHost
     @Environment(Templates.self) private var templates: Templates
@@ -262,17 +205,22 @@ struct OneSequenceView: View {
     var lowerVStack: some View {
         if viewModel.showSystemPromptOverride {
             HStack(spacing: 0) {
-                ContextualTextInput(
-                    desc: "Override system prompt",
-                    finalString: $settings.overrideSystemPrompt,
-                    historical: templates.recents(
-                        type: .systemPromptOverride,
-                        model: viewModel.sequence.serverId))
-                {
-                    templates.add(
-                        $0,
-                        type: .systemPromptOverride,
-                        model: viewModel.sequence.serverId)
+                ZStack {
+                    Rectangle()
+                        .fill(Color.red.opacity(0.2))
+
+                    ContextualTextInput(
+                        desc: "Override system prompt",
+                        finalString: $settings.overrideSystemPrompt,
+                        historical: templates.recents(
+                            type: .systemPromptOverride,
+                            model: viewModel.sequence.serverId))
+                    {
+                        templates.add(
+                            $0,
+                            type: .systemPromptOverride,
+                            model: viewModel.sequence.serverId)
+                    }
                 }
 
                 ContextualTextInput(
@@ -300,11 +248,18 @@ struct OneSequenceView: View {
                 Rectangle()
                     .fill(Color.blue.opacity(0.2))
 
-                InlineTextInput($settings.seedAssistantResponse, isFocused: $focusAssistantResponseSeed)
-
-                Text("Seed Assistant Response")
-                    .foregroundStyle(Color(.disabledControlTextColor))
-                    .opacity(settings.seedAssistantResponse.isEmpty ? 1.0 : 0.0)
+                ContextualTextInput(
+                    desc: "Seed assistant response",
+                    finalString: $settings.seedAssistantResponse,
+                    historical: templates.recents(
+                        type: .assistantResponseSeed,
+                        model: viewModel.sequence.serverId))
+                {
+                    templates.add(
+                        $0,
+                        type: .assistantResponseSeed,
+                        model: viewModel.sequence.serverId)
+                }
             }
         }
     }
@@ -321,10 +276,21 @@ struct OneSequenceView: View {
 
         if viewModel.showInferenceOptions {
             GroupBox(content: {
-                InlineTextInput($settings.inferenceOptions, isFocused: $focusInferenceOptions)
-                    .focused($focusInferenceOptions)
-                    .frame(width: 800, height: 144)
-                    .lineLimit(4...12)
+                ContextualTextInput(
+                    desc: "",
+                    finalString: $settings.inferenceOptions,
+                    historical: templates.recents(
+                        type: .inferenceOptions,
+                        model: viewModel.sequence.serverId))
+                {
+                    templates.add(
+                        $0,
+                        type: .inferenceOptions,
+                        model: viewModel.sequence.serverId)
+                }
+                .frame(width: 800, height: 144)
+                .background(Color(.controlBackgroundColor))
+
             }, label: {
                 Text("Inference options (JSON, passed directly to provider)")
             })
@@ -332,16 +298,34 @@ struct OneSequenceView: View {
 
         if viewModel.showRetrievalOptions {
             GroupBox(content: {
-                TextEditor(text: $settings.retrievalPolicy)
-                    .frame(width: 360, height: 36)
-                    .lineLimit(4...12)
+                Picker("Retrieval policy", selection: $settings.retrievalPolicy) {
+                    Text("skip")
+                        .tag("skip")
 
-                TextEditor(text: $settings.retrievalSearchArgs)
-                    .frame(width: 360, height: 36)
-                    .lineLimit(4...12)
+                    Text("simple")
+                        .tag("simple")
+
+                    Text("summarizing")
+                        .tag("summarizing")
+                }
+
+                ContextualTextInput(
+                    desc: "Retrieval search args (passed directly to RetrievalPolicy)",
+                    finalString: $settings.retrievalSearchArgs,
+                    historical: templates.recents(
+                        type: .retrievalSearchArgs,
+                        model: viewModel.sequence.serverId))
+                {
+                    templates.add(
+                        $0,
+                        type: .retrievalSearchArgs,
+                        model: viewModel.sequence.serverId)
+                }
+                .frame(width: 360, height: 144)
+                .background(Color(.controlBackgroundColor))
 
             }, label: {
-                Text("retrievalOptions")
+                Text("Retrieval-augmented generation (RAG) options")
             })
         }
     }

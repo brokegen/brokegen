@@ -147,6 +147,63 @@ struct InlineTextInput: View {
     }
 }
 
+// TODO: Figure out how to make this a context menu and not a button.
+// As-is, the TextEditor eats the right click and shows editing options, instead.
+struct ContextualTextInput: View {
+    let desc: String
+    @Binding var finalString: String
+
+    let historical: [StoredText]
+    let saveAction: (String) -> ()
+
+    @FocusState private var isFocused: Bool
+    @State private var isHovered: Bool = false
+
+    var body: some View {
+        InlineTextInput(self.$finalString, isFocused: $isFocused)
+            .overlay(alignment: .center) {
+                Text(self.desc)
+                    .foregroundStyle(Color(.disabledControlTextColor))
+                    .opacity(self.finalString.isEmpty ? 1.0 : 0.0)
+            }
+            .overlay(alignment: .bottomTrailing) {
+                Menu {
+                    Button {
+                        self.saveAction(self.finalString)
+                    } label: {
+                        Text("Save current template")
+                    }
+
+                    if !self.historical.isEmpty {
+                        Divider()
+
+                        ForEach(self.historical) { template in
+                            Button {
+                                self.finalString = template.content
+                            } label: {
+                                Text(template.content)
+                            }
+                        }
+                    }
+                } label: {
+                    Image(systemName: "clock")
+                        .font(.system(size: 32))
+                        .padding(12)
+                        .background(
+                            Rectangle()
+                                .fill(isHovered ? Color(.selectedControlColor) : Color.clear)
+                        )
+                }
+                .onHover { isHovered in
+                    self.isHovered = isHovered
+                }
+                .padding(24)
+                .menuStyle(.borderedButton)
+                .fixedSize()
+            }
+    }
+}
+
 #Preview(traits: .fixedLayout(width: 800, height: 800)) {
     struct ViewHolder: View {
         @State var textInEdit = "typed text"
