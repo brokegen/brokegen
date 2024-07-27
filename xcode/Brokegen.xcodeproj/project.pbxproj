@@ -51,6 +51,7 @@
 		CEB773232C0160530051F41C /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = CEB773222C0160530051F41C /* Alamofire */; };
 		CEDCF2AB2BFFD623006ABBA9 /* SimpleOneMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDCF2AA2BFFD623006ABBA9 /* SimpleOneMessageView.swift */; };
 		CEDE7FBB2C54286A00200909 /* StoredText.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDE7FBA2C54286A00200909 /* StoredText.swift */; };
+		CEDE7FBD2C54A74600200909 /* StoredTextTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDE7FBC2C54A74600200909 /* StoredTextTest.swift */; };
 		CEE99E592C0D85AD008E1B07 /* OneSequenceViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E582C0D85AD008E1B07 /* OneSequenceViewModel.swift */; };
 		CEE99E632C0E7D9F008E1B07 /* OneFoundationModelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E622C0E7D9F008E1B07 /* OneFoundationModelView.swift */; };
 		CEE99E652C0E8378008E1B07 /* JobPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E642C0E8378008E1B07 /* JobPickerView.swift */; };
@@ -134,6 +135,7 @@
 		CEAEF07D2C49B02B00281578 /* MarkdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownView.swift; sourceTree = "<group>"; };
 		CEDCF2AA2BFFD623006ABBA9 /* SimpleOneMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleOneMessageView.swift; sourceTree = "<group>"; };
 		CEDE7FBA2C54286A00200909 /* StoredText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoredText.swift; sourceTree = "<group>"; };
+		CEDE7FBC2C54A74600200909 /* StoredTextTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoredTextTest.swift; sourceTree = "<group>"; };
 		CEE99E582C0D85AD008E1B07 /* OneSequenceViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneSequenceViewModel.swift; sourceTree = "<group>"; };
 		CEE99E622C0E7D9F008E1B07 /* OneFoundationModelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneFoundationModelView.swift; sourceTree = "<group>"; };
 		CEE99E642C0E8378008E1B07 /* JobPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobPickerView.swift; sourceTree = "<group>"; };
@@ -248,6 +250,7 @@
 			isa = PBXGroup;
 			children = (
 				CE66FAFF2C16915C00BD8745 /* ChatMessageTests.swift */,
+				CEDE7FBC2C54A74600200909 /* StoredTextTest.swift */,
 			);
 			path = BrokegenTests;
 			sourceTree = "<group>";
@@ -504,6 +507,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CE66FB132C16968C00BD8745 /* ChatMessageTests.swift in Sources */,
+				CEDE7FBD2C54A74600200909 /* StoredTextTest.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

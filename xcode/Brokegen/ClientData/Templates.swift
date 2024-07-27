@@ -17,30 +17,45 @@ class Templates {
         self.modelContext = modelContext
     }
 
-    private func fetchTextKey(
+    func fetchTextKey(
         contentType: StoredTextType,
         targetModel: FoundationModelRecordID?,
         printSaved: Bool = false,
-        printLoaded: Bool = true
+        printLoaded: Bool = false
     ) -> StoredTextKey {
         let newKey = StoredTextKey(contentType: contentType, targetModel: targetModel)
+
         let fetchDescriptor = FetchDescriptor<StoredTextKey>(
-            predicate: #Predicate {
-                $0.contentType == newKey.contentType
-                && $0.targetModel == newKey.targetModel
-            }
+            // NB #Predicate does not work with this expression. Don't use it.
+            // predicate: #Predicate { $0 == newKey }
         )
 
         let results = try? self.modelContext.fetch(fetchDescriptor)
+            .filter { $0 == newKey }
+        if (results?.count ?? 0) > 1 {
+            fatalError("SwiftData model store contains \(results?.count) duplicate StoredTextKeys")
+        }
+
         if let theResult = results?.first {
-            // If found, it should be in our local list already, so just exit
             return theResult
         }
         else {
-            // Print debug info for current state
-            print("[INFO] Failed to find any matching StoredTextKeys for \(newKey)")
+            modelContext.insert(newKey)
+            if modelContext.hasChanges {
+                do {
+                    try modelContext.save()
+                    print("[TRACE] Saved new \(newKey)")
+                }
+                catch {
+                    print("[ERROR] Failed to save new \(newKey)")
+                }
+            }
+            else {
+                print("[TRACE] Ignoring (no changes) for \(newKey)")
+            }
 
-            print("[DEBUG] loadedTemplates has \(loadedTemplates.count) keys")
+            // Print the state _after_ any insert events.
+            print("[DEBUG] fetchTextKey(): \(loadedTemplates.count) keys loaded")
             if printLoaded {
                 for (k, vList) in loadedTemplates {
                     print("- \(k): \(vList.count) texts in list")
@@ -53,31 +68,15 @@ class Templates {
             let allKeys = try? self.modelContext.fetch(
                 FetchDescriptor<StoredTextKey>()
             )
-            print("[DEBUG] Total number of StoredTextKeys is \(allKeys?.count ?? -1)")
+            print("[DEBUG] fetchTextKey(): \(allKeys?.count ?? -1) keys total in model store")
             if printSaved {
                 for k: StoredTextKey in allKeys ?? [] {
                     print("- \(k)")
                 }
             }
 
-            // Actually add it to context
-            let key = StoredTextKey(contentType: contentType, targetModel: targetModel)
-
-            modelContext.insert(key)
-            if modelContext.hasChanges {
-                do {
-                    try modelContext.save()
-                    print("[TRACE] Saved new \(key)")
-                }
-                catch {
-                    print("[ERROR] Failed to save new \(key)")
-                }
-            }
-            else {
-                print("[TRACE] Ignoring (no changes) for \(key)")
-            }
-
-            return key
+            print("")
+            return newKey
         }
     }
 
@@ -88,16 +87,12 @@ class Templates {
     ) -> StoredText {
         let key = fetchTextKey(contentType: contentType, targetModel: targetModel)
         let fetchDescriptor = FetchDescriptor<StoredText>(
-            predicate: #Predicate {
-                $0.key == key
-                && $0.content == content
-            },
             sortBy: [SortDescriptor(\StoredText.createdAt)]
         )
 
         let results = try? self.modelContext.fetch(fetchDescriptor)
+            .filter { $0.key == key && $0.content == content }
         if let theResult = results?.first {
-            // If found, it should be in our local list already, so just exit
             return theResult
         }
         else {
@@ -149,15 +144,14 @@ class Templates {
         }
 
         var fetchDescriptor = FetchDescriptor<StoredText>(
-            predicate: #Predicate {
-                $0.key == key
-            },
             sortBy: [SortDescriptor(\StoredText.createdAt, order: .reverse)]
         )
         fetchDescriptor.fetchLimit = n
 
-        if let results = try? self.modelContext.fetch(fetchDescriptor) {
-            loadedTemplates[key]!.append(contentsOf: results)
+        let results = try? self.modelContext.fetch(fetchDescriptor)
+            .filter { $0.key == key }
+        if results != nil {
+            loadedTemplates[key]!.append(contentsOf: results!)
         }
         else {
             print("[INFO] Failed to find any matching StoredTexts for \(key)")
@@ -187,7 +181,8 @@ class Templates {
     func recents(
         type: StoredTextType,
         model: FoundationModelRecordID?,
-        n: Int? = 8
+        // NB Due to how FetchDescriptors aren't working, this value would be applied pre-filtering.
+        n: Int? = nil
     ) -> [StoredText] {
         let key = fetchTextKey(contentType: type, targetModel: model)
         if loadedTemplates[key] == nil {
