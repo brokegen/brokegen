@@ -181,7 +181,15 @@ struct ContextualTextInput: View {
                             Button {
                                 self.finalString = template.content
                             } label: {
-                                Text(template.content)
+                                let contentForDisplay = template.content
+                                    .replacingOccurrences(of: "\n", with: "\\n")
+                                    .prefix(140)
+
+                                Text(contentForDisplay)
+                                Text(String(describing: template.createdAt))
+                                if template.key.targetModel != nil {
+                                    Text("FoundationModel #\(template.key.targetModel!)")
+                                }
                             }
                         }
                     }
@@ -197,7 +205,7 @@ struct ContextualTextInput: View {
                 .onHover { isHovered in
                     self.isHovered = isHovered
                 }
-                .padding(24)
+                .padding(18)
                 .menuStyle(.borderedButton)
                 .fixedSize()
             }

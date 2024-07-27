@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 
+
 enum StoredTextType: String, Codable, Hashable {
     case systemPromptOverride
     case modelTemplate
