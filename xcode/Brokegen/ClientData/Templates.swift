@@ -44,7 +44,7 @@ class Templates {
         }
     }
 
-    private func add(
+    func add(
         content: String,
         contentType: StoredTextType,
         targetModel: FoundationModelRecordID?

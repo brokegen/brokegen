@@ -2,6 +2,7 @@ import SwiftUI
 
 struct BlankOneSequenceView: View {
     @EnvironmentObject private var pathHost: PathHost
+    @Environment(Templates.self) private var templates: Templates
     @EnvironmentObject var viewModel: BlankSequenceViewModel
 
     @FocusState private var focusTextInput: Bool
@@ -203,19 +204,29 @@ struct BlankOneSequenceView: View {
                     Rectangle()
                         .fill(Color.red.opacity(0.2))
 
-                    InlineTextInput($viewModel.settings.overrideSystemPrompt, isFocused: $focusSystemPromptOverride)
-
-                    Text("Override System Prompt")
-                        .foregroundStyle(Color(.disabledControlTextColor))
-                        .opacity(viewModel.settings.overrideSystemPrompt.isEmpty ? 1.0 : 0.0)
+                    ContextualTextInput(
+                        desc: "Override system prompt",
+                        finalString: $viewModel.settings.overrideSystemPrompt,
+                        historical: templates.recents(
+                            type: .systemPromptOverride))
+                    {
+                        _ = templates.add(
+                            content: $0,
+                            contentType: .systemPromptOverride,
+                            targetModel: nil)
+                    }
                 }
 
-                ZStack {
-                    InlineTextInput($viewModel.settings.overrideModelTemplate, isFocused: $focusModelTemplateOverride)
-
-                    Text("Override Model Template")
-                        .foregroundStyle(Color(.disabledControlTextColor))
-                        .opacity(viewModel.settings.overrideModelTemplate.isEmpty ? 1.0 : 0.0)
+                ContextualTextInput(
+                    desc: "Override model template",
+                    finalString: $viewModel.settings.overrideModelTemplate,
+                    historical: templates.recents(
+                        type: .modelTemplate))
+                {
+                    _ = templates.add(
+                        content: $0,
+                        contentType: .modelTemplate,
+                        targetModel: nil)
                 }
             }
         }
@@ -230,11 +241,17 @@ struct BlankOneSequenceView: View {
                 Rectangle()
                     .fill(Color.blue.opacity(0.2))
 
-                InlineTextInput($viewModel.settings.seedAssistantResponse, isFocused: $focusAssistantResponseSeed)
-
-                Text("Seed Assistant Response")
-                    .foregroundStyle(Color(.disabledControlTextColor))
-                    .opacity(viewModel.settings.seedAssistantResponse.isEmpty ? 1.0 : 0.0)
+                ContextualTextInput(
+                    desc: "Seed assistant response",
+                    finalString: $viewModel.settings.seedAssistantResponse,
+                    historical: templates.recents(
+                        type: .assistantResponseSeed))
+                {
+                    _ = templates.add(
+                        content: $0,
+                        contentType: .assistantResponseSeed,
+                        targetModel: nil)
+                }
             }
         }
     }
@@ -251,10 +268,20 @@ struct BlankOneSequenceView: View {
 
         if viewModel.showInferenceOptions {
             GroupBox(content: {
-                InlineTextInput($viewModel.settings.inferenceOptions, isFocused: $focusInferenceOptions)
-                    .focused($focusInferenceOptions)
-                    .frame(width: 360, height: 36)
-                    .lineLimit(4...12)
+                ContextualTextInput(
+                    desc: "",
+                    finalString: $viewModel.settings.inferenceOptions,
+                    historical: templates.recents(
+                        type: .inferenceOptions))
+                {
+                    templates.add(
+                        content: $0,
+                        contentType: .inferenceOptions,
+                        targetModel: nil)
+                }
+                .frame(width: 800, height: 144)
+                .background(Color(.controlBackgroundColor))
+
             }, label: {
                 Text("Inference options (JSON, passed directly to provider)")
             })
@@ -262,16 +289,33 @@ struct BlankOneSequenceView: View {
 
         if viewModel.showRetrievalOptions {
             GroupBox(content: {
-                TextEditor(text: $viewModel.settings.retrievalPolicy)
-                    .frame(width: 360, height: 36)
-                    .lineLimit(4...12)
+                Picker("Retrieval policy", selection: $viewModel.settings.retrievalPolicy) {
+                    Text("skip")
+                        .tag("skip")
 
-                TextEditor(text: $viewModel.settings.retrievalSearchArgs)
-                    .frame(width: 360, height: 36)
-                    .lineLimit(4...12)
+                    Text("simple")
+                        .tag("simple")
+
+                    Text("summarizing")
+                        .tag("summarizing")
+                }
+
+                ContextualTextInput(
+                    desc: "Retrieval search args (passed directly to RetrievalPolicy)",
+                    finalString: $viewModel.settings.retrievalSearchArgs,
+                    historical: templates.recents(
+                        type: .retrievalSearchArgs))
+                {
+                    _ = templates.add(
+                        content: $0,
+                        contentType: .retrievalSearchArgs,
+                        targetModel: nil)
+                }
+                .frame(width: 360, height: 144)
+                .background(Color(.controlBackgroundColor))
 
             }, label: {
-                Text("retrievalOptions")
+                Text("Retrieval-augmented generation (RAG) options")
             })
         }
     }
@@ -530,6 +574,52 @@ struct BlankOneSequenceView: View {
                 if noInferenceModelSelected {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         withAnimation { viewModel.settings.showOFMPicker = true }
+                    }
+                }
+            }
+            .onChange(of: viewModel.continuationInferenceModel?.serverId ?? -5) { oldValue, newValue in
+                guard newValue != -5 else { return }
+
+                if viewModel.settings.inference.overrideSystemPrompt == nil {
+                    if let content = templates.recents(type: .systemPromptOverride, model: newValue).first?.content {
+                        viewModel.settings.inference.overrideSystemPrompt = content
+                        viewModel.showSystemPromptOverride = true
+                    }
+                }
+
+                if viewModel.settings.inference.overrideModelTemplate == nil {
+                    if let content = templates.recents(type: .modelTemplate, model: newValue).first?.content {
+                        viewModel.settings.overrideModelTemplate = content
+                        viewModel.showSystemPromptOverride = true
+                    }
+                }
+
+                if viewModel.settings.inference.seedAssistantResponse == nil {
+                    if let content = templates.recents(type: .assistantResponseSeed, model: newValue).first?.content {
+                        viewModel.settings.seedAssistantResponse = content
+                        viewModel.showAssistantResponseSeed = true
+                    }
+                }
+                if viewModel.settings.inference.inferenceOptions == nil {
+                    if let content = templates.recents(type: .inferenceOptions, model: newValue).first?.content {
+                        viewModel.settings.inferenceOptions = content
+                        viewModel.showInferenceOptions = true
+                    }
+                }
+
+                if false {
+                    if viewModel.settings.retrievalPolicy.isEmpty {
+                        viewModel.settings.retrievalPolicy = "simple"
+                    }
+                    // Set default retrievalSearchArgs
+                    if templates.recents(type: .retrievalSearchArgs).isEmpty {
+                        _ = templates.add(
+                            content: "{\"k\": 18}",
+                            contentType: .retrievalSearchArgs,
+                            targetModel: nil)
+                    }
+                    if viewModel.settings.retrievalSearchArgs.isEmpty {
+                        viewModel.settings.retrievalSearchArgs = templates.recents(type: .retrievalSearchArgs).first?.content ?? ""
                     }
                 }
             }
