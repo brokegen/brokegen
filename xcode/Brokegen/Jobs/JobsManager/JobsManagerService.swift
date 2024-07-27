@@ -64,9 +64,10 @@ class DefaultJobsManagerService: JobsManagerService {
             importantJobs.append(server)
         }
 
-        if let ollamaUrl = Bundle.main.url(forResource: "ollama-darwin", withExtension: nil) {
+        let ollamaUrl = Bundle.main.url(forResource: "ollama-darwin", withExtension: nil)
+        if ollamaUrl != nil {
             let ollama = ManagedService(
-                ollamaUrl,
+                ollamaUrl!,
                 ["serve"],
                 environment: [
                     "OLLAMA_HOST": "127.0.0.1:11434",
@@ -100,14 +101,19 @@ class DefaultJobsManagerService: JobsManagerService {
             RestartableProcess(URL(fileURLWithPath: "/bin/date")),
             OneShotProcess("/usr/bin/man", ["man"]),
             TimeJob("infinitimer", maxTimesFired: -1),
-            RestartableProcess(
-                Bundle.main.url(forResource: "ollama-darwin", withExtension: nil)!,
-                ["ps"],
-                environment: [
-                    "OLLAMA_DEBUG": "1",
-                ],
-                sidebarTitle: "ollama ps"
-            ),
         ]
+
+        if ollamaUrl != nil {
+            self.storedJobs.append(
+                RestartableProcess(
+                    Bundle.main.url(forResource: "ollama-darwin", withExtension: nil)!,
+                    ["ps"],
+                    environment: [
+                        "OLLAMA_DEBUG": "1",
+                    ],
+                    sidebarTitle: "ollama ps"
+                )
+            )
+        }
     }
 }
