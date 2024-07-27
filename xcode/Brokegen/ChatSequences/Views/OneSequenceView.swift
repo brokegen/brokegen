@@ -5,6 +5,62 @@ let tabBarHeight: CGFloat = 48
 let statusBarVPadding: CGFloat = 12
 let minStatusBarHeight: CGFloat = statusBarVPadding + 12 + statusBarVPadding
 
+struct MultiMessageView: View {
+    @EnvironmentObject private var pathHost: PathHost
+    @ObservedObject var viewModel: OneSequenceViewModel
+    var messages: [MessageLike] {
+        viewModel.sequence.messages
+    }
+    @ObservedObject var settings: CSCSettingsService.SettingsProxy
+
+    var body: some View {
+        ForEach(messages) { message in
+            let indentMessage = !settings.showMessageHeaders && message.role != "user"
+            let branchAction = {
+                if case .stored(let message) = message {
+                    Task {
+                        if let sequence = try? await viewModel.chatService.fetchChatSequenceDetails(message.hostSequenceId) {
+                            pathHost.push(
+                                viewModel.chatService.clientModel(
+                                    for: sequence,
+                                    appSettings: viewModel.appSettings,
+                                    chatSettingsService: viewModel.chatSettingsService)
+                            )
+                        }
+                    }
+                }
+            }
+
+            OneMessageView(
+                message,
+                renderMessageContent: viewModel.lookup,
+                branchAction: branchAction,
+                showMessageHeaders: settings.showMessageHeaders,
+                renderAsMarkdown: $settings.renderAsMarkdown
+            )
+            .padding(.leading, indentMessage ? 24.0 : 0.0)
+            .id(message)
+        }
+
+        if viewModel.responseInEdit != nil {
+            let messageIndent = settings.showMessageHeaders ? 0.0 : 24.0
+            // Disable animation if we're rendering Markdown, because something in MarkdownUI makes it fade really poorly
+            // NB This also affects scrollToBottomOnNew
+            let shouldAnimate = settings.animateNewResponseText && !settings.renderAsMarkdown
+
+            OneMessageView(
+                .temporary(viewModel.responseInEdit!),
+                stillUpdating: true,
+                showMessageHeaders: settings.showMessageHeaders,
+                renderAsMarkdown: $settings.renderAsMarkdown
+            )
+            .animation(shouldAnimate ? .easeIn : nil, value: viewModel.responseInEdit)
+            .padding(.leading, messageIndent)
+            .id(-1)
+        }
+    }
+}
+
 struct OneSequenceView: View {
     @EnvironmentObject private var pathHost: PathHost
     @Environment(Templates.self) private var templates: Templates
@@ -532,54 +588,6 @@ struct OneSequenceView: View {
     }
 
     @ViewBuilder
-    var messages: some View {
-        ForEach(viewModel.sequence.messages) { message in
-            let indentMessage = !settings.showMessageHeaders && message.role != "user"
-            let branchAction = {
-                if case .stored(let message) = message {
-                    Task {
-                        if let sequence = try? await viewModel.chatService.fetchChatSequenceDetails(message.hostSequenceId) {
-                            pathHost.push(
-                                viewModel.chatService.clientModel(
-                                    for: sequence,
-                                    appSettings: viewModel.appSettings,
-                                    chatSettingsService: viewModel.chatSettingsService)
-                            )
-                        }
-                    }
-                }
-            }
-
-            OneMessageView(
-                message,
-                renderMessageContent: viewModel.lookup,
-                branchAction: branchAction,
-                showMessageHeaders: settings.showMessageHeaders,
-                renderAsMarkdown: $settings.renderAsMarkdown
-            )
-            .padding(.leading, indentMessage ? 24.0 : 0.0)
-            .id(message)
-        }
-
-        if viewModel.responseInEdit != nil {
-            let messageIndent = settings.showMessageHeaders ? 0.0 : 24.0
-            // Disable animation if we're rendering Markdown, because something in MarkdownUI makes it fade really poorly
-            // NB This also affects scrollToBottomOnNew
-            let shouldAnimate = settings.animateNewResponseText && !settings.renderAsMarkdown
-
-            OneMessageView(
-                .temporary(viewModel.responseInEdit!),
-                stillUpdating: true,
-                showMessageHeaders: settings.showMessageHeaders,
-                renderAsMarkdown: $settings.renderAsMarkdown
-            )
-            .animation(shouldAnimate ? .easeIn : nil, value: viewModel.responseInEdit)
-            .padding(.leading, messageIndent)
-            .id(-1)
-        }
-    }
-
-    @ViewBuilder
     func ofmPicker(_ geometry: GeometryProxy) -> some View {
         VStack(alignment: .center) {
             VStack(spacing: 0) {
@@ -628,8 +636,10 @@ struct OneSequenceView: View {
                                         .id("sequence title")
                                     }
 
-                                    messages
-                                        .fontDesign(settings.messageFontDesign)
+                                    MultiMessageView(
+                                        viewModel: viewModel,
+                                        settings: settings)
+                                    .fontDesign(settings.messageFontDesign)
 
                                     // Add a bit of scroll-past-the-bottom space
                                     if !settings.showOFMPicker {
