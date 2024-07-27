@@ -10,14 +10,17 @@ logger = logging.getLogger(__name__)
 class LlamaCppProviderFactory(ProviderFactory):
     search_dirs: list[str]
     cache_dir: str | None
+    max_loaded_models: int
 
     def __init__(
             self,
             search_dirs: list[str] | None = None,
             cache_dir: str | None = None,
+            max_loaded_models: int = 1,
     ):
         self.search_dirs = search_dirs or []
         self.cache_dir = cache_dir
+        self.max_loaded_models = max_loaded_models
 
     async def try_make_nocache(self, label: ProviderLabel) -> BaseProvider | None:
         if label.type != "lcp":
@@ -32,7 +35,12 @@ class LlamaCppProviderFactory(ProviderFactory):
             import llama_cpp
             from .provider import LlamaCppProvider
 
-            new_provider: BaseProvider = LlamaCppProvider(search_dir=label.id, cache_dir=self.cache_dir)
+            new_provider: BaseProvider = LlamaCppProvider(
+                search_dir=label.id,
+                cache_dir=self.cache_dir,
+                max_loaded_models=self.max_loaded_models,
+            )
+
             if await new_provider.available():
                 return new_provider
             else:

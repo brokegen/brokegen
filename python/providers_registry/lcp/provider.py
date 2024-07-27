@@ -392,7 +392,7 @@ class LlamaCppProvider(BaseProvider):
             self,
             search_dir: str,
             cache_dir: str | None,
-            max_loaded_models: int = 3,
+            max_loaded_models: int,
             # Nevermind, just outright disable the cache.
             # Gathering LLM state takes too much time and makes everything seem slow.
             enable_cache: bool = False,
@@ -404,6 +404,7 @@ class LlamaCppProvider(BaseProvider):
         self.max_loaded_models = max_loaded_models
 
         if enable_cache and LlamaCppProvider.shared_cache is None:
+            logger.warning("lcp creating Llama cache; this is generally broken!")
             # TODO: These may not be thread/process safe, but whether _that_ matters depends on the ASGI framework
             if cache_dir is not None and os.path.isdir(cache_dir) and False:
                 LlamaCppProvider.shared_cache = LlamaDiskCache(cache_dir, capacity_bytes=disk_capacity)

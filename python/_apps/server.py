@@ -125,16 +125,18 @@ async def init_app(app: FastAPI):
               help='Add /terminate endpoint that will halt the server. '
                    '(Sometimes needed due to how PyInstaller or Swift handle processes.)',
               type=click.BOOL)
+@click.option('--lcp-max-loaded-models', default=1, show_default=True, type=click.INT)
 def run_proxy(
         data_dir,
         bind_host,
-        bind_port,
+        bind_port: int,
         log_level,
         enable_colorlog: bool,
         trace_sqlalchemy: bool,
         trace_fastapi_http: bool,
         print_uvicorn_access_log: bool,
         install_terminate_endpoint: bool,
+        lcp_max_loaded_models: int,
 ):
     numeric_log_level = getattr(logging, str(log_level).upper(), None)
     logging.getLogger().setLevel(level=numeric_log_level)
@@ -260,6 +262,7 @@ def run_proxy(
             providers_registry.lcp.factory.LlamaCppProviderFactory(
                 [data_dir],
                 cache_dir=lcp_cache_dir,
+                max_loaded_models=lcp_max_loaded_models,
             ))
     )
 

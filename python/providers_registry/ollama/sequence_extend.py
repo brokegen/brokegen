@@ -231,8 +231,8 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         ).scalar_one()
 
         messages_list: list[ChatMessage] = \
-            fetch_messages_for_sequence(sequence_id, history_db, include_model_info_diffs=False,
-                                        include_sequence_info=True)
+            fetch_messages_for_sequence(
+                sequence_id, history_db, include_model_info_diffs=False, include_sequence_info=True)
 
         # Decide how to continue inference for this sequence
         inference_model: FoundationModelRecordOrm = \
