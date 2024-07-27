@@ -53,7 +53,7 @@ struct CSInferenceSettings {
     enum AutonamingPolicy: String, CaseIterable, Identifiable {
         case serverDefault, disable, summarizeAfterAsync, summarizeBefore
 
-        func toDesc() -> String {
+        func asUiLabel() -> String {
             switch(self) {
             case .serverDefault:
                 "server default"

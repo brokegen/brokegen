@@ -28,14 +28,15 @@ struct BrokegenApp: App {
     @FocusedObject private var windowState: WindowViewModel?
     private var templates: Templates
 
+    @MainActor
     var modelData: ModelContainer = {
-        let schema = Schema([StoredText.self])
+        let schema = Schema([StoredTextKey.self, StoredText.self])
         let modelConfiguration = ModelConfiguration(
             schema: schema,
             url: URL.applicationSupportDirectory.appending(path: "brokegen.sqlite"))
 
         do {
-            return try ModelContainer(for: Schema([StoredText.self]), configurations: [modelConfiguration])
+            return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
             fatalError("[ERROR] Could not create ModelContainer: \(error)")
         }
@@ -115,6 +116,7 @@ struct BrokegenApp: App {
                     print("[TRACE] useSimplifiedOSV: \(chatSettingsService.useSimplifiedOSV)")
                 }
                 .environment(templates)
+                .modelContainer(modelData)
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1080, height: 1800)

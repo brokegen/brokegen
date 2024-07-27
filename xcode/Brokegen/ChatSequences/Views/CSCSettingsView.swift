@@ -345,7 +345,7 @@ struct CSCSettingsView: View {
 
                         Picker("", selection: $settings.autonamingPolicy) {
                             ForEach(CSInferenceSettings.AutonamingPolicy.allCases) { policy in
-                                Text(policy.toDesc())
+                                Text(policy.asUiLabel())
                                     .tag(policy)
                             }
                         }

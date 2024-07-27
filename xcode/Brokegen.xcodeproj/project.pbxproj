@@ -50,6 +50,7 @@
 		CEAEF07E2C49B02B00281578 /* MarkdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEAEF07D2C49B02B00281578 /* MarkdownView.swift */; };
 		CEB773232C0160530051F41C /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = CEB773222C0160530051F41C /* Alamofire */; };
 		CEDCF2AB2BFFD623006ABBA9 /* SimpleOneMessageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDCF2AA2BFFD623006ABBA9 /* SimpleOneMessageView.swift */; };
+		CEDE7FBB2C54286A00200909 /* StoredText.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDE7FBA2C54286A00200909 /* StoredText.swift */; };
 		CEE99E592C0D85AD008E1B07 /* OneSequenceViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E582C0D85AD008E1B07 /* OneSequenceViewModel.swift */; };
 		CEE99E632C0E7D9F008E1B07 /* OneFoundationModelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E622C0E7D9F008E1B07 /* OneFoundationModelView.swift */; };
 		CEE99E652C0E8378008E1B07 /* JobPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE99E642C0E8378008E1B07 /* JobPickerView.swift */; };
@@ -132,6 +133,7 @@
 		CEAA2B712C070B2E002BEB26 /* ChatSequence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatSequence.swift; sourceTree = "<group>"; };
 		CEAEF07D2C49B02B00281578 /* MarkdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownView.swift; sourceTree = "<group>"; };
 		CEDCF2AA2BFFD623006ABBA9 /* SimpleOneMessageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleOneMessageView.swift; sourceTree = "<group>"; };
+		CEDE7FBA2C54286A00200909 /* StoredText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoredText.swift; sourceTree = "<group>"; };
 		CEE99E582C0D85AD008E1B07 /* OneSequenceViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneSequenceViewModel.swift; sourceTree = "<group>"; };
 		CEE99E622C0E7D9F008E1B07 /* OneFoundationModelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneFoundationModelView.swift; sourceTree = "<group>"; };
 		CEE99E642C0E8378008E1B07 /* JobPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobPickerView.swift; sourceTree = "<group>"; };
@@ -321,6 +323,7 @@
 			isa = PBXGroup;
 			children = (
 				CE9B96CC2C533F4000DE8C8E /* Templates.swift */,
+				CEDE7FBA2C54286A00200909 /* StoredText.swift */,
 			);
 			path = ClientData;
 			sourceTree = "<group>";
@@ -533,6 +536,7 @@
 				CEF73F332C1E19B500C46AA5 /* Provider.swift in Sources */,
 				CE8229AF2BF7306000029DC2 /* JobsManagerService.swift in Sources */,
 				CEFEB4782BFDA6C900334522 /* TimeJob.swift in Sources */,
+				CEDE7FBB2C54286A00200909 /* StoredText.swift in Sources */,
 				CEE99E652C0E8378008E1B07 /* JobPickerView.swift in Sources */,
 				CE727B372C4F07D4000D3F64 /* PersistentCSUISettings.swift in Sources */,
 				CE4634ED2BFAE3020063142E /* RestartableProcess.swift in Sources */,
