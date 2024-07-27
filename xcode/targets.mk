@@ -31,7 +31,8 @@ build-xcode:
 		-config Debug \
 		-sdk macosx \
 		-archivePath build/"macOS App.xcarchive" \
-		-derivedDataPath build/xcode-derived-data/
+		-derivedDataPath build/xcode-derived-data/ \
+		-destination 'generic/platform=macOS'
 
 .PHONY: dist-xcode-release
 dist: dist-xcode-release
@@ -57,7 +58,8 @@ build-xcode-release:
 		-config Release \
 		-sdk macosx \
 		-archivePath build/"macOS App (Release).xcarchive" \
-		-derivedDataPath build/xcode-derived-data/
+		-derivedDataPath build/xcode-derived-data/ \
+		-destination 'generic/platform=macOS'
 
 .PHONY: clean-xcode
 clean: clean-xcode
