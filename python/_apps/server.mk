@@ -17,7 +17,7 @@ server: $(pyinstaller_inference_venv)
 			--paths $(python_root) \
 			--hidden-import llama_cpp \
 			--collect-all llama_cpp \
-			--specpath dist \
+			--specpath build \
 			--onefile --name "brokegen-server" \
 			$(python_root)_apps/server.py
 	# TODO: Check that the size of the target file hasn't dropped by too much
@@ -33,7 +33,7 @@ server-onedir: $(pyinstaller_inference_venv)
 			--paths $(python_root) \
 			--hidden-import llama_cpp \
 			--collect-all llama_cpp \
-			--specpath dist \
+			--specpath build \
 			--onedir --name "brokegen-server-onedir" \
 			$(python_root)_apps/server.py
 

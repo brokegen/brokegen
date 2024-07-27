@@ -17,7 +17,7 @@ ollama-proxy: $(pyinstaller_inference_venv)
 			--noupx --console \
 			--noconfirm \
 			--paths $(python_root) \
-			--specpath dist \
+			--specpath build \
 			--onefile --name "brokegen-ollama-proxy" \
 			$(python_root)_apps/simple_proxy.py
 
@@ -37,7 +37,7 @@ ollama-rag-proxy: $(pyinstaller_inference_venv)
 			--console \
 			--noconfirm \
 			--paths $(python_root) \
-			--specpath dist \
+			--specpath build \
 			--onefile --name "brokegen-rag-proxy" \
 			$(python_root)_apps/rag_proxy.py
 
