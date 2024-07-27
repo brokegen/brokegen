@@ -213,13 +213,17 @@ struct OneSequenceView: View {
                         desc: "Override system prompt",
                         finalString: $settings.overrideSystemPrompt,
                         historical: templates.recents(
-                            type: .systemPromptOverride,
-                            model: viewModel.sequence.serverId))
+                            type: .systemPromptOverride))
                     {
                         templates.add(
                             $0,
                             type: .systemPromptOverride,
                             model: viewModel.sequence.serverId)
+                    }
+                    .onAppear {
+                        if settings.overrideSystemPrompt.isEmpty {
+                            settings.overrideSystemPrompt = templates.recents(type: .systemPromptOverride).first?.content ?? ""
+                        }
                     }
                 }
 
@@ -227,13 +231,17 @@ struct OneSequenceView: View {
                     desc: "Override model template",
                     finalString: $settings.overrideModelTemplate,
                     historical: templates.recents(
-                        type: .modelTemplate,
-                        model: viewModel.sequence.serverId))
+                        type: .modelTemplate))
                 {
                     templates.add(
                         $0,
                         type: .modelTemplate,
                         model: viewModel.sequence.serverId)
+                }
+                .onAppear {
+                    if settings.overrideModelTemplate.isEmpty {
+                        settings.overrideModelTemplate = templates.recents(type: .modelTemplate).first?.content ?? ""
+                    }
                 }
             }
         }
@@ -252,13 +260,17 @@ struct OneSequenceView: View {
                     desc: "Seed assistant response",
                     finalString: $settings.seedAssistantResponse,
                     historical: templates.recents(
-                        type: .assistantResponseSeed,
-                        model: viewModel.sequence.serverId))
+                        type: .assistantResponseSeed))
                 {
                     templates.add(
                         $0,
                         type: .assistantResponseSeed,
                         model: viewModel.sequence.serverId)
+                }
+                .onAppear {
+                    if settings.seedAssistantResponse.isEmpty {
+                        settings.seedAssistantResponse = templates.recents(type: .assistantResponseSeed).first?.content ?? ""
+                    }
                 }
             }
         }
@@ -280,8 +292,7 @@ struct OneSequenceView: View {
                     desc: "",
                     finalString: $settings.inferenceOptions,
                     historical: templates.recents(
-                        type: .inferenceOptions,
-                        model: viewModel.sequence.serverId))
+                        type: .inferenceOptions))
                 {
                     templates.add(
                         $0,
@@ -290,6 +301,11 @@ struct OneSequenceView: View {
                 }
                 .frame(width: 800, height: 144)
                 .background(Color(.controlBackgroundColor))
+                .onAppear {
+                    if settings.inferenceOptions.isEmpty {
+                        settings.inferenceOptions = templates.recents(type: .inferenceOptions).first?.content ?? ""
+                    }
+                }
 
             }, label: {
                 Text("Inference options (JSON, passed directly to provider)")
@@ -313,8 +329,7 @@ struct OneSequenceView: View {
                     desc: "Retrieval search args (passed directly to RetrievalPolicy)",
                     finalString: $settings.retrievalSearchArgs,
                     historical: templates.recents(
-                        type: .retrievalSearchArgs,
-                        model: viewModel.sequence.serverId))
+                        type: .retrievalSearchArgs))
                 {
                     templates.add(
                         $0,
@@ -323,6 +338,11 @@ struct OneSequenceView: View {
                 }
                 .frame(width: 360, height: 144)
                 .background(Color(.controlBackgroundColor))
+                .onAppear {
+                    if settings.retrievalSearchArgs.isEmpty {
+                        settings.retrievalSearchArgs = templates.recents(type: .retrievalSearchArgs).first?.content ?? ""
+                    }
+                }
 
             }, label: {
                 Text("Retrieval-augmented generation (RAG) options")
