@@ -76,8 +76,8 @@ struct CSInferenceSettings {
     var overrideSystemPrompt: String? = nil
     var seedAssistantResponse: String? = nil
 
-    var retrievalPolicy: String? = "simple"
-    var retrievalSearchArgs: String? = "{\"k\": 18}"
+    var retrievalPolicy: String? = nil
+    var retrievalSearchArgs: String? = nil
 
     var autonamingPolicy: AutonamingPolicy = .serverDefault
 }

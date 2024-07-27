@@ -220,11 +220,6 @@ struct OneSequenceView: View {
                             type: .systemPromptOverride,
                             model: viewModel.sequence.serverId)
                     }
-                    .onAppear {
-                        if settings.overrideSystemPrompt.isEmpty {
-                            settings.overrideSystemPrompt = templates.recents(type: .systemPromptOverride).first?.content ?? ""
-                        }
-                    }
                 }
 
                 ContextualTextInput(
@@ -237,11 +232,6 @@ struct OneSequenceView: View {
                         $0,
                         type: .modelTemplate,
                         model: viewModel.sequence.serverId)
-                }
-                .onAppear {
-                    if settings.overrideModelTemplate.isEmpty {
-                        settings.overrideModelTemplate = templates.recents(type: .modelTemplate).first?.content ?? ""
-                    }
                 }
             }
         }
@@ -266,11 +256,6 @@ struct OneSequenceView: View {
                         $0,
                         type: .assistantResponseSeed,
                         model: viewModel.sequence.serverId)
-                }
-                .onAppear {
-                    if settings.seedAssistantResponse.isEmpty {
-                        settings.seedAssistantResponse = templates.recents(type: .assistantResponseSeed).first?.content ?? ""
-                    }
                 }
             }
         }
@@ -301,11 +286,6 @@ struct OneSequenceView: View {
                 }
                 .frame(width: 800, height: 144)
                 .background(Color(.controlBackgroundColor))
-                .onAppear {
-                    if settings.inferenceOptions.isEmpty {
-                        settings.inferenceOptions = templates.recents(type: .inferenceOptions).first?.content ?? ""
-                    }
-                }
 
             }, label: {
                 Text("Inference options (JSON, passed directly to provider)")
@@ -338,11 +318,6 @@ struct OneSequenceView: View {
                 }
                 .frame(width: 360, height: 144)
                 .background(Color(.controlBackgroundColor))
-                .onAppear {
-                    if settings.retrievalSearchArgs.isEmpty {
-                        settings.retrievalSearchArgs = templates.recents(type: .retrievalSearchArgs).first?.content ?? ""
-                    }
-                }
 
             }, label: {
                 Text("Retrieval-augmented generation (RAG) options")
@@ -761,6 +736,30 @@ struct OneSequenceView: View {
             .background(BackgroundEffectView().ignoresSafeArea())
             .navigationTitle(viewModel.sequence.displayServerId())
             .navigationSubtitle(viewModel.sequence.displayHumanDesc())
+        }
+        .onAppear {
+            if settings.overrideSystemPrompt.isEmpty {
+                settings.overrideSystemPrompt = templates.recents(type: .systemPromptOverride).first?.content ?? ""
+            }
+            if settings.overrideModelTemplate.isEmpty {
+                settings.overrideModelTemplate = templates.recents(type: .modelTemplate).first?.content ?? ""
+            }
+            if settings.seedAssistantResponse.isEmpty {
+                settings.seedAssistantResponse = templates.recents(type: .assistantResponseSeed).first?.content ?? ""
+            }
+            if settings.inferenceOptions.isEmpty {
+                settings.inferenceOptions = templates.recents(type: .inferenceOptions).first?.content ?? ""
+            }
+            if settings.retrievalPolicy.isEmpty {
+                settings.retrievalPolicy = "simple"
+            }
+            // Set default retrievalSearchArgs
+            if templates.recents(type: .retrievalSearchArgs).isEmpty {
+                templates.add("{\"k\": 18}", type: .retrievalSearchArgs, model: viewModel.sequence.serverId)
+            }
+            if settings.retrievalSearchArgs.isEmpty {
+                settings.retrievalSearchArgs = templates.recents(type: .retrievalSearchArgs).first?.content ?? ""
+            }
         }
     }
 }
