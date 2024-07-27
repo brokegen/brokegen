@@ -269,21 +269,23 @@ struct OneSequenceView: View {
         if viewModel.showInferenceOptions {
             GroupBox(content: {
                 ContextualTextInput(
-                    desc: "",
+                    desc: "Inference options\n(JSON, passed directly to provider)",
                     finalString: $settings.inferenceOptions,
                     historical: templates.recents(
                         type: .inferenceOptions))
                 {
-                    templates.add(
-                        $0,
-                        type: .inferenceOptions,
-                        model: viewModel.sequence.serverId)
+                    _ = templates.add(
+                        content: $0,
+                        contentType: .inferenceOptions,
+                        targetModel: viewModel.sequence.serverId)
                 }
                 .frame(width: 800, height: 144)
                 .background(Color(.controlBackgroundColor))
 
             }, label: {
-                Text("Inference options (JSON, passed directly to provider)")
+                Text("Provider Inference Options")
+                    .font(.system(size: 12).lowercaseSmallCaps())
+                    .padding(.top, 24)
             })
         }
 
@@ -301,21 +303,23 @@ struct OneSequenceView: View {
                 }
 
                 ContextualTextInput(
-                    desc: "Retrieval search args (passed directly to RetrievalPolicy)",
+                    desc: "Retrieval-augmented generation (RAG) search args\n(JSON, passed directly to RetrievalPolicy)",
                     finalString: $settings.retrievalSearchArgs,
                     historical: templates.recents(
                         type: .retrievalSearchArgs))
                 {
-                    templates.add(
-                        $0,
-                        type: .retrievalSearchArgs,
-                        model: viewModel.sequence.serverId)
+                    _ = templates.add(
+                        content: $0,
+                        contentType: .retrievalSearchArgs,
+                        targetModel: viewModel.sequence.serverId)
                 }
                 .frame(width: 360, height: 144)
                 .background(Color(.controlBackgroundColor))
 
             }, label: {
-                Text("Retrieval-augmented generation (RAG) options")
+                Text("Retrieval options")
+                    .font(.system(size: 12).lowercaseSmallCaps())
+                    .padding(.top, 24)
             })
         }
     }
@@ -717,8 +721,10 @@ struct OneSequenceView: View {
                                 }
                             }
                         }
-                        // Set a min height so we don't accidentally make a 0-height SplitView pane
-                        .frame(minHeight: 72)
+                        /// - Set a min height so we don't accidentally make a 0-height SplitView pane.
+                        /// - Also, set this in a way proportional to the upper VStack,
+                        ///   since that's what VSplitView uses to read proportions.
+                        .frame(minHeight: 144)
                     }
 
                     lowerTabBar(height: tabBarHeight)

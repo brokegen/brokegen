@@ -126,7 +126,6 @@ struct CSCSettingsView: View {
         }, label: {
             Text("ChatSequence UI Appearance")
                 .font(.system(size: 12).lowercaseSmallCaps())
-                .gridCellColumns(3)
                 .padding(.top, 24)
         })
     }
@@ -198,7 +197,6 @@ struct CSCSettingsView: View {
         }, label: {
             Text("ChatSequence UI Behaviors")
                 .font(.system(size: 12).lowercaseSmallCaps())
-                .gridCellColumns(3)
                 .padding(.top, 24)
         })
     }
@@ -306,7 +304,6 @@ struct CSCSettingsView: View {
         }, label: {
             Text("UI performance tweaks for new inference text (global)")
                 .font(.system(size: 12).lowercaseSmallCaps())
-                .gridCellColumns(3)
                 .padding(.top, 24)
         })
     }
@@ -358,7 +355,6 @@ struct CSCSettingsView: View {
         }, label: {
             Text("ChatSequence Inference Options")
                 .font(.system(size: 12).lowercaseSmallCaps())
-                .gridCellColumns(3)
                 .padding(.top, 24)
         })
     }

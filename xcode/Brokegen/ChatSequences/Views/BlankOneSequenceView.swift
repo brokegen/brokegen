@@ -269,12 +269,12 @@ struct BlankOneSequenceView: View {
         if viewModel.showInferenceOptions {
             GroupBox(content: {
                 ContextualTextInput(
-                    desc: "",
+                    desc: "Inference options\n(JSON, passed directly to provider)",
                     finalString: $viewModel.settings.inferenceOptions,
                     historical: templates.recents(
                         type: .inferenceOptions))
                 {
-                    templates.add(
+                    _ = templates.add(
                         content: $0,
                         contentType: .inferenceOptions,
                         targetModel: nil)
@@ -283,7 +283,9 @@ struct BlankOneSequenceView: View {
                 .background(Color(.controlBackgroundColor))
 
             }, label: {
-                Text("Inference options (JSON, passed directly to provider)")
+                Text("Provider Inference Options")
+                    .font(.system(size: 12).lowercaseSmallCaps())
+                    .padding(.top, 24)
             })
         }
 
@@ -301,7 +303,7 @@ struct BlankOneSequenceView: View {
                 }
 
                 ContextualTextInput(
-                    desc: "Retrieval search args (passed directly to RetrievalPolicy)",
+                    desc: "Retrieval-augmented generation (RAG) search args\n(JSON, passed directly to RetrievalPolicy)",
                     finalString: $viewModel.settings.retrievalSearchArgs,
                     historical: templates.recents(
                         type: .retrievalSearchArgs))
@@ -315,7 +317,9 @@ struct BlankOneSequenceView: View {
                 .background(Color(.controlBackgroundColor))
 
             }, label: {
-                Text("Retrieval-augmented generation (RAG) options")
+                Text("Retrieval options")
+                    .font(.system(size: 12).lowercaseSmallCaps())
+                    .padding(.top, 24)
             })
         }
     }
@@ -566,6 +570,9 @@ struct BlankOneSequenceView: View {
                             .frame(maxWidth: .infinity)
                         }
                     }
+                    // Set this in a way proportional to the upper VStack,
+                    // since that's what VSplitView uses to read proportions.
+                    .frame(minHeight: 144)
                 }
                 
                 lowerTabBar(height: tabBarHeight)
