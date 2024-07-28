@@ -252,7 +252,7 @@ class ProviderRegistry(_Borg):
                     return result
 
             except Exception:
-                logger.info(f"{factory.__class__} could not load {label}")
+                logger.info(f"{factory.__class__} could not try_make {label}")
 
         return None
 
