@@ -75,7 +75,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
     @router_ish.get("/providers/any/any/models")
     async def get_all_provider_models(
-            bypass_cache: Annotated[bool, Query()],
+            bypass_cache: Annotated[bool, Query()] = False,
             history_db: HistoryDB = Depends(get_history_db),
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ) -> list[FoundationModelResponse]:
