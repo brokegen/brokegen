@@ -100,7 +100,7 @@ class DefaultProviderService: ProviderService {
     }
 
     func doFetchAvailableModels() async throws {
-        let allModelsData = await self.getDataBlocking("/providers/any/any/models")
+        let allModelsData = await self.getDataBlocking("/providers/any/any/models?bypass_cache=true")
         guard allModelsData != nil else { throw ProviderServiceError.noResponseContentReturned }
 
         let oldCount = self.allModels.count

@@ -1,9 +1,9 @@
 import asyncio
 import logging
-from typing import AsyncGenerator, Iterable, Awaitable, AsyncIterable
+from typing import AsyncGenerator, Iterable, Awaitable, AsyncIterable, Annotated
 
 import fastapi
-from fastapi import Depends
+from fastapi import Depends, Query
 from starlette.responses import RedirectResponse
 
 from client.database import HistoryDB, get_db as get_history_db
@@ -75,6 +75,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
     @router_ish.get("/providers/any/any/models")
     async def get_all_provider_models(
+            bypass_cache: Annotated[bool, Query()],
             history_db: HistoryDB = Depends(get_history_db),
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ) -> list[FoundationModelResponse]:
@@ -90,7 +91,11 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 label: ProviderLabel,
                 provider: BaseProvider,
         ) -> list[tuple[FoundationModelRecord, ProviderLabel]]:
-            list_maker: AsyncGenerator[FoundationModelRecord, None] = provider.list_models()
+            if bypass_cache:
+                list_maker: AsyncGenerator[FoundationModelRecord, None] = provider.list_models_nocache()
+            else:
+                list_maker: AsyncGenerator[FoundationModelRecord, None] = provider.list_models()
+
             available_models = [(model, label) async for model in list_maker]
 
             logger.info(f"{len(available_models)} available FoundationModels <= from {label}")
