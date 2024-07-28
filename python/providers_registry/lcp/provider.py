@@ -196,7 +196,8 @@ class _OneModel:
             n_gpu_layers=-1,
             verbose=verbose,
             # TODO: The more elegant way to do this is with llama_cpp contexts, but this works for now.
-            n_ctx=131_072,
+            # NB This can have a significant impact on memory usage.
+            n_ctx=40_000,
         )
 
         logger.debug(f"Chat format for {self.model_name}: {self.underlying_model.chat_format}")
