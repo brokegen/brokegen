@@ -538,16 +538,16 @@ struct OneSequenceView: View {
             Toggle(isOn: $settings.responseBufferFlush) {
                 Text(
                     viewModel.settings.responseBufferFlush
-                    ? "Buffer inference output: update every \(viewModel.settings.responseBufferFlushFrequencyMsec) msec"
-                    : "Buffer inference output: update every \(PersistentDefaultCSUISettings.default_responseBufferFlushFrequencyMsec) msec"
+                    ? "Buffer inference output:\nupdate every \(viewModel.settings.responseBufferFlushFrequencyMsec) msec"
+                    : "Buffer inference output:\nupdate every \(PersistentDefaultCSUISettings.default_responseBufferFlushFrequencyMsec) msec"
                 )
             }
 
             Toggle(isOn: $settings.scrollOnNewText) {
                 Text(
                     viewModel.settings.scrollOnNewText
-                    ? "Scroll to bottom of window on new response text: check every \(viewModel.settings.scrollOnNewTextFrequencyMsec) msec"
-                    : "Scroll to bottom of window on new response text: check every \(PersistentDefaultCSUISettings.default_scrollOnNewTextFrequencyMsec) msec"
+                    ? "Scroll to bottom of window on new response text:\ncheck every \(viewModel.settings.scrollOnNewTextFrequencyMsec) msec"
+                    : "Scroll to bottom of window on new response text:\ncheck every \(PersistentDefaultCSUISettings.default_scrollOnNewTextFrequencyMsec) msec"
                 )
             }
 

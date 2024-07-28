@@ -477,19 +477,18 @@ struct BlankOneSequenceView: View {
 
         Section(header: Text("UI Performance Tweaks (global)")) {
             Toggle(isOn: $viewModel.settings.responseBufferFlush) {
-                Text("Buffer inference output")
-                Text(viewModel.settings.responseBufferFlush
-                     ? "update every \(viewModel.settings.responseBufferFlushFrequencyMsec) msec"
-                     : "update every \(PersistentDefaultCSUISettings.default_responseBufferFlushFrequencyMsec) msec"
+                Text(
+                    viewModel.settings.responseBufferFlush
+                    ? "Buffer inference output\n(update every \(viewModel.settings.responseBufferFlushFrequencyMsec) msec)"
+                    : "Buffer inference output\n(update every \(PersistentDefaultCSUISettings.default_responseBufferFlushFrequencyMsec) msec)"
                 )
             }
 
             Toggle(isOn: $viewModel.settings.scrollOnNewText) {
-                Text("Scroll to bottom of window on new response text")
                 Text(
                     viewModel.settings.scrollOnNewText
-                    ? "check every \(viewModel.settings.scrollOnNewTextFrequencyMsec) msec"
-                    : "check every \(PersistentDefaultCSUISettings.default_scrollOnNewTextFrequencyMsec) msec"
+                    ? "Scroll to bottom of window on new response text\n(check every \(viewModel.settings.scrollOnNewTextFrequencyMsec) msec)"
+                    : "Scroll to bottom of window on new response text\n(check every \(PersistentDefaultCSUISettings.default_scrollOnNewTextFrequencyMsec) msec)"
                 )
             }
 
