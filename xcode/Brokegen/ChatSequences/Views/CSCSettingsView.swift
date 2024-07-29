@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct CSCSettingsView: View {
-    @ObservedObject var settings: CSCSettingsService.SettingsProxy
+    var settings: CSCSettingsService.SettingsProxy
 
     func combinedGridRow(
         _ labelText: String,
@@ -34,6 +34,8 @@ struct CSCSettingsView: View {
 
     @ViewBuilder
     var appearanceOptions: some View {
+        @Bindable var settings = settings
+
         GroupBox(content: {
             VStack(spacing: 24) {
                 Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
@@ -132,6 +134,8 @@ struct CSCSettingsView: View {
 
     @ViewBuilder
     var behaviorOptions: some View {
+        @Bindable var settings = settings
+
         GroupBox(content: {
             Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
                 GridRow {
@@ -203,6 +207,8 @@ struct CSCSettingsView: View {
 
     @ViewBuilder
     var performanceOptions: some View {
+        @Bindable var settings = settings
+
         GroupBox(content: {
             Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
                 GridRow {
@@ -310,6 +316,8 @@ struct CSCSettingsView: View {
 
     @ViewBuilder
     var inferenceOptions: some View {
+        @Bindable var settings = settings
+
         GroupBox(content: {
             VStack(spacing: 24) {
                 Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {

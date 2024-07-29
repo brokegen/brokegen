@@ -8,7 +8,7 @@ enum ProviderServiceError: Error {
 }
 
 @Observable
-class ProviderService: ObservableObject {
+class ProviderService {
     var allModels: [FoundationModel] = []
     var allProviders: [ProviderClientModel] = []
 

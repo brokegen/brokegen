@@ -3,7 +3,7 @@ import SwiftUI
 fileprivate let INVALID_MODEL_ID: FoundationModelRecordID = -4
 
 struct ModelPickerView: View {
-    @EnvironmentObject private var providerService: ProviderService
+    @Environment(ProviderService.self) private var providerService
     @Environment(\.dismiss) var dismiss
 
     @Binding private var modelSelection: FoundationModel?
@@ -144,7 +144,7 @@ struct ModelPickerView: View {
 }
 
 struct RefreshableModelPickerView: View {
-    @EnvironmentObject private var providerService: ProviderService
+    @Environment(ProviderService.self) private var providerService
 
     var body: some View {
         VStack(spacing: 0) {
@@ -195,7 +195,7 @@ fileprivate func makeFakeModel(_ suffix: String) -> FoundationModel {
 
         var body: some View {
             ModelPickerView(modelSelection: nil)
-                .environmentObject(providerService)
+                .environment(providerService)
                 .frame(width: 800, height: 600)
         }
     }
@@ -226,7 +226,7 @@ fileprivate func makeFakeModel(_ suffix: String) -> FoundationModel {
 
         var body: some View {
             ModelPickerView(modelSelection: $modelSelection)
-                .environmentObject(providerService)
+                .environment(providerService)
                 .frame(width: 800, height: 600)
         }
     }

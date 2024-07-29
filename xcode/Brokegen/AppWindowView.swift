@@ -7,7 +7,7 @@ extension OneSequenceViewModel: CustomStringConvertible {
 }
 
 @Observable
-class PathHost: ObservableObject {
+class PathHost {
     var path: NavigationPath = NavigationPath()
     var inspectablePathItems: [any Hashable] = []
 
@@ -96,8 +96,8 @@ struct AppWindowView: View {
         .frame(idealWidth: 960)
         // Without this, shrinking the window shows a weird grey blank area on the left
         .frame(minWidth: 640)
-        .environmentObject(windowState.pathHost)
-        .environmentObject(windowState.blankViewModel)
+        .environment(windowState.pathHost)
+        .environment(windowState.blankViewModel)
         .focusedSceneObject(windowState)
     }
 }

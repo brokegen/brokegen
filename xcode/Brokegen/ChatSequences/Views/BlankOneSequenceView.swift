@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct BlankOneSequenceView: View {
-    @EnvironmentObject private var pathHost: PathHost
-    @Environment(Templates.self) private var templates: Templates
-    @EnvironmentObject var viewModel: BlankSequenceViewModel
+    @Environment(PathHost.self) private var pathHost
+    @Environment(Templates.self) private var templates
+    @Environment(BlankSequenceViewModel.self) var viewModel
 
     @FocusState private var focusTextInput: Bool
     @State private var showContinuationModelPicker: Bool = false
@@ -133,6 +133,8 @@ struct BlankOneSequenceView: View {
         VStack(spacing: 0) {
             GeometryReader { geometry in
                 HStack(spacing: 12) {
+                    @Bindable var viewModel = viewModel
+
                     InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
                         .padding(.leading, -24)
                         .focused($focusTextInput)
@@ -198,6 +200,8 @@ struct BlankOneSequenceView: View {
 
     @ViewBuilder
     var lowerVStack: some View {
+        @Bindable var viewModel = viewModel
+
         if viewModel.showSystemPromptOverride {
             HStack(spacing: 0) {
                 ZStack {
@@ -263,6 +267,8 @@ struct BlankOneSequenceView: View {
 
     @ViewBuilder
     var lowerVStackOptions: some View {
+        @Bindable var viewModel = viewModel
+
         if viewModel.showUiOptions {
             CSCSettingsView(settings: viewModel.settings)
         }
@@ -451,6 +457,8 @@ struct BlankOneSequenceView: View {
 
     @ViewBuilder
     var contextMenuItems: some View {
+        @Bindable var viewModel = viewModel
+
         Text(viewModel.displayHumanDesc)
 
         Divider()
@@ -529,6 +537,8 @@ struct BlankOneSequenceView: View {
     }
 
     var body: some View {
+        @Bindable var viewModel = viewModel
+
         GeometryReader { geometry in
             VSplitView {
                 VStack(spacing: 0) {

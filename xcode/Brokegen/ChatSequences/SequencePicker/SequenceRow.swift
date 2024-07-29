@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SequenceRow: View {
-    @EnvironmentObject private var providerService: ProviderService
+    @Environment(ProviderService.self) private var providerService
 
     let sequence: ChatSequence
     let hasPending: Bool
@@ -113,7 +113,7 @@ struct SequenceRow: View {
 }
 
 struct RenameableSequenceRow: View {
-    @EnvironmentObject private var providerService: ProviderService
+    @Environment(ProviderService.self) private var providerService
 
     let sequence: ChatSequence
     let hasPending: Bool

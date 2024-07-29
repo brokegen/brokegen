@@ -39,7 +39,7 @@ class CSCSettingsService {
     var perSequenceInferenceSettings: [ChatSequenceServerID : CSInferenceSettings] = [:]
 
     @Observable
-    class SettingsProxy: ObservableObject {
+    class SettingsProxy {
         var defaults: PersistentDefaultCSUISettings
         var override: OverrideCSUISettings
         var inference: CSInferenceSettings
@@ -85,8 +85,6 @@ class CSCSettingsService {
             get { Font.Design.fromString(defaults.cached_messageFontDesign) }
             set {
                 defaults.messageFontDesign = newValue.toString()
-                // TODO: Confirm whether we still need these Observable kicks
-                objectWillChange.send()
             }
         }
 
@@ -94,8 +92,6 @@ class CSCSettingsService {
             get { Font.Design.fromString(defaults.textEntryFontDesign) }
             set {
                 defaults.textEntryFontDesign = newValue.toString()
-                // TODO: Confirm whether we still need these Observable kicks
-                objectWillChange.send()
             }
         }
 
@@ -103,8 +99,6 @@ class CSCSettingsService {
             get { defaults.cached_responseBufferFlushFrequencyMsec }
             set {
                 defaults.responseBufferFlushFrequencyMsec = newValue
-                // TODO: Confirm whether we still need these Observable kicks
-                objectWillChange.send()
             }
         }
 
@@ -121,8 +115,6 @@ class CSCSettingsService {
             get { defaults.cached_scrollOnNewTextFrequencyMsec }
             set {
                 defaults.scrollOnNewTextFrequencyMsec = newValue
-                // TODO: Confirm whether we still need these Observable kicks
-                objectWillChange.send()
             }
         }
 
@@ -132,8 +124,6 @@ class CSCSettingsService {
                 defaults.scrollOnNewTextFrequencyMsec = newValue
                 ? PersistentDefaultCSUISettings.default_scrollOnNewTextFrequencyMsec
                 : -1
-                // TODO: Confirm whether we still need these Observable kicks
-                objectWillChange.send()
             }
         }
 
@@ -141,8 +131,6 @@ class CSCSettingsService {
             get { defaults.cached_animateNewResponseText }
             set {
                 defaults.animateNewResponseText = newValue
-                // TODO: Confirm whether we still need these Observable kicks
-                objectWillChange.send()
             }
         }
 

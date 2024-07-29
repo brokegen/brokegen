@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct BlankSimpleOneSequenceView: View {
-    @EnvironmentObject private var pathHost: PathHost
-    @EnvironmentObject var viewModel: BlankSequenceViewModel
+    @Environment(PathHost.self) private var pathHost
+    @Environment(BlankSequenceViewModel.self) var viewModel
 
     @FocusState private var focusTextInput: Bool
     @State private var showContinuationModelPicker: Bool = false
@@ -64,6 +64,8 @@ struct BlankSimpleOneSequenceView: View {
 
     var textEntryView: some View {
         HStack(spacing: 0) {
+            @Bindable var viewModel = viewModel
+
             InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
                 .focused($focusTextInput)
                 .onAppear {
@@ -136,6 +138,8 @@ struct BlankSimpleOneSequenceView: View {
         GeometryReader { geometry in
             VSplitView {
                 VStack(spacing: 0) {
+                    @Bindable var viewModel = viewModel
+
                     ChatNameInput($viewModel.humanDesc)
                         .padding(.bottom, 24)
                         .id("sequence title")

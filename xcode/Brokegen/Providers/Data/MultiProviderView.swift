@@ -3,7 +3,7 @@ import SwiftUI
 import SwiftyJSON
 
 struct OneProviderView: View {
-    @EnvironmentObject private var providerService: ProviderService
+    @Environment(ProviderService.self) private var providerService
 
     let provider: ProviderClientModel
 
@@ -106,7 +106,7 @@ struct OneProviderView: View {
 }
 
 struct MultiProviderView: View {
-    @ObservedObject var providerService: ProviderService
+    var providerService: ProviderService
 
     var body: some View {
         HStack(spacing: 24) {

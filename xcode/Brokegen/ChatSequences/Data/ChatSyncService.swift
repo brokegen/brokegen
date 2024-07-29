@@ -19,13 +19,7 @@ enum ChatSyncServiceError: Error {
 }
 
 @Observable
-class ChatSyncService: ObservableObject {
-    /// Used to check when the @Environment was injected correctly;
-    /// NavigationStack's Views aren't children of each other, so they have to be re-injected.
-    public func ping() {
-        print("[TRACE] ChatSyncService ping at \(Date.now)")
-    }
-
+class ChatSyncService {
     // MARK: - Client side models
     var chatSequenceClientModels: [OneSequenceViewModel] = []
 
@@ -140,7 +134,7 @@ class ChatSyncService: ObservableObject {
     public func fetchRecents(lookback: TimeInterval? = nil, limit: Int? = nil, onlyUserPinned: Bool? = nil) async throws {
     }
 
-    func updateSequence(withSameId updatedSequence: ChatSequence, disablePublish: Bool = false) {
+    func updateSequence(withSameId updatedSequence: ChatSequence) {
         // Keep the first ChatSequence's clientId, in case of duplicates
         let originalClientId: UUID? = loadedChatSequences[updatedSequence.serverId]?.id
         if originalClientId != nil {
@@ -157,12 +151,6 @@ class ChatSyncService: ObservableObject {
 
         for clientModel in matchingClientModels {
             clientModel.sequence = updatedSequence
-        }
-
-        if !disablePublish {
-            // Without this, SwiftUI won't notice renames in particular.
-            // Possibly because we're keeping the Identifiable .id the same?
-            objectWillChange.send()
         }
     }
 
@@ -184,8 +172,6 @@ class ChatSyncService: ObservableObject {
         for clientModel in matchingClientModels {
             clientModel.sequence = updatedSequence
         }
-
-        objectWillChange.send()
     }
 
     // MARK: - ChatSequence continue

@@ -96,7 +96,7 @@ struct ASRow: View {
 }
 
 struct AppSidebar: View {
-    @EnvironmentObject private var providerService: ProviderService
+    @Environment(ProviderService.self) private var providerService
     @Environment(AppSettings.self) private var appSettings
     @Environment(CSCSettingsService.self) private var chatSettingsService
 

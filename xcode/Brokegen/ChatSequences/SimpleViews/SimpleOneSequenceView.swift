@@ -2,8 +2,8 @@ import Combine
 import SwiftUI
 
 struct SimpleOneSequenceView: View {
-    @ObservedObject var viewModel: OneSequenceViewModel
-    @ObservedObject var settings: CSCSettingsService.SettingsProxy
+    var viewModel: OneSequenceViewModel
+    var settings: CSCSettingsService.SettingsProxy
     @State private var lastScrollOnNewText: Date = Date.distantPast
 
     @FocusState var focusTextInput: Bool
@@ -36,6 +36,8 @@ struct SimpleOneSequenceView: View {
 
     var textEntryView: some View {
         HStack(spacing: 12) {
+            @Bindable var viewModel = viewModel
+
             InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
                 .focused($focusTextInput)
                 .onAppear {
@@ -100,6 +102,8 @@ struct SimpleOneSequenceView: View {
         GeometryReader { geometry in
             VSplitView {
                 VStack(spacing: 0) {
+                    @Bindable var settings = settings
+
                     if settings.pinChatSequenceDesc {
                         ChatNameReadOnly(
                             .constant(viewModel.displayHumanDesc),

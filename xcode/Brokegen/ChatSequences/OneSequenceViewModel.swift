@@ -15,7 +15,7 @@ let maxPinChatSequenceDesc = 140
 ///   as you might imagine, this gets _weird_.
 ///
 @Observable
-class OneSequenceViewModel: ObservableObject {
+class OneSequenceViewModel {
     var sequence: ChatSequence
     @ObservationIgnored private var prerenderedMessages: [MessageLike : MarkdownContent] = [:]
     let chatService: ChatSyncService

@@ -5,7 +5,7 @@ import SwiftData
 import SwiftyJSON
 
 @Observable
-class BlankSequenceViewModel: ObservableObject {
+class BlankSequenceViewModel {
     let chatService: ChatSyncService
     var settings: CSCSettingsService.SettingsProxy
     let chatSettingsService: CSCSettingsService

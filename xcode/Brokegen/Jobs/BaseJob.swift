@@ -11,7 +11,7 @@ enum JobStatus: Equatable {
     case error(_ reason: String)
 }
 
-class BaseJob: ObservableObject, Identifiable {
+class BaseJob: Identifiable {
     let id: UUID = UUID()
 
     @Published public var status: JobStatus

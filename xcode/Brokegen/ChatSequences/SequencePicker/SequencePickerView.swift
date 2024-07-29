@@ -134,8 +134,8 @@ func sectionedSequences(
 
 // MARK: - actual SequencePicker
 struct SequencePickerView: View {
-    @EnvironmentObject private var chatService: ChatSyncService
-    @EnvironmentObject private var pathHost: PathHost
+    @Environment(ChatSyncService.self) private var chatService
+    @Environment(PathHost.self) private var pathHost
     @Environment(AppSettings.self) public var appSettings
     @Environment(CSCSettingsService.self) public var chatSettingsService
 

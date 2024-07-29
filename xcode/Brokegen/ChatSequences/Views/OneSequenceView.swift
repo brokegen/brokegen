@@ -6,14 +6,17 @@ let statusBarVPadding: CGFloat = 12
 let minStatusBarHeight: CGFloat = statusBarVPadding + 12 + statusBarVPadding
 
 struct MultiMessageView: View {
-    @EnvironmentObject private var pathHost: PathHost
-    @ObservedObject var viewModel: OneSequenceViewModel
+    @Environment(PathHost.self) private var pathHost
+    var viewModel: OneSequenceViewModel
     var messages: [MessageLike] {
         viewModel.sequence.messages
     }
-    @ObservedObject var settings: CSCSettingsService.SettingsProxy
+    var settings: CSCSettingsService.SettingsProxy
 
     var body: some View {
+        @Bindable var viewModel = viewModel
+        @Bindable var settings = settings
+
         ForEach(messages) { message in
             let indentMessage = !settings.showMessageHeaders && message.role != "user"
             let branchAction = {
@@ -62,10 +65,10 @@ struct MultiMessageView: View {
 }
 
 struct OneSequenceView: View {
-    @EnvironmentObject private var pathHost: PathHost
-    @Environment(Templates.self) private var templates: Templates
-    @ObservedObject var viewModel: OneSequenceViewModel
-    @ObservedObject var settings: CSCSettingsService.SettingsProxy
+    @Environment(PathHost.self) private var pathHost
+    @Environment(Templates.self) private var templates
+    var viewModel: OneSequenceViewModel
+    var settings: CSCSettingsService.SettingsProxy
     @State private var lastScrollOnNewText: Date = Date.distantPast
 
     @FocusState private var focusTextInput: Bool
@@ -189,6 +192,8 @@ struct OneSequenceView: View {
         VStack(spacing: 0) {
             GeometryReader { geometry in
                 HStack(spacing: 12) {
+                    @Bindable var viewModel = viewModel
+
                     InlineTextInput($viewModel.promptInEdit, isFocused: $focusTextInput)
                         .padding(.leading, -24)
                         .focused($focusTextInput)
@@ -254,6 +259,8 @@ struct OneSequenceView: View {
 
     @ViewBuilder
     var lowerVStack: some View {
+        @Bindable var settings = settings
+
         if viewModel.showSystemPromptOverride {
             HStack(spacing: 0) {
                 ZStack {
@@ -319,6 +326,8 @@ struct OneSequenceView: View {
 
     @ViewBuilder
     var lowerVStackOptions: some View {
+        @Bindable var settings = settings
+
         if viewModel.showUiOptions {
             CSCSettingsView(settings: settings)
         }
@@ -510,6 +519,8 @@ struct OneSequenceView: View {
 
     @ViewBuilder
     var contextMenuItems: some View {
+        @Bindable var settings = settings
+
         Text(viewModel.sequence.displayRecognizableDesc())
 
         Divider()
@@ -596,6 +607,8 @@ struct OneSequenceView: View {
                         .progressViewStyle(.linear)
                 }
 
+                @Bindable var viewModel = viewModel
+
                 OFMPicker(
                     boxLabel: "Select an override inference model for next message:",
                     selectedModelBinding: $viewModel.continuationInferenceModel,
@@ -613,6 +626,8 @@ struct OneSequenceView: View {
     }
 
     var body: some View {
+        @Bindable var settings = settings
+
         GeometryReader { geometry in
             VStack(spacing: 0) {
                 VSplitView {
