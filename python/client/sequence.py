@@ -74,7 +74,10 @@ class ChatSequenceOrm(Base):
         return f"<ChatSequence#{self.id}>"
 
     def __repr__(self) -> str:
-        return f"<ChatSequence#{self.id} current_message={self.current_message} parent_sequence={self.parent_sequence} inference_job_id={self.inference_job_id}>"
+        if self.inference_job_id is None:
+            return f"<ChatSequence#{self.id} message={self.current_message} parent={self.parent_sequence}>"
+        else:
+            return f"<ChatSequence#{self.id} message={self.current_message} parent={self.parent_sequence} inference_job_id={self.inference_job_id}>"
 
 
 def lookup_sequence_parents(
