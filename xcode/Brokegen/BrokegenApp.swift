@@ -34,17 +34,26 @@ struct BrokegenApp: App {
             StoredTextKey.self,
             StoredText.self,
         ])
-        let storePath = URL.applicationSupportDirectory
-        // We manually append the path component because unsigned apps get special problems.
-            .appendingPathComponent(Bundle.main.bundleIdentifier!)
-            .appending(path: "brokegen.sqlite")
-
         do {
-            return try ModelContainer(
-                for: schema,
-                configurations: [
-                    ModelConfiguration(schema: schema, url: storePath),
-                ])
+            if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+                return try ModelContainer(
+                    for: schema,
+                    configurations: [
+                        ModelConfiguration(isStoredInMemoryOnly: true)
+                    ])
+            }
+            else {
+                let storePath = URL.applicationSupportDirectory
+                // We manually append the path component because unsigned apps get special problems.
+                    .appendingPathComponent(Bundle.main.bundleIdentifier!)
+                    .appending(path: "brokegen.sqlite")
+
+                return try ModelContainer(
+                    for: schema,
+                    configurations: [
+                        ModelConfiguration(schema: schema, url: storePath),
+                    ])
+            }
         } catch {
             fatalError("[ERROR] Could not create ModelContainer: \(error)")
         }
