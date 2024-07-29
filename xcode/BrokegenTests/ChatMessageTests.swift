@@ -17,7 +17,8 @@ final class ChatMessageTests: XCTestCase {
     func testDecode() throws {
         let jsonData = """
 {
-    "id": 86204401,
+    "message_id": 86204401,
+    "sequence_id": 4401,
     "role": "assistant",
     "content": "assistant message 3",
     "created_at": "2024-06-10T01:45:43.723648"
