@@ -17,9 +17,9 @@ func formatJson(_ jsonDict: JSON?, prefix: String? = nil) -> String {
 
 struct OneFoundationModelView: View {
     public static let preferredMaxWidth: CGFloat = 800
-    
+
     private var model: FoundationModel
-    
+
     @Binding private var modelAvailable: Bool
     @State private var expandContent: Bool
     @State private var isHovered = false
