@@ -34,7 +34,27 @@ struct RefreshingRow: View {
     }
 }
 
-struct ProvidersSidebar: View {
+struct MultiProviderDetail: View {
+    @ObservedObject var providerService: ProviderService
+
+    var body: some View {
+        ScrollView {
+            if providerService.availableProviders.isEmpty {
+                Text("[no providers available]")
+                    .frame(height: 400)
+            }
+            else {
+                VStack(spacing: 24) {
+                    ForEach(providerService.availableProviders) { provider in
+                        Text("\(provider.label.type) -- \(provider.label.id)")
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct MultiProviderView: View {
     @ObservedObject var providerService: ProviderService
 
     @ViewBuilder
@@ -120,29 +140,8 @@ struct ProvidersSidebar: View {
 
             Spacer()
         }, detail: {
-            ProviderPickerView(providerService: providerService)
+            MultiProviderDetail(providerService: providerService)
                 .font(.system(size: 36))
         })
-    }
-}
-
-// TODO: Rename this to something more fitting, like CombinedProviderList
-struct ProviderPickerView: View {
-    @ObservedObject var providerService: ProviderService
-
-    var body: some View {
-        ScrollView {
-            if providerService.availableProviders.isEmpty {
-                Text("[no providers available]")
-                    .frame(height: 400)
-            }
-            else {
-                VStack(spacing: 24) {
-                    ForEach(providerService.availableProviders) { provider in
-                        Text("\(provider.label.type) -- \(provider.label.id)")
-                    }
-                }
-            }
-        }
     }
 }

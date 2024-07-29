@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		CE145DA32C18071E00577314 /* ProviderPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE145DA22C18071E00577314 /* ProviderPickerView.swift */; };
+		CE145DA32C18071E00577314 /* MultiProviderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE145DA22C18071E00577314 /* MultiProviderView.swift */; };
 		CE145DA52C18074100577314 /* FoundationModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE145DA42C18074100577314 /* FoundationModel.swift */; };
 		CE145DA82C1A0DFD00577314 /* SequenceWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE145DA72C1A0DFD00577314 /* SequenceWidgets.swift */; };
 		CE145DAA2C1A0E9800577314 /* OneSequenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE145DA92C1A0E9800577314 /* OneSequenceView.swift */; };
@@ -93,7 +93,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		CE145DA22C18071E00577314 /* ProviderPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderPickerView.swift; sourceTree = "<group>"; };
+		CE145DA22C18071E00577314 /* MultiProviderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiProviderView.swift; sourceTree = "<group>"; };
 		CE145DA42C18074100577314 /* FoundationModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoundationModel.swift; sourceTree = "<group>"; };
 		CE145DA72C1A0DFD00577314 /* SequenceWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequenceWidgets.swift; sourceTree = "<group>"; };
 		CE145DA92C1A0E9800577314 /* OneSequenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneSequenceView.swift; sourceTree = "<group>"; };
@@ -376,7 +376,7 @@
 				CE145DA42C18074100577314 /* FoundationModel.swift */,
 				CE7FFE132C04435D00DB7CFA /* ProviderService.swift */,
 				CEF73F322C1E19B500C46AA5 /* ProviderClientModel.swift */,
-				CE145DA22C18071E00577314 /* ProviderPickerView.swift */,
+				CE145DA22C18071E00577314 /* MultiProviderView.swift */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -551,7 +551,7 @@
 				CE4634EF2BFAFA340063142E /* StayAwakeService.swift in Sources */,
 				CE9867512BF4047C008D6C41 /* BrokegenApp.swift in Sources */,
 				CEDCF2AB2BFFD623006ABBA9 /* SimpleOneMessageView.swift in Sources */,
-				CE145DA32C18071E00577314 /* ProviderPickerView.swift in Sources */,
+				CE145DA32C18071E00577314 /* MultiProviderView.swift in Sources */,
 				CE9065252C2751CD003593F1 /* BlankOneSequenceView.swift in Sources */,
 				CE4634E22BF97A180063142E /* JobOutputView.swift in Sources */,
 				CE4634E52BFA5F890063142E /* OneShotProcess.swift in Sources */,

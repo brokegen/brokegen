@@ -109,7 +109,7 @@ struct AppSidebar: View {
                 Text("Settings")
             }
         }) {
-            NavigationLink(destination: ProvidersSidebar(providerService: providerService)) {
+            NavigationLink(destination: MultiProviderView(providerService: providerService)) {
                 ASRow("Providers", showChevron: true)
             }
 
