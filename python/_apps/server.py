@@ -29,7 +29,6 @@ import client
 import client.database
 import client_ollama
 import inference.continuation_routes
-import inference.prompting.superprompting
 import providers.foundation_models
 import providers.routes
 import providers_registry
@@ -273,7 +272,6 @@ def run_proxy(
 
     # Direct test points, only used in Swagger test UI
     providers_registry.llamafile.direct_routes.install_test_points(app)
-    inference.prompting.superprompting.install_routes(app, data_dir)
 
     # brokegen-specific endpoints
     providers.routes.install_routes(app)
