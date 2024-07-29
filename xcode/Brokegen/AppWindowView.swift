@@ -51,7 +51,7 @@ class WindowViewModel: ObservableObject {
 }
 
 struct AppWindowView: View {
-    @EnvironmentObject private var chatSettingsService: CSCSettingsService
+    @Environment(CSCSettingsService.self) private var chatSettingsService
     @StateObject private var windowState: WindowViewModel
 
     init(blankViewModel: BlankSequenceViewModel) {

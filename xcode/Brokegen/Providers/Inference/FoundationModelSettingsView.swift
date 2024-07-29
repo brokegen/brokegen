@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct FoundationModelSettingsView: View {
-    @ObservedObject var appSettings: AppSettings
+    @Environment(AppSettings.self) var appSettings
 
     @State private var showDefaultInferenceModelPicker = false
     @State private var showFallbackInferenceModelPicker = false
@@ -10,6 +10,8 @@ struct FoundationModelSettingsView: View {
 
     @ViewBuilder
     func pickerList(_ geometry: GeometryProxy) -> some View {
+        @Bindable var appSettings = appSettings
+
         if appSettings.stillPopulating {
             ProgressView()
                 .progressViewStyle(.linear)

@@ -3,8 +3,8 @@ import SwiftUI
 struct MiniSequencePickerSidebar: View {
     @EnvironmentObject private var chatService: ChatSyncService
     @EnvironmentObject private var pathHost: PathHost
-    @EnvironmentObject public var chatSettingsService: CSCSettingsService
-    @EnvironmentObject public var appSettings: AppSettings
+    @Environment(CSCSettingsService.self) public var chatSettingsService
+    @Environment(AppSettings.self) public var appSettings
     let navLimit: Int
 
     @State private var timesRefreshClicked = 0

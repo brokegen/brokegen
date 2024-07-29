@@ -97,8 +97,8 @@ struct ASRow: View {
 
 struct AppSidebar: View {
     @EnvironmentObject private var providerService: ProviderService
-    @EnvironmentObject private var appSettings: AppSettings
-    @EnvironmentObject private var chatSettingsService: CSCSettingsService
+    @Environment(AppSettings.self) private var appSettings
+    @Environment(CSCSettingsService.self) private var chatSettingsService
 
     var settingsSection: some View {
         AppSidebarSection(isExpanded: appSettings.showDebugSidebarItems, label: {
@@ -109,11 +109,13 @@ struct AppSidebar: View {
                 Text("Settings")
             }
         }) {
+            @Bindable var chatSettingsService = chatSettingsService
+
             NavigationLink(destination: MultiProviderView(providerService: providerService)) {
                 ASRow("Providers", showChevron: true)
             }
 
-            NavigationLink(destination: FoundationModelSettingsView(appSettings: appSettings)) {
+            NavigationLink(destination: FoundationModelSettingsView()) {
                 ASRow("Foundation Models", showChevron: true)
             }
 

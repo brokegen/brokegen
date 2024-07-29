@@ -136,8 +136,8 @@ func sectionedSequences(
 struct SequencePickerView: View {
     @EnvironmentObject private var chatService: ChatSyncService
     @EnvironmentObject private var pathHost: PathHost
-    @EnvironmentObject public var appSettings: AppSettings
-    @EnvironmentObject public var chatSettingsService: CSCSettingsService
+    @Environment(AppSettings.self) public var appSettings
+    @Environment(CSCSettingsService.self) public var chatSettingsService
 
     let onlyUserPinned: Bool
     let showNewChatButton: Bool

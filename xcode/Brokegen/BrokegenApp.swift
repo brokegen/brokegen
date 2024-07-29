@@ -20,9 +20,9 @@ struct BrokegenApp: App {
     @ObservedObject private var jobsService: JobsManagerService
     @ObservedObject private var providerService: ProviderService
 
-    @ObservedObject private var appSettings: AppSettings
+    private var appSettings: AppSettings
     @State private var inferenceSettingsUpdater: AnyCancellable? = nil
-    @ObservedObject private var chatSettingsService = CSCSettingsService()
+    private var chatSettingsService = CSCSettingsService()
 
     @Environment(\.openWindow) var openWindow
     @FocusedObject private var windowState: WindowViewModel?
@@ -127,11 +127,8 @@ struct BrokegenApp: App {
                 .environmentObject(chatService)
                 .environmentObject(jobsService)
                 .environmentObject(providerService)
-                .environmentObject(appSettings)
-                .environmentObject(chatSettingsService)
-                .onReceive(chatSettingsService.objectWillChange) { entireService in
-                    print("[TRACE] useSimplifiedOSV: \(chatSettingsService.useSimplifiedOSV)")
-                }
+                .environment(appSettings)
+                .environment(chatSettingsService)
                 .environment(templates)
                 .modelContainer(modelData)
         }
@@ -171,6 +168,9 @@ struct BrokegenApp: App {
             }
 
             CommandMenu("Settings", content: {
+                @Bindable var appSettings = appSettings
+                @Bindable var chatSettingsService = chatSettingsService
+
                 Toggle(isOn: $appSettings.showDebugSidebarItems) {
                     Text("Show debug sidebar items")
                 }

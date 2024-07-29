@@ -5,7 +5,7 @@ import SwiftUI
 fileprivate let INVALID_MODEL_ID: FoundationModelRecordID = -3
 
 @Observable
-class AppSettings: ObservableObject {
+class AppSettings {
     @AppStorage("defaultInferenceModelId")
     @ObservationIgnored private var _defaultInferenceModelId: FoundationModelRecordID = INVALID_MODEL_ID
 
