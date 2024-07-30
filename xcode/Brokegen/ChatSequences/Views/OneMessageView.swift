@@ -47,8 +47,9 @@ struct OneMessageView: View {
         get { return renderMessageAsMarkdown ?? defaultRenderAsMarkdown }
     }
 
-    var buttons: some View {
-        HStack(spacing: messageFontSize * 2) {
+    @ViewBuilder
+    func buttons(_ baseFontSize: CGFloat) -> some View {
+        HStack(spacing: baseFontSize * 2) {
             Button(action: {
                 renderMessageAsMarkdown = !renderAsMarkdown
             }, label: {
@@ -77,11 +78,12 @@ struct OneMessageView: View {
                 .disabled(true)
             }
         }
-        .font(.system(size: messageFontSize * 2))
+        .font(.system(size: baseFontSize * 2))
         .buttonStyle(.borderless)
     }
 
-    var headerSection: some View {
+    @ViewBuilder
+    func headerSection(_ baseFontSize: CGFloat) -> some View {
         HStack(alignment: .bottom, spacing: 0) {
             Button(action: {
                 withAnimation(.snappy) {
@@ -91,15 +93,15 @@ struct OneMessageView: View {
                 HStack(alignment: .bottom, spacing: 0) {
                     Image(systemName: expandContent ? "chevron.down" : "chevron.right")
                         .contentTransition(.symbolEffect)
-                        .font(.system(size: messageFontSize * 1.5))
-                        .frame(width: 2 + messageFontSize * 1.5, height: messageFontSize * 1.5)
+                        .font(.system(size: baseFontSize * 1.5))
+                        .frame(width: 2 + baseFontSize * 1.5, height: baseFontSize * 1.5)
                         .modifier(ForegroundAccentColor(enabled: !expandContent))
-                        .padding(.trailing, messageFontSize)
+                        .padding(.trailing, baseFontSize)
 
                     Text(message.role)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color(.controlTextColor))
-                        .padding(.trailing, messageFontSize)
+                        .padding(.trailing, baseFontSize)
                 }
                 .contentShape(Rectangle())
             })
@@ -119,28 +121,30 @@ struct OneMessageView: View {
                     Text(message.sequenceIdString ?? message.messageIdString)
                 }
                 .foregroundStyle(Color(.disabledControlTextColor))
-                .padding(.leading, messageFontSize * 2)
-                .padding(.trailing, messageFontSize * 2)
+                .padding(.leading, baseFontSize * 2)
+                .padding(.trailing, baseFontSize * 2)
 
-                buttons
+                buttons(12)
                     .padding(.trailing, 18)
             }
         }
-        .font(.system(size: messageFontSize * 1.5))
-        .padding(16)
+        .font(.system(size: baseFontSize * 1.5))
+        .padding(baseFontSize * 4/3)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            let fixedHeaderSize: CGFloat = 12
+
             if showMessageHeaders {
-                headerSection
+                headerSection(fixedHeaderSize)
             }
 
             if stillExpectingUpdate && (message.content.isEmpty && expandContent) {
                 ProgressView()
                     .progressViewStyle(.circular)
-                    .padding(messageFontSize * 1.5)
-                    .padding(.bottom, messageFontSize * 0.5)
+                    .padding(messageFontSize * 4/3)
+                    .padding(.bottom, messageFontSize * 2/3)
                     .id("progress view")
             }
 
@@ -157,7 +161,7 @@ struct OneMessageView: View {
                             .font(.system(size: messageFontSize * 1.5))
                             .lineSpacing(6)
                             .textSelection(.enabled)
-                            .padding(messageFontSize * 1.5)
+                            .padding(messageFontSize * 4/3)
                             .background(
                                 RoundedRectangle(cornerRadius: messageFontSize, style: .continuous)
                                     .fill(Color(.controlBackgroundColor))
@@ -168,14 +172,14 @@ struct OneMessageView: View {
                     }
 
                     if !showMessageHeaders && isHovered {
-                        buttons
-                            .padding(messageFontSize * 1.5)
+                        buttons(fixedHeaderSize)
+                            .padding(fixedHeaderSize * 4/3)
                             .background(
                                 Rectangle()
                                     .fill(Color(.controlBackgroundColor))
                                     .opacity(0.8)
                             )
-                            .padding(.trailing, messageFontSize * 1.5)
+                            .padding(.trailing, fixedHeaderSize * 1.5)
                     }
                 }
             }
@@ -209,7 +213,6 @@ Your input will help me generate more targeted and valuable responses. Let's col
 """, createdAt: Date(timeIntervalSinceNow: +5))
 
     let message4 = TemporaryChatMessage(role: "assistant", content: """
-        ```
         **This is bold text**
         ```
         **This is bold text**
@@ -254,6 +257,7 @@ Your input will help me generate more targeted and valuable responses. Let's col
 
         ```
         Use `git status` to list all new or modified files that haven't yet been committed.
+        ```
 
         ---
         ok
@@ -270,7 +274,7 @@ Your input will help me generate more targeted and valuable responses. Let's col
             showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(false))
 
         OneMessageView(
-            .temporary(TemporaryChatMessage(role: "clown", content: "Hello! How can I help you today with your prompt? Please provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now)),
+            .temporary(TemporaryChatMessage(role: "clown", content: "Hello! How can I help you today with your prompt?\n\nPlease provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now)),
             showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(false))
 
         OneMessageView(.temporary(message3), showMessageHeaders: showMessageHeaders, messageFontSize: 24, renderAsMarkdown: .constant(true))

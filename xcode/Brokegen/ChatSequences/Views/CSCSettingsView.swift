@@ -113,7 +113,7 @@ struct CSCSettingsView: View {
                         Text("[global] Font size for messages")
 
                         Stepper(value: $settings.messageFontSize) {
-                            Text("\(settings.messageFontSize) pts")
+                            Text(String(format: "%.1f pts", settings.messageFontSize))
                         }
                     }
 

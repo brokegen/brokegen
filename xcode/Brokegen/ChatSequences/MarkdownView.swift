@@ -140,8 +140,9 @@ struct MarkdownView: View {
             .markdownBlockStyle(\.paragraph) { configuration in
                 configuration.label
                     .fixedSize(horizontal: false, vertical: true)
-                    .relativeLineSpacing(.em(0.333))
-                    .markdownMargin(top: 0, bottom: 33)
+                    .lineSpacing(6)
+                // Can't use regular .padding, because the last paragraph will then always have bottom padding.
+                    .markdownMargin(top: 0, bottom: messageFontSize * 2.333)
             }
             .markdownBlockStyle(\.listItem) { configuration in
                 configuration.label
@@ -171,7 +172,7 @@ struct MarkdownView: View {
             }
             .markdownCodeSyntaxHighlighter(.splash(theme: self.theme))
             .textSelection(.enabled)
-            .padding(messageFontSize * 1.5)
+            .padding(messageFontSize * 4/3)
             .background(
                 RoundedRectangle(cornerRadius: messageFontSize, style: .continuous)
                     .fill(Color(.controlBackgroundColor))
