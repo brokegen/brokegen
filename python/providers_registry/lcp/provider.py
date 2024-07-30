@@ -11,11 +11,11 @@ import diskcache
 import jinja2.exceptions
 import llama_cpp
 import orjson
+import psutil
 import sqlalchemy
 from llama_cpp import ChatCompletionRequestMessage, CreateCompletionResponse, CreateCompletionStreamResponse, \
     BaseLlamaCache, LlamaRAMCache, LlamaDiskCache
 from llama_cpp.llama_chat_format import ChatFormatter, ChatFormatterResponse
-import psutil
 from sqlalchemy import select
 
 from _util.json import JSONDict, safe_get, safe_get_arrayed
@@ -172,36 +172,78 @@ class TemplateApplier(ChatFormatter):
 
 class _OneModel:
     model_path: str
-    shared_cache: BaseLlamaCache | None
-    underlying_model: llama_cpp.Llama | None = None
+    underlying_model: llama_cpp.Llama | None
 
     def __init__(
             self,
             model_path: str,
-            shared_cache: BaseLlamaCache | None = None,
     ):
         self.model_path = model_path
-        self.shared_cache = shared_cache
+        self.underlying_model = None
 
-    def launch(
+    def launch_with_params(
             self,
-            verbose: bool = True,
-    ):
-        if self.underlying_model is not None:
-            return
+            cfr: ChatFormatterResponse | None,
+            inference_options: InferenceOptions,
+    ) -> dict:
+        context_params = {
+            "model_path": self.model_path,
+            "n_gpu_layers": -1,
+            "verbose": True,
+            "n_ctx": 512,
+        }
 
-        logger.info(f"Loading llama_cpp model: {self.model_name}")
-        self.underlying_model = llama_cpp.Llama(
-            model_path=self.model_path,
-            n_gpu_layers=-1,
-            verbose=verbose,
-            # TODO: The more elegant way to do this is with llama_cpp contexts, but this works for now.
-            # NB This can have a significant impact on memory usage.
-            n_ctx=40_000,
+        parsed_inference_options = {}
+        try:
+            parsed_inference_options = orjson.loads(inference_options.inference_options)
+        except ValueError:
+            logger.warning(f"Invalid inference options, ignoring: \"{inference_options.inference_options}\"")
+
+        context_fields: list[str] = [field for field, _ in llama_cpp.llama_context_params._fields_]
+        for field in context_fields:
+            if field in parsed_inference_options:
+                context_params[field] = parsed_inference_options[field]
+                del parsed_inference_options[field]
+
+        # If we already loaded a model, confirm that our context_params are compatible
+        if self.underlying_model is not None:
+            for field in context_fields:
+                if (
+                        hasattr(self.underlying_model.context_params, field)
+                        and field in context_params
+                        and getattr(self.underlying_model.context_params, field) != context_params[field]
+                ):
+                    logger.info(f"Got a different context_param value, reloading: {field}={context_params.get(field, None)}")
+                    self.underlying_model = None
+                    break
+
+        if self.underlying_model is None:
+            logger.info(f"Loading llama_cpp model: {self.model_name}")
+            self.underlying_model = llama_cpp.Llama(**context_params)
+
+        # Update default inference options with the provided values.
+        if cfr is None:
+            templator = TemplateApplier(self.underlying_model, inference_options)
+            cfr: ChatFormatterResponse = templator(messages=[])
+
+        model_params = {
+            "max_tokens": None,
+            "stream": True,
+            "stop": cfr.stop,
+            "stopping_criteria": cfr.stopping_criteria,
+        }
+        model_params.update(parsed_inference_options)
+
+        # TODO: Check whether we're running out of resources. Preemptively.
+        # Instead, print something about RAM, and hope for VRAM in the future.
+        logger.debug(
+            json.dumps(dict(
+                psutil.virtual_memory()._asdict()
+            ), indent=4)
         )
 
         logger.debug(f"Chat format for {self.model_name}: {self.underlying_model.chat_format}")
-        self.underlying_model.set_cache(self.shared_cache)
+        return model_params
 
     def available(self) -> bool:
         # Do a quick tokenize/detokenize test run
@@ -335,50 +377,38 @@ class _OneModel:
 
     def do_completion(
             self,
-            prompt: TemplatedPromptText,
-            lcp_inference_options: dict,
-    ) -> CreateCompletionResponse | Iterator[CreateCompletionStreamResponse]:
-        self.launch()
+            cfr: ChatFormatterResponse,
+            inference_options: InferenceOptions,
+    ) -> llama_cpp.CreateCompletionResponse | Iterator[llama_cpp.CreateCompletionStreamResponse]:
+        model_params = self.launch_with_params(cfr, inference_options)
 
         tokenized_prompt: list[int] = self.underlying_model.tokenize(
-            prompt.encode('utf-8'),
+            cfr.prompt.encode('utf-8'),
         )
         logger.debug(f"LlamaCppProvider starting inference on model \"{self.model_name}\""
                      f" with prompt size of {len(tokenized_prompt)} tokens")
 
         llama_cpp.llama_reset_timings(self.underlying_model.ctx)
 
-        # Then return something that can kickstart generation
         return self.underlying_model.create_completion(
             tokenized_prompt,
-            **lcp_inference_options,
+            **model_params,
         )
 
-    def convert_chat_to_completion(
+    def do_chat(
             self,
             messages: list[ChatCompletionRequestMessage],
             inference_options: InferenceOptions,
-    ) -> (ChatFormatterResponse, Iterator[CreateCompletionStreamResponse]):
-        templator = TemplateApplier(self.underlying_model, inference_options)
-        cfr: ChatFormatterResponse = templator(messages=messages)
+    ) -> llama_cpp.CreateChatCompletionResponse | Iterator[llama_cpp.CreateChatCompletionStreamResponse]:
+        model_params = self.launch_with_params(None, inference_options)
 
-        # Update default inference options with the provided values.
-        lcp_inference_options = {
-            "max_tokens": None,
-            "stream": True,
-            "stop": cfr.stop,
-            "stopping_criteria": cfr.stopping_criteria,
-        }
-        lcp_inference_options.update(
-            orjson.loads(inference_options.inference_options or "{}")
+        iterator_or_completion: \
+            llama_cpp.CreateChatCompletionResponse | Iterator[llama_cpp.CreateChatCompletionStreamResponse]
+        return self.underlying_model.create_chat_completion(
+            messages=messages,
+            **model_params,
         )
 
-        token_generator: Iterator[CreateCompletionStreamResponse] = self.do_completion(
-            cfr.prompt,
-            lcp_inference_options,
-        )
-
-        return cfr, token_generator
 
 
 class LlamaCppProvider(BaseProvider):
@@ -495,15 +525,15 @@ class LlamaCppProvider(BaseProvider):
     def _load_model(
             self,
             inference_model: FoundationModelRecordOrm,
+            inference_options: InferenceOptions,
             status_holder: ServerStatusHolder,
     ) -> _OneModel:
+        # Now load the model
         target_model: _OneModel
-
         if inference_model.id not in self.loaded_models:
             new_model: _OneModel = _OneModel(
                 os.path.abspath(os.path.join(self.search_dir,
                                              safe_get(inference_model.model_identifiers, "path"))),
-                shared_cache=LlamaCppProvider.shared_cache,
             )
             while len(self.loaded_models) >= self.max_loaded_models:
                 # Use this elaborate syntax so we delete the _oldest_ item.
@@ -511,33 +541,25 @@ class LlamaCppProvider(BaseProvider):
                     next(iter(self.loaded_models))
                 ]
 
-            # TODO: Check whether we're running out of resources. Preemptively.
-            # Instead, print something about RAM, and hope for VRAM in the future.
-            logger.debug(
-                json.dumps(dict(
-                    psutil.virtual_memory()._asdict()
-                ), indent=4)
-            )
-
             self.loaded_models[inference_model.id] = new_model
             target_model = new_model
         else:
             target_model = self.loaded_models[inference_model.id]
 
-        if target_model.underlying_model is None:
-            with StatusContext(f"{target_model.model_name}: loading model", status_holder):
-                target_model.launch()
-
-        return self.loaded_models[inference_model.id]
+        with StatusContext(f"{target_model.model_name}: loading model", status_holder):
+            target_model.launch_with_params(None, inference_options)
+            return target_model
 
     # region Actual chat completion endpoints
     async def _do_chat_nolog(
             self,
             messages_list: list[ChatMessage],
-            loaded_model: _OneModel,
+            inference_model: FoundationModelRecordOrm,
             inference_options: InferenceOptions,
             status_holder: ServerStatusHolder,
     ) -> (ChatFormatterResponse, AsyncIterator[JSONDict]):
+        loaded_model = self._load_model(inference_model, inference_options, status_holder)
+
         def chat_completion_choice0_extractor(chunk: JSONDict) -> str:
             response_choices = safe_get(chunk, "choices")
             if len(response_choices) > 1:
@@ -591,10 +613,14 @@ class LlamaCppProvider(BaseProvider):
                 cfr: ChatFormatterResponse
                 iter0: Iterator[JSONDict]
 
-                cfr, iter0 = loaded_model.convert_chat_to_completion(
-                    messages=[m.model_dump() for m in messages_list],
-                    inference_options=inference_options,
+                templator = TemplateApplier(loaded_model.underlying_model, inference_options)
+                cfr: ChatFormatterResponse = templator(messages=[m.model_dump() for m in messages_list])
+
+                iter0: Iterator[CreateCompletionStreamResponse] = loaded_model.do_completion(
+                    cfr,
+                    inference_options,
                 )
+
                 iter1: Iterator[str] = map(normal_completion_choice0_extractor, iter0)
                 iter2: AsyncIterator[str] = to_async(iter1)
 
@@ -612,21 +638,11 @@ class LlamaCppProvider(BaseProvider):
         if not custom_templatoor_succeeded:
             cfr: ChatFormatterResponse = ChatFormatterResponse(prompt="")
 
-            lcp_inference_options: dict = {
-                # Stream by default; we can handle non-streaming with the same infrastructure, just not as pretty.
-                "stream": True,
-            }
-            if inference_options.inference_options:
-                lcp_inference_options.update(
-                    orjson.loads(inference_options.inference_options)
-                )
-
             iterator_or_completion: \
                 llama_cpp.CreateChatCompletionResponse | Iterator[llama_cpp.CreateChatCompletionStreamResponse]
-            underlying_model: llama_cpp.Llama = loaded_model.underlying_model
-            iterator_or_completion = underlying_model.create_chat_completion(
+            iterator_or_completion = loaded_model.do_chat(
                 messages=[m.model_dump() for m in messages_list],
-                **lcp_inference_options,
+                inference_options=inference_options,
             )
 
             if isinstance(iterator_or_completion, Iterator):
@@ -659,7 +675,7 @@ class LlamaCppProvider(BaseProvider):
         iter3: AsyncIterator[JSONDict]
         _, iter3 = await self._do_chat_nolog(
             messages_list,
-            self._load_model(inference_model, status_holder),
+            inference_model,
             inference_options,
             status_holder,
         )
@@ -806,7 +822,7 @@ class LlamaCppProvider(BaseProvider):
         iter3: AsyncIterator[JSONDict]
         cfr, iter3 = await self._do_chat_nolog(
             messages_list,
-            self._load_model(inference_model, status_holder),
+            inference_model,
             inference_options,
             status_holder,
         )
