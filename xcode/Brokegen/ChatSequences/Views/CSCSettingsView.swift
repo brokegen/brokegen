@@ -100,20 +100,18 @@ struct CSCSettingsView: View {
                     GridRow {
                         Text("[global] Font for rendering messages")
 
-                        Picker("", selection: $settings.messageFontDesign) {
-                            ForEach(Font.Design.allCases) { fontDesign in
-                                // TODO: Make the Picker render items in the selected font
-                                Text(fontDesign.toString())
-                                    .tag(fontDesign)
+                        HStack {
+                            Picker("", selection: $settings.messageFontDesign) {
+                                ForEach(Font.Design.allCases) { fontDesign in
+                                    // TODO: Make the Picker render items in the selected font
+                                    Text(fontDesign.toString())
+                                        .tag(fontDesign)
+                                }
                             }
-                        }
-                    }
 
-                    GridRow {
-                        Text("[global] Font size for messages")
-
-                        Stepper(value: $settings.messageFontSize) {
-                            Text(String(format: "%.1f pts", settings.messageFontSize))
+                            Stepper(value: $settings.messageFontSize) {
+                                Text(String(format: "%.1f pt", settings.messageFontSize))
+                            }
                         }
                     }
 
