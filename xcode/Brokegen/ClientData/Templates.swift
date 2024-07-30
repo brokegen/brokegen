@@ -68,14 +68,6 @@ class Templates {
         return st
     }
 
-    func add(
-        _ content: String,
-        type: StoredTextType,
-        model: FoundationModelRecordID?
-    ) {
-        _ = self.add(content: content, contentType: type, targetModel: model)
-    }
-
     func recents(
         type: StoredTextType,
         model: FoundationModelRecordID,

@@ -275,10 +275,10 @@ struct OneSequenceView: View {
                         historical: templates.recents(
                             type: .systemPromptOverride))
                     {
-                        templates.add(
-                            $0,
-                            type: .systemPromptOverride,
-                            model: viewModel.sequence.serverId)
+                        _ = templates.add(
+                            content: $0,
+                            contentType: .systemPromptOverride,
+                            targetModel: viewModel.sequence.serverId)
                     }
                 }
 
@@ -288,10 +288,10 @@ struct OneSequenceView: View {
                     historical: templates.recents(
                         type: .modelTemplate))
                 {
-                    templates.add(
-                        $0,
-                        type: .modelTemplate,
-                        model: viewModel.sequence.serverId)
+                    _ = templates.add(
+                        content: $0,
+                        contentType: .modelTemplate,
+                        targetModel: viewModel.sequence.serverId)
                 }
                 .monospaced()
             }
@@ -313,10 +313,10 @@ struct OneSequenceView: View {
                     historical: templates.recents(
                         type: .assistantResponseSeed))
                 {
-                    templates.add(
-                        $0,
-                        type: .assistantResponseSeed,
-                        model: viewModel.sequence.serverId)
+                    _ = templates.add(
+                        content: $0,
+                        contentType: .assistantResponseSeed,
+                        targetModel: viewModel.sequence.serverId)
                 }
             }
         }
