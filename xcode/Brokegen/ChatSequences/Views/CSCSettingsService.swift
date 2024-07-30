@@ -88,6 +88,13 @@ class CSCSettingsService {
             }
         }
 
+        var messageFontSize: CGFloat {
+            get { CGFloat(defaults.cached_messageFontSize) }
+            set {
+                defaults.cached_messageFontSize = Int(newValue)
+            }
+        }
+
         var textEntryFontDesign: Font.Design {
             get { Font.Design.fromString(defaults.textEntryFontDesign) }
             set {

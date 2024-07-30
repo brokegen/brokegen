@@ -6,6 +6,7 @@ protocol CSUISettings {
     var showMessageHeaders: Bool { get set }
     var renderAsMarkdown: Bool { get set }
     var messageFontDesign: String { get set }
+    var messageFontSize: Int { get set }
     var textEntryFontDesign: String { get set }
 
     var responseBufferFlushFrequencyMsec: Int { get set }
@@ -27,6 +28,7 @@ struct InMemoryCSUISettings: CSUISettings {
     var showMessageHeaders: Bool
     var renderAsMarkdown: Bool
     var messageFontDesign: String
+    var messageFontSize: Int
     var textEntryFontDesign: String
     var responseBufferFlushFrequencyMsec: Int
     var scrollOnNewTextFrequencyMsec: Int

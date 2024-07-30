@@ -99,7 +99,6 @@ struct CSCSettingsView: View {
                 Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
                     GridRow {
                         Text("[global] Font for rendering messages")
-                            .layoutPriority(0.2)
 
                         Picker("", selection: $settings.messageFontDesign) {
                             ForEach(Font.Design.allCases) { fontDesign in
@@ -111,8 +110,15 @@ struct CSCSettingsView: View {
                     }
 
                     GridRow {
+                        Text("[global] Font size for messages")
+
+                        Stepper(value: $settings.messageFontSize) {
+                            Text("\(settings.messageFontSize) pts")
+                        }
+                    }
+
+                    GridRow {
                         Text("[global] Font for entering prompt text")
-                            .layoutPriority(0.2)
 
                         Picker("", selection: $settings.textEntryFontDesign) {
                             ForEach(Font.Design.allCases) { fontDesign in

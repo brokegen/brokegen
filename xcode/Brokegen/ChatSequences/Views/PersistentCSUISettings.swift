@@ -9,6 +9,8 @@ class PersistentDefaultCSUISettings: CSUISettings {
     public var cached_showMessageHeaders: Bool = false
     public var cached_renderAsMarkdown: Bool = false
     public var cached_messageFontDesign: String = ""
+    public static let default_messageFontSize: Int = 18
+    public var cached_messageFontSize: Int = default_messageFontSize
 
     public static let default_responseBufferFlushFrequencyMsec: Int = 250
     public var cached_responseBufferFlushFrequencyMsec: Int = default_responseBufferFlushFrequencyMsec
@@ -147,6 +149,23 @@ class PersistentDefaultCSUISettings: CSUISettings {
             withMutation(keyPath: \.messageFontDesign) {
                 stored_messageFontDesign = newValue
                 cached_messageFontDesign = newValue
+            }
+        }
+    }
+
+    @AppStorage("defaultUiSettings.messageFontSize")
+    @ObservationIgnored private var stored_messageFontSize: Int = default_messageFontSize
+
+    @ObservationIgnored
+    var messageFontSize: Int {
+        get {
+            access(keyPath: \.messageFontSize)
+            return stored_messageFontSize
+        }
+        set {
+            withMutation(keyPath: \.messageFontSize) {
+                stored_messageFontSize = newValue
+                cached_messageFontSize = newValue
             }
         }
     }

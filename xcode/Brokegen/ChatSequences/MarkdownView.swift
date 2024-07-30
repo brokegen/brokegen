@@ -129,11 +129,12 @@ struct MarkdownView: View {
 
     let content: MarkdownContent
     let enableHorizontalScroll: Bool = false
+    let messageFontSize: CGFloat
 
     var body: some View {
         Markdown(content)
             .markdownTextStyle {
-                FontSize(18)
+                FontSize(messageFontSize * 1.5)
                 BackgroundColor(nil)
             }
             .markdownBlockStyle(\.paragraph) { configuration in
@@ -145,18 +146,18 @@ struct MarkdownView: View {
             .markdownBlockStyle(\.listItem) { configuration in
                 configuration.label
                     .fixedSize(horizontal: false, vertical: true)
-                    .markdownMargin(top: 6)
+                    .markdownMargin(top: messageFontSize * 0.5)
             }
             .markdownBlockStyle(\.blockquote) { configuration in
                 HStack(spacing: 0) {
-                    RoundedRectangle(cornerRadius: 6)
+                    RoundedRectangle(cornerRadius: messageFontSize * 0.5)
                         .fill(Color(.disabledControlTextColor))
                         .relativeFrame(width: .em(0.2))
                     configuration.label
                         .relativePadding(.horizontal, length: .em(0.75))
                 }
                 .fixedSize(horizontal: false, vertical: true)
-                .markdownMargin(top: 6)
+                .markdownMargin(top: messageFontSize * 0.5)
             }
             .markdownBlockStyle(\.codeBlock) { configuration in
                 if enableHorizontalScroll {
@@ -170,9 +171,9 @@ struct MarkdownView: View {
             }
             .markdownCodeSyntaxHighlighter(.splash(theme: self.theme))
             .textSelection(.enabled)
-            .padding(16)
+            .padding(messageFontSize * 1.5)
             .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: messageFontSize, style: .continuous)
                     .fill(Color(.controlBackgroundColor))
             )
     }
@@ -181,9 +182,9 @@ struct MarkdownView: View {
         // NOTE: We are ignoring the Splash theme font
         switch self.colorScheme {
         case .dark:
-            return .wwdc17(withFont: .init(size: 16))
+            return .wwdc17(withFont: .init(size: messageFontSize * 1.5))
         default:
-            return .sunset(withFont: .init(size: 16))
+            return .sunset(withFont: .init(size: messageFontSize * 1.5))
         }
     }
 }
@@ -221,6 +222,6 @@ struct MarkdownView: View {
             Your input will help me generate more targeted and valuable responses. Let's collaborate to create something exciting together!
 
             > Thanks.
-            """))
+            """), messageFontSize: 18)
     }
 }

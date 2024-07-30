@@ -39,14 +39,15 @@ struct MultiMessageView: View {
                 renderMessageContent: viewModel.lookup,
                 branchAction: branchAction,
                 showMessageHeaders: settings.showMessageHeaders,
+                messageFontSize: settings.messageFontSize,
                 renderAsMarkdown: $settings.renderAsMarkdown
             )
-            .padding(.leading, indentMessage ? 24.0 : 0.0)
+            .padding(.leading, indentMessage ? settings.messageFontSize * 2 : 0.0)
             .id(message)
         }
 
         if viewModel.responseInEdit != nil {
-            let messageIndent = settings.showMessageHeaders ? 0.0 : 24.0
+            let messageIndent = settings.showMessageHeaders ? 0.0 : settings.messageFontSize * 2
             // Disable animation if we're rendering Markdown, because something in MarkdownUI makes it fade really poorly
             // NB This also affects scrollToBottomOnNew
             let shouldAnimate = settings.animateNewResponseText && !settings.renderAsMarkdown
@@ -55,6 +56,7 @@ struct MultiMessageView: View {
                 .temporary(viewModel.responseInEdit!),
                 stillUpdating: true,
                 showMessageHeaders: settings.showMessageHeaders,
+                messageFontSize: settings.messageFontSize,
                 renderAsMarkdown: $settings.renderAsMarkdown
             )
             .animation(shouldAnimate ? .easeIn : nil, value: viewModel.responseInEdit)

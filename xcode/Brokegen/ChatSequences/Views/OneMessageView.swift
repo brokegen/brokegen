@@ -8,6 +8,7 @@ struct OneMessageView: View {
     let branchAction: (() -> Void)?
     let stillExpectingUpdate: Bool
     let showMessageHeaders: Bool
+    let messageFontSize: CGFloat
 
     @State private var expandContent: Bool
     @State private var isHovered: Bool = false
@@ -23,6 +24,7 @@ struct OneMessageView: View {
         branchAction: (() -> Void)? = nil,
         stillUpdating stillExpectingUpdate: Bool = false,
         showMessageHeaders: Bool,
+        messageFontSize: CGFloat = 12,
         renderAsMarkdown defaultRenderAsMarkdown: Binding<Bool>
     ) {
         self.message = message
@@ -30,6 +32,7 @@ struct OneMessageView: View {
         self.sequence = sequence
         self.branchAction = branchAction
         self.stillExpectingUpdate = stillExpectingUpdate
+        self.messageFontSize = messageFontSize
         self.showMessageHeaders = showMessageHeaders
 
         self._renderMessageAsMarkdown = State(initialValue: nil)
@@ -45,7 +48,7 @@ struct OneMessageView: View {
     }
 
     var buttons: some View {
-        HStack(spacing: 24) {
+        HStack(spacing: messageFontSize * 2) {
             Button(action: {
                 renderMessageAsMarkdown = !renderAsMarkdown
             }, label: {
@@ -74,7 +77,7 @@ struct OneMessageView: View {
                 .disabled(true)
             }
         }
-        .font(.system(size: 24))
+        .font(.system(size: messageFontSize * 2))
         .buttonStyle(.borderless)
     }
 
@@ -88,15 +91,15 @@ struct OneMessageView: View {
                 HStack(alignment: .bottom, spacing: 0) {
                     Image(systemName: expandContent ? "chevron.down" : "chevron.right")
                         .contentTransition(.symbolEffect)
-                        .font(.system(size: 18))
-                        .frame(width: 20, height: 18)
+                        .font(.system(size: messageFontSize * 1.5))
+                        .frame(width: 2 + messageFontSize * 1.5, height: messageFontSize * 1.5)
                         .modifier(ForegroundAccentColor(enabled: !expandContent))
-                        .padding(.trailing, 12)
+                        .padding(.trailing, messageFontSize)
 
                     Text(message.role)
                         .fontWeight(.semibold)
                         .foregroundStyle(Color(.controlTextColor))
-                        .padding(.trailing, 12)
+                        .padding(.trailing, messageFontSize)
                 }
                 .contentShape(Rectangle())
             })
@@ -116,14 +119,14 @@ struct OneMessageView: View {
                     Text(message.sequenceIdString ?? message.messageIdString)
                 }
                 .foregroundStyle(Color(.disabledControlTextColor))
-                .padding(.leading, 24)
-                .padding(.trailing, 24)
+                .padding(.leading, messageFontSize * 2)
+                .padding(.trailing, messageFontSize * 2)
 
                 buttons
                     .padding(.trailing, 18)
             }
         }
-        .font(.system(size: 18))
+        .font(.system(size: messageFontSize * 1.5))
         .padding(16)
     }
 
@@ -136,27 +139,27 @@ struct OneMessageView: View {
             if stillExpectingUpdate && (message.content.isEmpty && expandContent) {
                 ProgressView()
                     .progressViewStyle(.circular)
-                    .padding(16)
-                    .padding(.bottom, 8)
+                    .padding(messageFontSize * 1.5)
+                    .padding(.bottom, messageFontSize * 0.5)
                     .id("progress view")
             }
 
             if expandContent && !message.content.isEmpty {
                 ZStack(alignment: .topTrailing) {
                     if renderAsMarkdown {
-                        MarkdownView(content: renderMessageContent(message))
+                        MarkdownView(content: renderMessageContent(message), messageFontSize: messageFontSize)
                         // https://stackoverflow.com/questions/56505929/the-text-doesnt-get-wrapped-in-swift-ui
                         // Render faster
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     else {
                         Text(message.content)
-                            .font(.system(size: 18))
+                            .font(.system(size: messageFontSize * 1.5))
                             .lineSpacing(6)
                             .textSelection(.enabled)
-                            .padding(16)
+                            .padding(messageFontSize * 1.5)
                             .background(
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                RoundedRectangle(cornerRadius: messageFontSize, style: .continuous)
                                     .fill(Color(.controlBackgroundColor))
                             )
                         // https://stackoverflow.com/questions/56505929/the-text-doesnt-get-wrapped-in-swift-ui
@@ -166,13 +169,13 @@ struct OneMessageView: View {
 
                     if !showMessageHeaders && isHovered {
                         buttons
-                            .padding(16)
+                            .padding(messageFontSize * 1.5)
                             .background(
                                 Rectangle()
                                     .fill(Color(.controlBackgroundColor))
                                     .opacity(0.8)
                             )
-                            .padding(.trailing, 18)
+                            .padding(.trailing, messageFontSize * 1.5)
                     }
                 }
             }
@@ -270,7 +273,7 @@ Your input will help me generate more targeted and valuable responses. Let's col
             .temporary(TemporaryChatMessage(role: "clown", content: "Hello! How can I help you today with your prompt? Please provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now)),
             showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(false))
 
-        OneMessageView(.temporary(message3), showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(true))
+        OneMessageView(.temporary(message3), showMessageHeaders: showMessageHeaders, messageFontSize: 24, renderAsMarkdown: .constant(true))
 
         OneMessageView(.temporary(message4), showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(false))
 
