@@ -101,10 +101,16 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             )
 
         async def nonblocking_response_maker(
-                real_response_maker: Awaitable[AsyncIterator[JSONDict]],
+                response_maker_awaitable: Awaitable[AsyncIterator[JSONDict]],
         ) -> AsyncIterator[JSONDict]:
-            async for item in (await real_response_maker):
-                yield item
+            try:
+                async for item in (await response_maker_awaitable):
+                    yield item
+            except Exception as e:
+                yield {
+                    "error": str(e),
+                    "done": True,
+                }
 
         async def do_keepalive(
                 primordial: AsyncIterator[JSONDict],
