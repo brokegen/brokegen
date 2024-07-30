@@ -67,7 +67,8 @@ async def keepalive_wrapper(
                 yield chunk
 
             if await request.is_disconnected():
-                logger.fatal(f"Detected client disconnection! Ignoring, because we want inference to continue.")
+                logger.warning(f"[ollama] Detected client disconnection, ending inference")
+                break
 
         logger.debug("ollama keepalive_wrapper(): detected end of inference chunks")
 

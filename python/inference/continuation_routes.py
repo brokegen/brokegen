@@ -124,7 +124,12 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                     yield chunk
 
                 if await request.is_disconnected():
-                    logger.fatal(f"Detected client disconnection! Ignoring, because we want inference to continue.")
+                    logger.debug(f"/sequences/{sequence_id}/continue-v2: Detected client disconnection, ending inference")
+                    yield {
+                        "error": f"/sequences/{sequence_id}/continue-v2: Detected client disconnection, ending inference",
+                        "done": True,
+                    }
+                    break
 
             logger.debug("sequence_continue_v2 do_keepalive(): detected end of inference chunks")
 

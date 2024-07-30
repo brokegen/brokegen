@@ -22,6 +22,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from starlette.background import BackgroundTask
 from starlette.exceptions import HTTPException
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 
 import audit
@@ -170,6 +171,45 @@ def run_proxy(
             SqlLoggingMiddleware,
             audit_db=next(get_audit_db()),
         )
+
+    class RequestCancelledMiddleware:
+        """
+        Prints a message if we got a client disconnection.
+
+        TODO: Is there another way of detecting disconnects, other than intercepting "http.disconnect"?
+        """
+        def __init__(self, app):
+            self.app = app
+
+        async def __call__(self, scope, receive, send):
+            if scope["type"] != "http":
+                await self.app(scope, receive, send)
+                return
+
+            # Let's make a shared queue for the request messages
+            queue = asyncio.Queue()
+
+            async def message_poller(sentinel, handler_task):
+                nonlocal queue
+                while True:
+                    message = await receive()
+                    if message["type"] == "http.disconnect":
+                        handler_task.cancel()
+                        return sentinel  # Break the loop
+
+                    # Puts the message in the queue
+                    await queue.put(message)
+
+            sentinel = object()
+            handler_task = asyncio.create_task(self.app(scope, queue.get, send))
+            asyncio.create_task(message_poller(sentinel, handler_task))
+
+            try:
+                return await handler_task
+            except asyncio.CancelledError:
+                logger.debug(f"Detected client disconnection, canceling request: {scope}")
+
+    app.add_middleware(RequestCancelledMiddleware)
 
     @app.head("/")
     def head_response():

@@ -607,13 +607,7 @@ class OneSequenceViewModel {
         submittedAssistantResponseSeed = nil
 
         if submitting {
-            if userRequested {
-                serverStatus = "\(Date.now) [WARNING] User requested stop, but server will not actually stop inference"
-            }
-            else {
-                serverStatus = nil
-            }
-
+            serverStatus = nil
             submitting = false
         }
 
@@ -633,13 +627,7 @@ class OneSequenceViewModel {
                 sequence.messages.append(.temporary(responseInEdit!))
             }
 
-            if userRequested {
-                serverStatus = "\(Date.now) [WARNING] User requested stop, but server will not actually stop inference"
-            }
-            else {
-                serverStatus = nil
-            }
-
+            serverStatus = nil
             responseInEdit = nil
         }
 

@@ -37,7 +37,6 @@ struct AFErrorAndData: Error {
     }
 }
 
-/// Finally, something to submit new chat requests
 extension DefaultChatSyncService {
     public func doSequenceContinue(
         _ params: ContinueParameters
@@ -59,7 +58,7 @@ extension DefaultChatSyncService {
         print("[DEBUG] POST /sequences/\(params.sequenceId!)/continue <= \(String(data: encodedParams!, encoding: .utf8)!)")
         var responseStatusCode: Int? = nil
 
-        _ = session.streamRequest(
+        let request = session.streamRequest(
             serverBaseURL + "/sequences/\(params.sequenceId!)/continue"
         ) { urlRequest in
             urlRequest.method = .post
@@ -68,34 +67,39 @@ extension DefaultChatSyncService {
             ]
             urlRequest.httpBody = encodedParams!
         }
-        .onHTTPResponse { response in
-            // Status code comes early on, but we need to wait for a .response handler to get body data.
-            // Store the status code until the later handler can deal with it.
-            responseStatusCode = response.statusCode
-        }
-        .responseStream { stream in
-            switch stream.event {
-            case let .stream(result):
-                switch result {
-                case let .success(data):
-                    if responseStatusCode != nil && !(200..<400).contains(responseStatusCode!) {
-                        let error = AFError.responseValidationFailed(reason: .unacceptableStatusCode(code: responseStatusCode!))
-                        subject.send(completion: .failure(AFErrorAndData(error: error, data: data)))
+            .onHTTPResponse { response in
+                // Status code comes early on, but we need to wait for a .response handler to get body data.
+                // Store the status code until the later handler can deal with it.
+                responseStatusCode = response.statusCode
+            }
+            .responseStream { stream in
+                switch stream.event {
+                case let .stream(result):
+                    switch result {
+                    case let .success(data):
+                        if responseStatusCode != nil && !(200..<400).contains(responseStatusCode!) {
+                            let error = AFError.responseValidationFailed(reason: .unacceptableStatusCode(code: responseStatusCode!))
+                            subject.send(completion: .failure(AFErrorAndData(error: error, data: data)))
+                        }
+                        else {
+                            subject.send(data)
+                        }
+                    }
+                case let .complete(completion):
+                    if completion.error == nil {
+                        subject.send(completion: .finished)
                     }
                     else {
-                        subject.send(data)
+                        subject.send(completion: .failure(AFErrorAndData(error: completion.error!, data: nil)))
                     }
                 }
-            case let .complete(completion):
-                if completion.error == nil {
-                    subject.send(completion: .finished)
-                }
-                else {
-                    subject.send(completion: .failure(AFErrorAndData(error: completion.error!, data: nil)))
-                }
             }
-        }
 
-        return subject.eraseToAnyPublisher()
+        return subject
+            .handleEvents(receiveCancel: {
+                print("[TRACE] Detected cancel event for /sequences/\(params.sequenceId!)/continue")
+                request.cancel()
+            })
+            .eraseToAnyPublisher()
     }
 }

@@ -257,7 +257,8 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
                     yield chunk
 
                 if await request.is_disconnected():
-                    logger.fatal(f"Detected client disconnection! Ignoring, because we want inference to continue.")
+                    logger.warning(f"[ollama-proxy] /api/generate: Detected client disconnection, ending inference")
+                    break
 
         async def add_newlines(primordial: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
             async for chunk in primordial:
