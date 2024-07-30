@@ -144,21 +144,6 @@ struct AppSidebar: View {
                 VStack(spacing: 0) {
                     MiniSequencePickerSidebar()
 
-                    if appSettings.showDebugSidebarItems {
-                        AppSidebarSection(isExpanded: false, label: {
-                            HStack {
-                                Image(systemName: "person.3")
-                                    .padding(.trailing, 0)
-
-                                Text("Agents")
-                            }
-                        }) {
-                            ASRow("IRC Simulator")
-                                .disabled(true)
-                                .foregroundStyle(Color(.disabledControlTextColor))
-                        }
-                    }
-
                     AppSidebarSection(label: {
                         Image(systemName: "sink")
                             .padding(.trailing, 0)
