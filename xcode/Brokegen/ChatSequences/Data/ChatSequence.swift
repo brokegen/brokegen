@@ -341,8 +341,10 @@ extension DefaultChatSyncService {
             let startTime = Date.now
 
             for oneSequence in sequenceUpdates {
-                self.updateSequence(withSameId: oneSequence)
+                self.updateSequence(withSameId: oneSequence, disablePublish: true)
             }
+
+            self.objectWillChange.send()
 
             let elapsedMsec = Date.now.timeIntervalSince(startTime) * 1000
             if elapsedMsec > 8.333 {

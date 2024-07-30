@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct MiniSequencePickerSidebar: View {
-    @Environment(ChatSyncService.self) private var chatService
+    @EnvironmentObject private var chatService: ChatSyncService
     @Environment(PathHost.self) private var pathHost
     @Environment(CSCSettingsService.self) public var chatSettingsService
     @Environment(AppSettings.self) public var appSettings

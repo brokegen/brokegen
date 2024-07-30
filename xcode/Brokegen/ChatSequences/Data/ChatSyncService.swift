@@ -19,7 +19,7 @@ enum ChatSyncServiceError: Error {
 }
 
 @Observable
-class ChatSyncService {
+class ChatSyncService: ObservableObject {
     // MARK: - Client side models
     var chatSequenceClientModels: [OneSequenceViewModel] = []
 
@@ -134,7 +134,7 @@ class ChatSyncService {
     public func fetchRecents(lookback: TimeInterval? = nil, limit: Int? = nil, onlyUserPinned: Bool? = nil) async throws {
     }
 
-    func updateSequence(withSameId updatedSequence: ChatSequence) {
+    func updateSequence(withSameId updatedSequence: ChatSequence, disablePublish: Bool = false) {
         // Keep the first ChatSequence's clientId, in case of duplicates
         let originalClientId: UUID? = loadedChatSequences[updatedSequence.serverId]?.id
         if originalClientId != nil {
@@ -151,6 +151,12 @@ class ChatSyncService {
 
         for clientModel in matchingClientModels {
             clientModel.sequence = updatedSequence
+        }
+
+        if !disablePublish {
+            // Without this, SwiftUI won't notice renames in particular.
+            // Possibly because we're keeping the Identifiable .id the same?
+            objectWillChange.send()
         }
     }
 
@@ -172,6 +178,8 @@ class ChatSyncService {
         for clientModel in matchingClientModels {
             clientModel.sequence = updatedSequence
         }
+
+        objectWillChange.send()
     }
 
     // MARK: - ChatSequence continue
