@@ -234,14 +234,6 @@ class _OneModel:
         }
         model_params.update(parsed_inference_options)
 
-        # TODO: Check whether we're running out of resources. Preemptively.
-        # Instead, print something about RAM, and hope for VRAM in the future.
-        logger.debug(
-            json.dumps(dict(
-                psutil.virtual_memory()._asdict()
-            ), indent=4)
-        )
-
         logger.debug(f"Chat format for {self.model_name}: {self.underlying_model.chat_format}")
         return model_params
 
@@ -298,7 +290,8 @@ class _OneModel:
             orjson.dumps(model_identifiers, option=orjson.OPT_SORT_KEYS)
         )
 
-        # Read the model_params into combined_inference_params, since they only affect inference, but don't impact the model
+        # Read the model_params into combined_inference_params,
+        # since they only affect inference, but don't impact the model
         model_params = dict([
             (field, getattr(info_only.model_params, field))
             for field, _ in info_only.model_params._fields_
@@ -410,46 +403,21 @@ class _OneModel:
         )
 
 
-
 class LlamaCppProvider(BaseProvider):
     search_dir: str
 
     loaded_models: dict[FoundationModelRecordID, _OneModel] = {}
     max_loaded_models: int
 
-    shared_cache: BaseLlamaCache | None = None
-
     def __init__(
             self,
             search_dir: str,
             cache_dir: str | None,
             max_loaded_models: int,
-            # Nevermind, just outright disable the cache.
-            # Gathering LLM state takes too much time and makes everything seem slow.
-            enable_cache: bool = False,
-            disk_capacity: int = 32 * (1 << 30),
-            ram_capacity: int = 4 * (1 << 30),
     ):
         super().__init__()
         self.search_dir = search_dir
         self.max_loaded_models = max_loaded_models
-
-        if enable_cache and LlamaCppProvider.shared_cache is None:
-            logger.warning("lcp creating Llama cache; this is generally broken!")
-            # TODO: These may not be thread/process safe, but whether _that_ matters depends on the ASGI framework
-            if cache_dir is not None and os.path.isdir(cache_dir) and False:
-                LlamaCppProvider.shared_cache = LlamaDiskCache(cache_dir, capacity_bytes=disk_capacity)
-
-                # TODO: llama_cpp_python doesn't actually set the cache settings correctly, upstream these changes.
-                # - Note that the disk capacity is not changed later on, since the initial capacity is stored in the db?
-                LlamaCppProvider.shared_cache.cache = diskcache.Cache(
-                    cache_dir=cache_dir,
-                    statistics=True,
-                    size_limit=disk_capacity,
-                    sqlite_synchronous=False,
-                )
-            else:
-                LlamaCppProvider.shared_cache = LlamaRAMCache(capacity_bytes=ram_capacity)
 
     async def available(self) -> bool:
         return os.path.exists(self.search_dir)
@@ -528,18 +496,25 @@ class LlamaCppProvider(BaseProvider):
             inference_options: InferenceOptions,
             status_holder: ServerStatusHolder,
     ) -> _OneModel:
+        # Check whether we're running out of resources. Preemptively.
+        # Interestingly enough, we only ever worry about RAM:
+        #
+        # - Apple silicon has unified memory
+        # - Intel macOS generally doesn't have a llama.cpp-supported GPU, so it's all CPU
+        #
+        available_ram = psutil.virtual_memory().available / (1 << 30)
+        total_ram = psutil.virtual_memory().total / (1 << 30)
+        logger.info(f"Available RAM: {available_ram:_.1f} GB / {total_ram:_.1f} total")
+
         # Now load the model
         target_model: _OneModel
         if inference_model.id not in self.loaded_models:
+            self.trim_loaded_models(self.max_loaded_models - 1)
+
             new_model: _OneModel = _OneModel(
                 os.path.abspath(os.path.join(self.search_dir,
                                              safe_get(inference_model.model_identifiers, "path"))),
             )
-            while len(self.loaded_models) >= self.max_loaded_models:
-                # Use this elaborate syntax so we delete the _oldest_ item.
-                del self.loaded_models[
-                    next(iter(self.loaded_models))
-                ]
 
             self.loaded_models[inference_model.id] = new_model
             target_model = new_model
@@ -549,6 +524,13 @@ class LlamaCppProvider(BaseProvider):
         with StatusContext(f"{target_model.model_name}: loading model", status_holder):
             target_model.launch_with_params(None, inference_options)
             return target_model
+
+    def trim_loaded_models(self, model_limit: int):
+        while len(self.loaded_models) > model_limit:
+            # Use this elaborate syntax so we delete the _oldest_ item.
+            del self.loaded_models[
+                next(iter(self.loaded_models))
+            ]
 
     # region Actual chat completion endpoints
     async def _do_chat_nolog(
