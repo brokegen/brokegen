@@ -200,6 +200,41 @@ class _OneModel:
             logger.warning(f"Invalid inference options, ignoring: \"{inference_options.inference_options}\"")
 
         context_fields: list[str] = [field for field, _ in llama_cpp.llama_context_params._fields_]
+        # Additional fields that are only present in __init__
+        context_fields.extend([
+            # Model Params
+            "n_gpu_layers",
+            "split_mode",
+            "main_gpu",
+            "tensor_split",
+            "rpc_servers",
+            "vocab_only",
+            "use_mmap",
+            "use_mlock",
+            "kv_overrides",
+            # Sampling Params
+            "last_n_tokens_size",
+            # LoRA Params
+            "lora_base",
+            "lora_scale",
+            "lora_path",
+            # Backend Params
+            "numa",
+            # Chat Format Params
+            "chat_format",
+            "chat_handler",
+            # Speculative Decoding
+            "draft_model",
+            # Tokenizer Override
+            "tokenizer",
+            # KV cache quantization
+            "type_k",
+            "type_v",
+            # Misc
+            "spm_infill",
+            "verbose",
+        ])
+
         for field in context_fields:
             if field in parsed_inference_options:
                 context_params[field] = parsed_inference_options[field]
