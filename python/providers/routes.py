@@ -19,6 +19,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
     def list_any_providers(
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ) -> Iterable[tuple[ProviderLabel, ProviderRecord]]:
+        record_by_provider: dict[BaseProvider, ProviderRecord]
         record_by_provider = dict([(v, k) for k, v in registry.by_record.items()])
 
         for label, provider in registry.by_label.items():
@@ -48,7 +49,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
     async def discover_specific_providers(
             provider_type: ProviderType,
             registry: ProviderRegistry = Depends(ProviderRegistry),
-    ):
+    ) -> list[tuple[ProviderLabel, ProviderRecord]]:
         async def do_load() -> AsyncGenerator[tuple[ProviderLabel, ProviderRecord], None]:
             for factory in registry.factories:
                 await factory.discover(provider_type, registry=registry)
@@ -64,10 +65,11 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             provider_type: ProviderType,
             provider_id: ProviderID,
             registry: ProviderRegistry = Depends(ProviderRegistry),
-    ):
+    ) -> tuple[ProviderLabel, ProviderRecord]:
         label = ProviderLabel(type=provider_type, id=provider_id)
         provider = registry.by_label[label]
 
+        record_by_provider: dict[BaseProvider, ProviderRecord]
         record_by_provider = dict([(v, k) for k, v in registry.by_record.items()])
 
         record = record_by_provider[provider]
