@@ -612,9 +612,6 @@ class LlamaCppProvider(BaseProvider):
                 status_holder.set(f"{loaded_model.model_name}: {timings.n_p_eval} new prompt tokens"
                                   f" => {timings.n_eval} tokens generated in {timings.t_eval_ms / 1000:_.3f} seconds")
 
-            if self.shared_cache is not None:
-                logger.debug(f"Updated LlamaCache size: {self.shared_cache.cache_size:_} bytes")
-
         # Main function body: maybe apply templating + kick off inference
         try_custom_templatoor: bool = True
         custom_templatoor_succeeded: bool = False
