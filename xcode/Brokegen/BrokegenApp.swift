@@ -14,6 +14,10 @@ let configuration: URLSessionConfiguration = { slowTimeouts in
     return configuration
 }(true)
 
+fileprivate let previewMode: Bool = {
+    ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+}()
+
 @main
 struct BrokegenApp: App {
     @ObservedObject private var chatService: ChatSyncService
@@ -35,7 +39,7 @@ struct BrokegenApp: App {
             StoredText.self,
         ])
         do {
-            if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+            if previewMode {
                 return try ModelContainer(
                     for: schema,
                     configurations: [
@@ -61,7 +65,7 @@ struct BrokegenApp: App {
 
     /// We have to make a bunch of "temporary" variables to do a non-automatic init
     init() {
-        if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+        if previewMode {
             chatService = ChatSyncService()
             let providerService = ProviderService()
             self.providerService = providerService
