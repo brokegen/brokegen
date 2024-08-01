@@ -158,12 +158,12 @@ struct SequencePickerView: View {
                 _ = chatService.autonameChatSequence(sequence, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
             }
         } label: {
-            Text(appSettings.preferredAutonamingModel == nil
+            Text(appSettings.cached_preferredAutonamingModel == nil
                  ? "Autoname \(sequences.count) sequences (disabled, select a preferred model first)"
                  : "Autoname \(sequences.count) sequences")
                 .font(.system(size: 18))
         }
-        .disabled(appSettings.preferredAutonamingModel == nil)
+        .disabled(appSettings.cached_preferredAutonamingModel == nil)
     }
 
     @ViewBuilder
@@ -186,12 +186,12 @@ struct SequencePickerView: View {
             } label: {
                 Text(appSettings.stillPopulating
                      ? "Autoname disabled (still loading)"
-                     : (appSettings.preferredAutonamingModel == nil
+                     : (appSettings.cached_preferredAutonamingModel == nil
                         ? "Autoname disabled (set a model in settings)"
-                        : "Autoname with model: \(appSettings.preferredAutonamingModel!.humanId)")
+                        : "Autoname with model: \(appSettings.cached_preferredAutonamingModel!.humanId)")
                 )
             }
-            .disabled(appSettings.preferredAutonamingModel == nil)
+            .disabled(appSettings.cached_preferredAutonamingModel == nil)
 
             Button {
                 self.isRenaming.append(sequence)
