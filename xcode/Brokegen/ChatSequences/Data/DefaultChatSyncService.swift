@@ -43,6 +43,7 @@ class DefaultChatSyncService: ChatSyncService {
 
             if let resultData: Data = try? await self.postDataBlocking(nil, endpoint: endpointBuilder) {
                 if let autoname: String = JSON(resultData)["autoname"].string {
+                    // TODO: Holding the `ChatSequence` for so long means we will overwrite any changes made since the start of the function call.
                     let autonamedSequence = sequence.replaceHumanDesc(desc: autoname)
                     DispatchQueue.main.async {
                         self.updateSequence(withSameId: autonamedSequence)
@@ -80,6 +81,7 @@ class DefaultChatSyncService: ChatSyncService {
                 endpoint: "/sequences/\(sequence.serverId)/user_pinned?value=\(userPinned)")
             guard result != nil else { return }
 
+            // TODO: Holding the `ChatSequence` for so long means we will overwrite any changes made since the start of the function call.
             let updatedSequence = sequence.replaceUserPinned(pinned: userPinned)
             DispatchQueue.main.async {
                 self.updateSequence(withSameId: updatedSequence)

@@ -581,6 +581,11 @@ struct OneSequenceView: View {
             }
 
             Button {
+                // Keep the chat name pinned if we're setting a name for the first time
+                if (viewModel.sequence.humanDesc ?? "").isEmpty {
+                    viewModel.settings.pinChatSequenceDesc = true
+                }
+
                 _ = viewModel.chatService.autonameChatSequence(viewModel.sequence, preferredAutonamingModel: viewModel.appSettings.preferredAutonamingModel?.serverId)
             } label: {
                 Text(viewModel.appSettings.stillPopulating
