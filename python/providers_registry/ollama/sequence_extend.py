@@ -59,7 +59,7 @@ async def do_continuation(
         inference_event = InferenceEventOrm(
             model_record_id=inference_model.id,
             prompt_with_templating=prompt_with_templating,
-            reason="ChatSequence continuation",
+            reason="[ollama] ChatSequence continuation",
             response_created_at=datetime.now(tz=timezone.utc),
             response_error="[haven't received/finalized response info yet]",
         )

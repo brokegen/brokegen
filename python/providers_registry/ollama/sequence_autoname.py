@@ -70,7 +70,7 @@ async def ollama_autoname_sequence(
             status_holder):
         name: str = await do_autoname_sequence(
             autonaming_model,
-            inference_reason=f"ChatSequence autoname",
+            inference_reason=f"[ollama] ChatSequence autoname",
             system_message=None,
             user_prompt="Summarize the provided messages, suitable as a short description for a tab title. " +
                         "Answer with that title only, do not provide additional information. Reply with exactly one title.\n\n" +
