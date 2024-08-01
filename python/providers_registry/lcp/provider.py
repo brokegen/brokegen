@@ -197,7 +197,8 @@ class _OneModel:
         try:
             parsed_inference_options = orjson.loads(inference_options.inference_options)
         except ValueError:
-            logger.warning(f"Invalid inference options, ignoring: \"{inference_options.inference_options}\"")
+            if inference_options.inference_options:
+                logger.warning(f"Invalid inference options, ignoring: \"{inference_options.inference_options}\"")
 
         context_fields: list[str] = [field for field, _ in llama_cpp.llama_context_params._fields_]
         # Additional fields that are only present in __init__
