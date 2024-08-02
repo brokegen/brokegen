@@ -188,7 +188,6 @@ class _OneModel:
     ) -> dict:
         context_params = {
             "model_path": self.model_path,
-            "n_gpu_layers": -1,
             "verbose": True,
             "n_ctx": 512,
         }

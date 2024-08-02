@@ -22,7 +22,6 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from starlette.background import BackgroundTask
 from starlette.exceptions import HTTPException
-from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 
 import audit
@@ -178,6 +177,7 @@ def run_proxy(
 
         TODO: Is there another way of detecting disconnects, other than intercepting "http.disconnect"?
         """
+
         def __init__(self, app):
             self.app = app
 

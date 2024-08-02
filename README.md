@@ -44,5 +44,6 @@ An embedded copy of ollama is also included, though you'll have to download mode
 
 - There is some support for reading langchain/FAISS vector stores, but the write code hasn't been added yet. RAG infrastructure is largely there, but I'd prefer to add a DSPy-centered implementation.
 - For newer models like `mistral-nemo` and `llama3.1`, scaling the context up to 128k generally consumes more than 64 GB of RAM, so default context size is 512 tokens + user is expected to override these in the UI inference options.
-- The llama-cpp-python provider defaults to GPU inference, which will be significantly slower on Intel Macs due to VRAM paging. Override this in inference options (`n_gpu_layers: 0`), or use Ollama.
+- The llama-cpp-python provider defaults to CPU inference, which will be significantly slower on Apple Silicon Macs.
+  Override this in inference options (`{"n_gpu_layers": -1}`), or use Ollama.
 - Multi-modal support is non-existent; the `/ollama-proxy` endpoint supports forwarding image files to any ollama model that indicates support for it (e.g. `llava`), but image data will not be captured or replayable.
