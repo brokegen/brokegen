@@ -9,6 +9,7 @@ from typing import AsyncGenerator, AsyncIterator, Iterator, TypeVar, Any, Callab
 
 import diskcache
 import jinja2.exceptions
+import jsondiff
 import llama_cpp
 import orjson
 import psutil
@@ -173,6 +174,7 @@ class TemplateApplier(ChatFormatter):
 class _OneModel:
     model_path: str
     underlying_model: llama_cpp.Llama | None
+    underlying_context_params: dict
 
     def __init__(
             self,
@@ -180,6 +182,7 @@ class _OneModel:
     ):
         self.model_path = model_path
         self.underlying_model = None
+        self.underlying_context_params = {}
 
     def launch_with_params(
             self,
@@ -242,19 +245,21 @@ class _OneModel:
 
         # If we already loaded a model, confirm that our context_params are compatible
         if self.underlying_model is not None:
-            for field in context_fields:
-                if (
-                        hasattr(self.underlying_model.context_params, field)
-                        and field in context_params
-                        and getattr(self.underlying_model.context_params, field) != context_params[field]
-                ):
-                    logger.info(f"Got a different context_param value, reloading: {field}={context_params.get(field, None)}")
-                    self.underlying_model = None
-                    break
+            if context_params != self.underlying_context_params:
+                # DEBUG: Print the details about what's different.
+                diff_info: str = json.dumps(
+                    # The values in the second dict are what get printed out.
+                    jsondiff.diff(self.underlying_context_params, context_params),
+                    indent=2
+                )
+                logger.info(f"Supplied context_params differ, reloading: {diff_info}")
+
+                self.underlying_model = None
 
         if self.underlying_model is None:
             logger.info(f"Loading llama_cpp model: {self.model_name}")
             self.underlying_model = llama_cpp.Llama(**context_params)
+            self.underlying_context_params = context_params
 
         # Update default inference options with the provided values.
         if cfr is None:
