@@ -18,7 +18,14 @@ struct MultiMessageView: View {
         @Bindable var settings = settings
 
         ForEach(messages) { message in
-            let indentMessage = !settings.showMessageHeaders && message.role != "user"
+            let messageIndent: CGFloat = {
+                if settings.showMessageHeaders || message.role == "user" {
+                    return 0.0
+                }
+
+                return settings.messageFontSize * 2
+            }()
+
             let branchAction = {
                 if case .stored(let message) = message {
                     Task {
@@ -44,7 +51,7 @@ struct MultiMessageView: View {
                     expandContent: true,
                     renderAsMarkdown: settings.renderAsMarkdown
                 )
-                .padding(.leading, indentMessage ? settings.messageFontSize * 2 : 0.0)
+                .padding(.leading, messageIndent)
                 .id(message)
             }
             else if message.role == "server error" {
@@ -55,6 +62,8 @@ struct MultiMessageView: View {
                     expandContent: true,
                     renderAsMarkdown: false
                 )
+                .padding(.leading, messageIndent)
+                .id(message)
                 .fontDesign(.monospaced)
             }
             else {
@@ -65,6 +74,8 @@ struct MultiMessageView: View {
                     expandContent: false,
                     renderAsMarkdown: false
                 )
+                .padding(.leading, messageIndent)
+                .id(message)
                 .fontDesign(.monospaced)
             }
         }
