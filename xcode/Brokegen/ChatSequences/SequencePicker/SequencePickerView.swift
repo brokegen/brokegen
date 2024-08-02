@@ -103,12 +103,12 @@ extension ChatSequence: Comparable {
 }
 
 func sectionedSequences(
-    _ loadedChatSequences: [ChatSequenceServerID : ChatSequence],
+    _ loadedChatSequences: [ChatSequence],
     onlyUserPinned: Bool
 ) -> [(String, [ChatSequence])] {
     let startTime = Date.now
 
-    var sortedSequences = Array(loadedChatSequences.values)
+    var sortedSequences = Array(loadedChatSequences)
     if onlyUserPinned {
         sortedSequences = sortedSequences.filter {
             $0.userPinned == true || $0.isLeafSequence == true
@@ -302,7 +302,7 @@ struct SequencePickerView: View {
         GeometryReader { geometry in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 8) {
-                    ForEach(sectionedSequences(chatService.loadedChatSequences, onlyUserPinned: onlyUserPinned), id: \.0) { pair in
+                    ForEach(sectionedSequences(Array(chatService.loadedChatSequences.values), onlyUserPinned: onlyUserPinned), id: \.0) { pair in
                         let (sectionName, sectionSequences) = pair
 
                         Section(content: {
