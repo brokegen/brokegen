@@ -85,29 +85,10 @@ func dateToSectionName(_ date: Date?) -> String {
     }
 }
 
-extension ChatSequence: Comparable {
-    static func < (lhs: ChatSequence, rhs: ChatSequence) -> Bool {
-        if lhs.generatedAt == nil {
-            return false
-        }
-        if rhs.generatedAt == nil {
-            return true
-        }
-
-        if lhs.generatedAt == rhs.generatedAt {
-            return lhs.parentSequences?.count ?? -1 > rhs.parentSequences?.count ?? -1
-        }
-
-        return lhs.generatedAt! > rhs.generatedAt!
-    }
-}
-
 func sectionedSequences(
     _ loadedChatSequences: [ChatSequence],
     onlyUserPinned: Bool
 ) -> [(String, [ChatSequence])] {
-    let startTime = Date.now
-
     var sortedSequences = Array(loadedChatSequences)
     if onlyUserPinned {
         sortedSequences = sortedSequences.filter {
@@ -117,17 +98,11 @@ func sectionedSequences(
     sortedSequences = sortedSequences.sorted()
 
     let sectionedSequences = Dictionary(grouping: sortedSequences) {
-        dateToSectionName($0.updatedAt)
+        dateToSectionName($0.generatedAt)
     }
 
     let result = Array(sectionedSequences)
         .sorted { $0.0 > $1.0 }
-
-    let elapsedMsec = Date.now.timeIntervalSince(startTime) * 1000
-    if elapsedMsec > 8.333 {
-        let args: String = onlyUserPinned ? "onlyUserPinned: true" : ""
-        print("[TRACE] ChatSyncService.sectionedSequences(\(args)) generation time: \(String(format: "%.3f", elapsedMsec)) msec for \(loadedChatSequences.count) rows")
-    }
 
     return result
 }

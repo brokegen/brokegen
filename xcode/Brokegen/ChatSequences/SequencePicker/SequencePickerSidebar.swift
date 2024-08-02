@@ -16,13 +16,11 @@ struct MiniSequencePickerSidebar: View {
     func someSectionedSequences(limit: Int) -> [(String, [ChatSequence])] {
         let someSequences = Array(chatService.loadedChatSequences.values)
             .filter { $0.userPinned == true }
-            .sorted {
-                $0.generatedAt ?? Date.distantPast > $1.generatedAt ?? Date.distantPast
-            }
+            .sorted()
             .prefix(limit)
 
         let sectionedSomeSequences = Dictionary(grouping: someSequences) {
-            dateToSectionName($0.updatedAt)
+            dateToSectionName($0.generatedAt)
         }
 
         return Array(sectionedSomeSequences)

@@ -259,6 +259,23 @@ extension ChatSequence: Hashable {
     }
 }
 
+extension ChatSequence: Comparable {
+    static func < (lhs: ChatSequence, rhs: ChatSequence) -> Bool {
+        if lhs.generatedAt == nil {
+            return false
+        }
+        if rhs.generatedAt == nil {
+            return true
+        }
+
+        if lhs.generatedAt == rhs.generatedAt {
+            return lhs.parentSequences?.count ?? -1 > rhs.parentSequences?.count ?? -1
+        }
+
+        return lhs.generatedAt! > rhs.generatedAt!
+    }
+}
+
 extension DefaultChatSyncService {
     func doConstructNewChatSequence(messageId: ChatMessageServerID, humanDesc: String = "") async throws -> ChatSequenceServerID? {
         struct Parameters: Codable {
