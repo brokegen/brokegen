@@ -9,7 +9,6 @@ struct OneMessageView: View {
     let stillExpectingUpdate: Bool
     let showMessageHeaders: Bool
     let messageFontSize: CGFloat
-    let forcedWidth: CGFloat?
 
     // TODO: These need to be a @Binding, or hosted in the parent/ViewModel, if we want them to persist across settings changes.
     @State private var localExpandContent: Bool? = nil
@@ -30,7 +29,6 @@ struct OneMessageView: View {
         stillUpdating stillExpectingUpdate: Bool = false,
         showMessageHeaders: Bool,
         messageFontSize: CGFloat = 12,
-        forcedWidth: CGFloat? = nil,
         expandContent defaultExpandContent: Bool,
         renderAsMarkdown defaultRenderAsMarkdown: Bool
     ) {
@@ -41,7 +39,6 @@ struct OneMessageView: View {
         self.stillExpectingUpdate = stillExpectingUpdate
         self.showMessageHeaders = showMessageHeaders
         self.messageFontSize = messageFontSize
-        self.forcedWidth = forcedWidth
 
         self.defaultExpandContent = defaultExpandContent
         self.defaultRenderAsMarkdown = defaultRenderAsMarkdown
@@ -299,14 +296,12 @@ Your input will help me generate more targeted and valuable responses. Let's col
                     content: "short prompt",
                     createdAt: Date(timeIntervalSinceNow: -604_800)), .user),
                 showMessageHeaders: false,
-                forcedWidth: geometry.size.width,
                 expandContent: true,
                 renderAsMarkdown: false)
 
             OneMessageView(
                 .temporary(TemporaryChatMessage(role: "clown", content: "Hello! How can I help you today with your prompt?\n\nPlease provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now)),
                 showMessageHeaders: showMessageHeaders,
-                forcedWidth: geometry.size.width,
                 expandContent: false,
                 renderAsMarkdown: false)
 
