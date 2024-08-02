@@ -31,7 +31,8 @@ class OneSequenceViewModel {
     @ObservationIgnored var bufferedResponseContent: String = ""
     @ObservationIgnored var bufferedResponseLastFlush: Date = Date.distantPast
     var responseInEdit: TemporaryChatMessage? = nil
-    @ObservationIgnored private var receivedDone: Int = 0
+    @ObservationIgnored private var receivedDone: Int = -1
+    @ObservationIgnored private var receivedError: Int = -1
     var receiving: Bool {
         /// This field does double duty to indicate whether we are currently receiving data.
         /// `nil` before first data, and then reset to `nil` once we're done receiving.
@@ -205,8 +206,9 @@ class OneSequenceViewModel {
                 //
                 promptInEdit = ""
                 receivedDone = 0
+                receivedError = 0
                 responseInEdit = TemporaryChatMessage(
-                    role: "assistant",
+                    role: "erroneous response (continued after \"done\")",
                     content: submittedAssistantResponseSeed ?? "",
                     createdAt: Date.now
                 )
@@ -240,6 +242,7 @@ class OneSequenceViewModel {
 
         if let errorDesc = jsonData["error"].string {
             serverStatus = "[\(Date.now)] server error: " + errorDesc
+            receivedError += 1
 
             if !(responseInEdit?.content ?? "").isEmpty {
                 let savedResponse = TemporaryChatMessage(
@@ -250,6 +253,7 @@ class OneSequenceViewModel {
                 sequence.messages.append(.temporary(savedResponse, .serverInfo))
             }
 
+            // TODO: This gets printed out of order, should appear at the bottom, after responseInEdit
             let errorMessage = TemporaryChatMessage(
                 role: "server-reported error",
                 content: errorDesc,
@@ -290,6 +294,16 @@ class OneSequenceViewModel {
 
                 sequence.messages.append(.stored(storedMessage))
                 responseInEdit = nil
+
+                if receivedError > 0 {
+                    // TODO: Remove this once we get error messages to show up at the bottom of the list.
+                    // For now, this is an indication that the user should check above for errors.
+                    sequence.messages.append(.temporary(
+                        TemporaryChatMessage(
+                            role: "server reported \(receivedError) errors",
+                            createdAt: Date.now
+                        ), .clientError))
+                }
             }
         }
 
@@ -313,6 +327,7 @@ class OneSequenceViewModel {
                 promptInEdit = ""
 
                 receivedDone = 0
+                receivedError = 0
                 responseInEdit = TemporaryChatMessage(
                     role: "assistant",
                     content: submittedAssistantResponseSeed ?? "",
@@ -630,6 +645,7 @@ class OneSequenceViewModel {
         }
 
         receivedDone = 0
+        receivedError = 0
         incompleteResponseData = nil
     }
 }

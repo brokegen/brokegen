@@ -609,15 +609,56 @@ class LlamaCppProvider(BaseProvider):
                     "status": status_holder.get(),
                 }
 
+                if extracted_content:
+                    pass
+
         T = TypeVar('T')
 
-        async def update_status_and_log_info(primordial: AsyncIterator[T]) -> AsyncIterator[T]:
-            async for chunk in primordial:
-                yield chunk
+        async def update_status_and_log_info(
+                primordial: AsyncIterator[T],
+                cfr: ChatFormatterResponse,
+        ) -> AsyncIterator[T]:
+            timings: llama_cpp.llama_timings | None = None
 
-                timings: llama_cpp.llama_timings = llama_cpp.llama_get_timings(loaded_model.underlying_model.ctx)
-                status_holder.set(f"{loaded_model.model_name}: {timings.n_p_eval} new prompt tokens"
-                                  f" => {timings.n_eval} tokens generated in {timings.t_eval_ms / 1000:_.3f} seconds")
+            try:
+                async for chunk in primordial:
+                    yield chunk
+
+                    timings = llama_cpp.llama_get_timings(loaded_model.underlying_model.ctx)
+                    status_holder.set(f"{loaded_model.model_name}: {timings.n_p_eval} new prompt tokens"
+                                      f" => {timings.n_eval} tokens generated in {timings.t_eval_ms / 1000:_.3f} seconds")
+
+            except (IndexError, ValueError):
+                # Probably ran out of tokens; continue on and rely on final handler(s)
+                pass
+
+            except Exception as e:
+                logger.exception(f"Caught exception during inference")
+                yield {
+                    "error": f"{type(e)}: {e}",
+                    "done": False,
+                    "status": status_holder.get(),
+                }
+
+            # Add an error message if we _probably_ ran out of tokens.
+            # It's okay to mark it as an error + toss previous work because the user wants a not-truncated response.
+            if timings is not None:
+                # NB This re-tokenization is _not_ free, but it's probably cheap enough to run at the end of inference.
+                tokenized_prompt: list[int] = loaded_model.underlying_model.tokenize(
+                    cfr.prompt.encode('utf-8'),
+                )
+
+                if len(tokenized_prompt) + timings.n_eval >= loaded_model.underlying_model.context_params.n_ctx:
+                    info_str = (
+                        f"Tokens exceeded context size: {len(tokenized_prompt)} prompt + {timings.n_eval} new"
+                        f" >= n_ctx={loaded_model.underlying_model.context_params.n_ctx}"
+                    )
+                    status_holder.set("[lcp] " + info_str)
+                    yield {
+                        "error": info_str,
+                        "done": False,
+                        "status": status_holder.get(),
+                    }
 
         # Main function body: maybe apply templating + kick off inference
         try_custom_templatoor: bool = True
@@ -679,7 +720,7 @@ class LlamaCppProvider(BaseProvider):
         iter3: AsyncIterator[JSONDict] = format_response(iter2)
         iter4: AsyncIterator[JSONDict] = tee_to_console_output(iter3,
                                                                lambda chunk: safe_get(chunk, "message", "content"))
-        iter5: AsyncIterator[JSONDict] = update_status_and_log_info(iter4)
+        iter5: AsyncIterator[JSONDict] = update_status_and_log_info(iter4, cfr=cfr)
 
         status_holder.set(f"{loaded_model.model_name} loaded, starting inference")
         return cfr, iter5
