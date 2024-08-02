@@ -1,6 +1,38 @@
 import MarkdownUI
 import SwiftUI
 
+
+struct OMVButton: View {
+    @State var isButtonHovered = false
+
+    let imageSystemName: String
+    let action: () -> Void
+
+    init(
+        _ imageSystemName: String,
+        action: (@escaping () -> Void) = {}
+    ) {
+        self.imageSystemName = imageSystemName
+        self.action = action
+    }
+
+    var body: some View {
+        Button(action: action, label: {
+            Image(systemName: imageSystemName)
+        })
+        .contentShape(Rectangle())
+        .onHover { isHovered in
+            self.isButtonHovered = isHovered
+        }
+        .background(
+            Circle()
+                .stroke(Color(.controlTextColor), lineWidth: isButtonHovered ? 2 : 0)
+                .blur(radius: isButtonHovered ? 8 : 0)
+                .animation(.easeOut(duration: 0.1), value: isButtonHovered)
+        )
+    }
+}
+
 struct OneMessageView: View {
     let message: MessageLike
     let renderMessageContent: (MessageLike) -> MarkdownContent
@@ -55,32 +87,27 @@ struct OneMessageView: View {
     @ViewBuilder
     func buttons(_ baseFontSize: CGFloat) -> some View {
         HStack(alignment: .bottom, spacing: baseFontSize * 2) {
-            Button(action: {
+            OMVButton(renderAsMarkdown ? "doc.richtext.fill" : "doc.richtext") {
                 localRenderAsMarkdown = !renderAsMarkdown
-            }, label: {
-                Image(systemName: renderAsMarkdown ? "doc.richtext.fill" : "doc.richtext")
-            })
+            }
+            .foregroundStyle(renderAsMarkdown ? Color(.controlAccentColor) : Color(.controlTextColor))
 
-            Button(action: {
+            OMVButton("clipboard") {
                 let pasteboard = NSPasteboard.general
                 // https://stackoverflow.com/questions/49211910/s
                 pasteboard.clearContents()
                 pasteboard.setString(message.content, forType: .string)
-            }, label: {
-                Image(systemName: "clipboard")
-            })
+            }
 
             if case .stored(_) = self.message {
-                Button(action: { self.branchAction?() }, label: {
-                    Image(systemName: "arrow.triangle.branch")
-                })
+                OMVButton("arrow.triangle.branch") {
+                    self.branchAction?()
+                }
                 .disabled(self.branchAction == nil)
             }
             else {
-                Button(action: {}, label: {
-                    Image(systemName: "arrow.triangle.branch")
-                })
-                .disabled(true)
+                OMVButton("arrow.triangle.branch")
+                    .disabled(true)
             }
         }
         .font(.system(size: baseFontSize * 2))
@@ -185,7 +212,7 @@ struct OneMessageView: View {
         }
         .overlay(alignment: .topTrailing) {
             if isHovered && showMessageHeaders {
-                HStack(alignment: .bottom, spacing: fixedOverlaySize * 2) {
+                HStack(alignment: .center, spacing: fixedOverlaySize * 2) {
                     VStack(alignment: .trailing, spacing: 0) {
                         Text(message.createdAtString)
                         Text(message.sequenceIdString ?? message.messageIdString)
@@ -193,15 +220,20 @@ struct OneMessageView: View {
                     .foregroundStyle(Color(.disabledControlTextColor))
 
                     buttons(fixedOverlaySize)
+                        .padding(fixedOverlaySize * 4/3)
+                        .background(
+                            RoundedRectangle(cornerRadius: fixedOverlaySize)
+                                .fill(Color(.controlBackgroundColor))
+                                .opacity(0.8)
+                        )
                 }
-                .padding(fixedOverlaySize * 4/3)
                 .padding(.trailing, fixedOverlaySize * 1.5)
             }
             else if isHovered && !showMessageHeaders {
                 buttons(fixedOverlaySize)
                     .padding(fixedOverlaySize * 4/3)
                     .background(
-                        Rectangle()
+                        RoundedRectangle(cornerRadius: fixedOverlaySize)
                             .fill(Color(.controlBackgroundColor))
                             .opacity(0.8)
                     )
