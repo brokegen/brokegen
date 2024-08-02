@@ -590,12 +590,12 @@ struct OneSequenceView: View {
             } label: {
                 Text(viewModel.appSettings.stillPopulating
                      ? "Autoname disabled (still loading)"
-                     : (viewModel.appSettings.cached_preferredAutonamingModel == nil
+                     : (viewModel.appSettings.preferredAutonamingModel == nil
                         ? "Autoname disabled (set a model in settings)"
-                        : "Autoname with model: \(viewModel.appSettings.cached_preferredAutonamingModel!.humanId)")
+                        : "Autoname with model: \(viewModel.appSettings.preferredAutonamingModel!.humanId)")
                 )
             }
-            .disabled(viewModel.appSettings.cached_preferredAutonamingModel == nil)
+            .disabled(viewModel.appSettings.preferredAutonamingModel == nil)
 
             Button {
                 viewModel.refreshSequenceData()

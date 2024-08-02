@@ -206,12 +206,12 @@ struct MiniSequencePickerSidebar: View {
                 } label: {
                     Text(appSettings.stillPopulating
                          ? "Autoname disabled (still loading)"
-                         : (appSettings.cached_preferredAutonamingModel == nil
+                         : (appSettings.preferredAutonamingModel == nil
                             ? "Autoname disabled (set a model in settings)"
-                            : "Autoname with model: \(appSettings.cached_preferredAutonamingModel!.humanId)")
+                            : "Autoname with model: \(appSettings.preferredAutonamingModel!.humanId)")
                     )
                 }
-                .disabled(appSettings.cached_preferredAutonamingModel == nil)
+                .disabled(appSettings.preferredAutonamingModel == nil)
             }
         }
     }

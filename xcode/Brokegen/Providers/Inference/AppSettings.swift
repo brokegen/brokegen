@@ -7,9 +7,6 @@ fileprivate let INVALID_MODEL_ID: FoundationModelRecordID = -3
 
 @Observable
 class AppSettings {
-    public var cached_preferredAutonamingModel: FoundationModel? = nil
-    public var cached_preferredEmbeddingModel: FoundationModel? = nil
-
     // MARK: - implement caching layer for @AppStorage reads
     @ObservationIgnored private var counter = PassthroughSubject<Int, Never>()
     @ObservationIgnored private var subscriber: AnyCancellable?
@@ -30,11 +27,18 @@ class AppSettings {
         //
         subscriber = counter
             // Drop updates in the background
-            .throttle(for: 1.1, scheduler: DispatchQueue.global(qos: .background), latest: true)
+            .throttle(for: 5.0, scheduler: DispatchQueue.global(qos: .background), latest: true)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard self != nil else { return }
-                self!.cached_preferredAutonamingModel = self!.preferredAutonamingModel
+                self!.cached_defaultInferenceModel = self!.live_defaultInferenceModel
+                self!.cached_fallbackInferenceModel = self!.live_fallbackInferenceModel
+                self!.cached_preferredAutonamingModel = self!.live_preferredAutonamingModel
+                self!.cached_preferredEmbeddingModel = self!.live_preferredEmbeddingModel
+
+                self!.cached_showDebugSidebarItems = self!.live_showDebugSidebarItems
+                self!.cached_startServicesImmediately = self!.live_startServicesImmediately
+                self!.cached_allowExternalTraffic = self!.live_allowExternalTraffic
             }
 
         startUpdater()
@@ -42,52 +46,72 @@ class AppSettings {
 
     // MARK: - retrieving fully populated models
     @AppStorage("defaultInferenceModelId")
-    @ObservationIgnored private var _defaultInferenceModelId: FoundationModelRecordID = INVALID_MODEL_ID
+    @ObservationIgnored private var stored_defaultInferenceModelId: FoundationModelRecordID = INVALID_MODEL_ID
+
+    private var cached_defaultInferenceModel: FoundationModel? = nil
 
     @ObservationIgnored
-    var defaultInferenceModel: FoundationModel? {
+    var live_defaultInferenceModel: FoundationModel? {
         get {
-            access(keyPath: \.defaultInferenceModel)
-            guard _defaultInferenceModelId != INVALID_MODEL_ID else { return nil }
+            access(keyPath: \.live_defaultInferenceModel)
+            guard stored_defaultInferenceModelId != INVALID_MODEL_ID else { return nil }
 
             return providerService?.allModels.first {
-                $0.serverId == _defaultInferenceModelId
+                $0.serverId == stored_defaultInferenceModelId
             }
         }
         set {
-            withMutation(keyPath: \.defaultInferenceModel) {
-                _defaultInferenceModelId = newValue?.serverId ?? INVALID_MODEL_ID
+            withMutation(keyPath: \.live_defaultInferenceModel) {
+                stored_defaultInferenceModelId = newValue?.serverId ?? INVALID_MODEL_ID
+                cached_defaultInferenceModel = newValue
             }
         }
     }
+
+    var defaultInferenceModel: FoundationModel? {
+        get { cached_preferredAutonamingModel }
+        set { live_defaultInferenceModel = newValue }
+    }
+
 
     @AppStorage("fallbackInferenceModelId")
-    @ObservationIgnored private var _fallbackInferenceModelId: FoundationModelRecordID = INVALID_MODEL_ID
+    @ObservationIgnored private var stored_fallbackInferenceModelId: FoundationModelRecordID = INVALID_MODEL_ID
+
+    private var cached_fallbackInferenceModel: FoundationModel? = nil
 
     @ObservationIgnored
-    var fallbackInferenceModel: FoundationModel? {
+    var live_fallbackInferenceModel: FoundationModel? {
         get {
-            access(keyPath: \.fallbackInferenceModel)
-            guard _fallbackInferenceModelId != INVALID_MODEL_ID else { return nil }
+            access(keyPath: \.live_fallbackInferenceModel)
+            guard stored_fallbackInferenceModelId != INVALID_MODEL_ID else { return nil }
 
             return providerService?.allModels.first {
-                $0.serverId == _fallbackInferenceModelId
+                $0.serverId == stored_fallbackInferenceModelId
             }
         }
         set {
-            withMutation(keyPath: \.fallbackInferenceModel) {
-                _fallbackInferenceModelId = newValue?.serverId ?? INVALID_MODEL_ID
+            withMutation(keyPath: \.live_fallbackInferenceModel) {
+                stored_fallbackInferenceModelId = newValue?.serverId ?? INVALID_MODEL_ID
+                cached_fallbackInferenceModel = newValue
             }
         }
     }
+
+    var fallbackInferenceModel: FoundationModel? {
+        get { cached_fallbackInferenceModel }
+        set { live_fallbackInferenceModel = newValue }
+    }
+
 
     @AppStorage("preferredAutonamingModelId")
     @ObservationIgnored private var stored_preferredAutonamingModelId: FoundationModelRecordID = INVALID_MODEL_ID
 
+    private var cached_preferredAutonamingModel: FoundationModel? = nil
+
     @ObservationIgnored
-    var preferredAutonamingModel: FoundationModel? {
+    var live_preferredAutonamingModel: FoundationModel? {
         get {
-            access(keyPath: \.preferredAutonamingModel)
+            access(keyPath: \.live_preferredAutonamingModel)
             guard stored_preferredAutonamingModelId != INVALID_MODEL_ID else { return nil }
 
             return providerService?.allModels.first {
@@ -95,20 +119,28 @@ class AppSettings {
             }
         }
         set {
-            withMutation(keyPath: \.preferredAutonamingModel) {
+            withMutation(keyPath: \.live_preferredAutonamingModel) {
                 stored_preferredAutonamingModelId = newValue?.serverId ?? INVALID_MODEL_ID
                 cached_preferredAutonamingModel = newValue
             }
         }
     }
 
+    var preferredAutonamingModel: FoundationModel? {
+        get { cached_preferredAutonamingModel }
+        set { live_preferredAutonamingModel = newValue }
+    }
+
+
     @AppStorage("preferredEmbeddingModelId")
     @ObservationIgnored private var stored_preferredEmbeddingModelId: FoundationModelRecordID = INVALID_MODEL_ID
 
+    private var cached_preferredEmbeddingModel: FoundationModel? = nil
+
     @ObservationIgnored
-    var preferredEmbeddingModel: FoundationModel? {
+    var live_preferredEmbeddingModel: FoundationModel? {
         get {
-            access(keyPath: \.preferredEmbeddingModel)
+            access(keyPath: \.live_preferredEmbeddingModel)
             guard stored_preferredEmbeddingModelId != INVALID_MODEL_ID else { return nil }
 
             return providerService?.allModels.first {
@@ -116,12 +148,18 @@ class AppSettings {
             }
         }
         set {
-            withMutation(keyPath: \.preferredEmbeddingModel) {
+            withMutation(keyPath: \.live_preferredEmbeddingModel) {
                 stored_preferredEmbeddingModelId = newValue?.serverId ?? INVALID_MODEL_ID
                 cached_preferredEmbeddingModel = newValue
             }
         }
     }
+
+    var preferredEmbeddingModel: FoundationModel? {
+        get { cached_preferredEmbeddingModel }
+        set { live_preferredEmbeddingModel = newValue }
+    }
+
 
     // MARK: - connecting ProviderService
     private var providerService: ProviderService? = nil
@@ -135,51 +173,84 @@ class AppSettings {
     }
 
     // MARK: - misc properties
+    public static let default_showDebugSidebarItems: Bool = false
+
     @AppStorage("showDebugSidebarItems")
-    @ObservationIgnored var _showDebugSidebarItems: Bool = true
+    @ObservationIgnored var stored_showDebugSidebarItems: Bool = default_showDebugSidebarItems
+
+    // This must be set to nil at first, so we force a read from stored_showDebugSidebarItems.
+    private var cached_showDebugSidebarItems: Bool? = nil
 
     @ObservationIgnored
-    var showDebugSidebarItems: Bool {
+    var live_showDebugSidebarItems: Bool {
         get {
-            access(keyPath: \.showDebugSidebarItems)
-            return _showDebugSidebarItems
+            access(keyPath: \.live_showDebugSidebarItems)
+            return stored_showDebugSidebarItems
         }
         set {
-            withMutation(keyPath: \.showDebugSidebarItems) {
-                _showDebugSidebarItems = newValue
+            withMutation(keyPath: \.live_showDebugSidebarItems) {
+                stored_showDebugSidebarItems = newValue
+                cached_showDebugSidebarItems = newValue
             }
         }
     }
+
+    var showDebugSidebarItems: Bool {
+        get { cached_showDebugSidebarItems ?? stored_showDebugSidebarItems }
+        set { live_showDebugSidebarItems = newValue }
+    }
+
+
+    public static let default_startServicesImmediately: Bool = true
 
     @AppStorage("startServicesImmediately")
-    @ObservationIgnored var _startServicesImmediately: Bool = true
+    @ObservationIgnored var stored_startServicesImmediately: Bool = default_startServicesImmediately
+
+    private var cached_startServicesImmediately: Bool? = nil
 
     @ObservationIgnored
-    var startServicesImmediately: Bool {
+    var live_startServicesImmediately: Bool {
         get {
-            access(keyPath: \.startServicesImmediately)
-            return _startServicesImmediately
+            access(keyPath: \.live_startServicesImmediately)
+            return stored_startServicesImmediately
         }
         set {
-            withMutation(keyPath: \.startServicesImmediately) {
-                _startServicesImmediately = newValue
+            withMutation(keyPath: \.live_startServicesImmediately) {
+                stored_startServicesImmediately = newValue
+                cached_startServicesImmediately = newValue
             }
         }
     }
 
+    var startServicesImmediately: Bool {
+        get { cached_startServicesImmediately ?? stored_startServicesImmediately }
+        set { live_startServicesImmediately = newValue }
+    }
+
+
+    public static let default_allowExternalTraffic = false
+
     @AppStorage("allowExternalTraffic")
-    @ObservationIgnored var _allowExternalTraffic: Bool = false
+    @ObservationIgnored var stored_allowExternalTraffic: Bool = default_allowExternalTraffic
+
+    private var cached_allowExternalTraffic: Bool? = nil
 
     @ObservationIgnored
-    var allowExternalTraffic: Bool {
+    var live_allowExternalTraffic: Bool {
         get {
-            access(keyPath: \.allowExternalTraffic)
-            return _allowExternalTraffic
+            access(keyPath: \.live_allowExternalTraffic)
+            return stored_allowExternalTraffic
         }
         set {
-            withMutation(keyPath: \.allowExternalTraffic) {
-                _allowExternalTraffic = newValue
+            withMutation(keyPath: \.live_allowExternalTraffic) {
+                stored_allowExternalTraffic = newValue
+                cached_allowExternalTraffic = newValue
             }
         }
+    }
+
+    var allowExternalTraffic: Bool {
+        get { cached_allowExternalTraffic ?? stored_allowExternalTraffic }
+        set { live_allowExternalTraffic = newValue }
     }
 }
