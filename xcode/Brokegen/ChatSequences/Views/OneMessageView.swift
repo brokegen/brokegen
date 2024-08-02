@@ -3,7 +3,10 @@ import SwiftUI
 
 
 struct OMVButton: View {
+    @Environment(\.isEnabled) var isEnabled
+
     @State var isButtonHovered = false
+    @State var isButtonPressed = false
 
     let imageSystemName: String
     let action: () -> Void
@@ -17,19 +20,32 @@ struct OMVButton: View {
     }
 
     var body: some View {
-        Button(action: action, label: {
-            Image(systemName: imageSystemName)
-        })
-        .contentShape(Rectangle())
-        .onHover { isHovered in
-            self.isButtonHovered = isHovered
-        }
-        .background(
-            Circle()
-                .stroke(Color(.controlTextColor), lineWidth: isButtonHovered ? 2 : 0)
-                .blur(radius: isButtonHovered ? 8 : 0)
-                .animation(.easeOut(duration: 0.1), value: isButtonHovered)
-        )
+        Image(systemName: imageSystemName)
+            .scaleEffect(self.isButtonPressed ? 0.9 : 1.0)
+            .onTapGesture {
+                self.isButtonPressed = true
+                action()
+                self.isButtonPressed = false
+            }
+            .onLongPressGesture(perform: {
+                action()
+            }, onPressingChanged: { pressing in
+                self.isButtonPressed = pressing
+            })
+            .background(
+                Circle()
+                    .stroke(Color(.controlTextColor), lineWidth: isButtonHovered ? 2 : 0)
+                    .blur(radius: isButtonHovered ? 8 : 0)
+                    .animation(.easeOut(duration: 0.1), value: isButtonHovered)
+            )
+            .contentShape(Rectangle())
+            .onHover { isHovered in
+                self.isButtonHovered = isHovered
+            }
+            .foregroundStyle(
+                isEnabled
+                ? (isButtonHovered ? Color(.controlAccentColor) : Color(.controlTextColor))
+                : Color(.disabledControlTextColor))
     }
 }
 
@@ -90,7 +106,6 @@ struct OneMessageView: View {
             OMVButton(renderAsMarkdown ? "doc.richtext.fill" : "doc.richtext") {
                 localRenderAsMarkdown = !renderAsMarkdown
             }
-            .foregroundStyle(renderAsMarkdown ? Color(.controlAccentColor) : Color(.controlTextColor))
 
             OMVButton("clipboard") {
                 let pasteboard = NSPasteboard.general
