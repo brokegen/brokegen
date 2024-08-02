@@ -173,10 +173,8 @@ class AppSettings {
     }
 
     // MARK: - misc properties
-    public static let default_showDebugSidebarItems: Bool = false
-
     @AppStorage("showDebugSidebarItems")
-    @ObservationIgnored var stored_showDebugSidebarItems: Bool = default_showDebugSidebarItems
+    @ObservationIgnored var stored_showDebugSidebarItems: Bool = false
 
     // This must be set to nil at first, so we force a read from stored_showDebugSidebarItems.
     private var cached_showDebugSidebarItems: Bool? = nil
@@ -201,10 +199,8 @@ class AppSettings {
     }
 
 
-    public static let default_startServicesImmediately: Bool = true
-
     @AppStorage("startServicesImmediately")
-    @ObservationIgnored var stored_startServicesImmediately: Bool = default_startServicesImmediately
+    @ObservationIgnored var stored_startServicesImmediately: Bool = true
 
     private var cached_startServicesImmediately: Bool? = nil
 
@@ -228,10 +224,8 @@ class AppSettings {
     }
 
 
-    public static let default_allowExternalTraffic = false
-
     @AppStorage("allowExternalTraffic")
-    @ObservationIgnored var stored_allowExternalTraffic: Bool = default_allowExternalTraffic
+    @ObservationIgnored var stored_allowExternalTraffic: Bool = false
 
     private var cached_allowExternalTraffic: Bool? = nil
 
