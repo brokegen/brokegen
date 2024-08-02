@@ -3,16 +3,19 @@
 ----
 
 <picture>
-  <img alt="screenshot" src="screenshot.webp">
+  <img alt="UI screenshot" src="screenshot.webp" height="480px">
+</picture>
+<picture>
+  <img alt="UI with settings screenshot" src="crowded.webp" height="480px">
 </picture>
 
 macOS app to chat with local foundation models. Ollama is well-supported, and .gguf files are loaded via llama-cpp-python (put them in `~/Library/Application Support/faux.brokegen/`).
-Key differentiator is a focus on data retention; text and inference stats are stored in a SQLite database.
+Key differentiator is a focus on data capture and retention; text and inference stats are stored in SQLite databases.
 
 ## Special Features
 
-- Chats are auto-named by the AI
-- Retrieval is working, but we can only read from FAISS vector stores (no writes)
+- Virtually all settings are overrideable (model template, system prompt, start of assistant response, ollama/llama.cpp inference options)
+- Chats can be branched at any point, and a built-in Ollama proxy is provided to capture chats from other apps.
 - Ollama proxy is built-in, so any messages sent through other apps will be captured and show up in brokegen (only `/api/chat` requests, not `/api/generate`). When the server is started, the proxy is available on `http://localhost:6635/ollama-proxy`.
 
 ## Requirements
@@ -21,7 +24,7 @@ Tested and developed on macOS 14.2+, M1 MBP + 2019 Intel MBP. Pre-built binaries
 If you don't need to run custom models, install Ollama and use that as the inference provider:
 
 1. Download from <https://ollama.ai> and open the application.
-2. Once the CLI utilities are installed, open a terminal and run `ollama pull <MODEL_NAME>`.
+2. Once the command-line utility is installed, open a terminal and run `ollama pull <MODEL_NAME>`.
    The full list is available at <https://ollama.ai/library>.
 3. Once the model has finished downloading, you can start using it.
 
