@@ -77,7 +77,7 @@ class DefaultJobsManagerService: JobsManagerService {
                     "OLLAMA_KEEP_ALIVE": "168h",
                     "OLLAMA_DEBUG": "1",
                 ],
-                sidebarTitle: "ollama v0.3.1\n(embedded binary)",
+                sidebarTitle: "ollama v0.3.3\n(embedded binary)",
                 pingEndpoint: "http://localhost:11434",
                 pingInterval: 13
             )
