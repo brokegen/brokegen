@@ -102,6 +102,13 @@ class CSCSettingsService {
             }
         }
 
+        var textEntryFontSize: CGFloat {
+            get { CGFloat(defaults.textEntryFontSize) }
+            set {
+                defaults.textEntryFontSize = Int(newValue)
+            }
+        }
+
         var responseBufferFlushFrequencyMsec: Int {
             get { defaults.responseBufferFlushFrequencyMsec }
             set { defaults.responseBufferFlushFrequencyMsec = newValue }

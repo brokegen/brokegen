@@ -103,7 +103,6 @@ struct CSCSettingsView: View {
                         HStack {
                             Picker("", selection: $settings.messageFontDesign) {
                                 ForEach(Font.Design.allCases) { fontDesign in
-                                    // TODO: Make the Picker render items in the selected font
                                     Text(fontDesign.toString())
                                         .tag(fontDesign)
                                 }
@@ -118,11 +117,16 @@ struct CSCSettingsView: View {
                     GridRow {
                         Text("[global] Font for entering prompt text")
 
-                        Picker("", selection: $settings.textEntryFontDesign) {
-                            ForEach(Font.Design.allCases) { fontDesign in
-                                // TODO: Make the Picker render items in the selected font
-                                Text(fontDesign.toString())
-                                    .tag(fontDesign)
+                        HStack {
+                            Picker("", selection: $settings.textEntryFontDesign) {
+                                ForEach(Font.Design.allCases) { fontDesign in
+                                    Text(fontDesign.toString())
+                                        .tag(fontDesign)
+                                }
+                            }
+
+                            Stepper(value: $settings.textEntryFontSize) {
+                                Text(String(format: "%.1f pt", settings.textEntryFontSize))
                             }
                         }
                     }

@@ -177,7 +177,7 @@ class PersistentDefaultCSUISettings: CSUISettings {
 
 
     @AppStorage("defaultUiSettings.messageFontDesign")
-    @ObservationIgnored private var stored_messageFontDesign: String = ""
+    @ObservationIgnored private var stored_messageFontDesign: String = "serif"
 
     private var cached_messageFontDesign: String? = nil
 
@@ -201,10 +201,8 @@ class PersistentDefaultCSUISettings: CSUISettings {
     }
 
 
-    public static let default_messageFontSize: Int = 18
-
     @AppStorage("defaultUiSettings.messageFontSize")
-    @ObservationIgnored private var stored_messageFontSize: Int = default_messageFontSize
+    @ObservationIgnored private var stored_messageFontSize: Int = 18
 
     private var cached_messageFontSize: Int? = nil
 
@@ -229,7 +227,7 @@ class PersistentDefaultCSUISettings: CSUISettings {
 
 
     @AppStorage("defaultUiSettings.textEntryFontDesign")
-    @ObservationIgnored private var stored_textEntryFontDesign: String = ""
+    @ObservationIgnored private var stored_textEntryFontDesign: String = "monospaced"
 
     private var cached_textEntryFontDesign: String? = nil
 
@@ -250,6 +248,31 @@ class PersistentDefaultCSUISettings: CSUISettings {
     var textEntryFontDesign: String {
         get { cached_textEntryFontDesign ?? stored_textEntryFontDesign }
         set { live_textEntryFontDesign = newValue }
+    }
+
+
+    @AppStorage("defaultUiSettings.textEntryFontSize")
+    @ObservationIgnored private var stored_textEntryFontSize: Int = 14
+
+    private var cached_textEntryFontSize: Int? = nil
+
+    @ObservationIgnored
+    var live_textEntryFontSize: Int {
+        get {
+            access(keyPath: \.live_textEntryFontSize)
+            return stored_textEntryFontSize
+        }
+        set {
+            withMutation(keyPath: \.live_textEntryFontSize) {
+                stored_textEntryFontSize = newValue
+                cached_textEntryFontSize = newValue
+            }
+        }
+    }
+
+    var textEntryFontSize: Int {
+        get { cached_textEntryFontSize ?? stored_textEntryFontSize }
+        set { live_textEntryFontSize = newValue }
     }
 
 

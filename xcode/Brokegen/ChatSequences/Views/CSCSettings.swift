@@ -12,6 +12,7 @@ protocol CSUISettings {
     var messageFontSize: Int { get set }
     /// NB This is the stringified name for a Font.Design
     var textEntryFontDesign: String { get set }
+    var textEntryFontSize: Int { get set }
 
     // MARK: - UI Performance tweaks
     var responseBufferFlushFrequencyMsec: Int { get set }
@@ -36,6 +37,7 @@ struct InMemoryCSUISettings: CSUISettings {
     var messageFontDesign: String
     var messageFontSize: Int
     var textEntryFontDesign: String
+    var textEntryFontSize: Int
 
     var responseBufferFlushFrequencyMsec: Int
     var scrollOnNewTextFrequencyMsec: Int
