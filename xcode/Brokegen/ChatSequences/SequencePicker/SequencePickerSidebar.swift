@@ -122,6 +122,7 @@ struct MiniSequencePickerSidebar: View {
                             .padding(.top, 12)
                             .foregroundStyle(Color(.disabledControlTextColor))
                             .font(.system(size: 16))
+                            .monospaced()
                     })
                 }
                 .padding(.leading, -24)
@@ -147,7 +148,6 @@ struct MiniSequencePickerSidebar: View {
                         .id("\(sequence.id) text")
 
                     Spacer()
-                        .frame(minWidth: 0)
 
                     if sequence.messages.count > 4 {
                         Text("\(sequence.messages.count) messages")
@@ -161,16 +161,11 @@ struct MiniSequencePickerSidebar: View {
                 } // first ViewThatFits option: HStack
 
                 VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: 0) {
-                        Text(sequence.displayHumanDesc())
-                            .lineLimit(1...2)
-                            .layoutPriority(0.5)
-                            .padding(.trailing, -12)
-                            .id("\(sequence.id) text")
-
-                        Spacer()
-                            .frame(minWidth: 0)
-                    }
+                    Text(sequence.displayHumanDesc())
+                        .lineLimit(1...2)
+                        .layoutPriority(0.5)
+                        .padding(.trailing, -12)
+                        .id("\(sequence.id) text")
 
                     if sequence.messages.count > 4 {
                         HStack(spacing: 0) {
