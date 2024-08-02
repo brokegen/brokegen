@@ -539,7 +539,7 @@ class OneSequenceViewModel {
         model continuationModelId: FoundationModelRecordID? = nil,
         withRetrieval: Bool = false
     ) {
-        print("[INFO] OneSequenceViewModel.requestExtend(\(continuationModelId), withRetrieval: \(withRetrieval))")
+        print("[INFO] OneSequenceViewModel.requestExtend(model: \(continuationModelId), withRetrieval: \(withRetrieval))")
         if settings.stayAwakeDuringInference {
             _ = stayAwake.createAssertion(reason: "brokegen OneSequenceViewModel.requestExtend() for ChatSequence#\(self.sequence.serverId)")
         }
