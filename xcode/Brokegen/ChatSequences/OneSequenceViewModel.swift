@@ -136,6 +136,11 @@ class OneSequenceViewModel {
             case .finished:
                 if receivedDone != 1 {
                     print("[ERROR] \(callerName) completed, but received \(receivedDone) \"done\" chunks")
+                    sequence.messages.append(.temporary(TemporaryChatMessage(
+                        role: "no response data received",
+                        content: "Try again, or check your prompt/template",
+                        createdAt: Date.now
+                    ), .serverError))
                 }
                 if incompleteResponseData != nil {
                     print("[ERROR] \(callerName) dropping \(incompleteResponseData!.count) bytes of unparsed JSON")
@@ -221,7 +226,7 @@ class OneSequenceViewModel {
 
         if let promptWithTemplating = jsonData["prompt_with_templating"].string {
             let templated = TemporaryChatMessage(
-                role: "user prompt (with model template + RAG context)",
+                role: "complete user prompt with templating",
                 content: promptWithTemplating,
                 // Don't use the current time, because this comes at the end of inference,
                 // so the date provided/used is usually far later than responseInEdit, which is marked by its own start time.

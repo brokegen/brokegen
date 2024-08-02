@@ -246,13 +246,17 @@ class _OneModel:
         # If we already loaded a model, confirm that our context_params are compatible
         if self.underlying_model is not None:
             if context_params != self.underlying_context_params:
-                # DEBUG: Print the details about what's different.
-                diff_info: str = json.dumps(
-                    # The values in the second dict are what get printed out.
-                    jsondiff.diff(self.underlying_context_params, context_params),
-                    indent=2
-                )
-                logger.info(f"Supplied context_params differ, reloading: {diff_info}")
+                try:
+                    # DEBUG: Print the details about what's different.
+                    diff_info: str = json.dumps(
+                        # The values in the second dict are what get printed out.
+                        jsondiff.diff(self.underlying_context_params, context_params),
+                        indent=2
+                    )
+                    logger.info(f"Supplied context_params differ, reloading: {diff_info}")
+                except Exception:
+                    # TODO: This mostly happens because there's a "Symbol" key in the JSON somewhere
+                    logger.info(f"Supplied context_params differ, reloading: {context_params}")
 
                 self.underlying_model = None
 
@@ -629,6 +633,8 @@ class LlamaCppProvider(BaseProvider):
                                       f" => {timings.n_eval} tokens generated in {timings.t_eval_ms / 1000:_.3f} seconds")
 
             except (IndexError, ValueError):
+                logger.exception(f"Caught exception during inference")
+
                 # Probably ran out of tokens; continue on and rely on final handler(s)
                 pass
 
