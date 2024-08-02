@@ -123,9 +123,6 @@ struct AppSidebar: View {
                 ASRow("Foundation Models", showChevron: true)
             }
 
-            ASRow("Retrieval and Vector Stores", showChevron: true)
-                .foregroundStyle(Color(.disabledControlTextColor))
-
             Divider()
 
             Toggle(isOn: $chatSettingsService.useSimplifiedOSV, label: {
@@ -163,19 +160,6 @@ struct AppSidebar: View {
 
                         NavigationLink(destination: SequencePickerView(onlyUserPinned: false, showNewChatButton: false, showSequenceIds: true)) {
                             ASRow("ChatSequences", showChevron: true)
-                        }
-
-                        if appSettings.showDebugSidebarItems {
-                            Divider()
-
-                            ASRow("Chat Templates")
-                                .foregroundStyle(Color(.disabledControlTextColor))
-
-                            ASRow("Tokenization Check")
-                                .foregroundStyle(Color(.disabledControlTextColor))
-
-                            ASRow("Vector Stores")
-                                .foregroundStyle(Color(.disabledControlTextColor))
                         }
                     }
 
