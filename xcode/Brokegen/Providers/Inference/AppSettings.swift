@@ -64,7 +64,7 @@ class AppSettings {
     }
 
     var defaultInferenceModel: FoundationModel? {
-        get { cached_preferredAutonamingModel }
+        get { cached_defaultInferenceModel }
         set { live_defaultInferenceModel = newValue }
     }
 
