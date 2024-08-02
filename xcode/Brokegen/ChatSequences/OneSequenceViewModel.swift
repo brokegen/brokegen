@@ -256,7 +256,6 @@ class OneSequenceViewModel {
                 createdAt: Date.now
             )
             sequence.messages.append(.temporary(errorMessage))
-            settings.showMessageHeaders = true
         }
 
         // NB This block is what actually marks the Sequence as "done" and gives us whatever updates we might need.
@@ -622,7 +621,6 @@ class OneSequenceViewModel {
             else if !(responseInEdit!.content ?? "").isEmpty {
                 if receivedDone != 1 {
                     responseInEdit!.role = "partial assistant response"
-                    settings.showMessageHeaders = true
                 }
                 sequence.messages.append(.temporary(responseInEdit!))
             }

@@ -34,17 +34,39 @@ struct MultiMessageView: View {
                 }
             }
 
-            OneMessageView(
-                message,
-                renderMessageContent: viewModel.lookup,
-                branchAction: branchAction,
-                showMessageHeaders: settings.showMessageHeaders,
-                messageFontSize: settings.messageFontSize,
-                expandContent: message.role == "user" || message.role == "assistant" || message.role == "server error",
-                renderAsMarkdown: settings.renderAsMarkdown
-            )
-            .padding(.leading, indentMessage ? settings.messageFontSize * 2 : 0.0)
-            .id(message)
+            if message.role == "user" || message.role == "assistant" {
+                OneMessageView(
+                    message,
+                    renderMessageContent: viewModel.lookup,
+                    branchAction: branchAction,
+                    showMessageHeaders: settings.showMessageHeaders,
+                    messageFontSize: settings.messageFontSize,
+                    expandContent: true,
+                    renderAsMarkdown: settings.renderAsMarkdown
+                )
+                .padding(.leading, indentMessage ? settings.messageFontSize * 2 : 0.0)
+                .id(message)
+            }
+            else if message.role == "server error" {
+                OneMessageView(
+                    message,
+                    showMessageHeaders: true,
+                    messageFontSize: settings.messageFontSize,
+                    expandContent: true,
+                    renderAsMarkdown: false
+                )
+                .fontDesign(.monospaced)
+            }
+            else {
+                OneMessageView(
+                    message,
+                    showMessageHeaders: true,
+                    messageFontSize: settings.messageFontSize,
+                    expandContent: false,
+                    renderAsMarkdown: false
+                )
+                .fontDesign(.monospaced)
+            }
         }
 
         if viewModel.responseInEdit != nil {
