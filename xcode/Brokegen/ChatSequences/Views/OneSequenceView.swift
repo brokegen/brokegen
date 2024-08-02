@@ -8,10 +8,12 @@ let minStatusBarHeight: CGFloat = statusBarVPadding + 12 + statusBarVPadding
 struct MultiMessageView: View {
     @Environment(PathHost.self) private var pathHost
     var viewModel: OneSequenceViewModel
-    var messages: [MessageLike] {
-        viewModel.sequence.messages
-    }
     var settings: CSCSettingsService.SettingsProxy
+
+    // This is a get-only property, partly to check access, but mostly to see if we can limit SwiftUI update scope.
+    var messages: [MessageLike] {
+        get { viewModel.sequence.messages }
+    }
 
     var body: some View {
         @Bindable var viewModel = viewModel
@@ -19,7 +21,7 @@ struct MultiMessageView: View {
 
         ForEach(messages) { message in
             let messageIndent: CGFloat = {
-                if settings.showMessageHeaders || message.role == "user" {
+                if settings.showMessageHeaders || message.messageType == .system || message.messageType == .user {
                     return 0.0
                 }
 
@@ -41,7 +43,8 @@ struct MultiMessageView: View {
                 }
             }
 
-            if message.role == "user" || message.role == "assistant" {
+            switch(message.messageType) {
+            case .system, .user, .assistant:
                 OneMessageView(
                     message,
                     renderMessageContent: viewModel.lookup,
@@ -53,25 +56,25 @@ struct MultiMessageView: View {
                 )
                 .padding(.leading, messageIndent)
                 .id(message)
-            }
-            else if message.role == "server error" {
+
+            case .unknown(_), .serverInfo, .clientInfo:
                 OneMessageView(
                     message,
-                    showMessageHeaders: true,
+                    showMessageHeaders: settings.showMessageHeaders,
                     messageFontSize: settings.messageFontSize,
-                    expandContent: true,
+                    expandContent: false,
                     renderAsMarkdown: false
                 )
                 .padding(.leading, messageIndent)
                 .id(message)
                 .fontDesign(.monospaced)
-            }
-            else {
+
+            case .serverError, .clientError:
                 OneMessageView(
                     message,
                     showMessageHeaders: true,
                     messageFontSize: settings.messageFontSize,
-                    expandContent: false,
+                    expandContent: true,
                     renderAsMarkdown: false
                 )
                 .padding(.leading, messageIndent)
@@ -87,7 +90,7 @@ struct MultiMessageView: View {
             let shouldAnimate = settings.animateNewResponseText && !settings.renderAsMarkdown
 
             OneMessageView(
-                .temporary(viewModel.responseInEdit!),
+                .temporary(viewModel.responseInEdit!, .assistant),
                 stillUpdating: true,
                 showMessageHeaders: settings.showMessageHeaders,
                 messageFontSize: settings.messageFontSize,
@@ -829,10 +832,10 @@ struct OneSequenceView: View {
 
 #Preview(traits: .fixedLayout(width: 800, height: 800)) {
     let messages: [MessageLike] = [
-        .temporary(TemporaryChatMessage(role: "user", content: "First message", createdAt: Date.distantPast)),
+        .temporary(TemporaryChatMessage(role: "user", content: "First message", createdAt: Date.distantPast), .user),
         .temporary(TemporaryChatMessage(role: "clown", content: "Second message", createdAt: Date.distantPast)),
-        .temporary(TemporaryChatMessage(role: "user", content: "Third message", createdAt: Date.now)),
-        .temporary(TemporaryChatMessage(role: "user", content: "Fourth message", createdAt: Date(timeIntervalSinceNow: +5)))
+        .temporary(TemporaryChatMessage(role: "user", content: "Third message", createdAt: Date.now), .user),
+        .temporary(TemporaryChatMessage(role: "user", content: "Fourth message", createdAt: Date(timeIntervalSinceNow: +5)), .user)
     ]
     
     let chatService = ChatSyncService()

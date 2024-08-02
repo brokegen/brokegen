@@ -35,7 +35,7 @@ class ChatSequence: Identifiable {
                     createdAt: messageJson["created_at"].isoDateValue
                 )
 
-                messageBuilder.append(.temporary(message))
+                messageBuilder.append(.temporary(message, .serverInfo))
             }
             else {
                 let message: ChatMessage = ChatMessage(

@@ -111,7 +111,7 @@ struct SimpleOneMessageView: View {
                 }
 
                 SimpleOneMessageView(
-                    .temporary(TemporaryChatMessage(role: "assistant 1", content: "This is a response continuation, 1 2 3-", createdAt: Date.distantFuture)),
+                    .temporary(TemporaryChatMessage(role: "assistant 1", content: "This is a response continuation, 1 2 3-", createdAt: Date.distantFuture), .assistant),
                     stillUpdating: true
                 )
 
@@ -145,12 +145,12 @@ Your input will help me generate more targeted and valuable responses. Let's col
 
     return VStack {
         SimpleOneMessageView(
-            .temporary(TemporaryChatMessage(role: "user", content: "Hello this is a prompt", createdAt: Date(timeIntervalSinceNow: -604_800))))
+            .temporary(TemporaryChatMessage(role: "user", content: "Hello this is a prompt", createdAt: Date(timeIntervalSinceNow: -604_800)), .user))
 
         SimpleOneMessageView(
             .temporary(TemporaryChatMessage(role: "clown", content: "Hello! How can I help you today with your prompt? Please provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now)))
 
-        SimpleOneMessageView(.temporary(message3))
+        SimpleOneMessageView(.temporary(message3, .user))
 
         Spacer()
     }

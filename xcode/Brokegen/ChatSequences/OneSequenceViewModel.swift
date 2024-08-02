@@ -158,7 +158,7 @@ class OneSequenceViewModel {
                     content: responseInEdit?.content ?? errorDesc,
                     createdAt: Date.now
                 )
-                sequence.messages.append(.temporary(errorMessage))
+                sequence.messages.append(.temporary(errorMessage, .clientError))
             }
         }
     }
@@ -226,7 +226,7 @@ class OneSequenceViewModel {
                 createdAt: responseInEdit?.createdAt ?? Date.distantPast
             )
 
-            sequence.messages.append(.temporary(templated))
+            sequence.messages.append(.temporary(templated, .serverInfo))
 
             // If we get this end-of-prompt field, flush the response content buffer.
             // (We're probably done rendering, just autonaming left.)
@@ -247,15 +247,15 @@ class OneSequenceViewModel {
                     content: responseInEdit?.content!,
                     createdAt: responseInEdit?.createdAt ?? Date.now
                 )
-                sequence.messages.append(.temporary(savedResponse))
+                sequence.messages.append(.temporary(savedResponse, .serverInfo))
             }
 
             let errorMessage = TemporaryChatMessage(
-                role: "server error",
+                role: "server-reported error",
                 content: errorDesc,
                 createdAt: Date.now
             )
-            sequence.messages.append(.temporary(errorMessage))
+            sequence.messages.append(.temporary(errorMessage, .serverError))
         }
 
         // NB This block is what actually marks the Sequence as "done" and gives us whatever updates we might need.
@@ -283,7 +283,7 @@ class OneSequenceViewModel {
                 let storedMessage = ChatMessage(
                     serverId: newMessageId,
                     hostSequenceId: sequence.serverId,
-                    role: responseInEdit!.role,
+                    role: responseInEdit!.role ?? "[unknown]",
                     content: responseInEdit!.content!,
                     createdAt: responseInEdit!.createdAt
                 )
@@ -622,7 +622,7 @@ class OneSequenceViewModel {
                 if receivedDone != 1 {
                     responseInEdit!.role = "partial assistant response"
                 }
-                sequence.messages.append(.temporary(responseInEdit!))
+                sequence.messages.append(.temporary(responseInEdit!, .serverInfo))
             }
 
             serverStatus = nil

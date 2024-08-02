@@ -4,6 +4,7 @@ import Foundation
 import SwiftUI
 import SwiftyJSON
 
+
 struct ChatMessage {
     let serverId: ChatMessageServerID
     let hostSequenceId: ChatSequenceServerID
@@ -39,11 +40,11 @@ extension ChatMessage: Decodable {
 
 struct TemporaryChatMessage: Identifiable {
     let id: UUID = UUID()
-    public var role: String
+    public var role: String?
     public var content: String?
     public var createdAt: Date
 
-    init(role: String = "user", content: String? = nil, createdAt: Date = Date.now) {
+    init(role: String? = nil, content: String? = nil, createdAt: Date = Date.now) {
         self.role = role
         self.content = content
         self.createdAt = createdAt
@@ -80,17 +81,29 @@ extension TemporaryChatMessage: Encodable {
     }
 }
 
+
+enum ChatMessageType: Equatable, Hashable {
+    case system
+    case user
+    case assistant
+    case unknown(String?)
+    case serverInfo
+    case serverError
+    case clientInfo
+    case clientError
+}
+
 enum MessageLike: Equatable, Hashable {
     case stored(ChatMessage)
-    case temporary(TemporaryChatMessage)
+    case temporary(TemporaryChatMessage, ChatMessageType = .unknown(nil))
 
     var messageIdString: String {
         get {
             switch(self) {
             case .stored(let m):
                 "ChatMessage#\(m.serverId)"
-            case .temporary(_):
-                "TemporaryChatMessage"
+            case .temporary(_, let messageType):
+                "TemporaryChatMessage \(messageType)"
             }
         }
     }
@@ -106,13 +119,33 @@ enum MessageLike: Equatable, Hashable {
         }
     }
 
+    var messageType: ChatMessageType {
+        get {
+            switch(self) {
+            case .stored(let m):
+                switch(m.role) {
+                case "system":
+                    return .system
+                case "user":
+                    return .user
+                case "assistant":
+                    return .assistant
+                default:
+                    return .unknown(m.role)
+                }
+            case .temporary(_, let messageType):
+                return messageType
+            }
+        }
+    }
+
     var role: String {
         get {
             switch(self) {
             case .stored(let m):
                 m.role
-            case .temporary(let m):
-                m.role
+            case .temporary(let m, _):
+                m.role ?? "[unknown]"
             }
         }
     }
@@ -122,7 +155,7 @@ enum MessageLike: Equatable, Hashable {
             switch(self) {
             case .stored(let m):
                 m.content
-            case .temporary(let m):
+            case .temporary(let m, _):
                 m.content ?? ""
             }
         }
@@ -134,7 +167,7 @@ enum MessageLike: Equatable, Hashable {
             case .stored(let m):
                 m.createdAt
 
-            case .temporary(let m):
+            case .temporary(let m, _):
                 m.createdAt
             }
         }
@@ -145,7 +178,7 @@ enum MessageLike: Equatable, Hashable {
             switch(self) {
             case .stored(let m):
                 String(describing: m.createdAt)
-            case .temporary(let m):
+            case .temporary(let m, _):
                 String(describing: m.createdAt)
             }
         }

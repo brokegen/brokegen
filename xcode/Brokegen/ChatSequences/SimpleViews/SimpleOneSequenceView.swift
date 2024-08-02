@@ -130,7 +130,7 @@ struct SimpleOneSequenceView: View {
                                 .fontDesign(settings.messageFontDesign)
 
                                 if viewModel.responseInEdit != nil {
-                                    SimpleOneMessageView(.temporary(viewModel.responseInEdit!), stillUpdating: true)
+                                    SimpleOneMessageView(.temporary(viewModel.responseInEdit!, .assistant), stillUpdating: true)
                                         .animation(settings.animateNewResponseText ? .easeIn : nil, value: viewModel.responseInEdit)
                                         .id(-1)
                                         .fontDesign(settings.messageFontDesign)
@@ -204,10 +204,10 @@ struct SimpleOneSequenceView: View {
 
 #Preview(traits: .fixedLayout(width: 800, height: 1200)) {
     let messages: [MessageLike] = [
-        .temporary(TemporaryChatMessage(role: "user", content: "First message", createdAt: Date.distantPast)),
+        .temporary(TemporaryChatMessage(role: "user", content: "First message", createdAt: Date.distantPast), .user),
         .temporary(TemporaryChatMessage(role: "clown", content: "Second message", createdAt: Date.distantPast)),
-        .temporary(TemporaryChatMessage(role: "user", content: "Third message", createdAt: Date.now)),
-        .temporary(TemporaryChatMessage(role: "user", content: "Fourth message", createdAt: Date(timeIntervalSinceNow: +5)))
+        .temporary(TemporaryChatMessage(role: "user", content: "Third message", createdAt: Date.now), .user),
+        .temporary(TemporaryChatMessage(role: "user", content: "Fourth message", createdAt: Date(timeIntervalSinceNow: +5)), .user)
     ]
 
     let chatService = ChatSyncService()

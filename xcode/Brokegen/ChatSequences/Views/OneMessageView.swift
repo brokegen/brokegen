@@ -9,6 +9,7 @@ struct OneMessageView: View {
     let stillExpectingUpdate: Bool
     let showMessageHeaders: Bool
     let messageFontSize: CGFloat
+    let forcedWidth: CGFloat?
 
     // TODO: These need to be a @Binding, or hosted in the parent/ViewModel, if we want them to persist across settings changes.
     @State private var localExpandContent: Bool? = nil
@@ -29,6 +30,7 @@ struct OneMessageView: View {
         stillUpdating stillExpectingUpdate: Bool = false,
         showMessageHeaders: Bool,
         messageFontSize: CGFloat = 12,
+        forcedWidth: CGFloat? = nil,
         expandContent defaultExpandContent: Bool,
         renderAsMarkdown defaultRenderAsMarkdown: Bool
     ) {
@@ -39,6 +41,7 @@ struct OneMessageView: View {
         self.stillExpectingUpdate = stillExpectingUpdate
         self.showMessageHeaders = showMessageHeaders
         self.messageFontSize = messageFontSize
+        self.forcedWidth = forcedWidth
 
         self.defaultExpandContent = defaultExpandContent
         self.defaultRenderAsMarkdown = defaultRenderAsMarkdown
@@ -54,7 +57,7 @@ struct OneMessageView: View {
 
     @ViewBuilder
     func buttons(_ baseFontSize: CGFloat) -> some View {
-        HStack(spacing: baseFontSize * 2) {
+        HStack(alignment: .bottom, spacing: baseFontSize * 2) {
             Button(action: {
                 localRenderAsMarkdown = !renderAsMarkdown
             }, label: {
@@ -70,7 +73,7 @@ struct OneMessageView: View {
                 Image(systemName: "clipboard")
             })
 
-            if case .stored(let message) = self.message {
+            if case .stored(_) = self.message {
                 Button(action: { self.branchAction?() }, label: {
                     Image(systemName: "arrow.triangle.branch")
                 })
@@ -111,55 +114,47 @@ struct OneMessageView: View {
                 .contentShape(Rectangle())
             })
             .buttonStyle(.borderless)
+            .layoutPriority(0.2)
 
             if stillExpectingUpdate && (!message.content.isEmpty || !expandContent) {
                 ProgressView()
                     .controlSize(.mini)
                     .id("progress view")
+                    .layoutPriority(0.2)
             }
 
             Spacer()
-
-            if isHovered {
-                VStack(alignment: .trailing, spacing: 0) {
-                    Text(message.createdAtString)
-                    Text(message.sequenceIdString ?? message.messageIdString)
-                }
-                .foregroundStyle(Color(.disabledControlTextColor))
-                .padding(.leading, baseFontSize * 2)
-                .padding(.trailing, baseFontSize * 2)
-
-                buttons(12)
-                    .padding(.trailing, 18)
-            }
         }
         .font(.system(size: baseFontSize * 1.5))
         .padding(baseFontSize * 4/3)
     }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            let fixedHeaderSize: CGFloat = 12
+    @ViewBuilder
+    var bodyNoButtons: some View {
+        let fixedHeaderSize: CGFloat = 12
 
-            if showMessageHeaders {
-                headerSection(fixedHeaderSize)
-            }
+        if showMessageHeaders {
+            headerSection(fixedHeaderSize)
+        }
 
-            if stillExpectingUpdate && (message.content.isEmpty && expandContent) {
-                ProgressView()
-                    .progressViewStyle(.circular)
-                    .padding(messageFontSize * 4/3)
-                    .padding(.bottom, messageFontSize * 2/3)
-                    .id("progress view")
-            }
+        if expandContent {
+            HStack(spacing: 0) {
+                if stillExpectingUpdate && message.content.isEmpty {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .padding(messageFontSize * 4/3)
+                        .padding(.bottom, messageFontSize * 2/3)
+                        .id("progress view")
+                        .layoutPriority(0.2)
+                }
 
-            if expandContent && !message.content.isEmpty {
-                ZStack(alignment: .topTrailing) {
+                else if !message.content.isEmpty {
                     if renderAsMarkdown {
                         MarkdownView(content: renderMessageContent(message), messageFontSize: messageFontSize)
                         // https://stackoverflow.com/questions/56505929/the-text-doesnt-get-wrapped-in-swift-ui
                         // Render faster
                             .fixedSize(horizontal: false, vertical: true)
+                            .layoutPriority(0.2)
                     }
                     else {
                         Text(message.content)
@@ -174,19 +169,45 @@ struct OneMessageView: View {
                         // https://stackoverflow.com/questions/56505929/the-text-doesnt-get-wrapped-in-swift-ui
                         // Render faster
                             .fixedSize(horizontal: false, vertical: true)
-                    }
-
-                    if !showMessageHeaders && isHovered {
-                        buttons(fixedHeaderSize)
-                            .padding(fixedHeaderSize * 4/3)
-                            .background(
-                                Rectangle()
-                                    .fill(Color(.controlBackgroundColor))
-                                    .opacity(0.8)
-                            )
-                            .padding(.trailing, fixedHeaderSize * 1.5)
+                            .layoutPriority(0.2)
                     }
                 }
+
+                Spacer()
+                    .frame(minWidth: 0)
+            }
+        }
+    }
+
+    var body: some View {
+        let fixedOverlaySize: CGFloat = 12
+
+        VStack(spacing: 0) {
+            bodyNoButtons
+        }
+        .overlay(alignment: .topTrailing) {
+            if isHovered && showMessageHeaders {
+                HStack(alignment: .bottom, spacing: fixedOverlaySize * 2) {
+                    VStack(alignment: .trailing, spacing: 0) {
+                        Text(message.createdAtString)
+                        Text(message.sequenceIdString ?? message.messageIdString)
+                    }
+                    .foregroundStyle(Color(.disabledControlTextColor))
+
+                    buttons(fixedOverlaySize)
+                }
+                .padding(fixedOverlaySize * 4/3)
+                .padding(.trailing, fixedOverlaySize * 1.5)
+            }
+            else if isHovered && !showMessageHeaders {
+                buttons(fixedOverlaySize)
+                    .padding(fixedOverlaySize * 4/3)
+                    .background(
+                        Rectangle()
+                            .fill(Color(.controlBackgroundColor))
+                            .opacity(0.8)
+                    )
+                    .padding(.trailing, fixedOverlaySize * 1.5)
             }
         }
         .onHover { isHovered in
@@ -270,22 +291,30 @@ Your input will help me generate more targeted and valuable responses. Let's col
 
     let showMessageHeaders = true
 
-    return VStack(alignment: .leading, spacing: 0) {
-        OneMessageView(
-            .temporary(TemporaryChatMessage(
-                role: "user",
-                content: "Hello this is a prompt",
-                createdAt: Date(timeIntervalSinceNow: -604_800))),
-            showMessageHeaders: showMessageHeaders, expandContent: true, renderAsMarkdown: false)
+    return GeometryReader { geometry in
+        ScrollView {
+            OneMessageView(
+                .temporary(TemporaryChatMessage(
+                    role: "user",
+                    content: "short prompt",
+                    createdAt: Date(timeIntervalSinceNow: -604_800)), .user),
+                showMessageHeaders: false,
+                forcedWidth: geometry.size.width,
+                expandContent: true,
+                renderAsMarkdown: false)
 
-        OneMessageView(
-            .temporary(TemporaryChatMessage(role: "clown", content: "Hello! How can I help you today with your prompt?\n\nPlease provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now)),
-            showMessageHeaders: showMessageHeaders, expandContent: false, renderAsMarkdown: false)
+            OneMessageView(
+                .temporary(TemporaryChatMessage(role: "clown", content: "Hello! How can I help you today with your prompt?\n\nPlease provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now)),
+                showMessageHeaders: showMessageHeaders,
+                forcedWidth: geometry.size.width,
+                expandContent: false,
+                renderAsMarkdown: false)
 
-        OneMessageView(.temporary(message3), showMessageHeaders: showMessageHeaders, messageFontSize: 24, expandContent: true, renderAsMarkdown: true)
+            OneMessageView(.temporary(message3, .user), showMessageHeaders: showMessageHeaders, messageFontSize: 24, expandContent: true, renderAsMarkdown: true)
 
-        OneMessageView(.temporary(message4), showMessageHeaders: showMessageHeaders, expandContent: true, renderAsMarkdown: false)
+            OneMessageView(.temporary(message4, .assistant), showMessageHeaders: showMessageHeaders, expandContent: true, renderAsMarkdown: false)
 
-        Spacer()
+            Spacer()
+        }
     }
 }
