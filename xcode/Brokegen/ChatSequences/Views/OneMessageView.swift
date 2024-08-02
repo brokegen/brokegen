@@ -10,10 +10,14 @@ struct OneMessageView: View {
     let showMessageHeaders: Bool
     let messageFontSize: CGFloat
 
-    @State private var expandContent: Bool
+    // TODO: These need to be a @Binding, or hosted in the parent/ViewModel, if we want them to persist across settings changes.
+    @State private var localExpandContent: Bool? = nil
+    private let defaultExpandContent: Bool
+    // TODO: These need to be a @Binding, or hosted in the parent/ViewModel, if we want them to persist across settings changes.
+    @State private var localRenderAsMarkdown: Bool? = nil
+    private let defaultRenderAsMarkdown: Bool
+
     @State private var isHovered: Bool = false
-    @State private var renderMessageAsMarkdown: Bool?
-    @Binding private var defaultRenderAsMarkdown: Bool
 
     init(
         _ message: MessageLike,
@@ -25,33 +29,34 @@ struct OneMessageView: View {
         stillUpdating stillExpectingUpdate: Bool = false,
         showMessageHeaders: Bool,
         messageFontSize: CGFloat = 12,
-        renderAsMarkdown defaultRenderAsMarkdown: Binding<Bool>
+        expandContent defaultExpandContent: Bool,
+        renderAsMarkdown defaultRenderAsMarkdown: Bool
     ) {
         self.message = message
         self.renderMessageContent = renderMessageContent
         self.sequence = sequence
         self.branchAction = branchAction
         self.stillExpectingUpdate = stillExpectingUpdate
-        self.messageFontSize = messageFontSize
         self.showMessageHeaders = showMessageHeaders
+        self.messageFontSize = messageFontSize
 
-        self._renderMessageAsMarkdown = State(initialValue: nil)
-        self._defaultRenderAsMarkdown = defaultRenderAsMarkdown
+        self.defaultExpandContent = defaultExpandContent
+        self.defaultRenderAsMarkdown = defaultRenderAsMarkdown
+    }
 
-        self._expandContent = State(
-            initialValue: message.role == "user" || message.role == "assistant"
-        )
+    var expandContent: Bool {
+        get { localExpandContent ?? defaultExpandContent }
     }
 
     var renderAsMarkdown: Bool {
-        get { return renderMessageAsMarkdown ?? defaultRenderAsMarkdown }
+        get { localRenderAsMarkdown ?? defaultRenderAsMarkdown }
     }
 
     @ViewBuilder
     func buttons(_ baseFontSize: CGFloat) -> some View {
         HStack(spacing: baseFontSize * 2) {
             Button(action: {
-                renderMessageAsMarkdown = !renderAsMarkdown
+                localRenderAsMarkdown = !renderAsMarkdown
             }, label: {
                 Image(systemName: renderAsMarkdown ? "doc.richtext.fill" : "doc.richtext")
             })
@@ -87,7 +92,7 @@ struct OneMessageView: View {
         HStack(alignment: .bottom, spacing: 0) {
             Button(action: {
                 withAnimation(.snappy) {
-                    expandContent.toggle()
+                    localExpandContent = !expandContent
                 }
             }, label: {
                 HStack(alignment: .bottom, spacing: 0) {
@@ -271,15 +276,15 @@ Your input will help me generate more targeted and valuable responses. Let's col
                 role: "user",
                 content: "Hello this is a prompt",
                 createdAt: Date(timeIntervalSinceNow: -604_800))),
-            showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(false))
+            showMessageHeaders: showMessageHeaders, expandContent: true, renderAsMarkdown: false)
 
         OneMessageView(
             .temporary(TemporaryChatMessage(role: "clown", content: "Hello! How can I help you today with your prompt?\n\nPlease provide some context or details so I can better understand what you're looking for. I'm here to answer any questions you might have, offer suggestions, or just chat if that's what you prefer. Let me know how I can be of service!", createdAt: Date.now)),
-            showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(false))
+            showMessageHeaders: showMessageHeaders, expandContent: false, renderAsMarkdown: false)
 
-        OneMessageView(.temporary(message3), showMessageHeaders: showMessageHeaders, messageFontSize: 24, renderAsMarkdown: .constant(true))
+        OneMessageView(.temporary(message3), showMessageHeaders: showMessageHeaders, messageFontSize: 24, expandContent: true, renderAsMarkdown: true)
 
-        OneMessageView(.temporary(message4), showMessageHeaders: showMessageHeaders, renderAsMarkdown: .constant(false))
+        OneMessageView(.temporary(message4), showMessageHeaders: showMessageHeaders, expandContent: true, renderAsMarkdown: false)
 
         Spacer()
     }

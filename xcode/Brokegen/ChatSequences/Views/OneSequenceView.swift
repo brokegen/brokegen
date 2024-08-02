@@ -40,7 +40,8 @@ struct MultiMessageView: View {
                 branchAction: branchAction,
                 showMessageHeaders: settings.showMessageHeaders,
                 messageFontSize: settings.messageFontSize,
-                renderAsMarkdown: $settings.renderAsMarkdown
+                expandContent: message.role == "user" || message.role == "assistant" || message.role == "server.error",
+                renderAsMarkdown: settings.renderAsMarkdown
             )
             .padding(.leading, indentMessage ? settings.messageFontSize * 2 : 0.0)
             .id(message)
@@ -57,7 +58,8 @@ struct MultiMessageView: View {
                 stillUpdating: true,
                 showMessageHeaders: settings.showMessageHeaders,
                 messageFontSize: settings.messageFontSize,
-                renderAsMarkdown: $settings.renderAsMarkdown
+                expandContent: true,
+                renderAsMarkdown: settings.renderAsMarkdown
             )
             .animation(shouldAnimate ? .easeIn : nil, value: viewModel.responseInEdit)
             .padding(.leading, messageIndent)
