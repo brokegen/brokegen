@@ -14,6 +14,10 @@ class ProviderService {
 
     func fetchAvailableModels(repeatUntilSuccess: Bool) {}
 
+    var stillFetchingModels: Bool {
+        get { false }
+    }
+
     var availableModels: [FoundationModel] {
         get {
             return allModels.filter {
@@ -76,6 +80,11 @@ class DefaultProviderService: ProviderService {
     @ObservationIgnored var modelFetcher: Task<Void, Never>? = nil
     @ObservationIgnored var providerFetcher: Task<Void, Never>? = nil
 
+    private var modelFetcherComplete: Int = 0
+    override var stillFetchingModels: Bool {
+        modelFetcherComplete < 1
+    }
+
     init(_ serverBaseURL: String, configuration: URLSessionConfiguration) {
         self.serverBaseURL = serverBaseURL
         self.session = Alamofire.Session(configuration: configuration)
@@ -122,7 +131,13 @@ class DefaultProviderService: ProviderService {
         if !repeatUntilSuccess {
             modelFetcher = Task {
                 print("[TRACE] DefaultProviderService.fetchAvailableModels(repeatUntilSuccess: \(repeatUntilSuccess)) starting")
-                try? await doFetchAvailableModels()
+                do {
+                    try await doFetchAvailableModels()
+                    DispatchQueue.main.async {
+                        self.modelFetcherComplete += 1
+                    }
+                }
+                catch {}
 
                 DispatchQueue.main.async {
                     self.modelFetcher = nil
@@ -133,6 +148,9 @@ class DefaultProviderService: ProviderService {
             modelFetcher = Task {
                 do {
                     try await doFetchAvailableModels()
+                    DispatchQueue.main.async {
+                        self.modelFetcherComplete += 1
+                    }
                     print("[TRACE] DefaultProviderService.fetchAvailableModels() succeeded")
 
                     DispatchQueue.main.async {

@@ -19,7 +19,7 @@ struct FoundationModelSettingsView: View {
 
         OFMPicker(
             boxLabel: "Default inference model (for new chats):",
-            selectedModelBinding: $appSettings.defaultInferenceModel,
+            selectedModelBinding: $appSettings.live_defaultInferenceModel,
             showModelPicker: $showDefaultInferenceModelPicker,
             geometry: geometry,
             allowClear: true
@@ -28,7 +28,7 @@ struct FoundationModelSettingsView: View {
 
         OFMPicker(
             boxLabel: "Fallback inference model (for unavailable providers):",
-            selectedModelBinding: $appSettings.fallbackInferenceModel,
+            selectedModelBinding: $appSettings.live_fallbackInferenceModel,
             showModelPicker: $showFallbackInferenceModelPicker,
             geometry: geometry,
             allowClear: true
@@ -37,7 +37,7 @@ struct FoundationModelSettingsView: View {
 
         OFMPicker(
             boxLabel: "Preferred autonaming model:",
-            selectedModelBinding: $appSettings.preferredAutonamingModel,
+            selectedModelBinding: $appSettings.live_preferredAutonamingModel,
             showModelPicker: $showPreferredAutonamingModelPicker,
             geometry: geometry,
             allowClear: true

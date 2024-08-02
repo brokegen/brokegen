@@ -164,7 +164,7 @@ class AppSettings {
     }
 
     var stillPopulating: Bool {
-        providerService == nil || providerService!.allModels.isEmpty
+        providerService == nil || providerService!.stillFetchingModels
     }
 
     // MARK: - misc properties
