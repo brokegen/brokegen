@@ -654,9 +654,19 @@ class LlamaCppProvider(BaseProvider):
                     cfr.prompt.encode('utf-8'),
                 )
 
-                if len(tokenized_prompt) + timings.n_eval >= loaded_model.underlying_model.context_params.n_ctx:
+                # For some kind of error margin, complain if we're within 10 tokens of the end.
+                # This doesn't work well for extremely short contexts, but for ten tokens? blame the user.
+                #
+                # This "safety" margin can probably reduced to 1 or 2, depending on whether we have Unicode sequences
+                # that span multiple tokens (the llama-cpp-python decoder groups them together).
+                #
+                tokens_remaining = loaded_model.underlying_model.context_params.n_ctx - len(tokenized_prompt) - timings.n_eval
+                if tokens_remaining < 512:
+                    logger.debug(f"{tokens_remaining} token remaining in total context size of {loaded_model.underlying_model.context_params.n_ctx}")
+
+                if tokens_remaining < 10:
                     info_str = (
-                        f"Tokens exceeded context size: {len(tokenized_prompt)} prompt + {timings.n_eval} new"
+                        f"Token count near or exceeded context size: {len(tokenized_prompt)} prompt + {timings.n_eval} new"
                         f" >= n_ctx={loaded_model.underlying_model.context_params.n_ctx}"
                     )
                     status_holder.set("[lcp] " + info_str)
