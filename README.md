@@ -22,6 +22,7 @@ Minor features:
 
 - Chats are optionally auto-named by the UI (the naming prompts in the app work best with llama3 models)
 - Overridden prompts/templates are stored in a SwiftData store, while broad settings like "render as markdown" are stored using `@AppStorage`
+- User/assistant messages can be sent in any order (continue assistant inference even during its turn + keep "saving" user messages without inference), though this depends on the model template + whether the model handles out-of-turn events well.
 
 ## Requirements
 Tested and developed on macOS 14.2+, M1 MBP + 2019 Intel MBP. Pre-built binaries are x86 only, compiled for AVX2 CPU's and will run inference very slowly (estimated 3-6 tokens/sec for quantized mistral-7b, maxing out the 8 CPU cores on an Intel MBP).
