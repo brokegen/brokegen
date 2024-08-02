@@ -40,7 +40,7 @@ struct MultiMessageView: View {
                 branchAction: branchAction,
                 showMessageHeaders: settings.showMessageHeaders,
                 messageFontSize: settings.messageFontSize,
-                expandContent: message.role == "user" || message.role == "assistant" || message.role == "server.error",
+                expandContent: message.role == "user" || message.role == "assistant" || message.role == "server error",
                 renderAsMarkdown: settings.renderAsMarkdown
             )
             .padding(.leading, indentMessage ? settings.messageFontSize * 2 : 0.0)

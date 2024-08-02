@@ -14,7 +14,7 @@ import orjson
 import psutil
 import sqlalchemy
 from llama_cpp import ChatCompletionRequestMessage, CreateCompletionResponse, CreateCompletionStreamResponse, \
-    BaseLlamaCache, LlamaRAMCache, LlamaDiskCache
+    BaseLlamaCache, LlamaRAMCache, LlamaDiskCache, ChatCompletionRequestSystemMessage
 from llama_cpp.llama_chat_format import ChatFormatter, ChatFormatterResponse
 from sqlalchemy import select
 
@@ -260,7 +260,9 @@ class _OneModel:
         # Update default inference options with the provided values.
         if cfr is None:
             templator = TemplateApplier(self.underlying_model, inference_options)
-            cfr: ChatFormatterResponse = templator(messages=[])
+            cfr: ChatFormatterResponse = templator(messages=[
+                ChatCompletionRequestSystemMessage(role="system", content="[throwaway message for stop tokens]]"),
+            ])
 
         model_params = {
             "max_tokens": None,
