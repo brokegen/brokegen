@@ -165,9 +165,43 @@ class ChatSequence: Identifiable {
         )
     }
 
-    var lastMessageDate: Date? {
-        guard !messages.isEmpty else { return nil }
-        return messages.last!.createdAt
+    var updatedAt: Date? {
+        var currentLatestDate: Date? = nil
+
+        for message in messages {
+            if message.createdAt == nil {
+                continue
+            }
+
+            if currentLatestDate == nil {
+                currentLatestDate = message.createdAt
+                continue
+            }
+
+            /// We have to check more than the latest message, because if we re-use a ChatMessage, we pick up its createdAt.
+            /// However, since messages are generally in sequence, we can go back until we hit the first "assistant" message:
+            ///
+            /// - "assistant" messages are virtually always freshly-rendered, so we can just check up until that message.
+            /// - And since this is only used for UI rendering purposes, it doesn't have to be _that_ exact.
+            ///
+            if currentLatestDate! > message.createdAt! {
+                return currentLatestDate
+            }
+
+            currentLatestDate = max(currentLatestDate!, message.createdAt!)
+        }
+
+        // Also check other timestamps we have access to
+        if self.generatedAt != nil {
+            if currentLatestDate == nil {
+                currentLatestDate = self.generatedAt
+            }
+            else {
+                currentLatestDate = max(currentLatestDate!, self.generatedAt!)
+            }
+        }
+
+        return currentLatestDate
     }
 
     func displayServerId() -> String {

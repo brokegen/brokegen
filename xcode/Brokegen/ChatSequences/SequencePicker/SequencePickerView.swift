@@ -87,18 +87,18 @@ func dateToSectionName(_ date: Date?) -> String {
 
 extension ChatSequence: Comparable {
     static func < (lhs: ChatSequence, rhs: ChatSequence) -> Bool {
-        if lhs.lastMessageDate == nil {
+        if lhs.generatedAt == nil {
             return false
         }
-        if rhs.lastMessageDate == nil {
+        if rhs.generatedAt == nil {
             return true
         }
 
-        if lhs.lastMessageDate == rhs.lastMessageDate {
+        if lhs.generatedAt == rhs.generatedAt {
             return lhs.parentSequences?.count ?? -1 > rhs.parentSequences?.count ?? -1
         }
 
-        return lhs.lastMessageDate! > rhs.lastMessageDate!
+        return lhs.generatedAt! > rhs.generatedAt!
     }
 }
 
@@ -117,7 +117,7 @@ func sectionedSequences(
     sortedSequences = sortedSequences.sorted()
 
     let sectionedSequences = Dictionary(grouping: sortedSequences) {
-        dateToSectionName($0.lastMessageDate)
+        dateToSectionName($0.updatedAt)
     }
 
     let result = Array(sectionedSequences)

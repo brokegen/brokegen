@@ -21,7 +21,7 @@ struct SequenceRow: View {
     }
 
     func displayDate() -> String? {
-        if let date = sequence.lastMessageDate {
+        if let date = sequence.generatedAt {
             return dateToISOWeekStartingMonday(date) + " " + date.formatted(date: .omitted, time: .standard)
         }
         else {
@@ -135,7 +135,7 @@ struct RenameableSequenceRow: View {
     }
 
     func displayDate() -> String? {
-        if let date = sequence.lastMessageDate {
+        if let date = sequence.generatedAt {
             return dateToISOWeekStartingMonday(date) + " " + date.formatted(date: .omitted, time: .standard)
         }
         else {

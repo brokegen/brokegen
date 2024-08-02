@@ -22,7 +22,7 @@ struct MiniSequencePickerSidebar: View {
             .prefix(limit)
 
         let sectionedSomeSequences = Dictionary(grouping: someSequences) {
-            dateToSectionName($0.lastMessageDate)
+            dateToSectionName($0.updatedAt)
         }
 
         return Array(sectionedSomeSequences)
