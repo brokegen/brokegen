@@ -1,19 +1,25 @@
 protocol CSUISettings {
+    // MARK: - UI Behaviors
     var allowContinuation: Bool { get set }
     var showSeparateRetrievalButton: Bool { get set }
     var forceRetrieval: Bool { get set }
 
+    // MARK: - UI Appearance
     var showMessageHeaders: Bool { get set }
     var renderAsMarkdown: Bool { get set }
+    /// NB This is the stringified name for a Font.Design
     var messageFontDesign: String { get set }
     var messageFontSize: Int { get set }
+    /// NB This is the stringified name for a Font.Design
     var textEntryFontDesign: String { get set }
 
+    // MARK: - UI Performance tweaks
     var responseBufferFlushFrequencyMsec: Int { get set }
     /// NB Value of 0 means scrolling is immediate, values less than 0 mean disabled.
     var scrollOnNewTextFrequencyMsec: Int { get set }
     var animateNewResponseText: Bool { get set }
 
+    // MARK: - misc
     var showOFMPicker: Bool { get set }
     var stayAwakeDuringInference: Bool { get set }
 }
@@ -30,6 +36,7 @@ struct InMemoryCSUISettings: CSUISettings {
     var messageFontDesign: String
     var messageFontSize: Int
     var textEntryFontDesign: String
+
     var responseBufferFlushFrequencyMsec: Int
     var scrollOnNewTextFrequencyMsec: Int
     var animateNewResponseText: Bool

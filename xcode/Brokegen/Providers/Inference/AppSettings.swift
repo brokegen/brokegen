@@ -5,6 +5,7 @@ import SwiftUI
 /// Well, these should only ever be positive integers, anyway.
 fileprivate let INVALID_MODEL_ID: FoundationModelRecordID = -3
 
+/// See PersistentCSUISettings for detailed comments and reference implementations.
 @Observable
 class AppSettings {
     // MARK: - implement caching layer for @AppStorage reads
@@ -20,13 +21,7 @@ class AppSettings {
     }
 
     init() {
-        // https://stackoverflow.com/questions/63678438/swiftui-updating-ui-with-high-frequency-data
-        //
-        // NB We're implementing a (not-optimal) multi-step approach, where
-        // the extra variables are a read-only cache that reads from system preferences once every second or so.
-        //
         subscriber = counter
-            // Drop updates in the background
             .throttle(for: 5.0, scheduler: DispatchQueue.global(qos: .background), latest: true)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in

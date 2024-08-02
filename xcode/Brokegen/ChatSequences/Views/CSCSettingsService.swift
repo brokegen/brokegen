@@ -72,26 +72,26 @@ class CSCSettingsService {
         }
 
         var showMessageHeaders: Bool {
-            get { override.showMessageHeaders ?? defaults.cached_showMessageHeaders }
+            get { override.showMessageHeaders ?? defaults.showMessageHeaders }
             set { override.showMessageHeaders = newValue }
         }
 
         var renderAsMarkdown: Bool {
-            get { override.renderAsMarkdown ?? defaults.cached_renderAsMarkdown }
+            get { override.renderAsMarkdown ?? defaults.renderAsMarkdown }
             set { override.renderAsMarkdown = newValue }
         }
 
         var messageFontDesign: Font.Design {
-            get { Font.Design.fromString(defaults.cached_messageFontDesign) }
+            get { Font.Design.fromString(defaults.messageFontDesign) }
             set {
                 defaults.messageFontDesign = newValue.toString()
             }
         }
 
         var messageFontSize: CGFloat {
-            get { CGFloat(defaults.cached_messageFontSize) }
+            get { CGFloat(defaults.messageFontSize) }
             set {
-                defaults.cached_messageFontSize = Int(newValue)
+                defaults.messageFontSize = Int(newValue)
             }
         }
 
@@ -103,14 +103,12 @@ class CSCSettingsService {
         }
 
         var responseBufferFlushFrequencyMsec: Int {
-            get { defaults.cached_responseBufferFlushFrequencyMsec }
-            set {
-                defaults.responseBufferFlushFrequencyMsec = newValue
-            }
+            get { defaults.responseBufferFlushFrequencyMsec }
+            set { defaults.responseBufferFlushFrequencyMsec = newValue }
         }
 
         var responseBufferFlush: Bool {
-            get { defaults.cached_responseBufferFlushFrequencyMsec > 0 }
+            get { defaults.responseBufferFlushFrequencyMsec > 0 }
             set {
                 defaults.responseBufferFlushFrequencyMsec = newValue
                 ? PersistentDefaultCSUISettings.default_responseBufferFlushFrequencyMsec
@@ -119,14 +117,12 @@ class CSCSettingsService {
         }
 
         var scrollOnNewTextFrequencyMsec: Int {
-            get { defaults.cached_scrollOnNewTextFrequencyMsec }
-            set {
-                defaults.scrollOnNewTextFrequencyMsec = newValue
-            }
+            get { defaults.scrollOnNewTextFrequencyMsec }
+            set { defaults.scrollOnNewTextFrequencyMsec = newValue }
         }
 
         var scrollOnNewText: Bool {
-            get { defaults.cached_scrollOnNewTextFrequencyMsec >= 0 }
+            get { defaults.scrollOnNewTextFrequencyMsec >= 0 }
             set {
                 defaults.scrollOnNewTextFrequencyMsec = newValue
                 ? PersistentDefaultCSUISettings.default_scrollOnNewTextFrequencyMsec
@@ -135,10 +131,8 @@ class CSCSettingsService {
         }
 
         var animateNewResponseText: Bool {
-            get { defaults.cached_animateNewResponseText }
-            set {
-                defaults.animateNewResponseText = newValue
-            }
+            get { defaults.animateNewResponseText }
+            set { defaults.animateNewResponseText = newValue }
         }
 
         var showOFMPicker: Bool {

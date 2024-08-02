@@ -4,20 +4,12 @@ import SwiftUI
 /// @AppStorage needs a bit of manual plumbing to make it compatible with @Observable.
 /// https://stackoverflow.com/questions/76606977/swift-ist-there-any-way-using-appstorage-with-observable
 ///
+/// NB We're also implementing a (not-optimal) multi-step approach, where the extra variables are
+/// a read-only cache that reads from system preferences once every second or so.
+/// https://stackoverflow.com/questions/63678438/swiftui-updating-ui-with-high-frequency-data
+///
 @Observable
 class PersistentDefaultCSUISettings: CSUISettings {
-    public var cached_showMessageHeaders: Bool = false
-    public var cached_renderAsMarkdown: Bool = false
-    public var cached_messageFontDesign: String = ""
-    public static let default_messageFontSize: Int = 18
-    public var cached_messageFontSize: Int = default_messageFontSize
-
-    public static let default_responseBufferFlushFrequencyMsec: Int = 250
-    public var cached_responseBufferFlushFrequencyMsec: Int = default_responseBufferFlushFrequencyMsec
-    public static let default_scrollOnNewTextFrequencyMsec: Int = 600
-    public var cached_scrollOnNewTextFrequencyMsec: Int = default_scrollOnNewTextFrequencyMsec
-    public var cached_animateNewResponseText: Bool = false
-
     @ObservationIgnored private var counter = PassthroughSubject<Int, Never>()
     @ObservationIgnored private var subscriber: AnyCancellable?
 
@@ -30,244 +22,364 @@ class PersistentDefaultCSUISettings: CSUISettings {
     }
 
     init() {
-        // https://stackoverflow.com/questions/63678438/swiftui-updating-ui-with-high-frequency-data
-        //
-        // NB We're implementing a (not-optimal) multi-step approach, where
-        // the extra variables are a read-only cache that reads from system preferences once every second or so.
-        //
         subscriber = counter
             // Drop updates in the background
-            .throttle(for: 1.1, scheduler: DispatchQueue.global(qos: .background), latest: true)
+            .throttle(for: 5.0, scheduler: DispatchQueue.global(qos: .background), latest: true)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard self != nil else { return }
-                self!.cached_showMessageHeaders = self!.showMessageHeaders
-                self!.cached_renderAsMarkdown = self!.renderAsMarkdown
-                self!.cached_messageFontDesign = self!.messageFontDesign
+                self!.cached_allowContinuation = self!.live_allowContinuation
+                self!.cached_showSeparateRetrievalButton = self!.live_showSeparateRetrievalButton
+                self!.cached_forceRetrieval = self!.live_forceRetrieval
 
-                self!.cached_responseBufferFlushFrequencyMsec = self!.responseBufferFlushFrequencyMsec
-                self!.cached_scrollOnNewTextFrequencyMsec = self!.scrollOnNewTextFrequencyMsec
-                self!.cached_animateNewResponseText = self!.animateNewResponseText
+                self!.cached_showMessageHeaders = self!.live_showMessageHeaders
+                self!.cached_renderAsMarkdown = self!.live_renderAsMarkdown
+                self!.cached_messageFontDesign = self!.live_messageFontDesign
+                self!.cached_messageFontSize = self!.live_messageFontSize
+                self!.cached_textEntryFontDesign = self!.live_textEntryFontDesign
+
+                self!.cached_responseBufferFlushFrequencyMsec = self!.live_responseBufferFlushFrequencyMsec
+                self!.cached_scrollOnNewTextFrequencyMsec = self!.live_scrollOnNewTextFrequencyMsec
+                self!.cached_animateNewResponseText = self!.live_animateNewResponseText
+
+                self!.cached_showOFMPicker = self!.live_showOFMPicker
+                self!.cached_stayAwakeDuringInference = self!.live_stayAwakeDuringInference
             }
 
         startUpdater()
     }
 
+    // MARK: - @AppStorage caching, part 1
     @AppStorage("defaultUiSettings.allowContinuation")
     @ObservationIgnored private var stored_allowContinuation: Bool = true
 
+    private var cached_allowContinuation: Bool? = nil
+
     @ObservationIgnored
-    var allowContinuation: Bool {
+    var live_allowContinuation: Bool {
         get {
-            access(keyPath: \.allowContinuation)
+            access(keyPath: \.live_allowContinuation)
             return stored_allowContinuation
         }
         set {
-            withMutation(keyPath: \.allowContinuation) {
+            withMutation(keyPath: \.live_allowContinuation) {
                 stored_allowContinuation = newValue
+                cached_allowContinuation = newValue
             }
         }
     }
+
+    var allowContinuation: Bool {
+        get { cached_allowContinuation ?? stored_allowContinuation }
+        set { live_allowContinuation = newValue }
+    }
+
 
     @AppStorage("defaultUiSettings.showSeparateRetrievalButton")
     @ObservationIgnored private var stored_showSeparateRetrievalButton: Bool = true
 
+    private var cached_showSeparateRetrievalButton: Bool? = nil
+
     @ObservationIgnored
-    var showSeparateRetrievalButton: Bool {
+    var live_showSeparateRetrievalButton: Bool {
         get {
-            access(keyPath: \.showSeparateRetrievalButton)
+            access(keyPath: \.live_showSeparateRetrievalButton)
             return stored_showSeparateRetrievalButton
         }
         set {
-            withMutation(keyPath: \.showSeparateRetrievalButton) {
+            withMutation(keyPath: \.live_showSeparateRetrievalButton) {
                 stored_showSeparateRetrievalButton = newValue
+                cached_showSeparateRetrievalButton = newValue
             }
         }
     }
+
+    var showSeparateRetrievalButton: Bool {
+        get { cached_showSeparateRetrievalButton ?? stored_showSeparateRetrievalButton }
+        set { live_showSeparateRetrievalButton = newValue }
+    }
+
 
     @AppStorage("defaultUiSettings.forceRetrieval")
     @ObservationIgnored private var stored_forceRetrieval: Bool = false
 
+    private var cached_forceRetrieval: Bool? = nil
+
     @ObservationIgnored
-    var forceRetrieval: Bool {
+    var live_forceRetrieval: Bool {
         get {
-            access(keyPath: \.forceRetrieval)
+            access(keyPath: \.live_forceRetrieval)
             return stored_forceRetrieval
         }
         set {
-            withMutation(keyPath: \.forceRetrieval) {
+            withMutation(keyPath: \.live_forceRetrieval) {
                 stored_forceRetrieval = newValue
+                cached_forceRetrieval = newValue
             }
         }
     }
 
+    var forceRetrieval: Bool {
+        get { cached_forceRetrieval ?? stored_forceRetrieval }
+        set { live_forceRetrieval = newValue }
+    }
+
+
+    // MARK: - @AppStorage caching, part 2
     @AppStorage("defaultUiSettings.showMessageHeaders")
     @ObservationIgnored private var stored_showMessageHeaders: Bool = false
 
+    private var cached_showMessageHeaders: Bool? = nil
+
     @ObservationIgnored
-    var showMessageHeaders: Bool {
+    var live_showMessageHeaders: Bool {
         get {
-            access(keyPath: \.showMessageHeaders)
+            access(keyPath: \.live_showMessageHeaders)
             return stored_showMessageHeaders
         }
         set {
-            withMutation(keyPath: \.showMessageHeaders) {
+            withMutation(keyPath: \.live_showMessageHeaders) {
                 stored_showMessageHeaders = newValue
                 cached_showMessageHeaders = newValue
             }
         }
     }
 
+    var showMessageHeaders: Bool {
+        get { cached_showMessageHeaders ?? stored_showMessageHeaders }
+        set { live_showMessageHeaders = newValue }
+    }
+
+
     @AppStorage("defaultUiSettings.renderAsMarkdown")
     @ObservationIgnored private var stored_renderAsMarkdown: Bool = true
 
+    private var cached_renderAsMarkdown: Bool? = nil
+
     @ObservationIgnored
-    var renderAsMarkdown: Bool {
+    var live_renderAsMarkdown: Bool {
         get {
-            access(keyPath: \.renderAsMarkdown)
+            access(keyPath: \.live_renderAsMarkdown)
             return stored_renderAsMarkdown
         }
         set {
-            withMutation(keyPath: \.renderAsMarkdown) {
+            withMutation(keyPath: \.live_renderAsMarkdown) {
                 stored_renderAsMarkdown = newValue
                 cached_renderAsMarkdown = newValue
             }
         }
     }
 
-    // NB This is the stringified name for a Font.Design
+    var renderAsMarkdown: Bool {
+        get { cached_renderAsMarkdown ?? stored_renderAsMarkdown }
+        set { live_renderAsMarkdown = newValue }
+    }
+
+
     @AppStorage("defaultUiSettings.messageFontDesign")
     @ObservationIgnored private var stored_messageFontDesign: String = ""
 
+    private var cached_messageFontDesign: String? = nil
+
     @ObservationIgnored
-    var messageFontDesign: String {
+    var live_messageFontDesign: String {
         get {
-            access(keyPath: \.messageFontDesign)
+            access(keyPath: \.live_messageFontDesign)
             return stored_messageFontDesign
         }
         set {
-            withMutation(keyPath: \.messageFontDesign) {
+            withMutation(keyPath: \.live_messageFontDesign) {
                 stored_messageFontDesign = newValue
                 cached_messageFontDesign = newValue
             }
         }
     }
 
+    var messageFontDesign: String {
+        get { cached_messageFontDesign ?? stored_messageFontDesign }
+        set { live_messageFontDesign = newValue }
+    }
+
+
+    public static let default_messageFontSize: Int = 18
+
     @AppStorage("defaultUiSettings.messageFontSize")
     @ObservationIgnored private var stored_messageFontSize: Int = default_messageFontSize
 
+    private var cached_messageFontSize: Int? = nil
+
     @ObservationIgnored
-    var messageFontSize: Int {
+    var live_messageFontSize: Int {
         get {
-            access(keyPath: \.messageFontSize)
+            access(keyPath: \.live_messageFontSize)
             return stored_messageFontSize
         }
         set {
-            withMutation(keyPath: \.messageFontSize) {
+            withMutation(keyPath: \.live_messageFontSize) {
                 stored_messageFontSize = newValue
                 cached_messageFontSize = newValue
             }
         }
     }
 
-    // NB This is the stringified name for a Font.Design
+    var messageFontSize: Int {
+        get { cached_messageFontSize ?? stored_messageFontSize }
+        set { live_messageFontSize = newValue }
+    }
+
+
     @AppStorage("defaultUiSettings.textEntryFontDesign")
     @ObservationIgnored private var stored_textEntryFontDesign: String = ""
 
+    private var cached_textEntryFontDesign: String? = nil
+
     @ObservationIgnored
-    var textEntryFontDesign: String {
+    var live_textEntryFontDesign: String {
         get {
-            access(keyPath: \.textEntryFontDesign)
+            access(keyPath: \.live_textEntryFontDesign)
             return stored_textEntryFontDesign
         }
         set {
             withMutation(keyPath: \.textEntryFontDesign) {
                 stored_textEntryFontDesign = newValue
+                cached_textEntryFontDesign = newValue
             }
         }
     }
 
+    var textEntryFontDesign: String {
+        get { cached_textEntryFontDesign ?? stored_textEntryFontDesign }
+        set { live_textEntryFontDesign = newValue }
+    }
+
+
+    // MARK: - @AppStorage caching, part 3
+    public static let default_responseBufferFlushFrequencyMsec: Int = 250
+
     @AppStorage("defaultUiSettings.responseBufferFlushFrequencyMsec")
     @ObservationIgnored private var stored_responseBufferFlushFrequencyMsec: Int = default_responseBufferFlushFrequencyMsec
 
+    private var cached_responseBufferFlushFrequencyMsec: Int? = nil
+
     @ObservationIgnored
-    var responseBufferFlushFrequencyMsec: Int {
+    var live_responseBufferFlushFrequencyMsec: Int {
         get {
-            access(keyPath: \.responseBufferFlushFrequencyMsec)
+            access(keyPath: \.live_responseBufferFlushFrequencyMsec)
             return stored_responseBufferFlushFrequencyMsec
         }
         set {
-            withMutation(keyPath: \.responseBufferFlushFrequencyMsec) {
+            withMutation(keyPath: \.live_responseBufferFlushFrequencyMsec) {
                 stored_responseBufferFlushFrequencyMsec = newValue
                 cached_responseBufferFlushFrequencyMsec = newValue
             }
         }
     }
 
+    var responseBufferFlushFrequencyMsec: Int {
+        get { cached_responseBufferFlushFrequencyMsec ?? stored_responseBufferFlushFrequencyMsec }
+        set { live_responseBufferFlushFrequencyMsec = newValue }
+    }
+
+
+    public static let default_scrollOnNewTextFrequencyMsec: Int = 600
+
     @AppStorage("defaultUiSettings.scrollOnNewTextFrequencyMsec")
     @ObservationIgnored private var stored_scrollOnNewTextFrequencyMsec: Int = default_scrollOnNewTextFrequencyMsec
 
-    /// NB Value of 0 means scrolling is immediate, values less than 0 mean disabled.
+    private var cached_scrollOnNewTextFrequencyMsec: Int? = nil
+
     @ObservationIgnored
-    var scrollOnNewTextFrequencyMsec: Int {
+    var live_scrollOnNewTextFrequencyMsec: Int {
         get {
-            access(keyPath: \.scrollOnNewTextFrequencyMsec)
+            access(keyPath: \.live_scrollOnNewTextFrequencyMsec)
             return stored_scrollOnNewTextFrequencyMsec
         }
         set {
-            withMutation(keyPath: \.scrollOnNewTextFrequencyMsec) {
+            withMutation(keyPath: \.live_scrollOnNewTextFrequencyMsec) {
                 stored_scrollOnNewTextFrequencyMsec = newValue
                 cached_scrollOnNewTextFrequencyMsec = newValue
             }
         }
     }
 
+    var scrollOnNewTextFrequencyMsec: Int {
+        get { cached_scrollOnNewTextFrequencyMsec ?? stored_scrollOnNewTextFrequencyMsec }
+        set { live_scrollOnNewTextFrequencyMsec = newValue }
+    }
+
+
     @AppStorage("defaultUiSettings.animateNewResponseText")
     @ObservationIgnored private var stored_animateNewResponseText: Bool = true
 
+    private var cached_animateNewResponseText: Bool? = nil
+
     @ObservationIgnored
-    var animateNewResponseText: Bool {
+    var live_animateNewResponseText: Bool {
         get {
-            access(keyPath: \.animateNewResponseText)
+            access(keyPath: \.live_animateNewResponseText)
             return stored_animateNewResponseText
         }
         set {
-            withMutation(keyPath: \.animateNewResponseText) {
+            withMutation(keyPath: \.live_animateNewResponseText) {
                 stored_animateNewResponseText = newValue
                 cached_animateNewResponseText = newValue
             }
         }
     }
 
+    var animateNewResponseText: Bool {
+        get { cached_animateNewResponseText ?? stored_animateNewResponseText }
+        set { live_animateNewResponseText = newValue }
+    }
+
+
+    // MARK: - @AppStorage caching, part 4
     @AppStorage("defaultUiSettings.showOFMPicker")
     @ObservationIgnored private var stored_showOFMPicker: Bool = false
 
+    private var cached_showOFMPicker: Bool? = nil
+
     @ObservationIgnored
-    var showOFMPicker: Bool {
+    var live_showOFMPicker: Bool {
         get {
-            access(keyPath: \.showOFMPicker)
+            access(keyPath: \.live_showOFMPicker)
             return stored_showOFMPicker
         }
         set {
-            withMutation(keyPath: \.showOFMPicker) {
+            withMutation(keyPath: \.live_showOFMPicker) {
                 stored_showOFMPicker = newValue
+                cached_showOFMPicker = newValue
             }
         }
     }
 
+    var showOFMPicker: Bool {
+        get { cached_showOFMPicker ?? stored_showOFMPicker }
+        set { live_showOFMPicker = newValue }
+    }
+
+
     @AppStorage("defaultUiSettings.stayAwakeDuringInference")
     @ObservationIgnored private var stored_stayAwakeDuringInference: Bool = true
 
+    private var cached_stayAwakeDuringInference: Bool? = nil
+
     @ObservationIgnored
-    var stayAwakeDuringInference: Bool {
+    var live_stayAwakeDuringInference: Bool {
         get {
-            access(keyPath: \.stayAwakeDuringInference)
+            access(keyPath: \.live_stayAwakeDuringInference)
             return stored_stayAwakeDuringInference
         }
         set {
-            withMutation(keyPath: \.stayAwakeDuringInference) {
+            withMutation(keyPath: \.live_stayAwakeDuringInference) {
                 stored_stayAwakeDuringInference = newValue
+                cached_stayAwakeDuringInference = newValue
             }
         }
+    }
+
+    var stayAwakeDuringInference: Bool {
+        get { cached_stayAwakeDuringInference ?? stored_stayAwakeDuringInference }
+        set { live_stayAwakeDuringInference = newValue }
     }
 }
