@@ -17,6 +17,7 @@ struct RibbonView: View {
                 .layoutPriority(0.2)
 
             Spacer()
+                .frame(minWidth: 0)
         }
         .padding([.top, .bottom], 32)
     }

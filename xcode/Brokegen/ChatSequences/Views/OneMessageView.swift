@@ -121,6 +121,7 @@ struct OneMessageView: View {
             }
 
             Spacer()
+                .frame(minWidth: 0)
         }
         .font(.system(size: baseFontSize * 1.5))
         .padding(baseFontSize * 4/3)

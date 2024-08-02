@@ -55,6 +55,7 @@ struct MiniSequencePickerSidebar: View {
                         .layoutPriority(0.5)
                     
                     Spacer()
+                        .frame(minWidth: 0)
                 }
                 .contentShape(Rectangle())
                 .foregroundStyle(Color.accentColor)
@@ -148,6 +149,7 @@ struct MiniSequencePickerSidebar: View {
                         .id("\(sequence.id) text")
 
                     Spacer()
+                        .frame(minWidth: 0)
 
                     if sequence.messages.count > 4 {
                         Text("\(sequence.messages.count) messages")
@@ -169,11 +171,13 @@ struct MiniSequencePickerSidebar: View {
                             .id("\(sequence.id) text")
 
                         Spacer()
+                            .frame(minWidth: 0)
                     }
 
                     if sequence.messages.count > 4 {
                         HStack(spacing: 0) {
                             Spacer()
+                                .frame(minWidth: 0)
 
                             Text("\(sequence.messages.count) messages")
                                 .lineLimit(1)

@@ -55,6 +55,7 @@ struct FoundationModelSettingsView: View {
                             .layoutPriority(0.2)
 
                         Spacer()
+                            .frame(minHeight: 0)
                     }
                     .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
                 }
@@ -67,6 +68,7 @@ struct FoundationModelSettingsView: View {
                                 .layoutPriority(0.2)
 
                             Spacer()
+                                .frame(minHeight: 0)
                         }
                         .frame(maxWidth: OneFoundationModelView.preferredMaxWidth)
                     }

@@ -280,6 +280,7 @@ struct OneSequenceView: View {
             }
 
             Spacer()
+                .frame(minWidth: 0)
 
             if viewModel.submitting || viewModel.receiving {
                 ProgressView()

@@ -157,6 +157,7 @@ struct RefreshableModelPickerView: View {
                 .layoutPriority(0.2)
 
                 Spacer()
+                    .frame(minWidth: 0)
             }
             ModelPickerView()
         }

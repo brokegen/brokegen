@@ -21,6 +21,7 @@ struct SimpleOneSequenceView: View {
                 .layoutPriority(0.2)
 
             Spacer()
+                .frame(minWidth: 0)
 
             if viewModel.submitting || viewModel.receiving {
                 ProgressView()

@@ -12,7 +12,7 @@ struct CSCSettingsView: View {
     ) -> some View {
         GridRow {
             Text(labelText)
-                .layoutPriority(0.2)
+                .layoutPriority(1.0)
 
             Toggle(isOn: globalIsOn) {}
                 .toggleStyle(.switch)
@@ -53,7 +53,7 @@ struct CSCSettingsView: View {
 
                     GridRow {
                         Text("Keep chat name pinned to top of window")
-                            .layoutPriority(0.2)
+                            .layoutPriority(1.0)
 
                         Text("")
 
@@ -99,6 +99,7 @@ struct CSCSettingsView: View {
                 Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
                     GridRow {
                         Text("[global] Font for rendering messages")
+                            .layoutPriority(1.0)
 
                         HStack {
                             Picker("", selection: $settings.messageFontDesign) {
@@ -176,7 +177,7 @@ struct CSCSettingsView: View {
 
                 GridRow {
                     Text("Force retrieval-augmented generation on every query")
-                        .layoutPriority(0.2)
+                        .layoutPriority(1.0)
 
                     Toggle(isOn: $settings.defaults.forceRetrieval) {}
                         .toggleStyle(.switch)
@@ -221,7 +222,7 @@ struct CSCSettingsView: View {
             Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
                 GridRow {
                     Text("Buffer inference output: UI update frequency")
-                        .layoutPriority(0.2)
+                        .layoutPriority(1.0)
 
                     HStack {
                         Picker("", selection: $settings.responseBufferFlushFrequencyMsec) {
@@ -262,7 +263,6 @@ struct CSCSettingsView: View {
                 GridRow {
                     Text("Scroll to bottom of window on new response text: UI update frequency"
                          + "\n(ignored if rendering message as markdown)")
-                        .layoutPriority(0.2)
 
                     HStack {
                         Picker("", selection: $settings.scrollOnNewTextFrequencyMsec) {
@@ -303,7 +303,6 @@ struct CSCSettingsView: View {
                 GridRow {
                     Text("Animate (fade in) new response text"
                          + "\n(ignored if rendering message as markdown)")
-                        .layoutPriority(0.2)
 
                     Picker("", selection: $settings.animateNewResponseText) {
                         Text("animate")
@@ -338,6 +337,7 @@ struct CSCSettingsView: View {
                         Text("this sequence")
                             .frame(minWidth: 240)
                     }
+
                     Divider()
 
                     combinedGridRow(
@@ -354,7 +354,7 @@ struct CSCSettingsView: View {
                 Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
                     GridRow {
                         Text("[global] Chat autonaming policy")
-                            .layoutPriority(0.2)
+                            .layoutPriority(1.0)
 
                         Picker("", selection: $settings.autonamingPolicy) {
                             ForEach(CSInferenceSettings.AutonamingPolicy.allCases) { policy in
@@ -362,6 +362,7 @@ struct CSCSettingsView: View {
                                     .tag(policy)
                             }
                         }
+                        .frame(width: 300)
                         // TODO: Re-enable once we plumb this through on the server
                         .disabled(true)
                     }

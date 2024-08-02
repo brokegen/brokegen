@@ -88,6 +88,7 @@ struct JobsSidebarItem: View {
                 .layoutPriority(1.0)
 
             Spacer()
+                .frame(minWidth: 0)
 
             Group {
                 switch job.status {

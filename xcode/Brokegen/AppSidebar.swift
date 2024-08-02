@@ -16,6 +16,7 @@ struct ASSStyle: DisclosureGroupStyle {
                         .layoutPriority(0.5)
 
                     Spacer()
+                        .frame(minWidth: 0)
 
                     Image(systemName: configuration.isExpanded ? "chevron.down" : "chevron.left")
                         .contentTransition(.symbolEffect)
@@ -84,7 +85,10 @@ struct ASRow: View {
             Text(text)
                 .lineLimit(1...2)
                 .layoutPriority(0.5)
+
             Spacer()
+                .frame(minWidth: 0)
+
             if showChevron {
                 Image(systemName: "chevron.right")
                     .padding(.trailing, -12)
@@ -130,6 +134,7 @@ struct AppSidebar: View {
                         .layoutPriority(0.2)
 
                     Spacer()
+                        .frame(minWidth: 0)
                 }
             })
             .toggleStyle(.switch)

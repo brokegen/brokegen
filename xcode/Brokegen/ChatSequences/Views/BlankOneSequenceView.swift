@@ -181,6 +181,7 @@ struct BlankOneSequenceView: View {
             }
 
             Spacer()
+                .frame(minWidth: 0)
 
             if viewModel.submitting || waitingForNavigation {
                 ProgressView()

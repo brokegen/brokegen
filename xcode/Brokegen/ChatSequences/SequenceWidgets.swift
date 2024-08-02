@@ -56,6 +56,7 @@ struct ChatNameReadOnly: View {
                 .layoutPriority(0.2)
 
             Spacer()
+                .frame(minWidth: 0)
 
             Button(action: {
                 pinChatSequenceDesc.toggle()
