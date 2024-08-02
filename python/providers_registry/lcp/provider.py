@@ -440,6 +440,9 @@ class _OneModel:
             inference_options: InferenceOptions,
     ) -> llama_cpp.CreateChatCompletionResponse | Iterator[llama_cpp.CreateChatCompletionStreamResponse]:
         model_params = self.launch_with_params(None, inference_options)
+        # This argument isn't supported by the create_chat_completion endpoint
+        if "stopping_criteria" in model_params:
+            del model_params["stopping_criteria"]
 
         iterator_or_completion: \
             llama_cpp.CreateChatCompletionResponse | Iterator[llama_cpp.CreateChatCompletionStreamResponse]
