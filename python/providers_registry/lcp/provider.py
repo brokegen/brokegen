@@ -7,21 +7,20 @@ import os
 from datetime import datetime, timezone
 from typing import AsyncGenerator, AsyncIterator, Iterator, TypeVar, Any, Callable, Union
 
-import diskcache
 import jinja2.exceptions
 import jsondiff
 import llama_cpp
 import orjson
 import psutil
 import sqlalchemy
-from llama_cpp import ChatCompletionRequestMessage, CreateCompletionResponse, CreateCompletionStreamResponse, \
-    BaseLlamaCache, LlamaRAMCache, LlamaDiskCache, ChatCompletionRequestSystemMessage
+from llama_cpp import ChatCompletionRequestMessage, CreateCompletionStreamResponse, \
+    ChatCompletionRequestSystemMessage
 from llama_cpp.llama_chat_format import ChatFormatter, ChatFormatterResponse
 from sqlalchemy import select
 
 from _util.json import JSONDict, safe_get, safe_get_arrayed
 from _util.status import ServerStatusHolder, StatusContext
-from _util.typing import FoundationModelRecordID, ChatSequenceID, TemplatedPromptText, FoundationModelHumanID
+from _util.typing import FoundationModelRecordID, ChatSequenceID, FoundationModelHumanID
 from audit.http import AuditDB
 from client.database import HistoryDB, get_db as get_history_db
 from client.message import ChatMessage, ChatMessageOrm
@@ -663,9 +662,11 @@ class LlamaCppProvider(BaseProvider):
                 # This "safety" margin can probably reduced to 1 or 2, depending on whether we have Unicode sequences
                 # that span multiple tokens (the llama-cpp-python decoder groups them together).
                 #
-                tokens_remaining = loaded_model.underlying_model.context_params.n_ctx - len(tokenized_prompt) - timings.n_eval
+                tokens_remaining = loaded_model.underlying_model.context_params.n_ctx - len(
+                    tokenized_prompt) - timings.n_eval
                 if tokens_remaining < 512:
-                    logger.debug(f"{tokens_remaining} token remaining in total context size of {loaded_model.underlying_model.context_params.n_ctx}")
+                    logger.debug(
+                        f"{tokens_remaining} token remaining in total context size of {loaded_model.underlying_model.context_params.n_ctx}")
 
                 if tokens_remaining < 10:
                     info_str = (
@@ -836,10 +837,10 @@ class LlamaCppProvider(BaseProvider):
                 }
 
                 response_message: ChatMessageOrm | None = construct_assistant_message(
-                    inference_options.seed_assistant_response,
-                    safe_get(consolidated_response, "message", "content"),
-                    inference_event.response_created_at,
-                    history_db,
+                    maybe_response_seed=inference_options.seed_assistant_response or "",
+                    assistant_response=safe_get(consolidated_response, "message", "content") or "",
+                    created_at=inference_event.response_created_at,
+                    history_db=history_db,
                 )
                 if not response_message:
                     return

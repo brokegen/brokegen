@@ -8,13 +8,12 @@ from providers.foundation_models.orm import InferenceEventOrm
 
 
 def construct_assistant_message(
-        maybe_response_seed: PromptText | None,
+        maybe_response_seed: PromptText,
         assistant_response: PromptText,
         created_at: datetime,
         history_db: HistoryDB,
 ) -> ChatMessageOrm | None:
-    assistant_message_to_append: PromptText = \
-        (maybe_response_seed or "") + assistant_response
+    assistant_message_to_append: PromptText = maybe_response_seed + assistant_response
     if not assistant_message_to_append:
         return None
 

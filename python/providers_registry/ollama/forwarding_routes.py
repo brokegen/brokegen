@@ -77,10 +77,10 @@ async def do_api_chat_textonly(
         if captured_sequence is not None:
             try:
                 response_message: ChatMessageOrm | None = construct_assistant_message(
-                    inference_options.seed_assistant_response,
-                    ollama_log_indexer(consolidated_response),
-                    inference_event.response_created_at,
-                    history_db,
+                    maybe_response_seed=inference_options.seed_assistant_response or "",
+                    assistant_response=ollama_log_indexer(consolidated_response),
+                    created_at=inference_event.response_created_at,
+                    history_db=history_db,
                 )
                 if not response_message:
                     return
