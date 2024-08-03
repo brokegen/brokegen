@@ -199,28 +199,6 @@ class OneSequenceViewModel {
                 //print("[TRACE] Flushing response buffer: \(bufferedResponseContent.count) chars after \(String(format: "%.3f", timeSinceFlush)) seconds")
             }
 
-            if self.responseInEdit == nil {
-                print("[WARNING] responseInEdit is already nil, did we pre-parse packets too early?")
-                print("- current buffer content: \"\(bufferedResponseContent)\"")
-                print("- received chunk: \(jsonData)")
-
-                // DEBUG: There's a race condition somewhere that lets you continue submitting while still receiving.
-                // For now, just duplicate the code from receiveHandler().
-                //
-                // NB All this state-mungeing is okay for now because we refresh the entire sequenceDetails on end of inference.
-                //
-                promptInEdit = ""
-                receivedDone = 0
-                receivedError = 0
-                responseInEdit = TemporaryChatMessage(
-                    role: "erroneous response (continued after \"done\")",
-                    content: submittedAssistantResponseSeed ?? "",
-                    createdAt: Date.now
-                )
-                submittedAssistantResponseSeed = nil
-                submitting = false
-            }
-
             flushResponseBuffer()
         }
 
@@ -258,7 +236,6 @@ class OneSequenceViewModel {
                 sequence.messages.append(.temporary(savedResponse, .serverInfo))
             }
 
-            // TODO: This gets printed out of order, should appear at the bottom, after responseInEdit
             let errorMessage = TemporaryChatMessage(
                 role: "server-reported error",
                 content: errorDesc,
@@ -285,6 +262,7 @@ class OneSequenceViewModel {
 
         if let newMessageId: ChatMessageServerID = jsonData["new_message_id"].int {
             flushResponseBuffer()
+
             if responseInEdit != nil {
                 responseInEdit!.content = (responseInEdit?.content ?? "")
                 responseInEdit!.content!.append(bufferedResponseContent)
@@ -297,18 +275,14 @@ class OneSequenceViewModel {
                     createdAt: responseInEdit!.createdAt
                 )
 
-                sequence.messages.append(.stored(storedMessage))
+                // Put the real server response prior to any error messages.
+                sequence.messages.insert(
+                    .stored(storedMessage),
+                    at: sequence.messages.count - receivedError)
                 responseInEdit = nil
-
-                if receivedError > 0 {
-                    // TODO: Remove this once we get error messages to show up at the bottom of the list.
-                    // For now, this is an indication that the user should check above for errors.
-                    sequence.messages.append(.temporary(
-                        TemporaryChatMessage(
-                            role: "server reported \(receivedError) errors",
-                            createdAt: Date.now
-                        ), .clientError))
-                }
+            }
+            else {
+                print("[ERROR] Got `new_message_id` from server, but responseInEdit is nil")
             }
         }
 
