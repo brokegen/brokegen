@@ -55,11 +55,22 @@ async def convert_chat_to_generate(
         logger.error(f"No ollama template info for {inference_model}, call /api/show to populate it")
         raise HTTPException(500, "No model template available, confirm that FoundationModelRecords are complete")
 
+    intercepted_ollama_system_message: PromptText | None = None
+    for message in chat_request_content['messages']:
+        if message.role == 'system':
+            if intercepted_ollama_system_message is None:
+                intercepted_ollama_system_message = message.content
+            else:
+                # This should never happen, but append further system messages to make a big system message.
+                intercepted_ollama_system_message += "\n\n"
+                intercepted_ollama_system_message += message.content
+
     system_message = (
         # This first one is from intercepting an Ollama /api/chat request, which should take precedence.
             requested_system_message
             # Or, actually, they should simply never overlap. Only one or the other should exist.
             or inference_options.override_system_prompt
+            or intercepted_ollama_system_message
             or safe_get(chat_request_content, 'options', 'system')
             or safe_get(inference_model.combined_inference_parameters, 'system')
             or ''
