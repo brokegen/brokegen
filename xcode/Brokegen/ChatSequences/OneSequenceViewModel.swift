@@ -134,13 +134,15 @@ class OneSequenceViewModel {
 
             switch completion {
             case .finished:
-                if receivedDone != 1 {
-                    print("[ERROR] \(callerName) completed, but received \(receivedDone) \"done\" chunks")
+                if receivedDone < 1 && receivedError == 0 {
                     sequence.messages.append(.temporary(TemporaryChatMessage(
                         role: "no response data received",
                         content: "Try again, or check your prompt/template",
                         createdAt: Date.now
                     ), .serverError))
+                }
+                if receivedDone > 1 {
+                    print("[ERROR] \(callerName) completed, but received \(receivedDone) \"done\" chunks")
                 }
                 if incompleteResponseData != nil {
                     print("[ERROR] \(callerName) dropping \(incompleteResponseData!.count) bytes of unparsed JSON")
