@@ -20,7 +20,7 @@ from sqlalchemy import select
 
 from _util.json import JSONDict, safe_get, safe_get_arrayed
 from _util.status import ServerStatusHolder, StatusContext
-from _util.typing import FoundationModelRecordID, ChatSequenceID, FoundationModelHumanID
+from _util.typing import FoundationModelRecordID, ChatSequenceID, FoundationModelHumanID, PromptText
 from audit.http import AuditDB
 from client.database import HistoryDB, get_db as get_history_db
 from client.message import ChatMessage, ChatMessageOrm
@@ -147,7 +147,18 @@ class TemplateApplier(ChatFormatter):
             messages: list[ChatCompletionRequestMessage],
             **kwargs: Any,
     ) -> ChatFormatterResponse:
-        use_custom_template = self.inference_options.override_model_template or self.inference_options.override_system_prompt
+        # If we have a special "system" prompt, override the first system message in our list
+        messages_with_system = list(messages)
+        if self.inference_options.override_system_prompt is not None:
+            if len(messages_with_system) >= 1 and messages_with_system[0]["role"] == "system":
+                messages_with_system[0]["content"] = self.inference_options.override_system_prompt
+            else:
+                messages_with_system.insert(0, {
+                    "role": "system",
+                    "content": self.inference_options.override_system_prompt,
+                })
+
+        use_custom_template = self.inference_options.override_model_template
         basename: str = safe_get(self.underlying_model.metadata, "general.basename")
         if basename == "Meta-Llama-3.1":
             use_custom_template = True
@@ -634,19 +645,15 @@ class LlamaCppProvider(BaseProvider):
                     status_holder.set(f"{loaded_model.model_name}: {timings.n_p_eval} new prompt tokens"
                                       f" => {timings.n_eval} tokens generated in {timings.t_eval_ms / 1000:_.3f} seconds")
 
-            except (IndexError, ValueError):
-                logger.exception(f"Caught exception during inference")
-
-                # Probably ran out of tokens; continue on and rely on final handler(s)
-                pass
-
             except Exception as e:
-                logger.exception(f"Caught exception during inference")
-                yield {
-                    "error": f"{type(e)}: {e}",
-                    "done": False,
-                    "status": status_holder.get(),
-                }
+                # Probably ran out of tokens; continue on and rely on final handler(s)
+                logger.exception(f"Caught exception during inference, probably out of tokens")
+                if timings is None:
+                    yield {
+                        "error": f"{type(e)}: {e}",
+                        "done": False,
+                        "status": status_holder.get(),
+                    }
 
             # Add an error message if we _probably_ ran out of tokens.
             # It's okay to mark it as an error + toss previous work because the user wants a not-truncated response.

@@ -66,9 +66,10 @@ async def convert_chat_to_generate(
                 intercepted_ollama_system_message += message.content
 
     system_message = (
-        # This first one is from intercepting an Ollama /api/chat request, which should take precedence.
+            # This first one is from intercepting an Ollama /api/chat request, which should take precedence.
             requested_system_message
             # Or, actually, they should simply never overlap. Only one or the other should exist.
+            # TODO: Properly handle a not-None override, allowing us to set ""
             or inference_options.override_system_prompt
             or intercepted_ollama_system_message
             or safe_get(chat_request_content, 'options', 'system')

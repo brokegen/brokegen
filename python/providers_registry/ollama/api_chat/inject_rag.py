@@ -59,6 +59,7 @@ async def do_proxy_chat_rag(
 
         final_system_message = (
                 system_message
+                # TODO: Properly handle a not-None override, allowing us to set ""
                 or inference_options.override_system_prompt
                 or safe_get(request_content_json, 'options', 'system')
                 or safe_get(inference_options.combined_inference_parameters, 'system')
