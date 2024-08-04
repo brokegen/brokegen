@@ -32,6 +32,7 @@ class OneSequenceViewModel {
     @ObservationIgnored var bufferedResponseLastFlush: Date = Date.distantPast
     var responseInEdit: TemporaryChatMessage? = nil
     @ObservationIgnored private var receivedDone: Int = -1
+    @ObservationIgnored private var receivedPartial: Int = -1
     @ObservationIgnored private var receivedExtra: Int = -1
     var receiving: Bool {
         /// This field does double duty to indicate whether we are currently receiving data.
@@ -135,11 +136,20 @@ class OneSequenceViewModel {
             switch completion {
             case .finished:
                 if receivedDone < 1 && receivedExtra == 0 {
-                    sequence.messages.append(.temporary(TemporaryChatMessage(
-                        role: "no response data received",
-                        content: "Try again, or check your prompt/template",
-                        createdAt: Date.now
-                    ), .serverError))
+                    if receivedPartial == 0 {
+                        sequence.messages.append(.temporary(TemporaryChatMessage(
+                            role: "no response data received",
+                            content: "Try again, or check your prompt/template",
+                            createdAt: Date.now
+                        ), .clientError))
+                    }
+                    else {
+                        sequence.messages.append(.temporary(TemporaryChatMessage(
+                            role: "response interrupted",
+                            content: "Try again",
+                            createdAt: Date.now
+                        ), .clientError))
+                    }
                 }
                 if receivedDone > 1 {
                     print("[ERROR] \(callerName) completed, but received \(receivedDone) \"done\" chunks")
@@ -310,6 +320,7 @@ class OneSequenceViewModel {
                 promptInEdit = ""
 
                 receivedDone = 0
+                receivedPartial = 0
                 receivedExtra = 0
                 responseInEdit = TemporaryChatMessage(
                     role: "assistant",
@@ -621,7 +632,7 @@ class OneSequenceViewModel {
                     responseInEdit!.role = "partial assistant response"
                 }
                 sequence.messages.append(.temporary(responseInEdit!, .serverInfo))
-                receivedExtra += 1
+                receivedPartial += 1
             }
 
             serverStatus = nil
@@ -629,6 +640,7 @@ class OneSequenceViewModel {
         }
 
         receivedDone = 0
+        receivedPartial = 0
         receivedExtra = 0
         incompleteResponseData = nil
     }
