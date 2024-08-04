@@ -57,13 +57,13 @@ async def convert_chat_to_generate(
 
     intercepted_ollama_system_message: PromptText | None = None
     for message in chat_request_content['messages']:
-        if message.role == 'system':
+        if message["role"] == 'system':
             if intercepted_ollama_system_message is None:
-                intercepted_ollama_system_message = message.content
+                intercepted_ollama_system_message = message["content"]
             else:
                 # This should never happen, but append further system messages to make a big system message.
                 intercepted_ollama_system_message += "\n\n"
-                intercepted_ollama_system_message += message.content
+                intercepted_ollama_system_message += message["content"]
 
     system_message = (
             # This first one is from intercepting an Ollama /api/chat request, which should take precedence.
