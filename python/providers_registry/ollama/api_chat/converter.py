@@ -161,10 +161,10 @@ async def convert_chat_to_generate(
     if inference_options.inference_options:
         try:
             generate_request_content['options'] = orjson.loads(inference_options.inference_options)
-            logger.debug(f"Using provided inference options:\n{json.dumps(generate_request_content['options'], indent=2)}")
+            logger.debug(f"[ollama] /api/generate using provided inference options:\n{json.dumps(generate_request_content['options'], indent=2)}")
 
         except ValueError:
-            logger.error(f"Failed to parse, ignoring provided inference options: {inference_options.inference_options}")
+            logger.error(f"[ollama] /api/generate ignoring provided inference options (failed to parse): {inference_options.inference_options}")
 
     for unsupported_field in ['messages', 'template', 'system', 'context']:
         if unsupported_field in generate_request_content:

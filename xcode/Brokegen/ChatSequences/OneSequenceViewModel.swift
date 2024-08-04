@@ -172,8 +172,10 @@ class OneSequenceViewModel {
                 serverStatus = "[\(Date.now)] \(endpoint) network error: " + errorDesc
 
                 let errorMessage = TemporaryChatMessage(
-                    role: "\(callerName) \(endpoint) network error: \(errorAndData.localizedDescription)",
-                    content: responseInEdit?.content ?? errorDesc,
+                    role: "network error",
+                    content: "\(callerName) network error:\n"
+                        + "\(endpoint)\n"
+                        + "\(errorAndData.localizedDescription)",
                     createdAt: Date.now
                 )
                 sequence.messages.append(.temporary(errorMessage, .clientError))
