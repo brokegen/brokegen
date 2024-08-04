@@ -32,7 +32,7 @@ class OneSequenceViewModel {
     @ObservationIgnored var bufferedResponseLastFlush: Date = Date.distantPast
     var responseInEdit: TemporaryChatMessage? = nil
     @ObservationIgnored private var receivedDone: Int = -1
-    @ObservationIgnored private var receivedError: Int = -1
+    @ObservationIgnored private var receivedExtra: Int = -1
     var receiving: Bool {
         /// This field does double duty to indicate whether we are currently receiving data.
         /// `nil` before first data, and then reset to `nil` once we're done receiving.
@@ -134,7 +134,7 @@ class OneSequenceViewModel {
 
             switch completion {
             case .finished:
-                if receivedDone < 1 && receivedError == 0 {
+                if receivedDone < 1 && receivedExtra == 0 {
                     sequence.messages.append(.temporary(TemporaryChatMessage(
                         role: "no response data received",
                         content: "Try again, or check your prompt/template",
@@ -214,6 +214,7 @@ class OneSequenceViewModel {
             )
 
             sequence.messages.append(.temporary(templated, .serverInfo))
+            receivedExtra += 1
 
             // If we get this end-of-prompt field, flush the response content buffer.
             // (We're probably done rendering, just autonaming left.)
@@ -227,7 +228,6 @@ class OneSequenceViewModel {
 
         if let errorDesc = jsonData["error"].string {
             serverStatus = "[\(Date.now)] server error: " + errorDesc
-            receivedError += 1
 
             if !(responseInEdit?.content ?? "").isEmpty {
                 let savedResponse = TemporaryChatMessage(
@@ -236,6 +236,7 @@ class OneSequenceViewModel {
                     createdAt: responseInEdit?.createdAt ?? Date.now
                 )
                 sequence.messages.append(.temporary(savedResponse, .serverInfo))
+                receivedExtra += 1
             }
 
             let errorMessage = TemporaryChatMessage(
@@ -244,6 +245,7 @@ class OneSequenceViewModel {
                 createdAt: Date.now
             )
             sequence.messages.append(.temporary(errorMessage, .serverError))
+            receivedExtra += 1
         }
 
         // NB This block is what actually marks the Sequence as "done" and gives us whatever updates we might need.
@@ -280,7 +282,7 @@ class OneSequenceViewModel {
                 // Put the real server response prior to any error messages.
                 sequence.messages.insert(
                     .stored(storedMessage),
-                    at: sequence.messages.count - receivedError)
+                    at: sequence.messages.count - receivedExtra)
                 responseInEdit = nil
             }
             else {
@@ -308,7 +310,7 @@ class OneSequenceViewModel {
                 promptInEdit = ""
 
                 receivedDone = 0
-                receivedError = 0
+                receivedExtra = 0
                 responseInEdit = TemporaryChatMessage(
                     role: "assistant",
                     content: submittedAssistantResponseSeed ?? "",
@@ -619,6 +621,7 @@ class OneSequenceViewModel {
                     responseInEdit!.role = "partial assistant response"
                 }
                 sequence.messages.append(.temporary(responseInEdit!, .serverInfo))
+                receivedExtra += 1
             }
 
             serverStatus = nil
@@ -626,7 +629,7 @@ class OneSequenceViewModel {
         }
 
         receivedDone = 0
-        receivedError = 0
+        receivedExtra = 0
         incompleteResponseData = nil
     }
 }
