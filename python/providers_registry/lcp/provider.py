@@ -4,7 +4,7 @@ import functools
 import json
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import AsyncGenerator, AsyncIterator, Iterator, TypeVar, Any, Callable, Union
 
 import jinja2.exceptions
@@ -20,7 +20,7 @@ from sqlalchemy import select
 
 from _util.json import JSONDict, safe_get, safe_get_arrayed
 from _util.status import ServerStatusHolder, StatusContext
-from _util.typing import FoundationModelRecordID, ChatSequenceID, FoundationModelHumanID, PromptText
+from _util.typing import FoundationModelRecordID, ChatSequenceID, FoundationModelHumanID
 from audit.http import AuditDB
 from client.database import HistoryDB, get_db as get_history_db
 from client.message import ChatMessage, ChatMessageOrm
@@ -424,11 +424,14 @@ class _OneModel:
                 or os.path.basename(self.model_path)
         )
 
-    def do_completion(
+    async def do_completion(
             self,
             cfr: ChatFormatterResponse,
             inference_options: InferenceOptions,
+            chunked_prompt_eval: bool = True,
     ) -> llama_cpp.CreateCompletionResponse | Iterator[llama_cpp.CreateCompletionStreamResponse]:
+        await asyncio.sleep(0)
+
         model_params = self.launch_with_params(cfr, inference_options)
 
         tokenized_prompt: list[int] = self.underlying_model.tokenize(
@@ -439,10 +442,31 @@ class _OneModel:
 
         llama_cpp.llama_reset_timings(self.underlying_model.ctx)
 
-        return self.underlying_model.create_completion(
-            tokenized_prompt,
-            **model_params,
-        )
+        # Split the prompt eval into chunks, so we give the caller(s) a chance to break
+        if chunked_prompt_eval:
+            chunking_model_params = dict(model_params)
+            chunking_model_params["max_tokens"] = 1
+            chunking_model_params["stream"] = False
+
+            start_time: datetime = datetime.now()
+            chunk_size: int = 64
+            tokens_parsed: int = 0
+            while tokens_parsed < len(tokenized_prompt):
+                self.underlying_model.create_completion(tokenized_prompt[:tokens_parsed + chunk_size], **chunking_model_params)
+                tokens_parsed += chunk_size
+
+                elapsed_time: timedelta = datetime.now() - start_time
+                logger.debug(f"Chunked prompt eval: {tokens_parsed=} in {elapsed_time.total_seconds()} seconds")
+                await asyncio.sleep(0)
+
+            llama_cpp.llama_reset_timings(self.underlying_model.ctx)
+            return self.underlying_model.create_completion(tokenized_prompt, **model_params)
+
+        else:
+            return self.underlying_model.create_completion(
+                tokenized_prompt,
+                **model_params,
+            )
 
     def do_chat(
             self,
@@ -705,7 +729,7 @@ class LlamaCppProvider(BaseProvider):
                 templator = TemplateApplier(loaded_model.underlying_model, inference_options)
                 cfr: ChatFormatterResponse = templator(messages=[m.model_dump() for m in messages_list])
 
-                iter0: Iterator[CreateCompletionStreamResponse] = loaded_model.do_completion(
+                iter0: Iterator[CreateCompletionStreamResponse] = await loaded_model.do_completion(
                     cfr,
                     inference_options,
                 )
