@@ -428,7 +428,7 @@ class _OneModel:
             self,
             cfr: ChatFormatterResponse,
             inference_options: InferenceOptions,
-            chunked_prompt_eval: bool = True,
+            chunked_prompt_eval: bool = False,
     ) -> llama_cpp.CreateCompletionResponse | Iterator[llama_cpp.CreateCompletionStreamResponse]:
         await asyncio.sleep(0)
 
