@@ -150,13 +150,12 @@ final class StoredTextTests: XCTestCase {
         let container = try ModelContainer(
             for: StoredTextKey.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        let modelContext = container.mainContext
 
-        let templates = Templates(modelContext)
+        let templates = Templates(container)
         let stk1a = templates.fetchTextKey(contentType: .assistantResponseSeed, targetModel: 49)
         let stk1b = templates.fetchTextKey(contentType: .assistantResponseSeed, targetModel: 49)
 
-        let allKeys = try modelContext.fetch(
+        let allKeys = try container.mainContext.fetch(
             FetchDescriptor<StoredTextKey>()
         )
         assert(allKeys.count == 1)

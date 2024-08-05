@@ -1,6 +1,7 @@
 import SwiftData
 import SwiftUI
 
+
 @Observable
 class Templates {
     private var modelContext: ModelContext
@@ -13,8 +14,51 @@ class Templates {
     @ObservationIgnored @Published
     private var loadedTemplates: [StoredTextKey : [StoredText]] = [:]
 
-    public init(_ modelContext: ModelContext) {
-        self.modelContext = modelContext
+    @MainActor
+    static func fromInMemory() -> Templates {
+        let schema = Schema([
+            StoredTextKey.self,
+            StoredText.self,
+        ])
+
+        do {
+            let modelContainer = try ModelContainer(
+                for: schema,
+                configurations: [
+                    ModelConfiguration(isStoredInMemoryOnly: true)
+                ])
+            return Templates(modelContainer)
+        }
+        catch {
+            fatalError("[ERROR] Could not create in-memory ModelContainer!: \(error)")
+        }
+    }
+
+    @MainActor
+    static func fromPath(
+        _ containerFilename: String = "client-only.sqlite"
+    ) throws -> Templates {
+        let schema = Schema([
+            StoredTextKey.self,
+            StoredText.self,
+        ])
+
+        let storePath = URL.applicationSupportDirectory
+        // We manually append the path component because unsigned apps get special problems.
+            .appendingPathComponent(Bundle.main.bundleIdentifier!)
+            .appending(path: containerFilename)
+
+        let modelContainer = try ModelContainer(
+            for: schema,
+            configurations: [
+                ModelConfiguration(schema: schema, url: storePath),
+            ])
+        return Templates(modelContainer)
+    }
+
+    @MainActor
+    public init(_ modelContainer: ModelContainer) {
+        self.modelContext = modelContainer.mainContext
     }
 
     func fetchTextKey(

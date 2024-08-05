@@ -1,6 +1,5 @@
 import Combine
 import Foundation
-import SwiftData
 import SwiftUI
 
 let serverBaseURL: String = "http://127.0.0.1:6635"
@@ -32,37 +31,6 @@ struct BrokegenApp: App {
     @FocusedObject private var windowState: WindowViewModel?
     private var templates: Templates
 
-    @MainActor
-    var modelData: ModelContainer = {
-        let schema = Schema([
-            StoredTextKey.self,
-            StoredText.self,
-        ])
-        do {
-            if previewMode {
-                return try ModelContainer(
-                    for: schema,
-                    configurations: [
-                        ModelConfiguration(isStoredInMemoryOnly: true)
-                    ])
-            }
-            else {
-                let storePath = URL.applicationSupportDirectory
-                // We manually append the path component because unsigned apps get special problems.
-                    .appendingPathComponent(Bundle.main.bundleIdentifier!)
-                    .appending(path: "brokegen.sqlite")
-
-                return try ModelContainer(
-                    for: schema,
-                    configurations: [
-                        ModelConfiguration(schema: schema, url: storePath),
-                    ])
-            }
-        } catch {
-            fatalError("[ERROR] Could not create ModelContainer: \(error)")
-        }
-    }()
-
     /// We have to make a bunch of "temporary" variables to do a non-automatic init
     init() {
         if previewMode {
@@ -75,6 +43,7 @@ struct BrokegenApp: App {
             appSettings.link(to: providerService)
 
             jobsService = JobsManagerService()
+            templates = Templates.fromInMemory()
         }
         else {
             chatService = DefaultChatSyncService(serverBaseURL, configuration: configuration)
@@ -92,14 +61,19 @@ struct BrokegenApp: App {
                 allowExternalTraffic: appSettings.allowExternalTraffic
             )
             self.jobsService = jobsService
+            do {
+                templates = try Templates.fromPath()
+            }
+            catch {
+                print("[ERROR] Could not Templates.fromPath(), falling back to in-memory SwiftData store")
+                templates = Templates.fromInMemory()
+            }
 
             NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { _ in
                 // Terminate Jobs on exit
                 jobsService.terminateAll()
             }
         }
-
-        self.templates = Templates(modelData.mainContext)
     }
 
     func resetAllUserSettings() {
@@ -134,7 +108,6 @@ struct BrokegenApp: App {
                 .environment(appSettings)
                 .environment(chatSettingsService)
                 .environment(templates)
-                .modelContainer(modelData)
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1080, height: 1800)
