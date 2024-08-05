@@ -2,7 +2,7 @@ import SwiftUI
 
 extension OneSequenceViewModel: CustomStringConvertible {
     var description: String {
-        return "OneSequenceViewModel: \(self.sequence.serverId)"
+        return "OneSequenceViewModel: \(self.sequence.displayRecognizableDesc())"
     }
 }
 

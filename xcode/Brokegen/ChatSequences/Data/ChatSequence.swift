@@ -45,7 +45,7 @@ class ChatSequence: Identifiable {
                     content: messageJson["content"].stringValue,
                     createdAt: messageJson["created_at"].isoDateValue
                 )
-                
+
                 messageBuilder.append(.stored(message))
             }
         }
@@ -202,6 +202,12 @@ class ChatSequence: Identifiable {
         }
 
         return currentLatestDate
+    }
+}
+
+extension ChatSequence: CustomStringConvertible {
+    var description: String {
+        return self.displayRecognizableDesc(replaceNewlines: true)
     }
 
     func displayServerId() -> String {

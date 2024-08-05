@@ -29,7 +29,16 @@ public struct FoundationModel: Identifiable {
     public let latestInferenceEvent: Date?
     public let recentInferenceEvents: Int
     public let recentTokensPerSecond: Float
+}
 
+extension FoundationModel: CustomStringConvertible {
+    public var description: String {
+        let maybeLabel = label?["type"]?.string != nil
+        ? "[\(label!["type"]!.string!)] "
+        : ""
+
+        return "\(maybeLabel)FoundationModel#\(serverId): \(humanId)"
+    }
 }
 
 extension FoundationModel {

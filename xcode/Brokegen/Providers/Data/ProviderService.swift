@@ -115,7 +115,7 @@ class DefaultProviderService: ProviderService {
         let oldCount = self.allModels.count
         for (_, modelData) in JSON(allModelsData!) {
             let model = FoundationModel(modelData.dictionaryValue)
-            //print("[TRACE] Adding FoundationModel #\(model.serverId) => \(self.allModels.count) total models")
+            //print("[TRACE] Adding \(model) => \(self.allModels.count) total models")
             await self.replaceModelById(model.serverId, with: model)
         }
 
