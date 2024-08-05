@@ -205,7 +205,7 @@ struct MiniSequencePickerSidebar: View {
                          ? "Autoname disabled (still loading)"
                          : (appSettings.preferredAutonamingModel == nil
                             ? "Autoname disabled (set a model in settings)"
-                            : "Autoname with model: \(appSettings.preferredAutonamingModel!.humanId)")
+                            : "Autoname with: \(appSettings.preferredAutonamingModel!)")
                     )
                 }
                 .disabled(appSettings.preferredAutonamingModel == nil)

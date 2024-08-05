@@ -631,7 +631,7 @@ struct OneSequenceView: View {
                      ? "Autoname disabled (still loading)"
                      : (viewModel.appSettings.preferredAutonamingModel == nil
                         ? "Autoname disabled (set a model in settings)"
-                        : "Autoname with model: \(viewModel.appSettings.preferredAutonamingModel!.humanId)")
+                        : "Autoname with: \(viewModel.appSettings.preferredAutonamingModel!)")
                 )
             }
             .disabled(viewModel.appSettings.preferredAutonamingModel == nil)
