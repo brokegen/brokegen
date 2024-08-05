@@ -209,6 +209,18 @@ struct MiniSequencePickerSidebar: View {
                     )
                 }
                 .disabled(appSettings.preferredAutonamingModel == nil)
+
+                Button {
+                    Task {
+                        if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
+                            DispatchQueue.main.async {
+                                self.chatService.updateSequence(withSameId: refreshedSequence)
+                            }
+                        }
+                    }
+                } label: {
+                    Text("Force ChatSequence data refresh...")
+                }
             }
         }
     }

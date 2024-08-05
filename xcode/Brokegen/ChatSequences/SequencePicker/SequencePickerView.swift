@@ -173,6 +173,18 @@ struct SequencePickerView: View {
             } label: {
                 Text("Rename...")
             }
+
+            Button {
+                Task {
+                    if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
+                        DispatchQueue.main.async {
+                            self.chatService.updateSequence(withSameId: refreshedSequence)
+                        }
+                    }
+                }
+            } label: {
+                Text("Force ChatSequence data refresh...")
+            }
         }
     }
 
