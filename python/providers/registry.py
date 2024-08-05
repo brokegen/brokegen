@@ -190,7 +190,12 @@ class BaseProvider:
             async for chunk in iter0:
                 consolidated_response = autoname_consolidator(chunk, consolidated_response)
 
-            return consolidated_response
+                # Ignore the first few characters, just in case the model likes prepending them.
+                if "\n" in consolidated_response[2:]:
+                    logger.debug(f"Detected newline during autoname inference, stopping")
+                    break
+
+            return consolidated_response.strip()
 
 
 class ProviderFactory:
