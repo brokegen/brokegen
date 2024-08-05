@@ -45,7 +45,7 @@ struct SequenceRow: View {
             action()
         }, label: {
             HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 12) {
                     HStack(alignment: .top, spacing: 16) {
                         if sequence.userPinned {
                             Image(systemName: "pin.fill")
@@ -64,7 +64,6 @@ struct SequenceRow: View {
                             .multilineTextAlignment(.leading)
                     }
                     .font(.title)
-                    .padding(12)
                     .padding(.leading, -8)
                     .foregroundStyle(
                         sequence.userPinned || (sequence.isLeafSequence ?? false)
@@ -72,13 +71,27 @@ struct SequenceRow: View {
                         : Color(.disabledControlTextColor)
                     )
 
+                    // MARK: - Details shown under sequence name/header
                     if showSequenceId && sequence.parentSequences != nil {
                         Text(String(describing: sequence.parentSequences!))
                             .monospaced()
                             .foregroundStyle(Color(.disabledControlTextColor))
                             .multilineTextAlignment(.leading)
                     }
+
+                    if showSequenceId && sequence.parentSequences != nil && !sequence.messages.isEmpty {
+                        Divider()
+                            .opacity(0.2)
+                    }
+
+                    if !sequence.messages.isEmpty {
+                        Text(String(describing: sequence.messages.last!.content))
+                            .lineLimit(1...4)
+                            .foregroundStyle(Color(.disabledControlTextColor))
+                            .multilineTextAlignment(.leading)
+                    }
                 }
+                .padding(12)
 
                 Spacer()
 
