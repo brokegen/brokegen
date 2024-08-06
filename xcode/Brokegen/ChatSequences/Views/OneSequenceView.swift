@@ -401,14 +401,10 @@ struct OneSequenceView: View {
             GroupBox(content: {
                 VStack(spacing: 24) {
                     Picker("Retrieval policy", selection: $settings.retrievalPolicy) {
-                        Text("skip")
-                            .tag("skip")
-
-                        Text("simple")
-                            .tag("simple")
-
-                        Text("summarizing")
-                            .tag("summarizing")
+                        ForEach(CSInferenceSettings.RetrievalPolicy.allCases) { policy in
+                            Text(policy.asUiLabel())
+                                .tag(policy)
+                        }
                     }
 
                     ContextualTextInput(

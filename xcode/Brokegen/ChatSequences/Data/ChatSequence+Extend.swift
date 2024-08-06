@@ -4,6 +4,7 @@ import Foundation
 import SwiftData
 import SwiftyJSON
 
+
 struct ContinueParameters: Encodable, Hashable {
     var continuationModelId: FoundationModelRecordID? = nil
     var fallbackModelId: FoundationModelRecordID? = nil

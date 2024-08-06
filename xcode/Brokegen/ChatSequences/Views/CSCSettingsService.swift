@@ -173,8 +173,8 @@ class CSCSettingsService {
             set { inference.seedAssistantResponse = newValue }
         }
 
-        var retrievalPolicy: String {
-            get { inference.retrievalPolicy ?? "" }
+        var retrievalPolicy: CSInferenceSettings.RetrievalPolicy {
+            get { inference.retrievalPolicy }
             set { inference.retrievalPolicy = newValue }
         }
 

@@ -1,5 +1,6 @@
 import SwiftUI
 
+
 struct BlankOneSequenceView: View {
     @Environment(PathHost.self) private var pathHost
     @Environment(Templates.self) private var templates
@@ -302,14 +303,10 @@ struct BlankOneSequenceView: View {
             GroupBox(content: {
                 VStack(spacing: 24) {
                     Picker("Retrieval policy", selection: $viewModel.settings.retrievalPolicy) {
-                        Text("skip")
-                            .tag("skip")
-
-                        Text("simple")
-                            .tag("simple")
-
-                        Text("summarizing")
-                            .tag("summarizing")
+                        ForEach(CSInferenceSettings.RetrievalPolicy.allCases) { policy in
+                            Text(policy.asUiLabel())
+                                .tag(policy)
+                        }
                     }
 
                     ContextualTextInput(
@@ -631,20 +628,8 @@ struct BlankOneSequenceView: View {
                     }
                 }
 
-                if false {
-                    if viewModel.settings.retrievalPolicy.isEmpty {
-                        viewModel.settings.retrievalPolicy = "simple"
-                    }
-                    // Set default retrievalSearchArgs
-                    if templates.recents(type: .retrievalSearchArgs).isEmpty {
-                        _ = templates.add(
-                            content: "{\"k\": 18}",
-                            contentType: .retrievalSearchArgs,
-                            targetModel: nil)
-                    }
-                    if viewModel.settings.retrievalSearchArgs.isEmpty {
-                        viewModel.settings.retrievalSearchArgs = templates.recents(type: .retrievalSearchArgs).first?.content ?? ""
-                    }
+                if viewModel.settings.retrievalSearchArgs.isEmpty {
+                    viewModel.settings.retrievalSearchArgs = templates.recents(type: .retrievalSearchArgs).first?.content ?? ""
                 }
             }
             .contextMenu {

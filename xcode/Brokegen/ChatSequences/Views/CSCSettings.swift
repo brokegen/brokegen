@@ -82,12 +82,24 @@ struct CSInferenceSettings {
         }
     }
 
+    enum RetrievalPolicy: String, CaseIterable, Identifiable {
+        case skip, simple, summarizing
+
+        func asUiLabel() -> String {
+            self.rawValue
+        }
+
+        var id: String {
+            self.rawValue
+        }
+    }
+
     var inferenceOptions: String? = nil
     var overrideModelTemplate: String? = nil
     var overrideSystemPrompt: String? = nil
     var seedAssistantResponse: String? = nil
 
-    var retrievalPolicy: String? = nil
+    var retrievalPolicy: RetrievalPolicy = .simple
     var retrievalSearchArgs: String? = nil
 
     var autonamingPolicy: AutonamingPolicy = .serverDefault

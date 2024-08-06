@@ -4,7 +4,7 @@ from typing import AsyncGenerator, Self, AsyncIterator, Awaitable, Optional
 
 from pydantic import BaseModel
 
-from _util.json import JSONDict, safe_get_arrayed, safe_get
+from _util.json import JSONDict, safe_get_arrayed
 from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import ChatSequenceID, PromptText, TemplatedPromptText
 from audit.http import AuditDB
@@ -15,6 +15,23 @@ from .foundation_models.orm import FoundationModelRecord, FoundationModelRespons
 from .orm import ProviderLabel, ProviderRecord, ProviderType
 
 logger = logging.getLogger(__name__)
+
+
+def _generic_consolidator(chunk: JSONDict, consolidated_response: str) -> str:
+    for k, v in chunk.items():
+        if k == 'message':
+            consolidated_response += v['content']
+            continue
+
+        elif k == 'choices':
+            if len(chunk[k]) > 0:
+                choice_index = 0
+                if safe_get_arrayed(chunk, k, choice_index, 'delta', 'content'):
+                    consolidated_response += safe_get_arrayed(chunk, k, choice_index, 'delta', 'content')
+                if safe_get_arrayed(chunk, k, choice_index, 'text'):
+                    consolidated_response += safe_get_arrayed(chunk, k, choice_index, 'text')
+
+    return consolidated_response
 
 
 class InferenceOptions(BaseModel):
@@ -141,6 +158,30 @@ class BaseProvider:
     ) -> AsyncGenerator[JSONDict, None]:
         raise NotImplementedError()
 
+    async def completion_blocking(
+            self,
+            messages_list: list[ChatMessage],
+            inference_model: FoundationModelRecordOrm,
+            inference_options: InferenceOptions,
+            status_holder: ServerStatusHolder,
+            history_db: HistoryDB,
+            audit_db: AuditDB,
+    ) -> PromptText:
+        iter0: AsyncIterator[JSONDict] = await self.do_chat_nolog(
+            messages_list,
+            inference_model,
+            inference_options,
+            status_holder,
+            history_db,
+            audit_db,
+        )
+
+        consolidated_response: str = ""
+        async for chunk in iter0:
+            consolidated_response = _generic_consolidator(chunk, consolidated_response)
+
+        return consolidated_response
+
     async def autoname_sequence(
             self,
             messages_list: list[ChatMessage],
@@ -149,22 +190,6 @@ class BaseProvider:
             history_db: HistoryDB,
             audit_db: AuditDB,
     ) -> PromptText:
-        def autoname_consolidator(chunk: JSONDict, consolidated_response: str):
-            for k, v in chunk.items():
-                if k == 'message':
-                    consolidated_response += v['content']
-                    continue
-
-                elif k == 'choices':
-                    if len(chunk[k]) > 0:
-                        choice_index = 0
-                        if safe_get_arrayed(chunk, k, choice_index, 'delta', 'content'):
-                            consolidated_response += safe_get_arrayed(chunk, k, choice_index, 'delta', 'content')
-                        if safe_get_arrayed(chunk, k, choice_index, 'text'):
-                            consolidated_response += safe_get_arrayed(chunk, k, choice_index, 'text')
-
-            return consolidated_response
-
         with StatusContext(
                 f"Autonaming ChatSequence with {len(messages_list)} messages => {autonaming_model}",
                 status_holder):
@@ -177,6 +202,9 @@ class BaseProvider:
                 ChatMessage(role="user", content=new_message)
             )
 
+            # modified_inference_options = InferenceOptions(**inference_options.model_dump())
+            # modified_inference_options.seed_assistant_response = "Tab title: "
+
             iter0: AsyncIterator[JSONDict] = await self.do_chat_nolog(
                 messages_list,
                 autonaming_model,
@@ -188,7 +216,7 @@ class BaseProvider:
 
             consolidated_response: str = ""
             async for chunk in iter0:
-                consolidated_response = autoname_consolidator(chunk, consolidated_response)
+                consolidated_response = _generic_consolidator(chunk, consolidated_response)
 
                 # Ignore the first few characters, just in case the model likes prepending them.
                 if "\n" in consolidated_response[2:]:

@@ -59,6 +59,14 @@ class Templates {
     @MainActor
     public init(_ modelContainer: ModelContainer) {
         self.modelContext = modelContainer.mainContext
+
+        // Do initial population of some templates
+        if recents(type: .retrievalSearchArgs).isEmpty {
+            _ = add(
+                content: "{\"k\": 18}",
+                contentType: .retrievalSearchArgs,
+                targetModel: nil)
+        }
     }
 
     func fetchTextKey(
@@ -114,9 +122,13 @@ class Templates {
 
     func recents(
         type: StoredTextType,
-        model: FoundationModelRecordID,
+        model: FoundationModelRecordID?,
         sharedFetchLimit: Int? = nil
     ) -> [StoredText] {
+        if model == nil {
+            return recents(type: type, n: sharedFetchLimit)
+        }
+
         let key = fetchTextKey(contentType: type, targetModel: model)
         if loadedTemplates[key] == nil {
             loadedTemplates[key] = []

@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from typing import AsyncIterator, Annotated, Awaitable
+from typing import AsyncIterator, Annotated, Awaitable, Callable
 
 import fastapi.routing
 import orjson
@@ -17,8 +17,11 @@ from _util.typing import ChatSequenceID, PromptText
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
 from client.database import HistoryDB, get_db as get_history_db
+from client.message import ChatMessage
+from client.sequence_get import fetch_messages_for_sequence
 from inference.continuation import ContinueRequest, select_continuation_model
 from providers.foundation_models.orm import FoundationModelRecordOrm
+from providers.foundation_models.orm import InferenceReason
 from providers.registry import ProviderRegistry, BaseProvider
 from retrieval.faiss.knowledge import get_knowledge, KnowledgeSingleton
 from retrieval.faiss.retrieval import RetrievalLabel, RetrievalPolicy, SimpleRetrievalPolicy, SummarizingRetrievalPolicy
@@ -28,6 +31,8 @@ logger = logging.getLogger(__name__)
 
 async def with_retrieval(
         retrieval_label: RetrievalLabel,
+        messages_list: list[ChatMessage],
+        generate_helper_fn: Callable[[PromptText, PromptText, PromptText, InferenceReason], Awaitable[PromptText]],
         status_holder: ServerStatusHolder | None = None,
         knowledge: KnowledgeSingleton = get_knowledge(),
 ) -> PromptText | None:
@@ -49,13 +54,11 @@ async def with_retrieval(
 
         if real_retrieval_policy is not None:
             if retrieval_label.preferred_embedding_model is not None:
-                logger.warning(f"Ignoring requested embedding model, since we don't support overrides")
+                logger.warning(f"TODO: Ignoring requested embedding model, since we don't support overrides")
 
-            logger.error(f"RAG not implemented yet")
-            return None
-            # return await real_retrieval_policy.parse_chat_history(
-            #     chat_messages, generate_helper_fn, status_holder,
-            # )
+            return await real_retrieval_policy.parse_chat_history(
+                messages_list, generate_helper_fn, status_holder,
+            )
 
         return None
 
@@ -94,7 +97,11 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 sequence_id=sequence_id,
                 inference_model=inference_model,
                 inference_options=parameters,
-                retrieval_context=with_retrieval(retrieval_label, status_holder),
+                retrieval_context=with_retrieval(
+                    retrieval_label=retrieval_label,
+                    messages_list=fetch_messages_for_sequence(sequence_id, history_db, include_model_info_diffs=False),
+                    generate_helper_fn=provider.completion_blocking,
+                    status_holder=status_holder),
                 status_holder=status_holder,
                 history_db=history_db,
                 audit_db=audit_db,
@@ -130,7 +137,8 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                     yield chunk
 
                 if await request.is_disconnected():
-                    logger.debug(f"/sequences/{sequence_id}/continue-v2: Detected client disconnection, ending inference")
+                    logger.debug(
+                        f"/sequences/{sequence_id}/continue-v2: Detected client disconnection, ending inference")
                     yield {
                         "error": f"/sequences/{sequence_id}/continue-v2: Detected client disconnection, ending inference",
                         "done": True,
