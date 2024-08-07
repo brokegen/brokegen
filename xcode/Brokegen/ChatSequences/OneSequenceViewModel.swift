@@ -346,10 +346,10 @@ class OneSequenceViewModel {
             combinedData.append(newData)
 
             if incompleteResponseData != nil && !incompleteResponseData!.isEmpty {
-                print("[TRACE] OneSequenceViewModel.receiveHandler: rollover of \(incompleteResponseData!.count) bytes incompleteResponseData")
                 incompleteResponseData = nil
             }
 
+            // Now loop over the data we have, for each NDJSON-ish chunk.
             while true {
                 if combinedData.isEmpty {
                     break
@@ -384,18 +384,17 @@ class OneSequenceViewModel {
                 }
                 // Otherwise, try parsing everything all together
                 else {
-                    print("[TRACE] OneSequenceViewModel.receiveHandler: Parsing all of \(combinedData.count) bytes remaining")
                     let jsonChunk: JSON = JSON(combinedData)
 
                     if !jsonChunk.isEmpty {
-                        // print("[TRACE] OneSequenceViewModel.receiveHandler: Successful parse")
+                        //print("[TRACE] OneSequenceViewModel.receiveHandler: Successful parse")
                         _parseJSONChunk(jsonChunk)
                         incompleteResponseData = nil
                         combinedData = Data()
                         break
                     }
                     else {
-                        print("[WARNING] Failed parse, rolling over remaining \(combinedData.count) bytes")
+                        print("[WARNING] OneSequenceViewModel.receiveHandler: Failed to parse \(combinedData.count) bytes, waiting for additional data")
                         incompleteResponseData = combinedData
                         combinedData = Data()
                         break

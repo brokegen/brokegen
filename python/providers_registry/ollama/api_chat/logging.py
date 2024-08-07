@@ -107,7 +107,11 @@ def ollama_response_consolidator(
             if v['role'] != 'assistant':
                 logger.warning(f"Received content for unexpected role \"{v['role']}\", continuing anyway")
 
-            consolidated_response[k]['content'] += v['content']
+            if not consolidated_response[k]['content']:
+                consolidated_response[k]['content'] = v['content']
+            else:
+                consolidated_response[k]['content'] += v['content']
+
             continue
 
         else:
