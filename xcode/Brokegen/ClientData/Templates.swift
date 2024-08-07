@@ -63,7 +63,15 @@ class Templates {
         // Do initial population of some templates
         if recents(type: .retrievalSearchArgs).isEmpty {
             _ = add(
-                content: "{\"k\": 18}",
+                // For thoroughness, this should be 18, but we haven't figured out prompt size/tuning yet.
+                // More specifically, how to configure it in a reasonable way.
+                content: """
+                {
+                    "k": 18,
+                    "fetch_k": 60,
+                    "lambda_mult": 0.25
+                }
+                """,
                 contentType: .retrievalSearchArgs,
                 targetModel: nil)
         }

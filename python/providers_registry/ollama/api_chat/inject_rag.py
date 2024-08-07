@@ -1,7 +1,6 @@
 import logging
 from typing import AsyncIterator
 
-import orjson
 import starlette.requests
 
 from _util.json import safe_get, JSONArray, JSONDict
@@ -10,6 +9,7 @@ from _util.status import ServerStatusHolder, StatusContext
 from _util.typing import PromptText, TemplatedPromptText
 from audit.http import AuditDB
 from client.database import HistoryDB
+from inference.continuation_routes import with_retrieval
 from inference.iterators import decode_from_bytes, stream_str_to_json
 from inference.prompting.templating import apply_llm_template
 from providers.foundation_models.orm import InferenceReason, FoundationModelRecordOrm
@@ -17,9 +17,7 @@ from providers.registry import InferenceOptions
 from providers_registry.ollama.api_chat.converter import convert_chat_to_generate
 from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON, ollama_log_indexer
 from providers_registry.ollama.api_generate import do_generate_raw_templated
-from retrieval.faiss.knowledge import get_knowledge
-from retrieval.faiss.retrieval import RetrievalPolicy, RetrievalLabel, SimpleRetrievalPolicy, \
-    SummarizingRetrievalPolicy
+from retrieval.faiss.retrieval import RetrievalLabel
 
 logger = logging.getLogger(__name__)
 
@@ -92,36 +90,18 @@ async def do_proxy_chat_rag(
         response0_json = await anext(iter2)
         return ollama_log_indexer(response0_json)
 
-    prompt_override: PromptText | None = None
-    with StatusContext(f"Retrieving documents with {retrieval_label}", status_holder):
-        real_retrieval_policy: RetrievalPolicy | None = None
-
-        if retrieval_label.retrieval_policy == "skip":
-            real_retrieval_policy = None
-        elif retrieval_label.retrieval_policy == "simple":
-            real_retrieval_policy = SimpleRetrievalPolicy(get_knowledge())
-        elif retrieval_label.retrieval_policy == "summarizing":
-            init_kwargs = {
-                "knowledge": get_knowledge(),
-            }
-            if retrieval_label.retrieval_search_args is not None:
-                init_kwargs["search_args_json"] = orjson.loads(retrieval_label.retrieval_search_args)
-
-            real_retrieval_policy = SummarizingRetrievalPolicy(**init_kwargs)
-
-        if real_retrieval_policy is not None:
-            if retrieval_label.preferred_embedding_model is not None:
-                logger.warning(f"Ignoring requested embedding model, since we don't support overrides")
-
-            prompt_override = await real_retrieval_policy.parse_chat_history(
-                chat_messages, generate_helper_fn, status_holder,
-            )
+    prompt_override: PromptText | None = await with_retrieval(
+        retrieval_label=retrieval_label,
+        messages_list=chat_messages,
+        generate_helper_fn=generate_helper_fn,
+        status_holder=status_holder,
+    )
 
     status_desc = f"[ollama] {safe_get(request_content_json, 'model')}: forwarding one message to /api/generate"
     if len(chat_messages) > 1:
         status_desc = f"[ollama] {safe_get(request_content_json, 'model')}: forwarding {len(chat_messages)} messages to /api/generate"
     if prompt_override is not None:
-        status_desc += f" (with retrieval context of {len(prompt_override):_} chars)"
+        status_desc += f" with retrieval context of {len(prompt_override):_} chars"
 
     with StatusContext(status_desc, status_holder):
         prompt_with_templating: TemplatedPromptText

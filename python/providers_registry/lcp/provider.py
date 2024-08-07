@@ -5,7 +5,7 @@ import json
 import logging
 import os
 from datetime import datetime, timezone, timedelta
-from typing import AsyncGenerator, AsyncIterator, Iterator, TypeVar, Any, Callable, Union
+from typing import AsyncGenerator, AsyncIterator, Iterator, TypeVar, Any, Callable, Union, Awaitable
 
 import jinja2.exceptions
 import jsondiff
@@ -20,7 +20,7 @@ from sqlalchemy import select
 
 from _util.json import JSONDict, safe_get, safe_get_arrayed
 from _util.status import ServerStatusHolder, StatusContext
-from _util.typing import FoundationModelRecordID, ChatSequenceID, FoundationModelHumanID
+from _util.typing import FoundationModelRecordID, ChatSequenceID, FoundationModelHumanID, PromptText
 from audit.http import AuditDB
 from client.database import HistoryDB, get_db as get_history_db
 from client.message import ChatMessage, ChatMessageOrm
@@ -451,7 +451,8 @@ class _OneModel:
             chunk_size: int = 64
             tokens_parsed: int = 0
             while tokens_parsed < len(tokenized_prompt):
-                self.underlying_model.create_completion(tokenized_prompt[:tokens_parsed + chunk_size], **chunking_model_params)
+                self.underlying_model.create_completion(tokenized_prompt[:tokens_parsed + chunk_size],
+                                                        **chunking_model_params)
                 tokens_parsed += chunk_size
 
                 elapsed_time: timedelta = datetime.now() - start_time
@@ -794,11 +795,12 @@ class LlamaCppProvider(BaseProvider):
 
         return iter3
 
-    async def do_chat_logged(
+    async def do_chat(
             self,
             sequence_id: ChatSequenceID,
             inference_model: FoundationModelRecordOrm,
             inference_options: InferenceOptions,
+            retrieval_context: Awaitable[PromptText | None],
             status_holder: ServerStatusHolder,
             history_db: HistoryDB,
             audit_db: AuditDB,
@@ -930,6 +932,20 @@ class LlamaCppProvider(BaseProvider):
                 }
 
         messages_list: list[ChatMessage] = fetch_messages_for_sequence(sequence_id, history_db)
+
+        prompt_override: PromptText | None = await retrieval_context
+        if prompt_override is not None:
+            status_holder.set(f"[lcp] {inference_model.human_id}: running inference with retrieval context of {len(prompt_override):_} chars")
+            rag_message = ChatMessage(
+                role="user",
+                content=prompt_override,
+                created_at=datetime.now(tz=timezone.utc))
+
+            if messages_list and messages_list[-1].role == "user":
+                # TODO: Is this really how we want to implement RAG? Overriding the user message?
+                messages_list[-1] = rag_message
+            else:
+                messages_list.append(rag_message)
 
         iter3: AsyncIterator[JSONDict]
         cfr, iter3 = await self._do_chat_nolog(

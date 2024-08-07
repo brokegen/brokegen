@@ -105,15 +105,20 @@ class BaseProvider:
         raise NotImplementedError()
 
     @abstractmethod
-    async def do_chat_logged(
+    async def do_chat(
             self,
             sequence_id: ChatSequenceID,
             inference_model: FoundationModelRecordOrm,
             inference_options: InferenceOptions,
+            retrieval_context: Awaitable[PromptText | None],
             status_holder: ServerStatusHolder,
             history_db: HistoryDB,
             audit_db: AuditDB,
     ) -> AsyncIterator[JSONDict]:
+        """
+        NB This may not be implemented if the client doesn't log inference events.
+        In that case, the caller falls back to .do_chat_nolog.
+        """
         raise NotImplementedError()
 
     async def chat(
@@ -126,14 +131,12 @@ class BaseProvider:
             history_db: HistoryDB,
             audit_db: AuditDB,
     ) -> AsyncIterator[JSONDict]:
-        # NB This isn't used anywhere, yet, so we don't care
-        await retrieval_context
-
         try:
-            return await self.do_chat_logged(
+            return await self.do_chat(
                 sequence_id,
                 inference_model,
                 inference_options,
+                retrieval_context,
                 status_holder,
                 history_db,
                 audit_db,

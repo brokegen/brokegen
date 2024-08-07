@@ -50,12 +50,15 @@ class SimpleRetrievalPolicy(RetrievalPolicy):
     Looks up matching docs that are similar to the last message in the provided list.
     """
 
-    def __init__(self, knowledge: KnowledgeSingleton):
+    def __init__(
+            self,
+            knowledge: KnowledgeSingleton,
+            search_type: str,
+            search_kwargs: dict,
+    ):
         self.retriever = knowledge.as_retriever(
-            search_type="similarity",
-            search_kwargs={
-                "k": 6,
-            },
+            search_type=search_type,
+            search_kwargs=search_kwargs,
         )
 
     async def parse_chat_history(
@@ -93,17 +96,12 @@ class SummarizingRetrievalPolicy(RetrievalPolicy):
     def __init__(
             self,
             knowledge: KnowledgeSingleton,
-            # For thoroughness, this should be 18, but we haven't figured out prompt size/tuning yet.
-            # More specifically, how to configure it in a reasonable way.
-            search_args_json: JSONDict = {
-                "k": 18,
-                "fetch_k": 60,
-                "lambda_mult": 0.25,
-            },
+            search_type: str,
+            search_kwargs: JSONDict,
     ):
         self.retriever = knowledge.as_retriever(
-            search_type="mmr",
-            search_kwargs=dict(search_args_json),
+            search_type=search_type,
+            search_kwargs=search_kwargs,
         )
 
     async def parse_chat_history(
@@ -115,7 +113,7 @@ class SummarizingRetrievalPolicy(RetrievalPolicy):
         with StatusContext("Loading retrieval databases…", status_holder):
             await get_knowledge().load_queued_data_dirs(status_holder)
 
-        latest_message_content = messages[-1].content
+        latest_message_content = safe_get_arrayed(messages, -1, "content") or getattr(messages[-1], "content", "")
 
         async def summarize_query():
             retrieval_str: PromptText = latest_message_content

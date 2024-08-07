@@ -42,16 +42,28 @@ async def with_retrieval(
 
         if retrieval_label.retrieval_policy == "skip":
             real_retrieval_policy = None
-        elif retrieval_label.retrieval_policy == "simple":
-            real_retrieval_policy = SimpleRetrievalPolicy(knowledge)
-        elif retrieval_label.retrieval_policy == "summarizing":
-            init_kwargs = {
-                "knowledge": knowledge,
-            }
-            if retrieval_label.retrieval_search_args is not None:
-                init_kwargs["search_args_json"] = orjson.loads(retrieval_label.retrieval_search_args)
 
-            real_retrieval_policy = SummarizingRetrievalPolicy(**init_kwargs)
+        elif retrieval_label.retrieval_policy == "simple":
+            search_kwargs: dict = {}
+            try:
+                search_kwargs.update(
+                    orjson.loads(retrieval_label.retrieval_search_args))
+            except ValueError:
+                if retrieval_label.retrieval_search_args:
+                    logger.warning(f"Invalid retrieval_search_args, ignoring: {retrieval_label.retrieval_search_args}")
+
+            real_retrieval_policy = SimpleRetrievalPolicy(knowledge, "similarity", search_kwargs)
+
+        elif retrieval_label.retrieval_policy == "summarizing":
+            search_kwargs: dict = {}
+            try:
+                search_kwargs.update(
+                    orjson.loads(retrieval_label.retrieval_search_args))
+            except ValueError:
+                if retrieval_label.retrieval_search_args:
+                    logger.warning(f"Invalid retrieval_search_args, ignoring: {retrieval_label.retrieval_search_args}")
+
+            real_retrieval_policy = SummarizingRetrievalPolicy(knowledge, "mmr", search_kwargs=search_kwargs)
 
         if real_retrieval_policy is not None:
             if retrieval_label.preferred_embedding_model is not None:

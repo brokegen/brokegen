@@ -65,7 +65,10 @@ def _generate_on_disk_shard_ids(rootpath: str):
             known_faiss.add((path, filename[:-6]))
 
     known_valid = known_pkl.intersection(known_faiss)
-    logger.info(f"Identified vectorstore shards {pprint.pformat(known_valid, width=256)}")
+    try:
+        pass
+    except ValueError:
+        logger.info(f"Identified vectorstore shards {pprint.pformat(known_valid, width=256)}")
     yield from known_valid
 
 
@@ -163,7 +166,7 @@ class KnowledgeSingleton(_Borg):
                     # Yield to other coroutines, particularly emit_keepalive_chunks()
                     await asyncio.sleep(0)
                     with RAMEstimator(logger.debug, shard_id):
-                        status_holder.set(f"KnowledgeSingleton loading {index + 1} of {shards_total}: {shard_id}")
+                        status_holder.set(f"KnowledgeSingleton loading shard {index + 1} of {shards_total}: {shard_id}")
                         maybe_shard = await load_from(parent_dir, shard_id)
                         if maybe_shard is not None:
                             store._copy_in(maybe_shard, destructive=True)
