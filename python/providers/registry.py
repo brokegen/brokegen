@@ -181,11 +181,14 @@ class BaseProvider:
             audit_db,
         )
 
-        consolidated_response: str = ""
-        async for chunk in iter0:
-            consolidated_response = _generic_consolidator(chunk, consolidated_response)
+        ollama_response: str = ""
+        openai_response: str = ""
 
-        return consolidated_response
+        async for chunk in iter0:
+            ollama_response = ollama_consolidator(chunk, ollama_response)
+            openai_response = openai_consolidator(chunk, openai_response)
+
+        return ollama_response or openai_response
 
     async def autoname_sequence(
             self,
@@ -219,16 +222,22 @@ class BaseProvider:
                 audit_db,
             )
 
-            consolidated_response: str = ""
-            async for chunk in iter0:
-                consolidated_response = _generic_consolidator(chunk, consolidated_response)
+            ollama_response: str = ""
+            openai_response: str = ""
 
+            async for chunk in iter0:
+                ollama_response = ollama_consolidator(chunk, ollama_response)
                 # Ignore the first few characters, just in case the model likes prepending them.
-                if "\n" in consolidated_response[2:]:
+                if "\n" in ollama_consolidator[2:]:
                     logger.debug(f"Detected newline during autoname inference, stopping")
                     break
 
-            return consolidated_response.strip()
+                openai_response = openai_consolidator(chunk, openai_response)
+                if "\n" in openai_consolidator[2:]:
+                    logger.debug(f"Detected newline during autoname inference, stopping")
+                    break
+
+            return ollama_response or openai_response
 
 
 class ProviderFactory:
