@@ -40,42 +40,30 @@ async def with_retrieval(
 ) -> PromptText | None:
     with StatusContext(f"Retrieving documents with {retrieval_label}", status_holder):
         real_retrieval_policy: RetrievalPolicy | None = None
+        search_kwargs: dict = {}
 
+        try:
+            search_kwargs = orjson.loads(retrieval_label.retrieval_search_args)
+        except ValueError:
+            if retrieval_label.retrieval_search_args:
+                logger.warning(f"Invalid retrieval_search_args, ignoring: {retrieval_label.retrieval_search_args}")
+
+        # Now that we've set up default args, actually construct a RetrievalPolicy
         if retrieval_label.retrieval_policy == "skip":
             real_retrieval_policy = None
 
         elif retrieval_label.retrieval_policy == "simple":
-            search_kwargs: dict = {}
-            try:
-                search_kwargs.update(
-                    orjson.loads(retrieval_label.retrieval_search_args))
-            except ValueError:
-                if retrieval_label.retrieval_search_args:
-                    logger.warning(f"Invalid retrieval_search_args, ignoring: {retrieval_label.retrieval_search_args}")
+            real_retrieval_policy = SomeMessageSimilarity(
+                1, knowledge=knowledge, search_type="similarity", search_kwargs=search_kwargs)
 
-            real_retrieval_policy = SomeMessageSimilarity(1, knowledge=knowledge, search_type="similarity",
-                                                          search_kwargs=search_kwargs)
+        elif retrieval_label.retrieval_policy == "simple-3":
+            real_retrieval_policy = SomeMessageSimilarity(
+                3, knowledge=knowledge, search_type="similarity", search_kwargs=search_kwargs)
 
         elif retrieval_label.retrieval_policy == "simple-all":
-            search_kwargs: dict = {}
-            try:
-                search_kwargs.update(
-                    orjson.loads(retrieval_label.retrieval_search_args))
-            except ValueError:
-                if retrieval_label.retrieval_search_args:
-                    logger.warning(f"Invalid retrieval_search_args, ignoring: {retrieval_label.retrieval_search_args}")
-
             real_retrieval_policy = AllMessageSimilarity(knowledge, "similarity", search_kwargs)
 
         elif retrieval_label.retrieval_policy == "summarizing":
-            search_kwargs: dict = {}
-            try:
-                search_kwargs.update(
-                    orjson.loads(retrieval_label.retrieval_search_args))
-            except ValueError:
-                if retrieval_label.retrieval_search_args:
-                    logger.warning(f"Invalid retrieval_search_args, ignoring: {retrieval_label.retrieval_search_args}")
-
             real_retrieval_policy = SummarizingRetrievalPolicy(knowledge, "mmr", search_kwargs=search_kwargs)
 
         if real_retrieval_policy is not None:

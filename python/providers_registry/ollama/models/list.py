@@ -136,7 +136,7 @@ async def do_api_show(
         audit_db: AuditDB,
 ) -> FoundationModelRecord:
     intercept = OllamaEgressEventBuilder("ollama:/api/show", audit_db)
-    logger.debug(f"ollama-proxy: start handler for POST /api/show")
+    logger.debug(f"ollama-proxy: start handler for POST /api/show <= {model_name}")
 
     provider: BaseProvider = ProviderRegistry().by_label[
         ProviderLabel(type="ollama", id=str(_real_ollama_client.base_url))]

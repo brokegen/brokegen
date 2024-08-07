@@ -297,8 +297,11 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
             return await do_api_tags(request, history_db, audit_db)
 
         if ollama_post_path == "api/show":
-            request_content_json: dict = orjson.loads(await request.body())
-            return await do_api_show(request_content_json['name'], history_db, audit_db)
+            try:
+                request_content_json: dict = orjson.loads(await request.body())
+                return await do_api_show(request_content_json['name'], history_db, audit_db)
+            except RuntimeError as e:
+                logger.warning(f"/ollama-proxy/api/show failed, continuing with normal forward: {e}")
 
         return await forward_request(request, audit_db)
 
