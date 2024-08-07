@@ -431,7 +431,7 @@ class _OneModel:
     ) -> tuple[
         llama_cpp.CreateCompletionResponse | Iterator[llama_cpp.CreateCompletionStreamResponse],
         int,
-     ]:
+    ]:
         await asyncio.sleep(0)
         model_params = self.launch_with_params(cfr, inference_options)
 
@@ -444,8 +444,15 @@ class _OneModel:
 
         llama_cpp.llama_reset_timings(self.underlying_model.ctx)
 
+        # In the normal/fast case, just run a normal completion
+        if inference_options.prompt_eval_batch_size is None or inference_options.prompt_eval_batch_size <= 0:
+            return self.underlying_model.create_completion(
+                tokenized_prompt,
+                **model_params,
+            ), cfr_prompt_token_len
+
         # Split the prompt eval into chunks, so we give the caller(s) a chance to break
-        if inference_options.prompt_eval_batch_size is not None and inference_options.prompt_eval_batch_size > 0:
+        else:
             chunking_model_params = dict(model_params)
             # NB This should be 0, but 0 has a special value that means "evaluate until model stops" or something.
             # Some providers also use -1 and -2 as special values.
@@ -459,7 +466,8 @@ class _OneModel:
             suppressed_model_verbose: bool = self.underlying_model.verbose
             self.underlying_model.verbose = False
 
-            with StatusContext(f"[lcp] Prompt eval: {cfr_prompt_token_len:_} tokens total, batch size {chunk_size}", status_holder):
+            with StatusContext(f"[lcp] Prompt eval: {cfr_prompt_token_len:_} tokens total, batch size {chunk_size}",
+                               status_holder):
                 while tokens_parsed < cfr_prompt_token_len:
                     self.underlying_model.create_completion(
                         tokenized_prompt[:tokens_parsed + chunk_size], **chunking_model_params)
@@ -478,16 +486,11 @@ class _OneModel:
 
                     await asyncio.sleep(0)
 
-                logger.warning(f"Splitting prompt eval into chunks; `timings.n_eval` will probably be off by {cfr_prompt_token_len / chunk_size:_.1f} tokens")
+                logger.warning(
+                    f"Splitting prompt eval into chunks; `timings.n_eval` will probably be off by {cfr_prompt_token_len / chunk_size:_.1f} tokens")
 
             self.underlying_model.verbose = suppressed_model_verbose
             return self.underlying_model.create_completion(tokenized_prompt, **model_params), cfr_prompt_token_len
-
-        else:
-            return self.underlying_model.create_completion(
-                tokenized_prompt,
-                **model_params,
-            ), cfr_prompt_token_len
 
     def do_chat(
             self,
@@ -636,7 +639,7 @@ class LlamaCppProvider(BaseProvider):
                 next(iter(self.loaded_models))
             ]
 
-    # region Actual chat completion endpoints
+    #  region ----- Actual chat completion endpoints
     async def _do_chat_nolog(
             self,
             messages_list: list[ChatMessage],
@@ -693,9 +696,11 @@ class LlamaCppProvider(BaseProvider):
                         if cfr_prompt_token_len == 0:
                             status_holder.set(f"{loaded_model.model_name}: " + evaluation_desc)
                         else:
-                            status_holder.set(f"{loaded_model.model_name}: {cfr_prompt_token_len} total prompt tokens => " + evaluation_desc)
+                            status_holder.set(
+                                f"{loaded_model.model_name}: {cfr_prompt_token_len} total prompt tokens => " + evaluation_desc)
                     else:
-                        status_holder.set(f"{loaded_model.model_name}: {timings.n_p_eval} new prompt tokens => " + evaluation_desc)
+                        status_holder.set(
+                            f"{loaded_model.model_name}: {timings.n_p_eval} new prompt tokens => " + evaluation_desc)
 
             except Exception as e:
                 # Probably ran out of tokens; continue on and rely on final handler(s)
@@ -968,7 +973,8 @@ class LlamaCppProvider(BaseProvider):
 
         prompt_override: PromptText | None = await retrieval_context
         if prompt_override is not None:
-            status_holder.set(f"[lcp] {inference_model.human_id}: running inference with retrieval context of {len(prompt_override):_} chars")
+            status_holder.set(
+                f"[lcp] {inference_model.human_id}: running inference with retrieval context of {len(prompt_override):_} chars")
 
             rag_message = ChatMessage(
                 role="user",
@@ -996,4 +1002,4 @@ class LlamaCppProvider(BaseProvider):
 
         return iter5
 
-# endregion
+    #  endregion

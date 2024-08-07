@@ -178,6 +178,7 @@ class OneSequenceViewModel {
                         + "\(errorAndData.localizedDescription)",
                     createdAt: Date.now
                 )
+                // TODO: This seems to not show up in SwiftUI when server is entirely offline, though the message gets added.
                 sequence.messages.append(.temporary(errorMessage, .clientError))
             }
         }
@@ -218,7 +219,7 @@ class OneSequenceViewModel {
 
         if let promptWithTemplating = jsonData["prompt_with_templating"].string {
             let templated = TemporaryChatMessage(
-                role: "complete user prompt with templating",
+                role: "complete user prompt with templating: \(promptWithTemplating.count) chars",
                 content: promptWithTemplating,
                 // Don't use the current time, because this comes at the end of inference,
                 // so the date provided/used is usually far later than responseInEdit, which is marked by its own start time.
@@ -226,6 +227,7 @@ class OneSequenceViewModel {
             )
 
             sequence.messages.append(.temporary(templated, .serverInfo))
+            // TODO: Figure out the weird times where we can get messages placed out of order.
             receivedExtra += 1
 
             // If we get this end-of-prompt field, flush the response content buffer.
@@ -243,7 +245,7 @@ class OneSequenceViewModel {
 
             if !(responseInEdit?.content ?? "").isEmpty {
                 let savedResponse = TemporaryChatMessage(
-                    role: "partial assistant response",
+                    role: "partial assistant response: \(responseInEdit!.content!.count) chars",
                     content: responseInEdit?.content!,
                     createdAt: responseInEdit?.createdAt ?? Date.now
                 )
@@ -296,6 +298,8 @@ class OneSequenceViewModel {
                     .stored(storedMessage),
                     at: sequence.messages.count - receivedExtra)
                 responseInEdit = nil
+                // TODO: Figure out why messages get returned out of order sometimes, and move this where appropriate.
+                receivedExtra = 0
             }
             else {
                 print("[ERROR] Got `new_message_id` from server, but responseInEdit is nil")

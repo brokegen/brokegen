@@ -174,6 +174,8 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         async def do_keepalive(
                 primordial: AsyncIterator[JSONDict],
         ) -> AsyncIterator[JSONDict]:
+            chunks_received: int = 0
+
             start_time = datetime.now(tz=timezone.utc)
             async for chunk in emit_keepalive_chunks(primordial, 0.5, None):
                 if chunk is None:
@@ -186,9 +188,12 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                     }
 
                 else:
+                    chunks_received += 1
                     yield chunk
 
-            logger.debug("sequence_continue_v2 do_keepalive(): detected end of inference chunks")
+            elapsed_time = datetime.now(tz=timezone.utc) - start_time
+            logger.debug("sequence_continue_v2 do_keepalive(): end of inference iterator"
+                         f", {chunks_received} chunks in {elapsed_time.total_seconds():_.3f} seconds")
 
         awaitable: Awaitable[AsyncIterator[JSONDict]] = real_response_maker()
         iter0: AsyncIterator[JSONDict] = nonblocking_response_maker(awaitable)
