@@ -375,11 +375,15 @@ struct CSCSettingsView: View {
                     }
 
                     GridRow {
-                        Text("[global] Batch size for prompt evaluation")
-                            .layoutPriority(1.0)
+                        VStack(alignment: .leading) {
+                            Text("[global] Batch size for prompt evaluation")
+                                .layoutPriority(1.0)
+                            Text("Smaller sizes take longer due to prefix-matching. Default: disabled")
+                                .foregroundStyle(Color(.disabledControlTextColor))
+                        }
 
                         HStack {
-                            let defaultSizes = [64, 128, 256, 512, 8_192, 32_768]
+                            let defaultSizes = [64, 128, 256, 512, 1_024, 2_048, 4_096, 8_192, 16_384]
                             let allSizes = Set([0] + defaultSizes)
 
                             Picker("", selection: $settings.promptEvalBatchSize) {
@@ -400,9 +404,35 @@ struct CSCSettingsView: View {
 
                             Text("/")
 
-                            Stepper(value: $settings.promptEvalBatchSize, step: 64) {
+                            let stepSize: Int = { referenceSize in
+                                if referenceSize < 32 {
+                                    return 4
+                                }
+                                // Incidentally, the reference/step size increase by 4x each time.
+                                else if referenceSize < 128 {
+                                    return 8
+                                }
+                                else if referenceSize < 512 {
+                                    return 64
+                                }
+                                else if referenceSize < 2_048 {
+                                    return 256
+                                }
+                                else if referenceSize < 8_192 {
+                                    return 1_024
+                                }
+                                else if referenceSize < 32_768 {
+                                    return 4_096
+                                }
+                                else {
+                                    return 8_192
+                                }
+                            }(settings.promptEvalBatchSize)
+
+                            Stepper(value: $settings.promptEvalBatchSize, step: stepSize) {
                                 Text("\(settings.promptEvalBatchSize)")
                             }
+                            .frame(maxWidth: 240)
 
                             Text("tokens")
 
