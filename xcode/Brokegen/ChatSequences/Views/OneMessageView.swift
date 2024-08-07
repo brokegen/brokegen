@@ -49,6 +49,22 @@ struct OMVButton: View {
     }
 }
 
+struct TextSelection: ViewModifier {
+    let enabled: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if enabled {
+            content
+                .textSelection(.enabled)
+        }
+        else {
+            content
+                .textSelection(.disabled)
+        }
+    }
+}
+
 struct OneMessageView: View {
     let message: MessageLike
     let renderMessageContent: (MessageLike) -> MarkdownContent
@@ -200,7 +216,9 @@ struct OneMessageView: View {
                         Text(message.content)
                             .font(.system(size: messageFontSize * 1.5))
                             .lineSpacing(6)
-                            .textSelection(.enabled)
+                        // Enabling text selection on very large text views gets difficult;
+                        // rely on the extra "copy" button, in those cases.
+                            .modifier(TextSelection(enabled: message.content.count < 4_000))
                             .padding(messageFontSize * 4/3)
                             .background(
                                 RoundedRectangle(cornerRadius: messageFontSize, style: .continuous)
