@@ -17,13 +17,18 @@ from .orm import ProviderLabel, ProviderRecord, ProviderType
 logger = logging.getLogger(__name__)
 
 
-def _generic_consolidator(chunk: JSONDict, consolidated_response: str) -> str:
+def ollama_consolidator(chunk: JSONDict, consolidated_response: str) -> str:
     for k, v in chunk.items():
         if k == 'message':
             consolidated_response += v['content']
             continue
 
-        elif k == 'choices':
+    return consolidated_response
+
+
+def openai_consolidator(chunk: JSONDict, consolidated_response: str) -> str:
+    for k, v in chunk.items():
+        if k == 'choices':
             if len(chunk[k]) > 0:
                 choice_index = 0
                 if safe_get_arrayed(chunk, k, choice_index, 'delta', 'content'):
@@ -158,7 +163,7 @@ class BaseProvider:
     ) -> AsyncGenerator[JSONDict, None]:
         raise NotImplementedError()
 
-    async def completion_blocking(
+    async def _completion_blocking(
             self,
             messages_list: list[ChatMessage],
             inference_model: FoundationModelRecordOrm,

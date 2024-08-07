@@ -5,13 +5,12 @@ from typing import TypeAlias, Optional, Self, Iterable, Any
 from pydantic import PositiveInt, BaseModel, ConfigDict
 from sqlalchemy import Column, Integer, String, DateTime, JSON, Double, select, UniqueConstraint, func, or_
 
-from _util.typing import ChatSequenceID, TemplatedPromptText, FoundationModelRecordID, FoundationModelHumanID
+from _util.typing import ChatSequenceID, TemplatedPromptText, FoundationModelRecordID, FoundationModelHumanID, \
+    InferenceReason
 from client.database import Base, HistoryDB
 from providers.orm import ProviderLabel, ProviderType, ProviderID
 
 InferenceEventID: TypeAlias = PositiveInt
-InferenceReason: TypeAlias = str
-"""TODO: Should be an enum, but enums for SQLAlchemy take some work"""
 
 logger = logging.getLogger(__name__)
 

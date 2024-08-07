@@ -1,18 +1,16 @@
 import logging
 import operator
 from abc import abstractmethod
-from typing import List, Callable, Awaitable, TypeAlias, Optional
+from typing import List, TypeAlias, Optional
 
-import orjson
 from langchain_core.documents import Document
 from langchain_core.messages import ChatMessage
 from pydantic import BaseModel
 
 from _util.json import safe_get_arrayed, JSONDict
 from _util.status import ServerStatusHolder, StatusContext
-from _util.typing import PromptText, FoundationModelRecordID
-from retrieval.faiss.knowledge import KnowledgeSingleton, get_knowledge
-from providers.foundation_models.orm import InferenceReason
+from _util.typing import PromptText, FoundationModelRecordID, GenerateHelper
+from .knowledge import KnowledgeSingleton, get_knowledge
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -31,7 +29,7 @@ class RetrievalPolicy:
     async def parse_chat_history(
             self,
             messages: List[ChatMessage],
-            _: Callable[[PromptText, PromptText, PromptText, InferenceReason], Awaitable[PromptText]],
+            _: GenerateHelper,
             status_holder: ServerStatusHolder | None = None,
     ) -> PromptText | None:
         raise NotImplementedError()
@@ -41,13 +39,17 @@ class SkipRetrievalPolicy(RetrievalPolicy):
     async def parse_chat_history(
             self,
             messages: List[ChatMessage],
-            _: Callable[[PromptText, PromptText, PromptText, InferenceReason], Awaitable[PromptText]],
+            _: GenerateHelper,
             status_holder: ServerStatusHolder | None = None,
     ) -> PromptText | None:
         return None
 
 
 class SimpleRetrievalPolicy(RetrievalPolicy):
+    """
+    Looks up matching docs that are similar to the last message in the provided list.
+    """
+
     def __init__(self, knowledge: KnowledgeSingleton):
         self.retriever = knowledge.as_retriever(
             search_type="similarity",
@@ -59,7 +61,7 @@ class SimpleRetrievalPolicy(RetrievalPolicy):
     async def parse_chat_history(
             self,
             messages: List[ChatMessage],
-            _: Callable[[PromptText, PromptText, PromptText, InferenceReason], Awaitable[PromptText]],
+            _: GenerateHelper,
             status_holder: ServerStatusHolder | None = None,
     ) -> PromptText | None:
         with StatusContext("Loading retrieval databases…", status_holder):
@@ -107,7 +109,7 @@ class SummarizingRetrievalPolicy(RetrievalPolicy):
     async def parse_chat_history(
             self,
             messages: List[ChatMessage],
-            generate_helper_fn: Callable[[PromptText, PromptText, PromptText, InferenceReason], Awaitable[PromptText]],
+            generate_helper_fn: GenerateHelper,
             status_holder: ServerStatusHolder | None = None,
     ) -> PromptText | None:
         with StatusContext("Loading retrieval databases…", status_holder):

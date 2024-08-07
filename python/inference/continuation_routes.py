@@ -1,6 +1,7 @@
+import functools
 import logging
 from datetime import datetime, timezone
-from typing import AsyncIterator, Annotated, Awaitable, Callable
+from typing import AsyncIterator, Annotated, Awaitable
 
 import fastapi.routing
 import orjson
@@ -13,18 +14,18 @@ from fastapi import Depends, Body
 from _util.json import JSONDict
 from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks, NDJSONStreamingResponse
 from _util.status import ServerStatusHolder, StatusContext
-from _util.typing import ChatSequenceID, PromptText
+from _util.typing import ChatSequenceID, PromptText, GenerateHelper, InferenceReason
 from audit.http import AuditDB
 from audit.http import get_db as get_audit_db
 from client.database import HistoryDB, get_db as get_history_db
 from client.message import ChatMessage
 from client.sequence_get import fetch_messages_for_sequence
-from inference.continuation import ContinueRequest, select_continuation_model
 from providers.foundation_models.orm import FoundationModelRecordOrm
-from providers.foundation_models.orm import InferenceReason
-from providers.registry import ProviderRegistry, BaseProvider
+from providers.registry import ProviderRegistry, BaseProvider, InferenceOptions, openai_consolidator, \
+    ollama_consolidator
 from retrieval.faiss.knowledge import get_knowledge, KnowledgeSingleton
 from retrieval.faiss.retrieval import RetrievalLabel, RetrievalPolicy, SimpleRetrievalPolicy, SummarizingRetrievalPolicy
+from .continuation import ContinueRequest, select_continuation_model
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ logger = logging.getLogger(__name__)
 async def with_retrieval(
         retrieval_label: RetrievalLabel,
         messages_list: list[ChatMessage],
-        generate_helper_fn: Callable[[PromptText, PromptText, PromptText, InferenceReason], Awaitable[PromptText]],
+        generate_helper_fn: GenerateHelper,
         status_holder: ServerStatusHolder | None = None,
         knowledge: KnowledgeSingleton = get_knowledge(),
 ) -> PromptText | None:
@@ -76,6 +77,44 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
         function_id = request.url_for('sequence_continue_v2', sequence_id=sequence_id)
         status_holder = ServerStatusHolder(f"{function_id}: setting up")
 
+        # TODO: Is it possible to make type checking work against a Protocol?
+        generate: GenerateHelper
+
+        async def generate(
+                inference_reason: InferenceReason,
+                system_message: PromptText | None,
+                user_prompt: PromptText,
+                assistant_response: PromptText | None,
+                inference_model: FoundationModelRecordOrm,
+                provider: BaseProvider,
+        ) -> PromptText:
+            inference_options: InferenceOptions = InferenceOptions(
+                override_system_prompt=system_message,
+                seed_assistant_response=assistant_response,
+            )
+
+            messages_list: list[ChatMessage] = [
+                ChatMessage(role="user", content=user_prompt or "")
+            ]
+
+            iter0: AsyncIterator[JSONDict] = await provider.do_chat_nolog(
+                messages_list,
+                inference_model,
+                inference_options,
+                status_holder,
+                history_db,
+                audit_db,
+            )
+
+            ollama_response: str = ""
+            openai_response: str = ""
+
+            async for chunk in iter0:
+                ollama_response = ollama_consolidator(chunk, ollama_response)
+                openai_response = openai_consolidator(chunk, openai_response)
+
+            return ollama_response or openai_response
+
         def real_response_maker() -> Awaitable[AsyncIterator[JSONDict]]:
             # Decide how to continue inference for this sequence
             inference_model: FoundationModelRecordOrm = \
@@ -100,7 +139,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 retrieval_context=with_retrieval(
                     retrieval_label=retrieval_label,
                     messages_list=fetch_messages_for_sequence(sequence_id, history_db, include_model_info_diffs=False),
-                    generate_helper_fn=provider.completion_blocking,
+                    generate_helper_fn=functools.partial(generate, inference_model=inference_model, provider=provider),
                     status_holder=status_holder),
                 status_holder=status_holder,
                 history_db=history_db,
