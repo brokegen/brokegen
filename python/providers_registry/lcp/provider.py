@@ -867,6 +867,19 @@ class LlamaCppProvider(BaseProvider):
 
             return inference_event
 
+        async def prepend_prompt_text(
+                primordial: AsyncIterator[JSONDict],
+                cfr: ChatFormatterResponse,
+        ) -> AsyncIterator[JSONDict]:
+            # Return a chunk that includes the entire context-y prompt.
+            # This is marked a separate packet to guard against overflows and similar.
+            yield {
+                "prompt_with_templating": cfr.prompt,
+            }
+
+            async for chunk in primordial:
+                yield chunk
+
         async def append_response_chunk(
                 consolidated_response: JSONDict,
                 cfr: ChatFormatterResponse,
@@ -874,12 +887,6 @@ class LlamaCppProvider(BaseProvider):
             # And now, construct the ChatSequence (which references the InferenceEvent, actually)
             try:
                 inference_event: InferenceEventOrm = record_inference_event(consolidated_response, cfr)
-
-                # Return a chunk that includes the entire context-y prompt.
-                # This is marked a separate packet to guard against overflows and similar.
-                yield {
-                    "prompt_with_templating": cfr.prompt,
-                }
 
                 response_message: ChatMessageOrm | None = construct_assistant_message(
                     maybe_response_seed=inference_options.seed_assistant_response or "",
@@ -967,8 +974,9 @@ class LlamaCppProvider(BaseProvider):
             inference_options,
             status_holder,
         )
+        iter4: AsyncIterator[JSONDict] = prepend_prompt_text(iter3, cfr)
         iter5: AsyncIterator[JSONDict] = consolidate_and_yield(
-            iter3, content_consolidator, {},
+            iter4, content_consolidator, {},
             functools.partial(append_response_chunk, cfr=cfr))
 
         return iter5
