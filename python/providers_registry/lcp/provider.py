@@ -475,22 +475,22 @@ class _OneModel:
                 while tokens_parsed < cfr_prompt_token_len:
                     self.underlying_model.create_completion(
                         tokenized_prompt[:tokens_parsed + CHUNK_SIZE], **chunking_model_params)
-                    tokens_parsed += CHUNK_SIZE
+                    tokens_parsed = min(tokens_parsed + CHUNK_SIZE, cfr_prompt_token_len)
 
-                    elapsed_time: timedelta = datetime.now(tz=timezone.utc) - START_TIME
-                    estimated_time = (cfr_prompt_token_len - tokens_parsed) / tokens_parsed * elapsed_time.total_seconds()
+                    elapsed_time: float = (datetime.now(tz=timezone.utc) - START_TIME).total_seconds()
+                    estimated_time: float = (cfr_prompt_token_len - tokens_parsed) / tokens_parsed * elapsed_time
 
                     status_holder.set(
-                        f"[lcp] Prompt eval: {min(tokens_parsed, cfr_prompt_token_len):_} of {cfr_prompt_token_len:_} tokens total"
-                        f", {elapsed_time.total_seconds():_.3f} seconds elapsed + {estimated_time:_.0f}s remaining")
+                        f"[lcp] Prompt eval: {tokens_parsed:_} of {cfr_prompt_token_len:_} tokens total"
+                        f", {elapsed_time:_.3f} seconds elapsed + {estimated_time:_.0f}s remaining")
 
                     # Print similar timing info to the console, but throttled by time.
                     if suppressed_model_verbose:
                         time_since_print: timedelta = datetime.now(tz=timezone.utc) - last_timing_print
                         if time_since_print.total_seconds() > timing_print_interval:
                             logger.debug(
-                                f"[lcp] Prompt eval: {min(tokens_parsed, cfr_prompt_token_len):_} of {cfr_prompt_token_len:_} tokens total"
-                                f", {elapsed_time.total_seconds():_.3f} seconds elapsed + {estimated_time:_.3f}s remaining")
+                                f"[lcp] Prompt eval: {tokens_parsed:_} of {cfr_prompt_token_len:_} tokens total"
+                                f", {elapsed_time:_.3f} seconds elapsed + {estimated_time:_.3f}s remaining")
                             last_timing_print = datetime.now(tz=timezone.utc)
 
                     await asyncio.sleep(0)
