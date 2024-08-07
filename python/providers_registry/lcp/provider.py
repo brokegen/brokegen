@@ -427,46 +427,53 @@ class _OneModel:
             self,
             cfr: ChatFormatterResponse,
             inference_options: InferenceOptions,
-            chunked_prompt_eval: bool = False,
-    ) -> llama_cpp.CreateCompletionResponse | Iterator[llama_cpp.CreateCompletionStreamResponse]:
+            status_holder: ServerStatusHolder,
+            chunked_prompt_eval: int | None,
+    ) -> tuple[
+        llama_cpp.CreateCompletionResponse | Iterator[llama_cpp.CreateCompletionStreamResponse],
+        int,
+     ]:
         await asyncio.sleep(0)
-
         model_params = self.launch_with_params(cfr, inference_options)
 
         tokenized_prompt: list[int] = self.underlying_model.tokenize(
             cfr.prompt.encode('utf-8'),
         )
+        cfr_prompt_token_len: int = len(tokenized_prompt)
         logger.debug(f"LlamaCppProvider starting inference on model \"{self.model_name}\""
-                     f" with prompt size of {len(tokenized_prompt)} tokens")
+                     f" with prompt size of {cfr_prompt_token_len} tokens")
 
         llama_cpp.llama_reset_timings(self.underlying_model.ctx)
 
         # Split the prompt eval into chunks, so we give the caller(s) a chance to break
-        if chunked_prompt_eval:
+        if chunked_prompt_eval is not None:
             chunking_model_params = dict(model_params)
             chunking_model_params["max_tokens"] = 1
             chunking_model_params["stream"] = False
 
             start_time: datetime = datetime.now()
-            chunk_size: int = 64
+            chunk_size: int = chunked_prompt_eval
             tokens_parsed: int = 0
-            while tokens_parsed < len(tokenized_prompt):
-                self.underlying_model.create_completion(tokenized_prompt[:tokens_parsed + chunk_size],
-                                                        **chunking_model_params)
-                tokens_parsed += chunk_size
 
-                elapsed_time: timedelta = datetime.now() - start_time
-                logger.debug(f"Chunked prompt eval: {tokens_parsed=} in {elapsed_time.total_seconds()} seconds")
-                await asyncio.sleep(0)
+            with StatusContext(f"[lcp] Prompt eval for {cfr_prompt_token_len} tokens", status_holder):
+                while tokens_parsed < cfr_prompt_token_len:
+                    self.underlying_model.create_completion(
+                        tokenized_prompt[:tokens_parsed + chunk_size], **chunking_model_params)
+                    tokens_parsed += chunk_size
 
-            llama_cpp.llama_reset_timings(self.underlying_model.ctx)
-            return self.underlying_model.create_completion(tokenized_prompt, **model_params)
+                    elapsed_time: timedelta = datetime.now() - start_time
+                    status_holder.set(f"[lcp] Prompt eval: {tokens_parsed=} of {cfr_prompt_token_len} tokens in {elapsed_time.total_seconds():_.3f} seconds")
+                    await asyncio.sleep(0)
+
+                logger.warning(f"Using chunked prompt eval, timings.n_eval will probably be off by {cfr_prompt_token_len / chunk_size} tokens")
+
+            return self.underlying_model.create_completion(tokenized_prompt, **model_params), cfr_prompt_token_len
 
         else:
             return self.underlying_model.create_completion(
                 tokenized_prompt,
                 **model_params,
-            )
+            ), cfr_prompt_token_len
 
     def do_chat(
             self,
@@ -657,7 +664,7 @@ class LlamaCppProvider(BaseProvider):
 
         async def update_status_and_log_info(
                 primordial: AsyncIterator[T],
-                cfr: ChatFormatterResponse,
+                cfr_prompt_token_len: int | None,
         ) -> AsyncIterator[T]:
             timings: llama_cpp.llama_timings | None = None
 
@@ -666,8 +673,15 @@ class LlamaCppProvider(BaseProvider):
                     yield chunk
 
                     timings = llama_cpp.llama_get_timings(loaded_model.underlying_model.ctx)
-                    status_holder.set(f"{loaded_model.model_name}: {timings.n_p_eval} new prompt tokens"
-                                      f" => {timings.n_eval} tokens generated in {timings.t_eval_ms / 1000:_.3f} seconds")
+                    evaluation_desc: str = f"{timings.n_eval} tokens generated in {timings.t_eval_ms / 1000:_.3f} seconds"
+
+                    if timings.n_p_eval == 0:
+                        if cfr_prompt_token_len == 0:
+                            status_holder.set(f"{loaded_model.model_name}: " + evaluation_desc)
+                        else:
+                            status_holder.set(f"{loaded_model.model_name}: {cfr_prompt_token_len} total prompt tokens => " + evaluation_desc)
+                    else:
+                        status_holder.set(f"{loaded_model.model_name}: {timings.n_p_eval} new prompt tokens => " + evaluation_desc)
 
             except Exception as e:
                 # Probably ran out of tokens; continue on and rely on final handler(s)
@@ -682,26 +696,20 @@ class LlamaCppProvider(BaseProvider):
             # Add an error message if we _probably_ ran out of tokens.
             # It's okay to mark it as an error + toss previous work because the user wants a not-truncated response.
             if timings is not None:
-                # NB This re-tokenization is _not_ free, but it's probably cheap enough to run at the end of inference.
-                tokenized_prompt: list[int] = loaded_model.underlying_model.tokenize(
-                    cfr.prompt.encode('utf-8'),
-                )
-
                 # For some kind of error margin, complain if we're within 10 tokens of the end.
                 # This doesn't work well for extremely short contexts, but for ten tokens? blame the user.
                 #
                 # This "safety" margin can probably reduced to 1 or 2, depending on whether we have Unicode sequences
                 # that span multiple tokens (the llama-cpp-python decoder groups them together).
                 #
-                tokens_remaining = loaded_model.underlying_model.context_params.n_ctx - len(
-                    tokenized_prompt) - timings.n_eval
+                tokens_remaining = loaded_model.underlying_model.context_params.n_ctx - cfr_prompt_token_len - timings.n_eval
                 if tokens_remaining < 512:
                     logger.debug(
                         f"{tokens_remaining} token remaining in total context size of {loaded_model.underlying_model.context_params.n_ctx}")
 
                 if tokens_remaining < 10:
                     info_str = (
-                        f"Token count near or exceeded context size: {len(tokenized_prompt)} prompt + {timings.n_eval} new"
+                        f"Token count near or exceeded context size: {cfr_prompt_token_len} prompt + {timings.n_eval} new"
                         f" >= n_ctx={loaded_model.underlying_model.context_params.n_ctx}"
                     )
                     status_holder.set("[lcp] " + info_str)
@@ -729,9 +737,14 @@ class LlamaCppProvider(BaseProvider):
                 templator = TemplateApplier(loaded_model.underlying_model, inference_options)
                 cfr: ChatFormatterResponse = templator(messages=[m.model_dump() for m in messages_list])
 
-                iter0: Iterator[CreateCompletionStreamResponse] = await loaded_model.do_completion(
+                iter0: Iterator[CreateCompletionStreamResponse]
+                iter0, cfr_prompt_token_len = await loaded_model.do_completion(
                     cfr,
                     inference_options,
+                    status_holder,
+                    # 512 is the default token batch size in llama.cpp, so it should work fine.
+                    # For more responsive UI, though, reduce this number to 128.
+                    chunked_prompt_eval=loaded_model.underlying_model.context_params.n_batch / 4,
                 )
 
                 iter1: Iterator[str] = map(normal_completion_choice0_extractor, iter0)
@@ -749,8 +762,6 @@ class LlamaCppProvider(BaseProvider):
 
         # Otherwise, just fall back to llama-cpp-python's built-in chat formatters, end-to-end.
         if not custom_templatoor_succeeded:
-            cfr: ChatFormatterResponse = ChatFormatterResponse(prompt="")
-
             iterator_or_completion: \
                 llama_cpp.CreateChatCompletionResponse | Iterator[llama_cpp.CreateChatCompletionStreamResponse]
             iterator_or_completion = loaded_model.do_chat(
@@ -768,10 +779,14 @@ class LlamaCppProvider(BaseProvider):
 
                 iter2: AsyncIterator[str] = one_chunk_to_async()
 
+            # Additional variables needed for later wrap-up
+            cfr: ChatFormatterResponse = ChatFormatterResponse(prompt="")
+            cfr_prompt_token_len: int | None = None
+
         iter3: AsyncIterator[JSONDict] = format_response(iter2)
         iter4: AsyncIterator[JSONDict] = tee_to_console_output(iter3,
                                                                lambda chunk: safe_get(chunk, "message", "content"))
-        iter5: AsyncIterator[JSONDict] = update_status_and_log_info(iter4, cfr=cfr)
+        iter5: AsyncIterator[JSONDict] = update_status_and_log_info(iter4, cfr_prompt_token_len=cfr_prompt_token_len)
 
         status_holder.set(f"{loaded_model.model_name} loaded, starting inference")
         return cfr, iter5

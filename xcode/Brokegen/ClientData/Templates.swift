@@ -63,13 +63,13 @@ class Templates {
         // Do initial population of some templates
         if recents(type: .retrievalSearchArgs).isEmpty {
             _ = add(
-                // For thoroughness, this should be 18, but we haven't figured out prompt size/tuning yet.
+                // TODO: We haven't really figured out prompt size/tuning yet, but default k=18 works for our dataset.
                 // More specifically, how to configure it in a reasonable way.
                 content: """
                 {
-                    "k": 18,
-                    "fetch_k": 60,
-                    "lambda_mult": 0.25
+                  "k": 18,
+                  "fetch_k": 60,
+                  "lambda_mult": 0.25
                 }
                 """,
                 contentType: .retrievalSearchArgs,
