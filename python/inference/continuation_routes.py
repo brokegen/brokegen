@@ -24,7 +24,8 @@ from providers.foundation_models.orm import FoundationModelRecordOrm
 from providers.registry import ProviderRegistry, BaseProvider, InferenceOptions, openai_consolidator, \
     ollama_consolidator
 from retrieval.faiss.knowledge import get_knowledge, KnowledgeSingleton
-from retrieval.faiss.retrieval import RetrievalLabel, RetrievalPolicy, SimpleRetrievalPolicy, SummarizingRetrievalPolicy
+from retrieval.faiss.retrieval import RetrievalLabel, RetrievalPolicy, \
+    SummarizingRetrievalPolicy, SomeMessageSimilarity, AllMessageSimilarity
 from .continuation import ContinueRequest, select_continuation_model
 
 logger = logging.getLogger(__name__)
@@ -52,7 +53,19 @@ async def with_retrieval(
                 if retrieval_label.retrieval_search_args:
                     logger.warning(f"Invalid retrieval_search_args, ignoring: {retrieval_label.retrieval_search_args}")
 
-            real_retrieval_policy = SimpleRetrievalPolicy(knowledge, "similarity", search_kwargs)
+            real_retrieval_policy = SomeMessageSimilarity(1, knowledge=knowledge, search_type="similarity",
+                                                          search_kwargs=search_kwargs)
+
+        elif retrieval_label.retrieval_policy == "simple-all":
+            search_kwargs: dict = {}
+            try:
+                search_kwargs.update(
+                    orjson.loads(retrieval_label.retrieval_search_args))
+            except ValueError:
+                if retrieval_label.retrieval_search_args:
+                    logger.warning(f"Invalid retrieval_search_args, ignoring: {retrieval_label.retrieval_search_args}")
+
+            real_retrieval_policy = AllMessageSimilarity(knowledge, "similarity", search_kwargs)
 
         elif retrieval_label.retrieval_policy == "summarizing":
             search_kwargs: dict = {}

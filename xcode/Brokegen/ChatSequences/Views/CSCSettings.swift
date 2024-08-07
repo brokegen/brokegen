@@ -83,14 +83,19 @@ struct CSInferenceSettings {
     }
 
     enum RetrievalPolicy: String, CaseIterable, Identifiable {
-        case skip, simple, summarizing
+        case skip, simple, simpleAll, summarizing
 
         func asUiLabel() -> String {
-            self.rawValue
+            self.id
         }
 
         var id: String {
-            self.rawValue
+            switch(self) {
+            case .simpleAll:
+                "simple-all"
+            default:
+                self.rawValue
+            }
         }
     }
 

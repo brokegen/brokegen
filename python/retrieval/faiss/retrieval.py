@@ -5,7 +5,7 @@ from typing import List, TypeAlias, Optional
 
 from langchain_core.documents import Document
 from langchain_core.messages import ChatMessage
-from pydantic import BaseModel
+from pydantic import BaseModel, PositiveInt
 
 from _util.json import safe_get_arrayed, JSONDict
 from _util.status import ServerStatusHolder, StatusContext
@@ -45,7 +45,7 @@ class SkipRetrievalPolicy(RetrievalPolicy):
         return None
 
 
-class SimpleRetrievalPolicy(RetrievalPolicy):
+class AllMessageSimilarity(RetrievalPolicy):
     """
     Looks up matching docs that are similar to the last message in the provided list.
     """
@@ -71,7 +71,11 @@ class SimpleRetrievalPolicy(RetrievalPolicy):
             await get_knowledge().load_queued_data_dirs(status_holder)
 
         latest_message_content = safe_get_arrayed(messages, -1, "content") or getattr(messages[-1], "content", "")
-        retrieval_str = latest_message_content
+        retrieval_str = '\n\n'.join([
+            # TODO: We can remove one of these clauses, once we write enough tests to decide which one.
+            safe_get_arrayed(message, "content") or getattr(message, "content", "")
+            for message in messages
+        ])
 
         matching_docs: List[Document] = await self.retriever.ainvoke(retrieval_str)
         formatted_docs = '\n\n'.join(
@@ -90,6 +94,32 @@ Reasoning: Let's think step by step in order to produce the answer. Take a deep 
 Question: {latest_message_content}"""
 
         return big_prompt
+
+
+class SomeMessageSimilarity(AllMessageSimilarity):
+    """
+    Looks up matching docs that are similar to the last message in the provided list.
+    """
+    messages_to_read: int
+
+    def __init__(self, messages_to_read: PositiveInt = 1, **kwargs):
+        super().__init__(**kwargs)
+
+        self.messages_to_read = messages_to_read
+        if messages_to_read < 1:
+            raise ValueError(f"SomeMessageSimilarity() requires a positive number of messages to read!")
+
+    async def parse_chat_history(
+            self,
+            messages: List[ChatMessage],
+            generate_helper_fn: GenerateHelper,
+            status_holder: ServerStatusHolder | None = None,
+    ) -> PromptText | None:
+        return await super().parse_chat_history(
+            messages[-self.messages_to_read:],
+            generate_helper_fn,
+            status_holder,
+        )
 
 
 class SummarizingRetrievalPolicy(RetrievalPolicy):
