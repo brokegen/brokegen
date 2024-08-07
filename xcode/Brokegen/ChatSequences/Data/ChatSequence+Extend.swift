@@ -6,27 +6,28 @@ import SwiftyJSON
 
 
 struct ContinueParameters: Encodable, Hashable {
-    var continuationModelId: FoundationModelRecordID? = nil
-    var fallbackModelId: FoundationModelRecordID? = nil
+    var continuationModelId: FoundationModelRecordID?
+    var fallbackModelId: FoundationModelRecordID?
 
-    var inferenceOptions: String? = nil
-    var overrideModelTemplate: String? = nil
-    var overrideSystemPrompt: String? = nil
-    var seedAssistantResponse: String? = nil
+    var inferenceOptions: String?
+    var promptEvalBatchSize: Int?
+    var overrideModelTemplate: String?
+    var overrideSystemPrompt: String?
+    var seedAssistantResponse: String?
 
-    var retrievalPolicy: String? = nil
-    var retrievalSearchArgs: String? = nil
-    var preferredEmbeddingModel: FoundationModelRecordID? = nil
+    var retrievalPolicy: String?
+    var retrievalSearchArgs: String?
+    var preferredEmbeddingModel: FoundationModelRecordID?
 
-    var autonamingPolicy: String? = nil
-    var preferredAutonamingModel: FoundationModelRecordID? = nil
+    var autonamingPolicy: String?
+    var preferredAutonamingModel: FoundationModelRecordID?
 
     // These parameters shouldn't be passed to the server,
     // but the information is needed to complete the request.
     //
     // Since I don't want to make four separate structs, they're passed to the server anyway.
     //
-    var sequenceId: ChatSequenceServerID? = nil
+    var sequenceId: ChatSequenceServerID
 }
 
 struct AFErrorAndData: Error {
@@ -52,15 +53,15 @@ extension DefaultChatSyncService {
 
         let encodedParams: Data? = try? jsonEncoder.encode(params)
         guard encodedParams != nil else {
-            print("[ERROR] /sequences/\(params.sequenceId!)/continue failed, probably encoding error: \(String(describing: params))")
+            print("[ERROR] /sequences/\(params.sequenceId)/continue failed, probably encoding error: \(String(describing: params))")
             return subject.eraseToAnyPublisher()
         }
 
-        print("[DEBUG] POST /sequences/\(params.sequenceId!)/continue <= \(String(data: encodedParams!, encoding: .utf8)!)")
+        print("[DEBUG] POST /sequences/\(params.sequenceId)/continue <= \(String(data: encodedParams!, encoding: .utf8)!)")
         var responseStatusCode: Int? = nil
 
         let request = session.streamRequest(
-            serverBaseURL + "/sequences/\(params.sequenceId!)/continue"
+            serverBaseURL + "/sequences/\(params.sequenceId)/continue"
         ) { urlRequest in
             urlRequest.method = .post
             urlRequest.headers = [
@@ -98,7 +99,7 @@ extension DefaultChatSyncService {
 
         return subject
             .handleEvents(receiveCancel: {
-                print("[TRACE] Detected cancel event for /sequences/\(params.sequenceId!)/continue")
+                print("[TRACE] Detected cancel event for /sequences/\(params.sequenceId)/continue")
                 request.cancel()
             })
             .eraseToAnyPublisher()

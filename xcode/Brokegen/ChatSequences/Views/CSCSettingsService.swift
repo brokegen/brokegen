@@ -158,6 +158,11 @@ class CSCSettingsService {
             set { inference.inferenceOptions = newValue }
         }
 
+        var promptEvalBatchSize: Int {
+            get { defaults.promptEvalBatchSize }
+            set { defaults.promptEvalBatchSize = newValue }
+        }
+
         var overrideModelTemplate: String {
             get { inference.overrideModelTemplate ?? "" }
             set { inference.overrideModelTemplate = newValue }

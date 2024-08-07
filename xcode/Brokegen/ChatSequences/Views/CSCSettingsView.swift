@@ -12,6 +12,7 @@ struct CSCSettingsView: View {
     ) -> some View {
         GridRow {
             Text(labelText)
+            // This should be attached to the widest string in the column, to avoid ellipsising
                 .layoutPriority(1.0)
 
             Toggle(isOn: globalIsOn) {}
@@ -99,7 +100,6 @@ struct CSCSettingsView: View {
                 Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
                     GridRow {
                         Text("[global] Font for rendering messages")
-                            .layoutPriority(1.0)
 
                         HStack {
                             Picker("", selection: $settings.messageFontDesign) {
@@ -117,6 +117,7 @@ struct CSCSettingsView: View {
 
                     GridRow {
                         Text("[global] Font for entering prompt text")
+                            .layoutPriority(1.0)
 
                         HStack {
                             Picker("", selection: $settings.textEntryFontDesign) {
@@ -177,7 +178,6 @@ struct CSCSettingsView: View {
 
                 GridRow {
                     Text("Force retrieval-augmented generation on every query")
-                        .layoutPriority(1.0)
 
                     Toggle(isOn: $settings.defaults.forceRetrieval) {}
                         .toggleStyle(.switch)
@@ -261,8 +261,11 @@ struct CSCSettingsView: View {
                 }
 
                 GridRow {
-                    Text("Scroll to bottom of window on new response text: UI update frequency"
-                         + "\n(ignored if rendering message as markdown)")
+                    VStack(alignment: .leading) {
+                        Text("Scroll to bottom of window on new response text: UI update frequency")
+                        Text("(ignored if rendering message as markdown)")
+                            .foregroundStyle(Color(.disabledControlTextColor))
+                    }
 
                     HStack {
                         Picker("", selection: $settings.scrollOnNewTextFrequencyMsec) {
@@ -301,8 +304,11 @@ struct CSCSettingsView: View {
                 }
 
                 GridRow {
-                    Text("Animate (fade in) new response text"
-                         + "\n(ignored if rendering message as markdown)")
+                    VStack(alignment: .leading) {
+                        Text("Animate (fade in) new response text")
+                        Text("(ignored if rendering message as markdown)")
+                            .foregroundStyle(Color(.disabledControlTextColor))
+                    }
 
                     Picker("", selection: $settings.animateNewResponseText) {
                         Text("animate")
@@ -354,7 +360,6 @@ struct CSCSettingsView: View {
                 Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
                     GridRow {
                         Text("[global] Chat autonaming policy")
-                            .layoutPriority(1.0)
 
                         Picker("", selection: $settings.autonamingPolicy) {
                             ForEach(CSInferenceSettings.AutonamingPolicy.allCases) { policy in
@@ -366,6 +371,43 @@ struct CSCSettingsView: View {
                         // TODO: Re-enable once we plumb this through on the server
                         .disabled(true)
                     }
+
+                    GridRow {
+                        Text("[global] Batch size for prompt evaluation")
+                            .layoutPriority(1.0)
+
+                        HStack {
+                            let defaultSizes = [64, 128, 256, 512]
+                            let allSizes = Set([0] + defaultSizes)
+
+                            Picker("", selection: $settings.promptEvalBatchSize) {
+                                Text("disable batching")
+                                    .tag(0)
+
+                                ForEach(defaultSizes, id: \.self) { size in
+                                    Text(String(describing: size))
+                                        .tag(size)
+                                }
+
+                                if !allSizes.contains(settings.promptEvalBatchSize) {
+                                    Text("custom")
+                                        .tag(settings.promptEvalBatchSize)
+                                }
+                            }
+                            .frame(minWidth: 96)
+
+                            Text("/")
+
+                            Stepper(value: $settings.promptEvalBatchSize) {
+                                Text("\(settings.promptEvalBatchSize)")
+                            }
+
+                            Text("tokens")
+
+                            Spacer()
+                        }
+                    }
+
                 }
             }
             .padding(24)

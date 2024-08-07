@@ -41,6 +41,14 @@ def openai_consolidator(chunk: JSONDict, consolidated_response: str) -> str:
 
 class InferenceOptions(BaseModel):
     inference_options: Optional[str] = None
+    prompt_eval_batch_size: Optional[int] = None
+    """
+    512 is the default token batch size in llama.cpp, so it should work fine.
+    For more responsive UI, though, reduce this number to 128:
+    
+        loaded_model.underlying_model.context_params.n_batch / 4
+    """
+
     override_model_template: Optional[str] = None
     override_system_prompt: Optional[PromptText] = None
     seed_assistant_response: Optional[PromptText] = None

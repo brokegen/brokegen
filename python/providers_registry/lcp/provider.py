@@ -428,7 +428,6 @@ class _OneModel:
             cfr: ChatFormatterResponse,
             inference_options: InferenceOptions,
             status_holder: ServerStatusHolder,
-            chunked_prompt_eval: int | None,
     ) -> tuple[
         llama_cpp.CreateCompletionResponse | Iterator[llama_cpp.CreateCompletionStreamResponse],
         int,
@@ -446,16 +445,18 @@ class _OneModel:
         llama_cpp.llama_reset_timings(self.underlying_model.ctx)
 
         # Split the prompt eval into chunks, so we give the caller(s) a chance to break
-        if chunked_prompt_eval is not None:
+        if inference_options.prompt_eval_batch_size is not None and inference_options.prompt_eval_batch_size > 0:
             chunking_model_params = dict(model_params)
+            # NB This should be 0, but 0 has a special value that means "evaluate until model stops" or something.
+            # Some providers also use -1 and -2 as special values.
             chunking_model_params["max_tokens"] = 1
             chunking_model_params["stream"] = False
 
             start_time: datetime = datetime.now()
-            chunk_size: int = chunked_prompt_eval
+            chunk_size: int = inference_options.prompt_eval_batch_size
             tokens_parsed: int = 0
 
-            with StatusContext(f"[lcp] Prompt eval for {cfr_prompt_token_len} tokens", status_holder):
+            with StatusContext(f"[lcp] Prompt eval: {cfr_prompt_token_len} tokens, batch size {chunk_size}", status_holder):
                 while tokens_parsed < cfr_prompt_token_len:
                     self.underlying_model.create_completion(
                         tokenized_prompt[:tokens_parsed + chunk_size], **chunking_model_params)
@@ -742,9 +743,6 @@ class LlamaCppProvider(BaseProvider):
                     cfr,
                     inference_options,
                     status_holder,
-                    # 512 is the default token batch size in llama.cpp, so it should work fine.
-                    # For more responsive UI, though, reduce this number to 128.
-                    chunked_prompt_eval=loaded_model.underlying_model.context_params.n_batch / 4,
                 )
 
                 iter1: Iterator[str] = map(normal_completion_choice0_extractor, iter0)

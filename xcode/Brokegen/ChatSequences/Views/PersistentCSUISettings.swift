@@ -44,6 +44,7 @@ class PersistentDefaultCSUISettings: CSUISettings {
 
                 self!.cached_showOFMPicker = self!.live_showOFMPicker
                 self!.cached_stayAwakeDuringInference = self!.live_stayAwakeDuringInference
+                self!.cached_promptEvalBatchSize = self!.live_promptEvalBatchSize
             }
 
         startUpdater()
@@ -404,5 +405,30 @@ class PersistentDefaultCSUISettings: CSUISettings {
     var stayAwakeDuringInference: Bool {
         get { cached_stayAwakeDuringInference ?? stored_stayAwakeDuringInference }
         set { live_stayAwakeDuringInference = newValue }
+    }
+
+
+    @AppStorage("serverInferenceSettings.promptEvalBatchSize")
+    @ObservationIgnored private var stored_promptEvalBatchSize: Int = 128
+
+    private var cached_promptEvalBatchSize: Int? = nil
+
+    @ObservationIgnored
+    var live_promptEvalBatchSize: Int {
+        get {
+            access(keyPath: \.live_promptEvalBatchSize)
+            return stored_promptEvalBatchSize
+        }
+        set {
+            withMutation(keyPath: \.live_promptEvalBatchSize) {
+                stored_promptEvalBatchSize = newValue
+                cached_promptEvalBatchSize = newValue
+            }
+        }
+    }
+
+    var promptEvalBatchSize: Int {
+        get { cached_promptEvalBatchSize ?? stored_promptEvalBatchSize }
+        set { live_promptEvalBatchSize = newValue }
     }
 }
