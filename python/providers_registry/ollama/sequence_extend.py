@@ -37,6 +37,18 @@ from .sequence_autoname import ollama_autoname_sequence
 logger = logging.getLogger(__name__)
 
 
+async def prepend_prompt_text(
+        primordial: AsyncIterator[JSONDict],
+        prompt_with_templating: TemplatedPromptText,
+) -> AsyncIterator[JSONDict]:
+    yield {
+        "prompt_with_templating": prompt_with_templating,
+    }
+
+    async for chunk in primordial:
+        yield chunk
+
+
 async def do_continuation(
         messages_list: list[ChatMessage],
         original_sequence: ChatSequenceOrm,
@@ -72,12 +84,6 @@ async def do_continuation(
             logger.exception(f"Failed to commit {inference_event=}")
             history_db.rollback()
             return
-
-        # Return a chunk that includes the entire context-y prompt.
-        # This is marked a separate packet to guard against overflows and similar.
-        yield {
-            "prompt_with_templating": prompt_with_templating,
-        }
 
         # And now, construct the ChatSequence (which references the InferenceEvent, actually)
         try:
@@ -194,22 +200,22 @@ async def do_continuation(
         audit_db=audit_db,
         status_holder=status_holder,
         requested_system_message=None,
-        only_ollama_supported_fields=False,
     )
 
     # Convert to JSON chunks
     iter1: AsyncIterator[JSONDict] = proxied_response._content_iterable
     iter2: AsyncIterator[JSONDict] = update_status(iter1)
     iter3: AsyncIterator[JSONDict] = tee_to_console_output(iter2, ollama_log_indexer)
+    iter4: AsyncIterator[JSONDict] = prepend_prompt_text(iter3, prompt_with_templating)
 
     # All for the sake of consolidate + add "new_sequence_id" chunk
-    iter4: AsyncIterator[JSONDict] = hide_done(iter3)
-    iter5: AsyncIterator[JSONDict] = consolidate_and_yield(
-        iter4, ollama_response_consolidator, {},
+    iter5: AsyncIterator[JSONDict] = hide_done(iter4)
+    iter6: AsyncIterator[JSONDict] = consolidate_and_yield(
+        iter5, ollama_response_consolidator, {},
         functools.partial(append_response_chunk, prompt_with_templating=prompt_with_templating),
     )
 
-    proxied_response._content_iterable = iter5
+    proxied_response._content_iterable = iter6
     return proxied_response
 
 

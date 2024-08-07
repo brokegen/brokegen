@@ -32,7 +32,6 @@ async def do_proxy_chat_rag(
         audit_db: AuditDB,
         status_holder: ServerStatusHolder,
         requested_system_message: PromptText | None,
-        only_ollama_supported_fields: bool,
 ) -> tuple[TemplatedPromptText, JSONStreamingResponse]:
     # For now, everything we could possibly retrieve is from intercepting an Ollama /api/chat,
     # so there's no need to check for /api/generate's 'content' field.
@@ -114,7 +113,6 @@ async def do_proxy_chat_rag(
             inference_options=inference_options,
             requested_system_message=requested_system_message,
             prompt_override=prompt_override,
-            only_ollama_supported_fields=only_ollama_supported_fields,
         )
 
     return prompt_with_templating, ollama_response

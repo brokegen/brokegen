@@ -35,18 +35,6 @@ async def translate_generate_to_chat(
         yield chunk_json
 
 
-async def prepend_prompt_text(
-        primordial: AsyncIterator[JSONDict],
-        prompt_with_templating: TemplatedPromptText,
-) -> AsyncIterator[JSONDict]:
-    yield {
-        "prompt_with_templating": prompt_with_templating,
-    }
-
-    async for chunk in primordial:
-        yield chunk
-
-
 async def convert_chat_to_generate(
         original_request: starlette.requests.Request,
         chat_request_content: OllamaRequestContentJSON,
@@ -54,7 +42,6 @@ async def convert_chat_to_generate(
         inference_options: InferenceOptions,
         requested_system_message: PromptText | None,
         prompt_override: PromptText | None,
-        only_ollama_supported_fields: bool,
 ) -> tuple[TemplatedPromptText, JSONStreamingResponse]:
     used_assistant_response_seed: bool = False
 
@@ -199,11 +186,7 @@ async def convert_chat_to_generate(
     generate_response: httpx.Response = await do_generate_nolog(generate_request_content)
     iter0: AsyncIterator[str] = generate_response.aiter_text()
     iter1: AsyncIterator[JSONDict] = stream_str_to_json(iter0)
-    if only_ollama_supported_fields:
-        iter3: AsyncIterator[JSONDict] = translate_generate_to_chat(iter1)
-    else:
-        iter2: AsyncIterator[JSONDict] = translate_generate_to_chat(iter1)
-        iter3: AsyncIterator[JSONDict] = prepend_prompt_text(iter2, generate_request_content['prompt'])
+    iter3: AsyncIterator[JSONDict] = translate_generate_to_chat(iter1)
 
     # DEBUG: content-length is also still not correct, sometimes?
     # I would guess this only happens for `stream=false` requests, because otherwise how would this make sense?
