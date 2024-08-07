@@ -175,6 +175,8 @@ def run_proxy(
         """
         Prints a message if we got a client disconnection.
 
+        https://github.com/fastapi/fastapi/discussions/11360
+
         TODO: Is there another way of detecting disconnects, other than intercepting "http.disconnect"?
         """
 
@@ -207,7 +209,7 @@ def run_proxy(
             try:
                 return await handler_task
             except asyncio.CancelledError:
-                logger.debug(f"Detected client disconnection, canceling request: {scope}")
+                logger.info(f"{scope['raw_path']}: Detected client disconnection, canceling request")
 
     app.add_middleware(RequestCancelledMiddleware)
 

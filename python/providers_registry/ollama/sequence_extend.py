@@ -269,7 +269,6 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                     audit_db=audit_db,
                 ),
                 status_holder,
-                request,
                 allow_non_ollama_fields=True,
             )
 

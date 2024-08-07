@@ -164,10 +164,6 @@ def install_forwards(router_ish: FastAPI):
                     else:
                         yield chunk
 
-                    if await original_request.is_disconnected():
-                        logger.warning(f"[ollama-emulate] /api/generate: Detected client disconnection, ending inference")
-                        break
-
             async def add_newlines(primordial: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
                 async for chunk in primordial:
                     yield chunk + b'\n'

@@ -136,15 +136,6 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 else:
                     yield chunk
 
-                if await request.is_disconnected():
-                    logger.debug(
-                        f"/sequences/{sequence_id}/continue-v2: Detected client disconnection, ending inference")
-                    yield {
-                        "error": f"/sequences/{sequence_id}/continue-v2: Detected client disconnection, ending inference",
-                        "done": True,
-                    }
-                    break
-
             logger.debug("sequence_continue_v2 do_keepalive(): detected end of inference chunks")
 
         awaitable: Awaitable[AsyncIterator[JSONDict]] = real_response_maker()

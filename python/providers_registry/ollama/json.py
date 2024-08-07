@@ -25,7 +25,6 @@ async def keepalive_wrapper(
         inference_model_human_id: FoundationModelHumanID,
         real_response_maker: Awaitable[JSONStreamingResponse],
         status_holder: ServerStatusHolder,
-        request: starlette.requests.Request,
         allow_non_ollama_fields: bool = False,
 ) -> JSONStreamingResponse:
     async def nonblocking_response_maker():
@@ -65,10 +64,6 @@ async def keepalive_wrapper(
 
             else:
                 yield chunk
-
-            if await request.is_disconnected():
-                logger.warning(f"[ollama] Detected client disconnection, ending inference")
-                break
 
         logger.debug("ollama keepalive_wrapper(): detected end of inference chunks")
 

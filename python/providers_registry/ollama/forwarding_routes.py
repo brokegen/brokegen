@@ -173,7 +173,6 @@ async def do_api_chat(
                 inference_model_human_id,
                 forward_request(request, audit_db),
                 status_holder,
-                request,
             )
 
         else:
@@ -192,7 +191,6 @@ async def do_api_chat(
                     audit_db=audit_db,
                 ),
                 status_holder,
-                request,
             )
 
     except fastapi.HTTPException as e:
@@ -255,10 +253,6 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
 
                 else:
                     yield chunk
-
-                if await request.is_disconnected():
-                    logger.warning(f"[ollama-proxy] /api/generate: Detected client disconnection, ending inference")
-                    break
 
         async def add_newlines(primordial: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
             async for chunk in primordial:
