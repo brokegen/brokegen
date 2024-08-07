@@ -87,8 +87,9 @@ class Templates {
                 {
                   "n_ctx": 80000,
                   "last_n_tokens_size": 512,
-                  "repeat_penalty": 2.0,
+                  "repeat_penalty": 1.0,
                   "max_tokens": 1024,
+                  "min_p": 0.05,
                   "n_gpu_layers": -1,
                   "n_threads": 9,
                   "temperature": 0.8,
