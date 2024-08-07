@@ -23,6 +23,7 @@ protocol CSUISettings {
     // MARK: - misc
     var showOFMPicker: Bool { get set }
     var stayAwakeDuringInference: Bool { get set }
+    var promptEvalBatchSize: Int { get set }
 }
 
 // TODO: Does this need to conform to @Observable?
@@ -45,6 +46,7 @@ struct InMemoryCSUISettings: CSUISettings {
 
     var showOFMPicker: Bool
     var stayAwakeDuringInference: Bool
+    var promptEvalBatchSize: Int
 }
 
 struct OverrideCSUISettings {

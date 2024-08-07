@@ -34,17 +34,17 @@ class CSCSettingsService {
         }
     }
 
-    let defaults: PersistentDefaultCSUISettings = PersistentDefaultCSUISettings()
+    let defaults: CSUISettings = PersistentDefaultCSUISettings()
     var perSequenceUiSettings: [ChatSequenceServerID : OverrideCSUISettings] = [:]
     var perSequenceInferenceSettings: [ChatSequenceServerID : CSInferenceSettings] = [:]
 
     @Observable
     class SettingsProxy {
-        var defaults: PersistentDefaultCSUISettings
+        var defaults: CSUISettings
         var override: OverrideCSUISettings
         var inference: CSInferenceSettings
 
-        init(defaults: PersistentDefaultCSUISettings, override: OverrideCSUISettings, inference: CSInferenceSettings) {
+        init(defaults: CSUISettings, override: OverrideCSUISettings, inference: CSInferenceSettings) {
             self.defaults = defaults
             self.override = override
             self.inference = inference
