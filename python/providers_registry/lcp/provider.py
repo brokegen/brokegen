@@ -440,7 +440,7 @@ class _OneModel:
         )
         cfr_prompt_token_len: int = len(tokenized_prompt)
         logger.debug(f"LlamaCppProvider starting inference on model \"{self.model_name}\""
-                     f" with prompt size of {cfr_prompt_token_len} tokens")
+                     f" with prompt size of {cfr_prompt_token_len:_} tokens")
 
         llama_cpp.llama_reset_timings(self.underlying_model.ctx)
 

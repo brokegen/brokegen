@@ -652,7 +652,7 @@ struct OneSequenceView: View {
                 @Bindable var viewModel = viewModel
 
                 OFMPicker(
-                    boxLabel: "Select an override inference model for next message:",
+                    boxLabel: "Override model for new messages:",
                     selectedModelBinding: $viewModel.continuationInferenceModel,
                     showModelPicker: $showContinuationModelPicker,
                     geometry: geometry,

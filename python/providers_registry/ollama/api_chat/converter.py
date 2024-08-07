@@ -151,8 +151,8 @@ async def convert_chat_to_generate(
             existing_content_len = sum(map(len, templated_messages))
             max_print_len = 280
             logging.debug(
-                f"Existing chat history is {existing_content_len} chars, "
-                f"adding prompt_override with {len(prompt_override):_} chars ({max_print_len=}):\n"
+                f"Existing chat history is {existing_content_len:_} chars, "
+                f"adding prompt_override with {len(prompt_override):_} chars ({max_print_len=:_}):\n"
                 f"{prompt_override[:max_print_len]}"
             )
 
