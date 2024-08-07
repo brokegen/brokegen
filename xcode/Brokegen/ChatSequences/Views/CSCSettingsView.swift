@@ -379,7 +379,7 @@ struct CSCSettingsView: View {
                             .layoutPriority(1.0)
 
                         HStack {
-                            let defaultSizes = [64, 128, 256, 512, 1024, 2048]
+                            let defaultSizes = [64, 128, 256, 512, 8_192, 32_768]
                             let allSizes = Set([0] + defaultSizes)
 
                             Picker("", selection: $settings.promptEvalBatchSize) {
@@ -400,7 +400,7 @@ struct CSCSettingsView: View {
 
                             Text("/")
 
-                            Stepper(value: $settings.promptEvalBatchSize) {
+                            Stepper(value: $settings.promptEvalBatchSize, step: 64) {
                                 Text("\(settings.promptEvalBatchSize)")
                             }
 

@@ -63,11 +63,12 @@ class Templates {
         // Do initial population of some templates
         if recents(type: .retrievalSearchArgs).isEmpty {
             _ = add(
-                // TODO: We haven't really figured out prompt size/tuning yet, but default k=18 works for our dataset.
+                // TODO: We haven't really figured out prompt size/tuning yet, but default k=18 should be ideal.
+                // TODO: Actually, k=18 brings us to a context length of 30k+, which models don't deal with well.
                 // More specifically, how to configure it in a reasonable way.
                 content: """
                 {
-                  "k": 18,
+                  "k": 4,
                   "fetch_k": 60,
                   "lambda_mult": 0.25
                 }
