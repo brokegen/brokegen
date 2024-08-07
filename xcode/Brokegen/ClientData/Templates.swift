@@ -75,6 +75,30 @@ class Templates {
                 contentType: .retrievalSearchArgs,
                 targetModel: nil)
         }
+
+        if recents(type: .inferenceOptions).isEmpty {
+            _ = add(
+                // These are specified in the high-level llama_cpp API:
+                // https://llama-cpp-python.readthedocs.io/en/latest/api-reference/#high-level-api
+                //
+                // This is a combined list of llama_cpp.Llama.__init__() args and llama_cpp.Llama.create_completion().
+                // TODO: Figure out a way to surface this URL to the end user
+                content: """
+                {
+                  "n_ctx": 80000,
+                  "last_n_tokens_size": 512,
+                  "repeat_penalty": 2.0,
+                  "max_tokens": 1024,
+                  "n_gpu_layers": -1,
+                  "n_threads": 9,
+                  "temperature": 0.8,
+                  "verbose": true
+                }
+                """,
+                contentType: .inferenceOptions,
+                targetModel: nil
+            )
+        }
     }
 
     func fetchTextKey(
