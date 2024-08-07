@@ -379,7 +379,7 @@ struct CSCSettingsView: View {
                             .layoutPriority(1.0)
 
                         HStack {
-                            let defaultSizes = [64, 128, 256, 512]
+                            let defaultSizes = [64, 128, 256, 512, 1024, 2048]
                             let allSizes = Set([0] + defaultSizes)
 
                             Picker("", selection: $settings.promptEvalBatchSize) {

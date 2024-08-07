@@ -165,7 +165,7 @@ class TemplateApplier(ChatFormatter):
 
         # First option: use our custom overrides
         if use_custom_template:
-            logger.debug(f"Switching to custom templating: {self.underlying_model.chat_format}")
+            # logger.debug(f"Switching to custom templating: {self.underlying_model.chat_format}")
             return self.custom_templating(messages)
 
         # Second: pick up whatever llama_cpp_python has
@@ -289,7 +289,7 @@ class _OneModel:
         }
         model_params.update(parsed_inference_options)
 
-        logger.debug(f"Chat format for {self.model_name}: {self.underlying_model.chat_format}")
+        # logger.debug(f"Chat format for {self.model_name}: {self.underlying_model.chat_format}")
         return model_params
 
     def available(self) -> bool:
@@ -463,10 +463,14 @@ class _OneModel:
                     tokens_parsed += chunk_size
 
                     elapsed_time: timedelta = datetime.now() - start_time
-                    status_holder.set(f"[lcp] Prompt eval: {tokens_parsed:_} of {cfr_prompt_token_len:_} tokens total in {elapsed_time.total_seconds():_.3f} seconds")
+                    estimated_time = (cfr_prompt_token_len - tokens_parsed) / tokens_parsed * elapsed_time.total_seconds()
+
+                    status_holder.set(
+                        f"[lcp] Prompt eval: {tokens_parsed:_} of {cfr_prompt_token_len:_} tokens total"
+                        f", {elapsed_time.total_seconds():_.3f} seconds elapsed + {estimated_time:_.0f}s remaining")
                     await asyncio.sleep(0)
 
-                logger.warning(f"Using chunked prompt eval, timings.n_eval will probably be off by {cfr_prompt_token_len / chunk_size} tokens")
+                logger.warning(f"Splitting prompt eval into chunks; `timings.n_eval` will probably be off by {cfr_prompt_token_len / chunk_size:_.1f} tokens")
 
             return self.underlying_model.create_completion(tokenized_prompt, **model_params), cfr_prompt_token_len
 
