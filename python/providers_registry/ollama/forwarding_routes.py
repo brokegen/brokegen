@@ -118,6 +118,7 @@ async def do_api_chat_textonly(
         audit_db=audit_db,
         status_holder=status_holder,
         requested_system_message=requested_system_message,
+        only_ollama_supported_fields=True,
     )
 
     iter1: AsyncIterator[JSONDict] = ollama_response._content_iterable

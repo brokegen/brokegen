@@ -194,6 +194,7 @@ async def do_continuation(
         audit_db=audit_db,
         status_holder=status_holder,
         requested_system_message=None,
+        only_ollama_supported_fields=False,
     )
 
     # Convert to JSON chunks
