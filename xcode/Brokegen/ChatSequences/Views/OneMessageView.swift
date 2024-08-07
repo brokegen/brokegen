@@ -165,6 +165,7 @@ struct OneMessageView: View {
                         .fontWeight(.semibold)
                         .foregroundStyle(Color(.controlTextColor))
                         .padding(.trailing, baseFontSize)
+                        .multilineTextAlignment(.leading)
                 }
                 .contentShape(Rectangle())
             })
@@ -377,5 +378,31 @@ Your input will help me generate more targeted and valuable responses. Let's col
 
             Spacer()
         }
+    }
+}
+
+#Preview(traits: .fixedLayout(width: 800, height: 800)) {
+    List {
+        OneMessageView(
+            .temporary(
+                TemporaryChatMessage(
+                    role: "really long role message, similar to the network errors that describe a failure: HTTP 429 you need to calm down",
+                    content: "",
+                    createdAt: Date.now),
+                .clientError
+            ),
+            showMessageHeaders: true,
+            expandContent: false,
+            renderAsMarkdown: false)
+
+        OneMessageView(
+            .temporary(
+                TemporaryChatMessage(
+                    role: "assistant",
+                    content: "message with short header but long body so we align to leading edge and the designer can check whether we did the alignments correctly"
+                )),
+            showMessageHeaders: true,
+            expandContent: true,
+            renderAsMarkdown: true)
     }
 }
