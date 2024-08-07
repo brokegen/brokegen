@@ -456,6 +456,9 @@ class _OneModel:
             chunk_size: int = inference_options.prompt_eval_batch_size
             tokens_parsed: int = 0
 
+            suppressed_model_verbose: bool = self.underlying_model.verbose
+            self.underlying_model.verbose = False
+
             with StatusContext(f"[lcp] Prompt eval: {cfr_prompt_token_len:_} tokens total, batch size {chunk_size}", status_holder):
                 while tokens_parsed < cfr_prompt_token_len:
                     self.underlying_model.create_completion(
@@ -468,10 +471,16 @@ class _OneModel:
                     status_holder.set(
                         f"[lcp] Prompt eval: {tokens_parsed:_} of {cfr_prompt_token_len:_} tokens total"
                         f", {elapsed_time.total_seconds():_.3f} seconds elapsed + {estimated_time:_.0f}s remaining")
+                    if suppressed_model_verbose:
+                        logger.debug(
+                            f"[lcp] Prompt eval: {tokens_parsed:_} of {cfr_prompt_token_len:_} tokens total"
+                            f", {elapsed_time.total_seconds():_.3f} seconds elapsed + {estimated_time:_.0f}s remaining")
+
                     await asyncio.sleep(0)
 
                 logger.warning(f"Splitting prompt eval into chunks; `timings.n_eval` will probably be off by {cfr_prompt_token_len / chunk_size:_.1f} tokens")
 
+            self.underlying_model.verbose = suppressed_model_verbose
             return self.underlying_model.create_completion(tokenized_prompt, **model_params), cfr_prompt_token_len
 
         else:
