@@ -108,6 +108,7 @@ struct CSCSettingsView: View {
                                         .tag(fontDesign)
                                 }
                             }
+                            .frame(minWidth: 96)
 
                             Stepper(value: $settings.messageFontSize) {
                                 Text(String(format: "%.1f pt", settings.messageFontSize))
@@ -126,6 +127,7 @@ struct CSCSettingsView: View {
                                         .tag(fontDesign)
                                 }
                             }
+                            .frame(minWidth: 96)
 
                             Stepper(value: $settings.textEntryFontSize) {
                                 Text(String(format: "%.1f pt", settings.textEntryFontSize))

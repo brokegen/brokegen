@@ -456,14 +456,14 @@ class _OneModel:
             chunk_size: int = inference_options.prompt_eval_batch_size
             tokens_parsed: int = 0
 
-            with StatusContext(f"[lcp] Prompt eval: {cfr_prompt_token_len} tokens, batch size {chunk_size}", status_holder):
+            with StatusContext(f"[lcp] Prompt eval: {cfr_prompt_token_len:_} tokens total, batch size {chunk_size}", status_holder):
                 while tokens_parsed < cfr_prompt_token_len:
                     self.underlying_model.create_completion(
                         tokenized_prompt[:tokens_parsed + chunk_size], **chunking_model_params)
                     tokens_parsed += chunk_size
 
                     elapsed_time: timedelta = datetime.now() - start_time
-                    status_holder.set(f"[lcp] Prompt eval: {tokens_parsed=} of {cfr_prompt_token_len} tokens in {elapsed_time.total_seconds():_.3f} seconds")
+                    status_holder.set(f"[lcp] Prompt eval: {tokens_parsed:_} of {cfr_prompt_token_len:_} tokens total in {elapsed_time.total_seconds():_.3f} seconds")
                     await asyncio.sleep(0)
 
                 logger.warning(f"Using chunked prompt eval, timings.n_eval will probably be off by {cfr_prompt_token_len / chunk_size} tokens")
@@ -956,6 +956,7 @@ class LlamaCppProvider(BaseProvider):
         prompt_override: PromptText | None = await retrieval_context
         if prompt_override is not None:
             status_holder.set(f"[lcp] {inference_model.human_id}: running inference with retrieval context of {len(prompt_override):_} chars")
+
             rag_message = ChatMessage(
                 role="user",
                 content=prompt_override,
@@ -963,7 +964,8 @@ class LlamaCppProvider(BaseProvider):
 
             if messages_list and messages_list[-1].role == "user":
                 # TODO: Is this really how we want to implement RAG? Overriding the user message?
-                messages_list[-1] = rag_message
+                messages_list.pop()
+                messages_list.append(rag_message)
             else:
                 messages_list.append(rag_message)
 
