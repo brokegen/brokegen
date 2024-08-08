@@ -467,9 +467,11 @@ class _OneModel:
             suppressed_model_verbose: bool = self.underlying_model.verbose
             self.underlying_model.verbose = False
 
+            last_tokens_parsed: int = 0
             last_timing_print: datetime = START_TIME
-            timing_print_interval: float = 5.0
+            timing_print_interval: float = 3.0
 
+            logger.info(f"[lcp] Prompt eval will be chunked, `timings.n_eval` may be off by {cfr_prompt_token_len / CHUNK_SIZE:_.1f} tokens")
             with StatusContext(f"[lcp] Prompt eval: {cfr_prompt_token_len:_} tokens total, batch size {CHUNK_SIZE}",
                                status_holder):
                 while tokens_parsed < cfr_prompt_token_len:
@@ -481,21 +483,28 @@ class _OneModel:
                     estimated_time: float = (cfr_prompt_token_len - tokens_parsed) / tokens_parsed * elapsed_time
 
                     status_holder.set(
-                        f"[lcp] Prompt eval: {tokens_parsed:_} of {cfr_prompt_token_len:_} tokens total"
-                        f", {elapsed_time:_.3f} seconds elapsed + {estimated_time:_.0f}s remaining")
+                        f"[lcp] Prompt eval: {tokens_parsed} of {cfr_prompt_token_len:_} tokens total"
+                        f", {elapsed_time: >7_.3f} seconds elapsed + {estimated_time:_.0f}s remaining")
 
                     # Print similar timing info to the console, but throttled by time.
                     if suppressed_model_verbose:
-                        time_since_print: timedelta = datetime.now(tz=timezone.utc) - last_timing_print
-                        if time_since_print.total_seconds() > timing_print_interval:
+                        count_since_print: int = tokens_parsed - last_tokens_parsed
+                        time_since_print: float = (datetime.now(tz=timezone.utc) - last_timing_print).total_seconds()
+
+                        # Skip the first print, since it has the model load time etc
+                        if last_tokens_parsed == 0:
+                            last_tokens_parsed = tokens_parsed
+                            last_timing_print = datetime.now(tz=timezone.utc)
+
+                        elif time_since_print > timing_print_interval:
                             logger.debug(
-                                f"[lcp] Prompt eval: {tokens_parsed:_} of {cfr_prompt_token_len:_} tokens total"
-                                f", {elapsed_time:_.3f} seconds elapsed + {estimated_time:_.3f}s remaining")
+                                f"[lcp] Prompt eval: {tokens_parsed: >6_} of {cfr_prompt_token_len:_} tokens total"
+                                f", {elapsed_time + estimated_time: >9_.3f} secs estimated total at {count_since_print / time_since_print: >6_.3f} tokens/sec")
+
+                            last_tokens_parsed = tokens_parsed
                             last_timing_print = datetime.now(tz=timezone.utc)
 
                     await asyncio.sleep(0)
-
-                logger.warning(f"Splitting prompt eval into chunks; `timings.n_eval` will probably be off by {cfr_prompt_token_len / CHUNK_SIZE:_.1f} tokens")
 
             self.underlying_model.verbose = suppressed_model_verbose
             return self.underlying_model.create_completion(tokenized_prompt, **model_params), cfr_prompt_token_len
