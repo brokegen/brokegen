@@ -31,9 +31,11 @@ class OneSequenceViewModel {
     @ObservationIgnored var bufferedResponseContent: String = ""
     @ObservationIgnored var bufferedResponseLastFlush: Date = Date.distantPast
     var responseInEdit: TemporaryChatMessage? = nil
-    @ObservationIgnored private var receivedDone: Int = -1
-    @ObservationIgnored private var receivedPartial: Int = -1
-    @ObservationIgnored private var receivedExtra: Int = -1
+    // These have to be initial-zero because of how we handle the "model info" message.
+    // TODO: Find a place to reset these between BlankOSV and sequenceContinue()
+    @ObservationIgnored private var receivedDone: Int = 0
+    @ObservationIgnored private var receivedPartial: Int = 0
+    @ObservationIgnored private var receivedExtra: Int = 0
     var receiving: Bool {
         /// This field does double duty to indicate whether we are currently receiving data.
         /// `nil` before first data, and then reset to `nil` once we're done receiving.
