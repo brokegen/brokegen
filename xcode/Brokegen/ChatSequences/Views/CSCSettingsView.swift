@@ -409,23 +409,23 @@ struct CSCSettingsView: View {
                             Text("/")
 
                             let stepSize: Int = { referenceSize in
-                                if referenceSize < 32 {
+                                if referenceSize <= 32 {
                                     return 4
                                 }
                                 // Incidentally, the reference/step size increase by 4x each time.
-                                else if referenceSize < 128 {
+                                else if referenceSize <= 128 {
                                     return 8
                                 }
-                                else if referenceSize < 512 {
+                                else if referenceSize <= 512 {
                                     return 64
                                 }
-                                else if referenceSize < 2_048 {
+                                else if referenceSize <= 2_048 {
                                     return 256
                                 }
-                                else if referenceSize < 8_192 {
+                                else if referenceSize <= 8_192 {
                                     return 1_024
                                 }
-                                else if referenceSize < 32_768 {
+                                else if referenceSize <= 32_768 {
                                     return 4_096
                                 }
                                 else {
