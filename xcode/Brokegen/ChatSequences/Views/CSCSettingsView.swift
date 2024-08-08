@@ -108,7 +108,7 @@ struct CSCSettingsView: View {
                                         .tag(fontDesign)
                                 }
                             }
-                            .frame(minWidth: 96)
+                            .frame(minWidth: 144)
 
                             Stepper(value: $settings.messageFontSize) {
                                 Text(String(format: "%.1f pt", settings.messageFontSize))
@@ -127,7 +127,7 @@ struct CSCSettingsView: View {
                                         .tag(fontDesign)
                                 }
                             }
-                            .frame(minWidth: 96)
+                            .frame(minWidth: 144)
 
                             Stepper(value: $settings.textEntryFontSize) {
                                 Text(String(format: "%.1f pt", settings.textEntryFontSize))
@@ -180,6 +180,8 @@ struct CSCSettingsView: View {
 
                 GridRow {
                     Text("Force retrieval-augmented generation on every query")
+                    // This enables text wrapping, since previous rows are priority: 1.0
+                        .layoutPriority(0.2)
 
                     Toggle(isOn: $settings.defaults.forceRetrieval) {}
                         .toggleStyle(.switch)
@@ -378,8 +380,10 @@ struct CSCSettingsView: View {
                         VStack(alignment: .leading) {
                             Text("[global] Batch size for prompt evaluation")
                                 .layoutPriority(1.0)
-                            Text("Smaller sizes take longer due to prefix-matching. Default: disabled")
+                            Text("Smaller sizes take longer due to prefix-matching.")
                                 .foregroundStyle(Color(.disabledControlTextColor))
+                            // This enables text wrapping, since previous rows are priority: 1.0
+                                .layoutPriority(0.2)
                         }
 
                         HStack {
@@ -432,7 +436,6 @@ struct CSCSettingsView: View {
                             Stepper(value: $settings.promptEvalBatchSize, step: stepSize) {
                                 Text("\(settings.promptEvalBatchSize)")
                             }
-                            .frame(maxWidth: 240)
 
                             Text("tokens")
 
