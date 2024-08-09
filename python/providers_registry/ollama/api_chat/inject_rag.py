@@ -11,7 +11,7 @@ from audit.http import AuditDB
 from client.database import HistoryDB
 from inference.continuation_routes import with_retrieval
 from inference.iterators import decode_from_bytes, stream_str_to_json
-from inference.prompting.templating import apply_llm_template
+from providers_registry.ollama.templating import apply_llm_template
 from providers.foundation_models.orm import InferenceReason, FoundationModelRecordOrm
 from providers.registry import InferenceOptions
 from providers_registry.ollama.api_chat.converter import convert_chat_to_generate

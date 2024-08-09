@@ -11,7 +11,7 @@ from _util.json import safe_get, JSONDict
 from _util.json_streaming import JSONStreamingResponse, NDJSONStreamingResponse
 from _util.typing import PromptText, TemplatedPromptText
 from inference.iterators import stream_str_to_json
-from inference.prompting.templating import apply_llm_template
+from providers_registry.ollama.templating import apply_llm_template
 from providers.foundation_models.orm import FoundationModelRecordOrm
 from providers.registry import InferenceOptions
 from .logging import OllamaRequestContentJSON
