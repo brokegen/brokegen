@@ -67,20 +67,20 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
     )
     async def create_model(
             response: fastapi.Response,
-            model_in: FoundationModelAddRequest,
-            provider_in: ProviderAddRequest,
+            in_model: FoundationModelAddRequest,  # renamed due to pydantic namespace conflict
+            in_provider: ProviderAddRequest,
             history_db: HistoryDB = Depends(get_history_db),
     ) -> FoundationModelAddResponse:
-        provider_record: ProviderRecord = make_provider_record(provider_in, "POST /models", history_db)
+        provider_record: ProviderRecord = make_provider_record(in_provider, "POST /models", history_db)
         # Replace the model_in's provider_identifiers with a sorted one
-        model_in.provider_identifiers = provider_record.identifiers
+        in_model.provider_identifiers = provider_record.identifiers
 
-        maybe_model = lookup_foundation_model(model_in.human_id, provider_record.identifiers, history_db)
+        maybe_model = lookup_foundation_model(in_model.human_id, provider_record.identifiers, history_db)
         if maybe_model is not None:
             # Check in-depth to see if we have anything actually-identical
-            maybe_model1 = lookup_foundation_model_detailed(model_in, history_db)
+            maybe_model1 = lookup_foundation_model_detailed(in_model, history_db)
             if maybe_model1 is not None:
-                maybe_model1.merge_in_updates(model_in)
+                maybe_model1.merge_in_updates(in_model)
                 history_db.add(maybe_model)
                 history_db.commit()
 
@@ -90,7 +90,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 )
 
         new_model = FoundationModelRecordOrm(
-            **model_in.model_dump(),
+            **in_model.model_dump(),
         )
         history_db.add(new_model)
         history_db.commit()
