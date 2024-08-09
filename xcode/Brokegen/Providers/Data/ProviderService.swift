@@ -108,11 +108,16 @@ class DefaultProviderService: ProviderService {
         }
     }
 
-    func doFetchAvailableModels() async throws {
+    func doFetchAvailableModels(preserveExisting: Bool = false) async throws {
         let allModelsData = await self.getDataBlocking("/providers/any/any/models")
         guard allModelsData != nil else { throw ProviderServiceError.noResponseContentReturned }
 
         let oldCount = self.allModels.count
+
+        if !preserveExisting {
+            self.allModels.removeAll()
+        }
+
         for (_, modelData) in JSON(allModelsData!) {
             let model = FoundationModel(modelData.dictionaryValue)
             //print("[TRACE] Adding \(model) => \(self.allModels.count) total models")
