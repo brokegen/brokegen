@@ -5,28 +5,50 @@ socks_proxy_wheel := $(wildcard $(HOME)/Documents/PySocks-1.7.1-py3-none-any.whl
 
 
 
-.PHONY: server
-build: server
-dist: server
-server: $(pyinstaller_inference_venv)
+server-onefile: dist/server-onefile-tmp
+	# Try running it, just to confirm it's executable
+	"./$^" --help > /dev/null
+	# Check that the size of the target file hasn't changed by too much
+	test -n "$$(find "$^" -a -size +120M)" \
+	    && test -n "$$(find "$^" -a -size -180M)" \
+	    && mv "$^" "dist/brokegen-server"
+
+# Make this .PHONY because we rely on pyinstaller to rebuild constantly.
+.PHONY: dist/server-onefile-tmp
+dist/server-onefile-tmp: $(pyinstaller_inference_venv)
 	source "$(pyinstaller_inference_venv)"/bin/activate \
 		&& arch -x86_64 pyinstaller \
 			--target-architecture x86_64 \
+			--log-level WARN \
 			--noupx --console \
 			--noconfirm \
 			--paths $(python_root) \
 			--hidden-import llama_cpp \
 			--collect-all llama_cpp \
 			--specpath build \
-			--onefile --name "brokegen-server" \
+			--onefile \
+			--name "server-onefile-tmp" \
 			$(python_root)_apps/server.py
-	# TODO: Check that the size of the target file hasn't dropped by too much
 
-.PHONY: server-onedir
-server-onedir: $(pyinstaller_inference_venv)
+
+
+build: server-onedir
+dist: server-onedir
+server-onedir: dist/server-onedir-tmp
+	"./dist/server-onedir-tmp/server-onedir-tmp" --help > /dev/null
+	rm -rf dist/server-internal
+	test "$$(du -sm dist/server-onedir-tmp/ | awk '{print $$1}')" -gt "400" \
+	    && test "$$(du -sm dist/server-onedir-tmp/ | awk '{print $$1}')" -lt "500" \
+	    && mv dist/server-onedir-tmp/server-internal dist/server-internal \
+	    && mv dist/server-onedir-tmp/server-onedir-tmp dist/server-onedir
+	rmdir dist/server-onedir-tmp || true
+
+.PHONY: dist/server-onedir-tmp
+dist/server-onedir-tmp: $(pyinstaller_inference_venv)
 	source "$(pyinstaller_inference_venv)"/bin/activate \
 		&& arch -x86_64 pyinstaller \
 			--target-architecture x86_64 \
+			--log-level WARN \
 			--noupx --console \
 			--noconfirm \
 			--debug noarchive \
@@ -34,7 +56,8 @@ server-onedir: $(pyinstaller_inference_venv)
 			--hidden-import llama_cpp \
 			--collect-all llama_cpp \
 			--specpath build \
-			--onedir --name "brokegen-server-onedir" \
+			--onedir --contents-directory "server-internal" \
+			--name "server-onedir-tmp" \
 			$(python_root)_apps/server.py
 
 .PHONY: run-server
