@@ -26,7 +26,7 @@ from inference.logging import construct_new_sequence_from, construct_assistant_m
 from providers.foundation_models.orm import InferenceEventOrm, FoundationModelRecordOrm
 from providers.registry import ProviderRegistry, InferenceOptions
 from providers_registry.ollama.api_chat.inject_rag import do_proxy_chat_rag
-from providers_registry.ollama.api_chat.intercept import do_capture_chat_messages
+from client_ollama.emulate_api_chat import do_capture_chat_messages
 from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON, OllamaResponseContentJSON, \
     finalize_inference_job, ollama_response_consolidator, ollama_log_indexer
 from providers_registry.ollama.api_generate import do_generate_raw_templated
