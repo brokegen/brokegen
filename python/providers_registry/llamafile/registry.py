@@ -169,7 +169,7 @@ class LlamafileProvider(BaseProvider):
             )
             model_props = response.json()
 
-        except httpx.ConnectError:
+        except (httpx.ConnectError, httpx.ConnectTimeout):
             return
 
         access_time = datetime.now(tz=timezone.utc)

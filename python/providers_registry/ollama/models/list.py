@@ -54,7 +54,7 @@ async def do_list_available_models(
     )
     try:
         response: httpx.Response = await provider.client.send(upstream_request)
-    except httpx.ConnectError as e:
+    except (httpx.ConnectError, httpx.ConnectTimeout) as e:
         logger.error(f"Failed to fetch new ollama models, check if ollama is running: {e}")
         return
 

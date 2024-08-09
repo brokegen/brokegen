@@ -319,5 +319,5 @@ def install_forwards(app: FastAPI, force_ollama_rag: bool):
     ):
         try:
             return await forward_request_nolog("/", request)
-        except httpx.ConnectError:
+        except (httpx.ConnectError, httpx.ConnectTimeout):
             return starlette.responses.Response(status_code=500)
