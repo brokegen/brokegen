@@ -41,7 +41,6 @@ server-onedir: dist/server-onedir-tmp
 	    && test "$$(du -sm dist/server-onedir-tmp/ | awk '{print $$1}')" -lt "500" \
 	    && mv dist/server-onedir-tmp/server-internal dist/server-internal \
 	    && mv dist/server-onedir-tmp/server-onedir-tmp dist/server-onedir
-	rmdir dist/server-onedir-tmp || true
 
 .PHONY: dist/server-onedir-tmp
 dist/server-onedir-tmp: $(pyinstaller_inference_venv)

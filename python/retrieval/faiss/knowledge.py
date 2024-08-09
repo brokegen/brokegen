@@ -41,7 +41,7 @@ class RAMEstimator:
 
     def __exit__(self, exc_type, exc_value, tb):
         end_size, _ = tracemalloc.get_traced_memory()
-        self.log_fn(f"Memory size delta for {self.desc}: {end_size - self.start_size:_}")
+        self.log_fn(f"{end_size - self.start_size: >+12_} bytes RAM for {self.desc}")
 
         if self.manage_tracemalloc_hooks:
             tracemalloc.stop()

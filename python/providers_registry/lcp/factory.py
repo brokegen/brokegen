@@ -47,6 +47,7 @@ class LlamaCppProviderFactory(ProviderFactory):
                 return None
 
         except ImportError:
+            logger.exception("[lcp] Failed to initialize LlamaCppProvider, pretending it doesn't exist")
             return None
 
     async def discover(

@@ -117,7 +117,7 @@ class VectorStoreReadOnly:
 
     def _load_from(self, parent_dir: str, shard_id: VectorStoreShardID) -> VectorStoreShard | None:
         try:
-            with BlockTimer(logger.info, f"load from \"{parent_dir}\" / \"{shard_id}\""):
+            with BlockTimer(logger.debug, f"load from \"{parent_dir}\" / \"{shard_id}\""):
                 new_vectordb = FAISS.load_local(
                     parent_dir,
                     self.embedder,
@@ -163,5 +163,8 @@ class VectorStoreReadOnly:
             return
 
         new_entries_count = len(self.unified_vectordb.index_to_docstore_id)
-        logger.debug(f"Merged {new_entries_count - original_entries_count:_} embeddings into main memory store"
-                     f" => {new_entries_count:_} total entries")
+        logger.debug(
+            # 12 chars long to line up with following RAMEstimator line
+            f"{new_entries_count - original_entries_count: >+12_} embeddings just added"
+            f", {new_entries_count: >12_} total in main memory store"
+        )
