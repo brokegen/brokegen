@@ -20,7 +20,7 @@ dist-xcode: build/xcode-macos-export-options.plist
 
 .PHONY: build-xcode
 build: build-xcode
-build-xcode: server-onefile
+build-xcode: server-onedir
 build-xcode:
 	xcodebuild archive \
 		-quiet \
@@ -47,7 +47,7 @@ dist/Brokegen.app.tzst: build/xcode-macos-export-options.plist
 
 .PHONY: build-xcode-release
 build: build-xcode-release
-build-xcode-release: server
+build-xcode-release: server-onefile
 build-xcode-release:
 	xcodebuild archive \
 		-quiet \
