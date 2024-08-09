@@ -8,9 +8,13 @@ socks_proxy_wheel := $(wildcard $(HOME)/Documents/PySocks-1.7.1-py3-none-any.whl
 server-onefile: dist/server-onefile-tmp
 	# Try running it, just to confirm it's executable
 	"./$^" --help > /dev/null
-	# Check that the size of the target file hasn't changed by too much
-	test -n "$$(find "$^" -a -size +120M)" \
-	    && test -n "$$(find "$^" -a -size -180M)" \
+	# Check that the size of the target file hasn't changed by too much.
+	# NB If these are unreasonably large, uninstall a bunch of packages:
+	#
+	#     pip uninstall torch pyarrow transformers pandas sympy
+	#
+	test -n "$$(find "$^" -a -size +75M)" \
+	    && test -n "$$(find "$^" -a -size -91M)" \
 	    && mv "$^" "dist/brokegen-server"
 
 # Make this .PHONY because we rely on pyinstaller to rebuild constantly.
@@ -37,8 +41,8 @@ dist: server-onedir
 server-onedir: dist/server-onedir-tmp
 	"./dist/server-onedir-tmp/server-onedir-tmp" --help > /dev/null
 	rm -rf dist/server-internal
-	test "$$(du -sm dist/server-onedir-tmp/ | awk '{print $$1}')" -gt "400" \
-	    && test "$$(du -sm dist/server-onedir-tmp/ | awk '{print $$1}')" -lt "500" \
+	test "$$(du -sm dist/server-onedir-tmp/ | awk '{print $$1}')" -gt "261" \
+	    && test "$$(du -sm dist/server-onedir-tmp/ | awk '{print $$1}')" -lt "319" \
 	    && mv dist/server-onedir-tmp/server-internal dist/server-internal \
 	    && mv dist/server-onedir-tmp/server-onedir-tmp dist/server-onedir
 
