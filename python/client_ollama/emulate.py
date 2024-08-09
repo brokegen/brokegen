@@ -1,4 +1,5 @@
 import hashlib
+import json
 import logging
 from datetime import datetime, timezone
 from typing import AsyncIterable, Awaitable, AsyncIterator, AsyncGenerator
@@ -10,18 +11,20 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy import select
 from starlette.requests import Request
 
-from _util.json import JSONDict, safe_get
+from _util.json import JSONDict, safe_get, JSONArray
 from _util.json_streaming import JSONStreamingResponse, emit_keepalive_chunks
 from _util.status import ServerStatusHolder
-from _util.typing import FoundationModelHumanID, FoundationModelRecordID
+from _util.typing import FoundationModelHumanID, FoundationModelRecordID, PromptText
 from audit.http import AuditDB, get_db as get_audit_db
 from client.database import HistoryDB, get_db as get_history_db
+from client.sequence import ChatSequenceOrm
 from inference.iterators import dump_to_bytes
 from providers.foundation_models.orm import FoundationModelRecord, FoundationModelRecordOrm
 from providers.orm import ProviderID, ProviderType, ProviderLabel
-from providers.registry import ProviderRegistry, BaseProvider
+from providers.registry import ProviderRegistry, BaseProvider, InferenceOptions
 from providers_registry.ollama.api_chat.logging import OllamaRequestContentJSON, OllamaResponseContentJSON, \
     OllamaGenerateResponse
+from .emulate_api_chat import do_capture_chat_messages
 from .forward import forward_request
 
 logger = logging.getLogger(__name__)
@@ -75,6 +78,24 @@ async def emulate_api_show(
     return {}
 
 
+async def _do_keepalive(
+        primordial: AsyncIterator[OllamaGenerateResponse],
+        request_content: OllamaResponseContentJSON,
+) -> AsyncGenerator[JSONDict, None]:
+    async for chunk in emit_keepalive_chunks(primordial, 3.0, None):
+        if chunk is None:
+            current_time = datetime.now(tz=timezone.utc)
+            yield {
+                "model": safe_get(request_content, "model"),
+                "created_at": current_time.isoformat() + "Z",
+                "done": False,
+                "response": "",
+            }
+
+        else:
+            yield chunk
+
+
 async def emulate_api_generate(
         request_content: OllamaRequestContentJSON,
         status_holder: ServerStatusHolder,
@@ -122,12 +143,69 @@ async def emulate_api_generate(
     return iter0
 
 
+async def emulate_api_chat(
+        original_request: starlette.requests.Request,
+        status_holder: ServerStatusHolder,
+        history_db: HistoryDB,
+        audit_db: AuditDB,
+        registry: ProviderRegistry,
+) -> AsyncIterator[OllamaGenerateResponse]:
+    request_content: dict = orjson.loads(await original_request.body())
+    model_id, human_id = unpack_name(request_content['model'])
+
+    inference_model: FoundationModelRecordOrm = history_db.execute(
+        select(FoundationModelRecordOrm)
+        .where(FoundationModelRecordOrm.id == model_id)
+        .order_by(FoundationModelRecordOrm.last_seen.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    if inference_model is None:
+        raise RuntimeError(f"Couldn't find foundation model with {model_id=}")
+
+    provider: BaseProvider | None = registry.provider_from(inference_model)
+
+    async def real_response_maker(request_content: JSONDict) -> AsyncIterator[JSONDict]:
+        # Assume that these are messages from a third-party client, and try to feed them into the history database.
+        chat_messages: JSONArray | None = safe_get(request_content, 'messages')
+        if not chat_messages:
+            raise RuntimeError("No 'messages' provided in call to /api/chat")
+
+        captured_sequence: ChatSequenceOrm | None
+        requested_system_message: PromptText | None
+        captured_sequence, requested_system_message = do_capture_chat_messages(chat_messages, history_db)
+
+        async def no_retrieval_context() -> PromptText | None:
+            return None
+
+        return await provider.chat(
+            sequence_id=captured_sequence.id,
+            inference_model=inference_model,
+            inference_options=InferenceOptions(
+                inference_options=json.dumps(safe_get(request_content, "options")),
+            ),
+            retrieval_context=no_retrieval_context(),
+            status_holder=status_holder,
+            history_db=history_db,
+            audit_db=audit_db,
+        )
+
+    async def nonblocking_response_maker(
+            real_response_maker: Awaitable[AsyncIterator[JSONDict]],
+    ) -> AsyncIterator[OllamaGenerateResponse]:
+        async for item in (await real_response_maker):
+            yield item
+
+    awaitable: Awaitable[AsyncIterator[JSONDict]] = real_response_maker(request_content)
+    iter0: AsyncIterator[JSONDict] = nonblocking_response_maker(awaitable)
+    return iter0
+
+
 def install_forwards(router_ish: FastAPI):
     @router_ish.get("/providers/any/any/ollama-emulate/{ollama_get_path:path}")
     @router_ish.get("/ollama-emulate/{ollama_get_path:path}")
     @router_ish.post("/ollama-emulate/{ollama_post_path:path}")
     async def ollama_get(
-            original_request: Request,
+            original_request: starlette.requests.Request,
             ollama_get_path: str | None = None,
             ollama_post_path: str | None = None,
             history_db: HistoryDB = Depends(get_history_db),
@@ -148,33 +226,16 @@ def install_forwards(router_ish: FastAPI):
             return await emulate_api_show(request_content['name'], history_db)
 
         if ollama_post_path == "api/generate":
-            async def do_keepalive(
-                    primordial: AsyncIterator[OllamaGenerateResponse],
-            ) -> AsyncGenerator[JSONDict, None]:
-                async for chunk in emit_keepalive_chunks(primordial, 3.0, None):
-                    if chunk is None:
-                        current_time = datetime.now(tz=timezone.utc)
-                        yield {
-                            "model": safe_get(request_content, "model"),
-                            "created_at": current_time.isoformat() + "Z",
-                            "done": False,
-                            "response": "",
-                        }
-
-                    else:
-                        yield chunk
-
             async def add_newlines(primordial: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
                 async for chunk in primordial:
                     yield chunk + b'\n'
 
             status_holder = ServerStatusHolder("Processing /api/generate")
-
             request_content: dict = orjson.loads(await original_request.body())
 
             iter0: AsyncIterator[OllamaResponseContentJSON] = await emulate_api_generate(
                 request_content, status_holder, history_db, audit_db, registry)
-            iter1: AsyncIterator[OllamaGenerateResponse] = do_keepalive(iter0)
+            iter1: AsyncIterator[OllamaGenerateResponse] = _do_keepalive(iter0, request_content)
             iter2: AsyncIterator[bytes] = dump_to_bytes(iter1)
             iter3: AsyncIterator[bytes] = add_newlines(iter2)
 
@@ -182,6 +243,11 @@ def install_forwards(router_ish: FastAPI):
                 content=iter3,
                 status_code=218,
             )
+
+        if ollama_post_path == "api/chat":
+            status_holder = ServerStatusHolder("Processing /api/chat")
+            return await emulate_api_chat(
+                original_request, status_holder, history_db, audit_db, registry)
 
         raise HTTPException(501, "endpoint not implemented")
 
