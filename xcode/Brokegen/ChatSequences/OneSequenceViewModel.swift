@@ -265,17 +265,20 @@ class OneSequenceViewModel {
         }
 
         // NB This block is what actually marks the Sequence as "done" and gives us whatever updates we might need.
+        // This also assumes that the next section, "new_message_id", has not happened yet, but will let us extend the new sequence with a new message.
         if let replacementSequenceId: ChatSequenceServerID = jsonData["new_sequence_id"].int {
             flushResponseBuffer()
             let originalSequenceId = self.sequence.serverId
 
-            // Set the old sequence as non-leaf
+            // Mark the old sequence as non-leaf.
             let nonLeafSequence = self.sequence.replaceIsLeaf(false)
             print("[TRACE] receiveHandler calling updateSequenceOffline: ChatSequence#\(originalSequenceId).isLeafSequence = false")
             self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: nonLeafSequence)
 
             // And then tell everyone to point to the new sequence
-            let updatedSequence = self.sequence.replaceServerId(replacementSequenceId)
+            let updatedSequence = self.sequence
+                .replaceServerId(replacementSequenceId)
+                .replaceIsLeaf(true)
             print("[TRACE] receiveHandler calling updateSequenceOffline: ChatSequence#\(originalSequenceId) => \(replacementSequenceId)")
             self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: updatedSequence)
         }
