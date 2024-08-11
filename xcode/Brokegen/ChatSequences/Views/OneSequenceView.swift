@@ -10,6 +10,8 @@ struct MultiMessageView: View {
     var viewModel: OneSequenceViewModel
     var settings: CSCSettingsService.SettingsProxy
 
+    @State var isAppActive: Bool = true
+
     // This is a get-only property, partly to check access, but mostly to see if we can limit SwiftUI update scope.
     var messages: [MessageLike] {
         get { viewModel.sequence.messages }
@@ -87,7 +89,7 @@ struct MultiMessageView: View {
             let messageIndent = settings.showMessageHeaders ? 0.0 : settings.messageFontSize * 2
             // Disable animation if we're rendering Markdown, because something in MarkdownUI makes it fade really poorly
             // NB This also affects scrollToBottomOnNew
-            let shouldAnimate = settings.animateNewResponseText && !settings.renderAsMarkdown
+            let shouldAnimate = isAppActive && settings.animateNewResponseText && !settings.renderAsMarkdown
 
             OneMessageView(
                 .temporary(viewModel.responseInEdit!, .assistant),
@@ -97,6 +99,12 @@ struct MultiMessageView: View {
                 expandContent: true,
                 renderAsMarkdown: settings.renderAsMarkdown
             )
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.willResignActiveNotification)) { _ in
+                self.isAppActive = false
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                self.isAppActive = true
+            }
             .animation(shouldAnimate ? .easeIn : nil, value: viewModel.responseInEdit)
             .padding(.leading, messageIndent)
             .id(-1)
