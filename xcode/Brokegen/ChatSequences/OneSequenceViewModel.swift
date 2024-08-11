@@ -33,9 +33,9 @@ class OneSequenceViewModel {
     var responseInEdit: TemporaryChatMessage? = nil
     // These have to be initial-zero because of how we handle the "model info" message.
     // TODO: Find a place to reset these between BlankOSV and sequenceContinue()
-    @ObservationIgnored private var receivedDone: Int = 0
-    @ObservationIgnored private var receivedPartial: Int = 0
-    @ObservationIgnored private var receivedExtra: Int = 0
+    @ObservationIgnored private var receivedDone: Int = -1
+    @ObservationIgnored private var receivedPartial: Int = -1
+    @ObservationIgnored private var receivedExtra: Int = -1
     var receiving: Bool {
         /// This field does double duty to indicate whether we are currently receiving data.
         /// `nil` before first data, and then reset to `nil` once we're done receiving.
@@ -229,7 +229,6 @@ class OneSequenceViewModel {
             )
 
             sequence.messages.append(.temporary(templated, .serverInfo))
-            // TODO: Figure out the weird times where we can get messages placed out of order.
             receivedExtra += 1
 
             // If we get this end-of-prompt field, flush the response content buffer.
@@ -303,8 +302,6 @@ class OneSequenceViewModel {
                     .stored(storedMessage),
                     at: sequence.messages.count - receivedExtra)
                 responseInEdit = nil
-                // TODO: Figure out why messages get returned out of order sometimes, and move this where appropriate.
-                receivedExtra = 0
             }
             else {
                 print("[ERROR] Got `new_message_id` from server, but responseInEdit is nil")

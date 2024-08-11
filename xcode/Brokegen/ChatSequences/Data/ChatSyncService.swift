@@ -137,13 +137,19 @@ class ChatSyncService: ObservableObject {
     func updateSequence(withSameId updatedSequence: ChatSequence, disablePublish: Bool = false) {
         loadedChatSequences[updatedSequence.serverId] = updatedSequence
 
-        // Update matching client models that held the original sequence
+        // Update matching client models that held the original sequence,
+        // but ONLY if it's not currently undergoing a refresh.
         let matchingClientModels = chatSequenceClientModels.filter {
             $0.sequence.serverId == updatedSequence.serverId
         }
 
         for clientModel in matchingClientModels {
-            clientModel.sequence = updatedSequence
+            if clientModel.receiving {
+                print("[INFO] clientModel for \(updatedSequence) is still updating, will ignore incoming JSON model data")
+            }
+            else {
+                clientModel.sequence = updatedSequence
+            }
         }
 
         if !disablePublish {
@@ -153,6 +159,8 @@ class ChatSyncService: ObservableObject {
         }
     }
 
+    // TODO: There's a couple potential race conditions happening with the way this is implemented.
+    // Multiple ChatSequence updates can happen at once, and only the latest one might get reflected.
     func updateSequenceOffline(_ originalSequenceId: ChatSequenceServerID, withReplacement updatedSequence: ChatSequence) {
         loadedChatSequences[updatedSequence.serverId] = updatedSequence
 
