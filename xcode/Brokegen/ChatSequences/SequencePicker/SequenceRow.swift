@@ -131,7 +131,7 @@ struct RenameableSequenceRow: View {
     let sequence: ChatSequence
     let hasPending: Bool
     @State private var newSequenceName: String
-    let action: ((String) -> Void)
+    let action: ((String) async -> Void)
 
     @FocusState private var isFocused: Bool
     @State private var isHovered: Bool = false
@@ -139,7 +139,7 @@ struct RenameableSequenceRow: View {
     init(
         _ sequence: ChatSequence,
         hasPending: Bool = false,
-        action: @escaping (String) -> Void
+        action: @escaping (String) async -> Void
     ) {
         self.sequence = sequence
         self.hasPending = hasPending
@@ -206,7 +206,9 @@ struct RenameableSequenceRow: View {
                                 }
                             }
                             .onSubmit {
-                                action(newSequenceName)
+                                Task { @MainActor in
+                                    await action(newSequenceName)
+                                }
                             }
 
                         Image(systemName: "pencil")

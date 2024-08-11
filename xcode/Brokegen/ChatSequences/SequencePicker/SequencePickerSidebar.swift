@@ -191,7 +191,7 @@ struct MiniSequencePickerSidebar: View {
             
             Section(header: Text("Chat Data")) {
                 Button {
-                    chatService.pinChatSequence(sequence, pinned: !sequence.userPinned)
+                    chatService.pin(sequenceId: sequence.serverId, pinned: !sequence.userPinned)
                 } label: {
                     Toggle(isOn: .constant(sequence.userPinned)) {
                         Text("Pin ChatSequence in sidebar")
@@ -199,7 +199,9 @@ struct MiniSequencePickerSidebar: View {
                 }
 
                 Button {
-                    _ = chatService.autonameChatSequence(sequence, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
+                    Task { @MainActor in
+                        _ = try? await chatService.autonameBlocking(sequenceId: sequence.serverId, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
+                    }
                 } label: {
                     Text(appSettings.stillPopulating
                          ? "Autoname disabled (still loading)"

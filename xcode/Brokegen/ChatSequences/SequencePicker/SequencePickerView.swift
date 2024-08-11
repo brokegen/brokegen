@@ -129,8 +129,11 @@ struct SequencePickerView: View {
     @ViewBuilder
     func sectionContextMenu(for sectionName: String, sequences: [ChatSequence]) -> some View {
         Button {
-            for sequence in sequences {
-                _ = chatService.autonameChatSequence(sequence, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
+            // NNB We intentionally run this sequentially, so rate limiting is done on our side.
+            Task { @MainActor in
+                for sequence in sequences {
+                    _ = try? await chatService.autonameBlocking(sequenceId: sequence.serverId, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
+                }
             }
         } label: {
             Text(appSettings.preferredAutonamingModel == nil
@@ -149,7 +152,7 @@ struct SequencePickerView: View {
 
         Section(header: Text("Chat Data")) {
             Button {
-                chatService.pinChatSequence(sequence, pinned: !sequence.userPinned)
+                chatService.pin(sequenceId: sequence.serverId, pinned: !sequence.userPinned)
             } label: {
                 Toggle(isOn: .constant(sequence.userPinned)) {
                     Text("Pin ChatSequence in sidebar")
@@ -157,7 +160,9 @@ struct SequencePickerView: View {
             }
 
             Button {
-                _ = chatService.autonameChatSequence(sequence, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
+                Task { @MainActor in
+                    _ = try? await chatService.autonameBlocking(sequenceId: sequence.serverId, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
+                }
             } label: {
                 Text(appSettings.stillPopulating
                      ? "Autoname disabled (still loading)"
@@ -250,27 +255,14 @@ struct SequencePickerView: View {
     func sequenceRow(_ sequence: ChatSequence) -> some View {
         if self.isRenaming.contains(where: { $0 == sequence }) {
             RenameableSequenceRow(sequence, hasPending: hasPendingInference(sequence)) { newHumanDesc in
-                guard newHumanDesc != sequence.humanDesc else {
-                    self.isRenaming.removeAll { $0 == sequence }
-                    return
+                print("[TRACE] Attempting rename from \(sequence.displayRecognizableDesc(replaceNewlines: true))")
+                if let updatedSequence = try? await chatService.renameBlocking(sequenceId: sequence.serverId, to: newHumanDesc) {
+                }
+                else {
+                    print("[TRACE] Failed rename to \(sequence.displayRecognizableDesc(replaceNewlines: true))")
                 }
 
-                print("[TRACE] Attempting rename from \(sequence.displayRecognizableDesc(replaceNewlines: true))")
-                Task {
-                    if let updatedSequence = await chatService.renameChatSequence(sequence, to: newHumanDesc) {
-                        DispatchQueue.main.async {
-                            chatService.updateSequence(withSameId: updatedSequence)
-                            print("[TRACE] Finished rename to \(sequence.displayRecognizableDesc(replaceNewlines: true))")
-                            self.isRenaming.removeAll { $0 == updatedSequence }
-                        }
-                    }
-                    else {
-                        DispatchQueue.main.async {
-                            print("[TRACE] Failed rename to \(sequence.displayRecognizableDesc(replaceNewlines: true))")
-                            self.isRenaming.removeAll { $0 == sequence }
-                        }
-                    }
-                }
+                self.isRenaming.removeAll { $0.serverId == sequence.serverId }
             }
         }
         else {

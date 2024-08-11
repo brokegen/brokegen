@@ -34,57 +34,74 @@ class DefaultChatSyncService: ChatSyncService {
         return try await doFetchChatSequenceDetails(sequenceId)
     }
 
-    override func autonameChatSequence(_ sequence: ChatSequence, preferredAutonamingModel: FoundationModelRecordID?) -> String? {
-        Task {
-            var endpointBuilder = "/sequences/\(sequence.serverId)/autoname?wait_for_response=true"
-            if preferredAutonamingModel != nil {
-                endpointBuilder += "&preferred_autonaming_model=\(preferredAutonamingModel!)"
-            }
+    // TODO: Mark this as requiring @MainActor
+    override func autonameBlocking(
+        sequenceId: ChatSequenceServerID,
+        preferredAutonamingModel: FoundationModelRecordID?
+    ) async throws -> String? {
+        var endpointBuilder = "/sequences/\(sequenceId)/autoname?wait_for_response=true"
+        if preferredAutonamingModel != nil {
+            endpointBuilder += "&preferred_autonaming_model=\(preferredAutonamingModel!)"
+        }
 
-            if let resultData: Data = try? await self.postDataBlocking(nil, endpoint: endpointBuilder) {
-                if let autoname: String = JSON(resultData)["autoname"].string {
-                    // TODO: Holding the `ChatSequence` for so long means we will overwrite any changes made since the start of the function call.
-                    let autonamedSequence = sequence.replaceHumanDesc(desc: autoname)
-                    DispatchQueue.main.async {
-                        self.updateSequence(withSameId: autonamedSequence)
-                    }
-                }
+        if let resultData: Data = try? await self.postDataBlocking(nil, endpoint: endpointBuilder) {
+            if let autoname: String = JSON(resultData)["autoname"].string {
+                // NB We explicitly "re-load" the ChatSequence info because `await` takes time.
+                let autonamedSequence: ChatSequence? = self.loadedChatSequences[sequenceId]?
+                    .replaceHumanDesc(desc: autoname)
+                guard autonamedSequence != nil else { return nil }
+
+                self.updateSequence(withSameId: autonamedSequence!)
+                return autonamedSequence?.humanDesc
             }
         }
 
         return nil
     }
 
-    override func renameChatSequence(_ sequence: ChatSequence, to newHumanDesc: String?) async -> ChatSequence? {
-        do {
-            _ = try await self.postDataBlocking(
-                nil,
-                endpoint: "/sequences/\(sequence.serverId)/human_desc?value=\(newHumanDesc ?? "")")
+    // TODO: Mark this as requiring @MainActor
+    override func renameBlocking(
+        sequenceId: ChatSequenceServerID,
+        to newHumanDesc: String?
+    ) async throws -> ChatSequence? {
+        let sequence: ChatSequence? = loadedChatSequences[sequenceId]
+        guard sequence != nil else { return nil }
+        guard newHumanDesc != sequence!.humanDesc else { return nil }
 
-            return sequence.replaceHumanDesc(desc: newHumanDesc)
-        }
-        catch {
-            print("[WARNING] Failed to upload ChatSequence rename, returning nil")
-            return nil
-        }
+        _ = try await self.postDataBlocking(
+            nil,
+            endpoint: "/sequences/\(sequenceId)/human_desc?value=\(newHumanDesc ?? "")")
+
+        // NB We explicitly "re-load" the ChatSequence info because `await` takes time.
+        let updatedSequence: ChatSequence? = self.loadedChatSequences[sequenceId]?
+            .replaceHumanDesc(desc: newHumanDesc)
+        guard updatedSequence != nil else { return nil }
+
+        self.updateSequence(withSameId: updatedSequence!)
+        print("[TRACE] Finished rename to \(updatedSequence!.displayRecognizableDesc(replaceNewlines: true))")
+        return updatedSequence
     }
 
-    override func pinChatSequence(
-        _ sequence: ChatSequence,
+    override func pin(
+        sequenceId: ChatSequenceServerID,
         pinned userPinned: Bool
     ) {
-        guard userPinned != sequence.userPinned else { return }
+        let sequence: ChatSequence? = loadedChatSequences[sequenceId]
+        guard sequence != nil else { return }
+        guard userPinned != sequence!.userPinned else { return }
 
         Task {
             let result = try? await self.postDataBlocking(
                 nil,
-                endpoint: "/sequences/\(sequence.serverId)/user_pinned?value=\(userPinned)")
+                endpoint: "/sequences/\(sequenceId)/user_pinned?value=\(userPinned)")
             guard result != nil else { return }
 
-            // TODO: Holding the `ChatSequence` for so long means we will overwrite any changes made since the start of the function call.
-            let updatedSequence = sequence.replaceUserPinned(pinned: userPinned)
             DispatchQueue.main.async {
-                self.updateSequence(withSameId: updatedSequence)
+                let latestSequenceUpdated: ChatSequence? = self.loadedChatSequences[sequenceId]?
+                    .replaceUserPinned(pinned: userPinned)
+                if latestSequenceUpdated != nil {
+                    self.updateSequence(withSameId: latestSequenceUpdated!)
+                }
             }
         }
     }

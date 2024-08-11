@@ -107,26 +107,37 @@ class ChatSyncService: ObservableObject {
         return nil
     }
 
-    func autonameChatSequence(_ sequence: ChatSequence, preferredAutonamingModel: FoundationModelRecordID?) -> String? {
+    func autonameBlocking(sequenceId: ChatSequenceServerID, preferredAutonamingModel: FoundationModelRecordID?) async throws -> String? {
+        let sequence: ChatSequence? = loadedChatSequences[sequenceId]
+        guard sequence != nil else { return nil }
+
         if let result = Optional("[mock client-side autoname]") {
-            let autonamedSequence = sequence.replaceHumanDesc(desc: result)
+            let autonamedSequence = sequence!.replaceHumanDesc(desc: result)
             self.updateSequence(withSameId: autonamedSequence)
             return result
         }
         return nil
     }
 
-    func renameChatSequence(_ sequence: ChatSequence, to newHumanDesc: String?) async -> ChatSequence? {
-        return sequence.replaceHumanDesc(desc: newHumanDesc)
+    func renameBlocking(sequenceId: ChatSequenceServerID, to newHumanDesc: String?) async throws -> ChatSequence? {
+        let sequence: ChatSequence? = loadedChatSequences[sequenceId]
+        guard sequence != nil else { return nil }
+        guard newHumanDesc != sequence!.humanDesc else { return nil }
+
+        let updatedSequence = sequence!.replaceHumanDesc(desc: newHumanDesc)
+        self.updateSequence(withSameId: updatedSequence)
+        return updatedSequence
     }
 
-    func pinChatSequence(
-        _ sequence: ChatSequence,
+    func pin(
+        sequenceId: ChatSequenceServerID,
         pinned userPinned: Bool
     ) {
-        guard userPinned != sequence.userPinned else { return }
+        let sequence: ChatSequence? = loadedChatSequences[sequenceId]
+        guard sequence != nil else { return }
+        guard userPinned != sequence!.userPinned else { return }
 
-        let updatedSequence = sequence.replaceUserPinned(pinned: userPinned)
+        let updatedSequence = sequence!.replaceUserPinned(pinned: userPinned)
         self.updateSequence(withSameId: updatedSequence)
     }
 

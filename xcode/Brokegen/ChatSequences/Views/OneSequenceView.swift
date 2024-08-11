@@ -608,7 +608,7 @@ struct OneSequenceView: View {
 
         Section(header: Text("Chat Data")) {
             Button {
-                viewModel.chatService.pinChatSequence(viewModel.sequence, pinned: !viewModel.sequence.userPinned)
+                viewModel.chatService.pin(sequenceId: viewModel.sequence.serverId, pinned: !viewModel.sequence.userPinned)
             } label: {
                 Toggle(isOn: .constant(viewModel.sequence.userPinned)) {
                     Text("Pin ChatSequence in sidebar")
@@ -621,7 +621,9 @@ struct OneSequenceView: View {
                     viewModel.settings.pinChatSequenceDesc = true
                 }
 
-                _ = viewModel.chatService.autonameChatSequence(viewModel.sequence, preferredAutonamingModel: viewModel.appSettings.preferredAutonamingModel?.serverId)
+                Task { @MainActor in
+                    _ = try? await viewModel.chatService.autonameBlocking(sequenceId: viewModel.sequence.serverId, preferredAutonamingModel: viewModel.appSettings.preferredAutonamingModel?.serverId)
+                }
             } label: {
                 Text(viewModel.appSettings.stillPopulating
                      ? "Autoname disabled (still loading)"
