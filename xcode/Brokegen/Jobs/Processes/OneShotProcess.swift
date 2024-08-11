@@ -94,10 +94,10 @@ class OneShotProcess: Job {
 
         status = .requestedStop
 
-        Task {
+        Task.detached {
             await withCheckedContinuation { continuation in
-                task?.waitUntilExit()
-                task = nil
+                self.task?.waitUntilExit()
+                self.task = nil
 
                 DispatchQueue.main.sync {
                     self.status = .stopped

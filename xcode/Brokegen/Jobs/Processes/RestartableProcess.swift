@@ -98,12 +98,12 @@ class RestartableProcess: Job {
 
         status = .requestedStop
 
-        Task {
+        Task.detached {
             await withCheckedContinuation { continuation in
-                for process in processes {
+                for process in self.processes {
                     process.waitUntilExit()
                 }
-                processes.removeAll()
+                self.processes.removeAll()
 
                 DispatchQueue.main.sync {
                     self.status = .stopped

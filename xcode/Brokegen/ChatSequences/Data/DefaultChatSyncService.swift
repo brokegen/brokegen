@@ -90,7 +90,7 @@ class DefaultChatSyncService: ChatSyncService {
         guard sequence != nil else { return }
         guard userPinned != sequence!.userPinned else { return }
 
-        Task {
+        Task.detached {
             let result = try? await self.postDataBlocking(
                 nil,
                 endpoint: "/sequences/\(sequenceId)/user_pinned?value=\(userPinned)")

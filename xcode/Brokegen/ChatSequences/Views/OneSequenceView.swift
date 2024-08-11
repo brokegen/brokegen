@@ -30,7 +30,7 @@ struct MultiMessageView: View {
 
             let branchAction = {
                 if case .stored(let message) = message {
-                    Task {
+                    Task { @MainActor in
                         if let sequence = try? await viewModel.chatService.fetchChatSequenceDetails(message.hostSequenceId) {
                             pathHost.push(
                                 viewModel.chatService.clientModel(
@@ -621,7 +621,7 @@ struct OneSequenceView: View {
                     viewModel.settings.pinChatSequenceDesc = true
                 }
 
-                Task { @MainActor in
+                Task.detached { @MainActor in
                     _ = try? await viewModel.chatService.autonameBlocking(sequenceId: viewModel.sequence.serverId, preferredAutonamingModel: viewModel.appSettings.preferredAutonamingModel?.serverId)
                 }
             } label: {

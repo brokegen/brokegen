@@ -74,7 +74,7 @@ struct MiniSequencePickerSidebar: View {
                         // do something with ProgressView and timeouts.
                         Button("Refresh Chats List", systemImage: "arrow.clockwise") {
                             timesRefreshClicked += 1
-                            Task { try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: true) }
+                            Task.detached { try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: true) }
                         }
                         .padding(.leading, -24)
                         .padding(.trailing, -24)
@@ -82,7 +82,7 @@ struct MiniSequencePickerSidebar: View {
                     else {
                         Button("Load Chats", systemImage: "arrow.clockwise") {
                             timesRefreshClicked += 1
-                            Task {
+                            Task.detached {
                                 try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: true)
                                 try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: false)
                             }
@@ -130,7 +130,7 @@ struct MiniSequencePickerSidebar: View {
             }
         }
         .onAppear {
-            Task {
+            Task.detached {
                 try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: true)
                 try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: false)
             }
@@ -199,7 +199,7 @@ struct MiniSequencePickerSidebar: View {
                 }
 
                 Button {
-                    Task { @MainActor in
+                    Task.detached { @MainActor in
                         _ = try? await chatService.autonameBlocking(sequenceId: sequence.serverId, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
                     }
                 } label: {
@@ -213,7 +213,7 @@ struct MiniSequencePickerSidebar: View {
                 .disabled(appSettings.preferredAutonamingModel == nil)
 
                 Button {
-                    Task {
+                    Task.detached {
                         if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
                             DispatchQueue.main.async {
                                 self.chatService.updateSequence(withSameId: refreshedSequence)

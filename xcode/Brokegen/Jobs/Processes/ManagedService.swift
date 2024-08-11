@@ -219,11 +219,11 @@ class ManagedService: Job {
             }
         }
         else {
-            Task {
-                for process in processes {
+            Task.detached {
+                for process in self.processes {
                     process.waitUntilExit()
                 }
-                processes.removeAll()
+                self.processes.removeAll()
 
                 DispatchQueue.main.sync {
                     self.status = .stopped

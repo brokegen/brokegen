@@ -206,7 +206,7 @@ struct RenameableSequenceRow: View {
                                 }
                             }
                             .onSubmit {
-                                Task { @MainActor in
+                                Task.detached { @MainActor in
                                     await action(newSequenceName)
                                 }
                             }

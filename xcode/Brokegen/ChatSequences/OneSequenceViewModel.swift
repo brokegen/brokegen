@@ -119,8 +119,8 @@ class OneSequenceViewModel {
     }
 
     func refreshSequenceData() {
-        Task {
-            if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
+        Task.detached {
+            if let refreshedSequence = try? await self.chatService.fetchChatSequenceDetails(self.sequence.serverId) {
                 DispatchQueue.main.async {
                     self.chatService.updateSequence(withSameId: refreshedSequence)
                 }
@@ -476,7 +476,7 @@ class OneSequenceViewModel {
         self.submitting = true
         self.serverStatus = "/sequences/\(self.sequence.serverId): appending follow-up message"
 
-        Task {
+        Task.detached {
             let appendResult = try? await self.save()
             guard appendResult != nil else { return }
 
@@ -521,7 +521,7 @@ class OneSequenceViewModel {
 
         submittedAssistantResponseSeed = settings.seedAssistantResponse
 
-        Task {
+        Task.detached { [self] in
             receivingStreamer = await chatService.sequenceContinue(
                 ContinueParameters(
                     continuationModelId: continuationModelId,
@@ -575,7 +575,7 @@ class OneSequenceViewModel {
 
         submittedAssistantResponseSeed = settings.seedAssistantResponse
 
-        Task {
+        Task.detached { [self] in
             let appendResult = try? await self.save()
             guard appendResult != nil else { return }
 
