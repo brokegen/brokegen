@@ -297,7 +297,7 @@ class OneSequenceViewModel {
 
                 // Put the real server response prior to any error messages.
                 sequence.messages.insert(
-                    .stored(storedMessage),
+                    .server(storedMessage),
                     at: sequence.messages.count - receivedExtra)
                 responseInEdit = nil
                 // TODO: Figure out why messages get returned out of order sometimes, and move this where appropriate.
@@ -433,7 +433,7 @@ class OneSequenceViewModel {
 
         // Manually (re)construct server data, rather than fetching the same data back.
         var replacementMessages = self.sequence.messages
-        replacementMessages.append(.stored(ChatMessage(
+        replacementMessages.append(.server(ChatMessage(
             serverId: messageId!,
             hostSequenceId: replacementSequenceId!,
             role: "user",

@@ -130,7 +130,7 @@ struct OneMessageView: View {
                 pasteboard.setString(message.content, forType: .string)
             }
 
-            if case .stored(_) = self.message {
+            if case .server(_) = self.message {
                 OMVButton("arrow.triangle.branch") {
                     self.branchAction?()
                 }
