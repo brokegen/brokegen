@@ -103,11 +103,11 @@ class OneSequenceViewModel {
 
     func prerenderMessages() {
         for message in sequence.messages {
-            _ = lookup(message)
+            _ = markdownLookup(message)
         }
     }
 
-    func lookup(_ message: MessageLike) -> MarkdownContent {
+    func markdownLookup(_ message: MessageLike) -> MarkdownContent {
         if let rendered = prerenderedMessages[message] {
             return rendered
         }

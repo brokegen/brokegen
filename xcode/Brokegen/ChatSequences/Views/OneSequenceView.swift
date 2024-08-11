@@ -47,7 +47,7 @@ struct MultiMessageView: View {
             case .system, .user, .assistant:
                 OneMessageView(
                     message,
-                    renderMessageContent: viewModel.lookup,
+                    renderMessageContent: viewModel.markdownLookup,
                     branchAction: branchAction,
                     showMessageHeaders: settings.showMessageHeaders,
                     messageFontSize: settings.messageFontSize,
