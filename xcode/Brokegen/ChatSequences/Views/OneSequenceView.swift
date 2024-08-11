@@ -29,7 +29,7 @@ struct MultiMessageView: View {
             }()
 
             let branchAction = {
-                if case .server(let message) = message {
+                if case .stored(let message) = message {
                     Task {
                         if let sequence = try? await viewModel.chatService.fetchChatSequenceDetails(message.hostSequenceId) {
                             pathHost.push(

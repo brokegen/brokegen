@@ -29,7 +29,6 @@
 		CE6807C22C35D9F500B0053A /* DefaultChatSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6807C12C35D9F400B0053A /* DefaultChatSyncService.swift */; };
 		CE6D8A7F2BF6DF1800A7934D /* RibbonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */; };
 		CE727B372C4F07D4000D3F64 /* PersistentCSUISettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE727B362C4F07D4000D3F64 /* PersistentCSUISettings.swift */; };
-		CE732C652C685DEC00BA1AEB /* StoredChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE732C642C685DEC00BA1AEB /* StoredChatMessage.swift */; };
 		CE7FFE142C04435D00DB7CFA /* ProviderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE132C04435D00DB7CFA /* ProviderService.swift */; };
 		CE7FFE162C04482900DB7CFA /* ModelPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE152C04482900DB7CFA /* ModelPickerView.swift */; };
 		CE7FFE182C06772400DB7CFA /* BlankSimpleOneSequenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE7FFE172C06772400DB7CFA /* BlankSimpleOneSequenceView.swift */; };
@@ -116,7 +115,6 @@
 		CE6807C12C35D9F400B0053A /* DefaultChatSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultChatSyncService.swift; sourceTree = "<group>"; };
 		CE6D8A7E2BF6DF1800A7934D /* RibbonView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RibbonView.swift; sourceTree = "<group>"; };
 		CE727B362C4F07D4000D3F64 /* PersistentCSUISettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistentCSUISettings.swift; sourceTree = "<group>"; };
-		CE732C642C685DEC00BA1AEB /* StoredChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoredChatMessage.swift; sourceTree = "<group>"; };
 		CE7FFE132C04435D00DB7CFA /* ProviderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderService.swift; sourceTree = "<group>"; };
 		CE7FFE152C04482900DB7CFA /* ModelPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelPickerView.swift; sourceTree = "<group>"; };
 		CE7FFE172C06772400DB7CFA /* BlankSimpleOneSequenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlankSimpleOneSequenceView.swift; sourceTree = "<group>"; };
@@ -241,7 +239,6 @@
 				CE145DA72C1A0DFD00577314 /* SequenceWidgets.swift */,
 				CEAEF07D2C49B02B00281578 /* MarkdownView.swift */,
 				CEAA2B6E2C070AAE002BEB26 /* Data */,
-				CE732C662C685FB100BA1AEB /* StoredData */,
 				CE145DA62C1A0A1E00577314 /* SimpleViews */,
 				CE9065232C272B12003593F1 /* SequencePicker */,
 				CE145DAB2C1A103C00577314 /* Views */,
@@ -256,14 +253,6 @@
 				CEDE7FBC2C54A74600200909 /* StoredTextTest.swift */,
 			);
 			path = BrokegenTests;
-			sourceTree = "<group>";
-		};
-		CE732C662C685FB100BA1AEB /* StoredData */ = {
-			isa = PBXGroup;
-			children = (
-				CE732C642C685DEC00BA1AEB /* StoredChatMessage.swift */,
-			);
-			path = StoredData;
 			sourceTree = "<group>";
 		};
 		CE9065232C272B12003593F1 /* SequencePicker */ = {
@@ -556,7 +545,6 @@
 				CE727B372C4F07D4000D3F64 /* PersistentCSUISettings.swift in Sources */,
 				CE4634ED2BFAE3020063142E /* RestartableProcess.swift in Sources */,
 				CE7FFE162C04482900DB7CFA /* ModelPickerView.swift in Sources */,
-				CE732C652C685DEC00BA1AEB /* StoredChatMessage.swift in Sources */,
 				CEAEF07E2C49B02B00281578 /* MarkdownView.swift in Sources */,
 				CEA410FF2C1E3B9A00FA3111 /* ManagedService.swift in Sources */,
 				CE4634F42BFBB4900063142E /* ChatSyncService.swift in Sources */,

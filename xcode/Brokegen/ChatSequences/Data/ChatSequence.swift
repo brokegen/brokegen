@@ -46,7 +46,7 @@ class ChatSequence: Identifiable {
                     createdAt: messageJson["created_at"].isoDateValue
                 )
 
-                messageBuilder.append(.server(message))
+                messageBuilder.append(.stored(message))
             }
         }
 

@@ -115,7 +115,7 @@ class BlankSequenceViewModel {
         let constructedSequence: ChatSequence = ChatSequence(
             serverId: replacementSequenceId!,
             messages: [
-                .server(ChatMessage(
+                .stored(ChatMessage(
                     serverId: messageId!,
                     hostSequenceId: replacementSequenceId!,
                     role: "user",
