@@ -88,7 +88,10 @@ def _lookup_one_message(
 
     else:
         src_cursor = src_conn.execute("""
-            SELECT role, content, created_at FROM ChatMessages WHERE id IS ?
+            SELECT
+                ChatMessages.role, ChatMessages.content, ChatMessages.created_at
+            FROM ChatMessages
+            WHERE id IS ?
         """, src_key)
         message_info = src_cursor.fetchone()
 
@@ -103,9 +106,7 @@ def _lookup_one_message(
             "SELECT id FROM ChatMessages WHERE role IS ? AND content IS ? AND created_at IS ?",
             (r['role'], r['content'], r['created_at'],),
         )
-        new_current_message = dst_cursor.fetchone()[0]
-
-    return new_current_message
+        return dst_cursor.fetchone()[0]
 
 
 current_message_cache = {}
@@ -118,10 +119,12 @@ def merge_one_message(
         r: sqlite3.Row,  # source database's info
 ):
     if src_key in current_message_cache:
-        return current_message_cache[src_key]
+        result = current_message_cache[src_key]
+        print(f"\r\033[K[TRACE] Found ChatMessage   {r['id']: >4_} => {result: >4_}")
+        return result
     else:
         result = _lookup_one_message(dst_conn, src_conn, src_key, r)
-        print(f"\r\033[K[TRACE] Merged ChatMessage {r['id']: >4_} => {result: >4_}")
+        print(f"\r\033[K[TRACE] Merged ChatMessage  {r['id']: >4_} => {result: >4_}")
         current_message_cache[src_key] = result
         return result
 
@@ -139,22 +142,105 @@ def merge_all_messages(
         merge_one_message(dst_conn, src_conn, (r['id'],), r)
 
 
-def merge_others(
+def _lookup_one_sequence(
+        dst_conn: sqlite3.Connection,
+        src_conn: sqlite3.Connection,
+        src_key: tuple,
+        r: sqlite3.Row,  # source database's info
+) -> int:
+    current_message = merge_one_message(dst_conn, src_conn, (r['current_message'],), r)
+
+    parent_sequence = None
+    if r['parent_sequence']:
+        parent_sequence = merge_one_sequence(dst_conn, src_conn, (r['parent_sequence'],), r)
+
+    # Check if this row already exists in the destination
+    # TODO: We don't have InferenceEvents in, so inference_job_id will always be NULL
+    dst_cursor = dst_conn.execute("""\
+            SELECT id FROM ChatSequences
+            WHERE
+                human_desc IS ?
+                AND user_pinned IS ?
+                AND current_message IS ?
+                AND parent_sequence IS ?
+                AND generated_at IS ?
+                AND generation_complete IS ?
+                AND inference_error IS ?
+        """, (
+        r['human_desc'], r['user_pinned'], current_message, parent_sequence, r['generated_at'],
+        r['generation_complete'], r['inference_error'],), )
+    existing_dst_sequence = dst_cursor.fetchone()
+    if existing_dst_sequence is not None:
+        return existing_dst_sequence[0]
+
+    else:
+        src_cursor = src_conn.execute("""
+            SELECT
+                ChatSequences.human_desc, ChatSequences.user_pinned, ChatSequences.current_message, ChatSequences.parent_sequence, ChatSequences.generated_at, ChatSequences.generation_complete, ChatSequences.inference_job_id, ChatSequences.inference_error
+            FROM ChatSequences
+            WHERE id IS ?
+        """, src_key)
+        sequence_info = src_cursor.fetchone()
+
+        # NB We re-insert the ChatMessage row just in case;
+        # we don't necessarily want every ChatMessage merged in.
+        dst_conn.execute(
+            "INSERT OR IGNORE INTO ChatSequences(human_desc, user_pinned, current_message, parent_sequence, generated_at, generation_complete, inference_error) "
+            "VALUES(?,?,?,?,?,?,?)",
+            (r['human_desc'], r['user_pinned'], current_message, parent_sequence, r['generated_at'],
+             r['generation_complete'], r['inference_error'],),
+        )
+        dst_cursor = dst_conn.execute("""\
+            SELECT id FROM ChatSequences
+            WHERE
+                human_desc IS ?
+                AND user_pinned IS ?
+                AND current_message IS ?
+                AND parent_sequence IS ?
+                AND generated_at IS ?
+                AND generation_complete IS ?
+                AND inference_error IS ?
+            """, (r['human_desc'], r['user_pinned'], current_message, parent_sequence, r['generated_at'],
+                  r['generation_complete'], r['inference_error'],), )
+        return dst_cursor.fetchone()[0]
+
+
+sequence_cache = {}
+
+
+def merge_one_sequence(
+        dst_conn: sqlite3.Connection,
+        src_conn: sqlite3.Connection,
+        src_key: tuple,
+        r: sqlite3.Row,  # source database's info
+):
+    if src_key in sequence_cache:
+        result = sequence_cache[src_key]
+        print(f"\r\033[K[TRACE] Found ChatSequence  {r['id']: >4_} => {result: >4_}")
+        return result
+    else:
+        result = _lookup_one_sequence(dst_conn, src_conn, src_key, r)
+        print(f"\r\033[K[TRACE] Merged ChatSequence {r['id']: >4_} => {result: >4_}")
+        sequence_cache[src_key] = result
+        return result
+
+
+def merge_all_sequences(
         dst_conn: sqlite3.Connection,
         src_conn: sqlite3.Connection,
         limit_str: str,
 ) -> None:
-    current_message_cache = {}
-
     sequence_rows = src_conn.execute(f"""
-        SELECT ChatSequences.id, ChatSequences.current_message,
+        SELECT
+            ChatSequences.id,
+            ChatSequences.human_desc, ChatSequences.user_pinned, ChatSequences.current_message, ChatSequences.parent_sequence, ChatSequences.generated_at, ChatSequences.generation_complete, ChatSequences.inference_job_id, ChatSequences.inference_error,
             ChatMessages.role, ChatMessages.content, ChatMessages.created_at
         FROM ChatSequences
         INNER JOIN ChatMessages ON ChatMessages.id=ChatSequences.current_message
         {limit_str}
     """)
     for r in maybe_tqdm(sequence_rows.fetchall(), "sequences"):
-        new_current_message = merge_one_message(dst_conn, src_conn, (r['current_message'],), r)
+        merge_one_sequence(dst_conn, src_conn, (r['id'],), r)
 
 
 if __name__ == '__main__':
@@ -174,6 +260,6 @@ if __name__ == '__main__':
             with src_conn:
                 print(f"file: {db_in_filename}")
                 merge_all_messages(dst_conn, src_conn, "LIMIT 2")
-                merge_others(dst_conn, src_conn, "LIMIT 5")
+                merge_all_sequences(dst_conn, src_conn, "LIMIT 5")
 
         print(f"done merging into {sys.argv[1]}")
