@@ -120,11 +120,11 @@ def merge_one_message(
 ):
     if src_key in current_message_cache:
         result = current_message_cache[src_key]
-        print(f"\r\033[K[TRACE] Found ChatMessage   {r['id']: >4_} => {result: >4_}")
+        # print(f"\r\033[K[TRACE] Found ChatMessage   {r['id']: >4_} => {result: >4_}")
         return result
     else:
         result = _lookup_one_message(dst_conn, src_conn, src_key, r)
-        print(f"\r\033[K[TRACE] Merged ChatMessage  {r['id']: >4_} => {result: >4_}")
+        # print(f"\r\033[K[TRACE] Merged ChatMessage  {r['id']: >4_} => {result: >4_}")
         current_message_cache[src_key] = result
         return result
 
@@ -138,7 +138,7 @@ def merge_all_messages(
         "SELECT * FROM ChatMessages "
         f"{limit_str}"
     )
-    for r in maybe_tqdm(message_rows.fetchall(), "all messages"):
+    for r in maybe_tqdm(message_rows.fetchall(), "messages"):
         merge_one_message(dst_conn, src_conn, (r['id'],), r)
 
 
@@ -216,11 +216,11 @@ def merge_one_sequence(
 ):
     if src_key in sequence_cache:
         result = sequence_cache[src_key]
-        print(f"\r\033[K[TRACE] Found ChatSequence  {r['id']: >4_} => {result: >4_}")
+        # print(f"\r\033[K[TRACE] Found ChatSequence  {r['id']: >4_} => {result: >4_}")
         return result
     else:
         result = _lookup_one_sequence(dst_conn, src_conn, src_key, r)
-        print(f"\r\033[K[TRACE] Merged ChatSequence {r['id']: >4_} => {result: >4_}")
+        # print(f"\r\033[K[TRACE] Merged ChatSequence {r['id']: >4_} => {result: >4_}")
         sequence_cache[src_key] = result
         return result
 
@@ -259,7 +259,7 @@ if __name__ == '__main__':
 
             with src_conn:
                 print(f"file: {db_in_filename}")
-                merge_all_messages(dst_conn, src_conn, "LIMIT 2")
-                merge_all_sequences(dst_conn, src_conn, "LIMIT 5")
+                merge_all_messages(dst_conn, src_conn, "LIMIT 1")
+                merge_all_sequences(dst_conn, src_conn, "")
 
         print(f"done merging into {sys.argv[1]}")
