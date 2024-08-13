@@ -1,6 +1,10 @@
 import Combine
 import SwiftUI
 
+
+public let appStorageUpdateInterval = DispatchQueue.SchedulerTimeType.Stride(60.0)
+public let appStorageRequestUpdateInterval: TimeInterval = 20
+
 /// @AppStorage needs a bit of manual plumbing to make it compatible with @Observable.
 /// https://stackoverflow.com/questions/76606977/swift-ist-there-any-way-using-appstorage-with-observable
 ///
@@ -16,7 +20,7 @@ class PersistentDefaultCSUISettings: CSUISettings {
     func startUpdater() {
         self.counter.send(-1)
 
-        DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 0.3) {
+        DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + appStorageRequestUpdateInterval) {
             self.startUpdater()
         }
     }
@@ -24,7 +28,7 @@ class PersistentDefaultCSUISettings: CSUISettings {
     init() {
         subscriber = counter
             // Drop updates in the background
-            .throttle(for: 5.0, scheduler: DispatchQueue.global(qos: .background), latest: true)
+            .throttle(for: appStorageUpdateInterval, scheduler: DispatchQueue.global(qos: .background), latest: true)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard self != nil else { return }

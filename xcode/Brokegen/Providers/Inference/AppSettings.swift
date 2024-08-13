@@ -1,6 +1,7 @@
 import Combine
 import SwiftUI
 
+
 /// These are represented by `nil` everywhere else in the code, but `@AppStorage` is more simpler.
 /// Well, these should only ever be positive integers, anyway.
 fileprivate let INVALID_MODEL_ID: FoundationModelRecordID = -3
@@ -15,14 +16,14 @@ class AppSettings {
     func startUpdater() {
         self.counter.send(-1)
 
-        DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 0.3) {
+        DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + appStorageRequestUpdateInterval) {
             self.startUpdater()
         }
     }
 
     init() {
         subscriber = counter
-            .throttle(for: 5.0, scheduler: DispatchQueue.global(qos: .background), latest: true)
+            .throttle(for: appStorageUpdateInterval, scheduler: DispatchQueue.global(qos: .background), latest: true)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard self != nil else { return }
