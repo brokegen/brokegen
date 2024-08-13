@@ -13,17 +13,35 @@ class AppSettings {
     @ObservationIgnored private var counter = PassthroughSubject<Int, Never>()
     @ObservationIgnored private var subscriber: AnyCancellable?
 
+    private var isAppActive: Bool = true
+
     func startUpdater() {
         self.counter.send(-1)
 
-        DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + appStorageRequestUpdateInterval) {
-            self.startUpdater()
-        }
+        DispatchQueue.global(qos: .background)
+            .asyncAfter(
+                deadline: .now()
+                + (isAppActive ? appStorageUpdateInterval : 60)
+            ) {
+                self.startUpdater()
+            }
     }
 
     init() {
+        NotificationCenter.default
+            .addObserver(forName: NSApplication.willResignActiveNotification, object: nil, queue: .main) { _ in
+                self.isAppActive = false
+            }
+        NotificationCenter.default
+            .addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { _ in
+                self.isAppActive = true
+            }
+
         subscriber = counter
-            .throttle(for: appStorageUpdateInterval, scheduler: DispatchQueue.global(qos: .background), latest: true)
+            .throttle(
+                for: DispatchQueue.SchedulerTimeType.Stride(floatLiteral: appStorageUpdateInterval),
+                scheduler: DispatchQueue.global(qos: .background),
+                latest: true)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard self != nil else { return }

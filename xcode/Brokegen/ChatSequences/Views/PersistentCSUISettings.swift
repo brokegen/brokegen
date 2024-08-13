@@ -2,8 +2,7 @@ import Combine
 import SwiftUI
 
 
-public let appStorageUpdateInterval = DispatchQueue.SchedulerTimeType.Stride(60.0)
-public let appStorageRequestUpdateInterval: TimeInterval = 20
+public let appStorageUpdateInterval = 3.0
 
 /// @AppStorage needs a bit of manual plumbing to make it compatible with @Observable.
 /// https://stackoverflow.com/questions/76606977/swift-ist-there-any-way-using-appstorage-with-observable
@@ -17,18 +16,36 @@ class PersistentDefaultCSUISettings: CSUISettings {
     @ObservationIgnored private var counter = PassthroughSubject<Int, Never>()
     @ObservationIgnored private var subscriber: AnyCancellable?
 
+    private var isAppActive: Bool = true
+
     func startUpdater() {
         self.counter.send(-1)
 
-        DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + appStorageRequestUpdateInterval) {
-            self.startUpdater()
-        }
+        DispatchQueue.global(qos: .background)
+            .asyncAfter(
+                deadline: .now()
+                + (isAppActive ? appStorageUpdateInterval : 60)
+            ) {
+                self.startUpdater()
+            }
     }
 
     init() {
+        NotificationCenter.default
+            .addObserver(forName: NSApplication.willResignActiveNotification, object: nil, queue: .main) { _ in
+                self.isAppActive = false
+            }
+        NotificationCenter.default
+            .addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { _ in
+                self.isAppActive = true
+            }
+
         subscriber = counter
             // Drop updates in the background
-            .throttle(for: appStorageUpdateInterval, scheduler: DispatchQueue.global(qos: .background), latest: true)
+            .throttle(
+                for: DispatchQueue.SchedulerTimeType.Stride(floatLiteral: appStorageUpdateInterval),
+                scheduler: DispatchQueue.global(qos: .background),
+                latest: true)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard self != nil else { return }
