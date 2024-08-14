@@ -6,29 +6,31 @@ build/xcode-macos-export-options.plist:
 	plutil -create xml1 "$@"
 	plutil -insert "method" -string "mac-application" "$@"
 
+# Internal-only build target; used for a rapid edit-deploy cycle.
 .PHONY: dist-xcode
-dist-xcode: build-xcode
+dist-xcode: build-xcode-release
 dist-xcode: build/xcode-macos-export-options.plist
+dist-xcode: | dist/Brokegen.app.tzst
 	xcodebuild -quiet \
 		-exportArchive \
-		-archivePath build/"macOS App.xcarchive" \
+		-archivePath build/"macOS App (Release).xcarchive" \
 		-exportPath dist/ \
 		-exportOptionsPlist build/xcode-macos-export-options.plist
 	# TODO: This clean-up should be less manual. Or within the xcode build.
 	rm dist/Brokegen.app/Contents/Resources/brokegen-server
 	rm dist/Brokegen.app/Contents/Resources/ollama-darwin
 
-.PHONY: build-xcode
-build: build-xcode
-build-xcode: server-onedir
-build-xcode:
+.PHONY: build-xcode-debug
+build: build-xcode-debug
+build-xcode-debug: server-onedir
+build-xcode-debug:
 	xcodebuild archive \
 		-quiet \
 		-project xcode/Brokegen.xcodeproj \
 		-scheme Debug \
 		-config Debug \
 		-sdk macosx \
-		-archivePath build/"macOS App.xcarchive" \
+		-archivePath build/"macOS App (Debug).xcarchive" \
 		-derivedDataPath build/xcode-derived-data/ \
 		-destination 'generic/platform=macOS'
 
