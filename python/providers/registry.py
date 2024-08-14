@@ -239,12 +239,12 @@ class BaseProvider:
             async for chunk in iter0:
                 ollama_response = ollama_consolidator(chunk, ollama_response)
                 # Ignore the first few characters, just in case the model likes prepending them.
-                if "\n" in ollama_consolidator[2:]:
+                if "\n" in ollama_response[2:]:
                     logger.debug(f"Detected newline during autoname inference, stopping")
                     break
 
                 openai_response = openai_consolidator(chunk, openai_response)
-                if "\n" in openai_consolidator[2:]:
+                if "\n" in openai_response[2:]:
                     logger.debug(f"Detected newline during autoname inference, stopping")
                     break
 
