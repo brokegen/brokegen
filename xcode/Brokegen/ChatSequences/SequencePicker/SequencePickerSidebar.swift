@@ -194,7 +194,7 @@ struct MiniSequencePickerSidebar: View {
                     chatService.pin(sequenceId: sequence.serverId, pinned: !sequence.userPinned)
                 } label: {
                     Toggle(isOn: .constant(sequence.userPinned)) {
-                        Text("Pin ChatSequence in sidebar")
+                        Text("Pin to sidebar")
                     }
                 }
 
@@ -221,7 +221,8 @@ struct MiniSequencePickerSidebar: View {
                         }
                     }
                 } label: {
-                    Text("Force ChatSequence data refresh...")
+                    Image(systemName: "arrow.clockwise")
+                    Text("Refresh data from server")
                 }
             }
         }

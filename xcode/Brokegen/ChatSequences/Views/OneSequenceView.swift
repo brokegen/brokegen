@@ -619,7 +619,7 @@ struct OneSequenceView: View {
                 viewModel.chatService.pin(sequenceId: viewModel.sequence.serverId, pinned: !viewModel.sequence.userPinned)
             } label: {
                 Toggle(isOn: .constant(viewModel.sequence.userPinned)) {
-                    Text("Pin ChatSequence in sidebar")
+                    Text("Pin to sidebar")
                 }
             }
 
@@ -645,7 +645,8 @@ struct OneSequenceView: View {
             Button {
                 viewModel.refreshSequenceData()
             } label: {
-                Text("Force ChatSequence data refresh...")
+                Image(systemName: "arrow.clockwise")
+                Text("Refresh data from server")
             }
         }
     }

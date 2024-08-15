@@ -128,20 +128,57 @@ struct SequencePickerView: View {
 
     @ViewBuilder
     func sectionContextMenu(for sectionName: String, sequences: [ChatSequence]) -> some View {
-        Button {
-            // NNB We intentionally run this sequentially, so rate limiting is done on our side.
-            Task.detached { @MainActor in
+        Text("\(sectionName) / \(sequences.count) ChatSequences")
+
+        Divider()
+
+        Section(header: Text("Chat Data")) {
+            Button {
                 for sequence in sequences {
-                    _ = try? await chatService.autonameBlocking(sequenceId: sequence.serverId, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
+                    chatService.pin(sequenceId: sequence.serverId, pinned: !sequence.userPinned)
                 }
+            } label: {
+                Text("Pin all to sidebar")
             }
-        } label: {
-            Text(appSettings.preferredAutonamingModel == nil
-                 ? "Autoname \(sequences.count) sequences (disabled, select a preferred model first)"
-                 : "Autoname \(sequences.count) sequences")
-                .font(.system(size: 18))
+
+            Button {
+                // NB We intentionally run this sequentially, so rate limiting is done on the client side.
+                Task.detached { @MainActor in
+                    for sequence in sequences {
+                        _ = try? await chatService.autonameBlocking(sequenceId: sequence.serverId, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
+                    }
+                }
+            } label: {
+                Text(appSettings.stillPopulating
+                     ? "Autoname disabled (still loading)"
+                     : (appSettings.preferredAutonamingModel == nil
+                        ? "Autoname disabled (set a model in settings)"
+                        : "Autoname with: \(appSettings.preferredAutonamingModel!)")
+                )
+            }
+            .disabled(appSettings.preferredAutonamingModel == nil)
+
+            Button {
+                self.isRenaming.append(contentsOf: sequences)
+            } label: {
+                Text("Rename all...")
+            }
+
+            Button {
+                Task.detached {
+                    for sequence in sequences {
+                        if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
+                            DispatchQueue.main.async {
+                                self.chatService.updateSequence(withSameId: refreshedSequence)
+                            }
+                        }
+                    }
+                }
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                Text("Refresh data from server")
+            }
         }
-        .disabled(appSettings.preferredAutonamingModel == nil)
     }
 
     @ViewBuilder
@@ -155,7 +192,7 @@ struct SequencePickerView: View {
                 chatService.pin(sequenceId: sequence.serverId, pinned: !sequence.userPinned)
             } label: {
                 Toggle(isOn: .constant(sequence.userPinned)) {
-                    Text("Pin ChatSequence in sidebar")
+                    Text("Pin to sidebar")
                 }
             }
 
@@ -188,7 +225,8 @@ struct SequencePickerView: View {
                     }
                 }
             } label: {
-                Text("Force ChatSequence data refresh...")
+                Image(systemName: "arrow.clockwise")
+                Text("Refresh data from server")
             }
         }
     }
