@@ -46,7 +46,7 @@ struct MultiMessageView: View {
             }
 
             switch(message.messageType) {
-            case .system, .user, .assistant:
+            case .user, .assistant:
                 OneMessageView(
                     message,
                     renderMessageContent: viewModel.markdownLookup,
@@ -71,7 +71,7 @@ struct MultiMessageView: View {
                 .id(message)
                 .fontDesign(.monospaced)
 
-            case .serverError, .clientError:
+            case .system, .serverError, .clientError:
                 OneMessageView(
                     message,
                     showMessageHeaders: true,
