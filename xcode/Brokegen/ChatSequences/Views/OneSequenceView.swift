@@ -566,13 +566,14 @@ struct OneSequenceView: View {
     var contextMenuItems: some View {
         @Bindable var settings = settings
 
-        Text(viewModel.sequence.displayRecognizableDesc())
-
-        Button {
-            viewModel.refreshSequenceData()
-        } label: {
-            Image(systemName: "arrow.clockwise")
-            Text("Refresh data from server")
+        if (viewModel.sequence.humanDesc ?? "").isEmpty {
+            Text(viewModel.sequence.displayRecognizableDesc())
+                .font(.title2)
+        }
+        else {
+            Text(viewModel.sequence.humanDesc!)
+                .font(.title2)
+            Text(viewModel.sequence.displayServerId())
         }
 
         Section(header: Text("UI Appearance")) {
@@ -619,7 +620,7 @@ struct OneSequenceView: View {
 
         Divider()
 
-        Section(header: Text("Chat Data")) {
+        Section(header: Text("Server-Side Chat Data")) {
             Button {
                 viewModel.chatService.pin(sequenceId: viewModel.sequence.serverId, pinned: !viewModel.sequence.userPinned)
             } label: {
@@ -642,14 +643,26 @@ struct OneSequenceView: View {
                 let subtitle: String = {
                     viewModel.appSettings.preferredAutonamingModel == nil
                     ? (viewModel.appSettings.stillPopulating
-                       ? " (disabled, still loading)"
-                       : " (disabled, set a model in settings)")
-                    : " with model:\n\t\(viewModel.appSettings.preferredAutonamingModel!)"
+                       ? "disabled, still loading"
+                       : "disabled, set a model in settings")
+                    : "\(viewModel.appSettings.preferredAutonamingModel!)"
                 }()
 
-                Text("Autoname\(subtitle)")
+                Text("Autoname\n")
+                + Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(Color(.disabledControlTextColor))
             }
             .disabled(viewModel.appSettings.preferredAutonamingModel == nil)
+
+            Divider()
+
+            Button {
+                viewModel.refreshSequenceData()
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                Text("Refresh sequence data from server")
+            }
         }
     }
 

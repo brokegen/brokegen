@@ -185,22 +185,17 @@ struct MiniSequencePickerSidebar: View {
             }
         }
         .contextMenu {
-            Text(sequence.displayRecognizableDesc())
-            
-            Button {
-                Task.detached {
-                    if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
-                        DispatchQueue.main.async {
-                            self.chatService.updateSequence(withSameId: refreshedSequence)
-                        }
-                    }
-                }
-            } label: {
-                Image(systemName: "arrow.clockwise")
-                Text("Refresh data from server")
+            if (sequence.humanDesc ?? "").isEmpty {
+                Text(sequence.displayRecognizableDesc())
+                    .font(.title2)
             }
-            
-            Section(header: Text("Chat Data")) {
+            else {
+                Text(sequence.humanDesc!)
+                    .font(.title2)
+                Text(sequence.displayServerId())
+            }
+
+            Section(header: Text("Server-Side Chat Data")) {
                 Button {
                     chatService.pin(sequenceId: sequence.serverId, pinned: !sequence.userPinned)
                 } label: {
@@ -217,14 +212,32 @@ struct MiniSequencePickerSidebar: View {
                     let subtitle: String = {
                         appSettings.preferredAutonamingModel == nil
                         ? (appSettings.stillPopulating
-                           ? " (disabled, still loading)"
-                           : " (disabled, set a model in settings)")
-                        : " with model:\n\t\(appSettings.preferredAutonamingModel!)"
+                           ? "disabled, still loading"
+                           : "disabled, set a model in settings")
+                        : "\(appSettings.preferredAutonamingModel!)"
                     }()
-                    
-                    Text("Autoname\(subtitle)")
+
+                    Text("Autoname\n")
+                    + Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(Color(.disabledControlTextColor))
                 }
                 .disabled(appSettings.preferredAutonamingModel == nil)
+
+                Divider()
+
+                Button {
+                    Task.detached {
+                        if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
+                            DispatchQueue.main.async {
+                                self.chatService.updateSequence(withSameId: refreshedSequence)
+                            }
+                        }
+                    }
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                    Text("Refresh sequence data from server")
+                }
             }
         }
     }

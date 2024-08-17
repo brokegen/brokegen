@@ -128,24 +128,11 @@ struct SequencePickerView: View {
 
     @ViewBuilder
     func sectionContextMenu(for sectionName: String, sequences: [ChatSequence]) -> some View {
-        Text("\(sectionName)\n\t\(sequences.count) chats")
+        Text(sectionName)
+            .font(.title2)
+        Text("\(sequences.count) chats")
 
-        Button {
-            Task.detached {
-                for sequence in sequences {
-                    if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
-                        DispatchQueue.main.async {
-                            self.chatService.updateSequence(withSameId: refreshedSequence)
-                        }
-                    }
-                }
-            }
-        } label: {
-            Image(systemName: "arrow.clockwise")
-            Text("Refresh data from server")
-        }
-
-        Section(header: Text("Chat Data")) {
+        Section(header: Text("Server-Side Chat Data")) {
             Button {
                 for sequence in sequences {
                     chatService.pin(sequenceId: sequence.serverId, pinned: !sequence.userPinned)
@@ -168,39 +155,53 @@ struct SequencePickerView: View {
                     }
                 }
             } label: {
-                // TODO: Make subtitle menu entries work, somehow.
                 let subtitle: String = {
                     appSettings.preferredAutonamingModel == nil
                     ? (appSettings.stillPopulating
-                       ? " (disabled, still loading)"
-                       : " (disabled, set a model in settings)")
-                    : " with model:\n\t\(appSettings.preferredAutonamingModel!)"
+                       ? "disabled, still loading"
+                       : "disabled, set a model in settings")
+                    : "\(appSettings.preferredAutonamingModel!)"
                 }()
 
-                Text("Autoname all\(subtitle)")
+                Text("Autoname all\n")
+                + Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(Color(.disabledControlTextColor))
             }
             .disabled(appSettings.preferredAutonamingModel == nil)
+
+            Divider()
+
+            Button {
+                Task.detached {
+                    for sequence in sequences {
+                        if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
+                            DispatchQueue.main.async {
+                                self.chatService.updateSequence(withSameId: refreshedSequence)
+                            }
+                        }
+                    }
+                }
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                Text("Refresh all sequence data from server")
+            }
         }
     }
 
     @ViewBuilder
     func sequenceContextMenu(for sequence: ChatSequence) -> some View {
-        Text(sequence.displayRecognizableDesc())
-
-        Button {
-            Task.detached {
-                if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
-                    DispatchQueue.main.async {
-                        self.chatService.updateSequence(withSameId: refreshedSequence)
-                    }
-                }
-            }
-        } label: {
-            Image(systemName: "arrow.clockwise")
-            Text("Refresh data from server")
+        if (sequence.humanDesc ?? "").isEmpty {
+            Text(sequence.displayRecognizableDesc())
+                .font(.title2)
+        }
+        else {
+            Text(sequence.humanDesc!)
+                .font(.title2)
+            Text(sequence.displayServerId())
         }
 
-        Section(header: Text("Chat Data")) {
+        Section(header: Text("Server-Side Chat Data")) {
             Button {
                 chatService.pin(sequenceId: sequence.serverId, pinned: !sequence.userPinned)
             } label: {
@@ -223,14 +224,32 @@ struct SequencePickerView: View {
                 let subtitle: String = {
                     appSettings.preferredAutonamingModel == nil
                     ? (appSettings.stillPopulating
-                       ? " (disabled, still loading)"
-                       : " (disabled, set a model in settings)")
-                    : " with model:\n\t\(appSettings.preferredAutonamingModel!)"
+                       ? "disabled, still loading"
+                       : "disabled, set a model in settings")
+                    : "\(appSettings.preferredAutonamingModel!)"
                 }()
 
-                Text("Autoname\(subtitle)")
+                Text("Autoname\n")
+                + Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(Color(.disabledControlTextColor))
             }
             .disabled(appSettings.preferredAutonamingModel == nil)
+
+            Divider()
+
+            Button {
+                Task.detached {
+                    if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
+                        DispatchQueue.main.async {
+                            self.chatService.updateSequence(withSameId: refreshedSequence)
+                        }
+                    }
+                }
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                Text("Refresh sequence data from server")
+            }
         }
     }
 
