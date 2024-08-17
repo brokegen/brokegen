@@ -186,8 +186,19 @@ struct MiniSequencePickerSidebar: View {
         }
         .contextMenu {
             Text(sequence.displayRecognizableDesc())
-
-            Divider()
+            
+            Button {
+                Task.detached {
+                    if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
+                        DispatchQueue.main.async {
+                            self.chatService.updateSequence(withSameId: refreshedSequence)
+                        }
+                    }
+                }
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                Text("Refresh data from server")
+            }
             
             Section(header: Text("Chat Data")) {
                 Button {
@@ -203,27 +214,17 @@ struct MiniSequencePickerSidebar: View {
                         _ = try? await chatService.autonameBlocking(sequenceId: sequence.serverId, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
                     }
                 } label: {
-                    Text(appSettings.stillPopulating
-                         ? "Autoname disabled (still loading)"
-                         : (appSettings.preferredAutonamingModel == nil
-                            ? "Autoname disabled (set a model in settings)"
-                            : "Autoname with: \(appSettings.preferredAutonamingModel!)")
-                    )
+                    let subtitle: String = {
+                        appSettings.preferredAutonamingModel == nil
+                        ? (appSettings.stillPopulating
+                           ? " (disabled, still loading)"
+                           : " (disabled, set a model in settings)")
+                        : " with model:\n\t\(appSettings.preferredAutonamingModel!)"
+                    }()
+                    
+                    Text("Autoname\(subtitle)")
                 }
                 .disabled(appSettings.preferredAutonamingModel == nil)
-
-                Button {
-                    Task.detached {
-                        if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
-                            DispatchQueue.main.async {
-                                self.chatService.updateSequence(withSameId: refreshedSequence)
-                            }
-                        }
-                    }
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                    Text("Refresh data from server")
-                }
             }
         }
     }

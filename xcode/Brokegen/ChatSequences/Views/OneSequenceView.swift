@@ -568,7 +568,12 @@ struct OneSequenceView: View {
 
         Text(viewModel.sequence.displayRecognizableDesc())
 
-        Divider()
+        Button {
+            viewModel.refreshSequenceData()
+        } label: {
+            Image(systemName: "arrow.clockwise")
+            Text("Refresh data from server")
+        }
 
         Section(header: Text("UI Appearance")) {
             Toggle(isOn: $settings.pinChatSequenceDesc) {
@@ -624,7 +629,8 @@ struct OneSequenceView: View {
             }
 
             Button {
-                // Keep the chat name pinned if we're setting a name for the first time
+                // Keep the chat name pinned if we're setting a name for the first time.
+                // This is a half-measure that sort of informs the user we received the autoname request.
                 if (viewModel.sequence.humanDesc ?? "").isEmpty {
                     viewModel.settings.pinChatSequenceDesc = true
                 }
@@ -633,21 +639,17 @@ struct OneSequenceView: View {
                     _ = try? await viewModel.chatService.autonameBlocking(sequenceId: viewModel.sequence.serverId, preferredAutonamingModel: viewModel.appSettings.preferredAutonamingModel?.serverId)
                 }
             } label: {
-                Text(viewModel.appSettings.stillPopulating
-                     ? "Autoname disabled (still loading)"
-                     : (viewModel.appSettings.preferredAutonamingModel == nil
-                        ? "Autoname disabled (set a model in settings)"
-                        : "Autoname with: \(viewModel.appSettings.preferredAutonamingModel!)")
-                )
+                let subtitle: String = {
+                    viewModel.appSettings.preferredAutonamingModel == nil
+                    ? (viewModel.appSettings.stillPopulating
+                       ? " (disabled, still loading)"
+                       : " (disabled, set a model in settings)")
+                    : " with model:\n\t\(viewModel.appSettings.preferredAutonamingModel!)"
+                }()
+
+                Text("Autoname\(subtitle)")
             }
             .disabled(viewModel.appSettings.preferredAutonamingModel == nil)
-
-            Button {
-                viewModel.refreshSequenceData()
-            } label: {
-                Image(systemName: "arrow.clockwise")
-                Text("Refresh data from server")
-            }
         }
     }
 
