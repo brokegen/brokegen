@@ -97,8 +97,8 @@ struct MiniSequencePickerSidebar: View {
                 NavigationLink(destination: SequencePickerView(onlyUserPinned: true)) {
                     ASRow("Pinned Chats", showChevron: true)
                 }
-                NavigationLink(destination: SequencePickerView(onlyUserPinned: false)) {
-                    ASRow("Pinned + Recent", showChevron: true)
+                NavigationLink(destination: SequencePickerView(onlyUserPinned: false, showSequenceIds: true)) {
+                    ASRow("All Chats", showChevron: true)
                 }
 
                 Divider()
