@@ -146,20 +146,22 @@ struct AppSidebar: View {
                 VStack(spacing: 0) {
                     MiniSequencePickerSidebar()
 
-                    AppSidebarSection(label: {
-                        Image(systemName: "sink")
-                            .padding(.trailing, 0)
+                    if appSettings.showDebugSidebarItems {
+                        AppSidebarSection(label: {
+                            Image(systemName: "sink")
+                                .padding(.trailing, 0)
 
-                        Text("Inspectors")
-                    }) {
-                        NavigationLink(destination: {
-                            RefreshableModelPickerView()
+                            Text("Inspectors")
                         }) {
-                            ASRow("Foundation Models")
-                        }
+                            NavigationLink(destination: {
+                                RefreshableModelPickerView()
+                            }) {
+                                ASRow("Foundation Models")
+                            }
 
-                        NavigationLink(destination: SequencePickerView(onlyUserPinned: false, showNewChatButton: false, showSequenceIds: true)) {
-                            ASRow("ChatSequences", showChevron: true)
+                            NavigationLink(destination: SequencePickerView(onlyUserPinned: false, showNewChatButton: false, showSequenceIds: true)) {
+                                ASRow("ChatSequences", showChevron: true)
+                            }
                         }
                     }
 
