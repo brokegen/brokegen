@@ -586,6 +586,8 @@ struct OneSequenceView: View {
             }
 
             Toggle(isOn: $settings.renderAsMarkdown) {
+                Image(systemName:
+                        settings.renderAsMarkdown ? "doc.richtext.fill" : "doc.richtext")
                 Text("Render message content as markdown")
             }
 
@@ -594,31 +596,33 @@ struct OneSequenceView: View {
             }
         }
 
-        Divider()
-
         Section(header: Text("UI Performance Tweaks (global)")) {
             Toggle(isOn: $settings.responseBufferFlush) {
-                Text(
+                Text("Buffer inference output\n")
+                + Text(
                     viewModel.settings.responseBufferFlush
-                    ? "Buffer inference output -- update every \(viewModel.settings.responseBufferFlushFrequencyMsec) msec"
-                    : "Buffer inference output -- update every \(PersistentDefaultCSUISettings.default_responseBufferFlushFrequencyMsec) msec"
+                    ? "update every \(viewModel.settings.responseBufferFlushFrequencyMsec) msec"
+                    : "update every \(PersistentDefaultCSUISettings.default_responseBufferFlushFrequencyMsec) msec"
                 )
+                .font(.subheadline)
+                .foregroundStyle(Color(.disabledControlTextColor))
             }
 
             Toggle(isOn: $settings.scrollOnNewText) {
-                Text(
+                Text("Scroll to bottom of window on new response text\n")
+                + Text(
                     viewModel.settings.scrollOnNewText
-                    ? "Scroll to bottom of window on new response text -- check every \(viewModel.settings.scrollOnNewTextFrequencyMsec) msec"
-                    : "Scroll to bottom of window on new response text -- check every \(PersistentDefaultCSUISettings.default_scrollOnNewTextFrequencyMsec) msec"
+                    ? "scroll every \(viewModel.settings.scrollOnNewTextFrequencyMsec) msec"
+                    : "scroll every \(PersistentDefaultCSUISettings.default_scrollOnNewTextFrequencyMsec) msec"
                 )
+                .font(.subheadline)
+                .foregroundStyle(Color(.disabledControlTextColor))
             }
 
             Toggle(isOn: $settings.animateNewResponseText) {
                 Text("Animate (fade in) new response text")
             }
         }
-
-        Divider()
 
         Section(header: Text("Server-Side Chat Data")) {
             Button {

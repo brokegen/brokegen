@@ -458,8 +458,7 @@ struct BlankOneSequenceView: View {
         @Bindable var viewModel = viewModel
 
         Text(viewModel.displayHumanDesc)
-
-        Divider()
+            .font(.title2)
 
         Section(header: Text("UI Appearance")) {
             Toggle(isOn: $viewModel.settings.pinChatSequenceDesc) {
@@ -471,6 +470,8 @@ struct BlankOneSequenceView: View {
             }
 
             Toggle(isOn: $viewModel.settings.renderAsMarkdown) {
+                Image(systemName:
+                        viewModel.settings.renderAsMarkdown ? "doc.richtext.fill" : "doc.richtext")
                 Text("Render message content as markdown")
             }
 
@@ -479,24 +480,27 @@ struct BlankOneSequenceView: View {
             }
         }
 
-        Divider()
-
         Section(header: Text("UI Performance Tweaks (global)")) {
             Toggle(isOn: $viewModel.settings.responseBufferFlush) {
-                Text("Buffer inference output")
-                Text(
+                Text("Buffer inference output\n")
+                + Text(
                     viewModel.settings.responseBufferFlush
-                    ? "Buffer inference output -- update every \(viewModel.settings.responseBufferFlushFrequencyMsec) msec"
-                    : "Buffer inference output -- update every \(PersistentDefaultCSUISettings.default_responseBufferFlushFrequencyMsec) msec"
+                    ? "update every \(viewModel.settings.responseBufferFlushFrequencyMsec) msec"
+                    : "update every \(PersistentDefaultCSUISettings.default_responseBufferFlushFrequencyMsec) msec"
                 )
+                .font(.subheadline)
+                .foregroundStyle(Color(.disabledControlTextColor))
             }
 
             Toggle(isOn: $viewModel.settings.scrollOnNewText) {
-                Text(
+                Text("Scroll to bottom of window on new response text\n")
+                + Text(
                     viewModel.settings.scrollOnNewText
-                    ? "Scroll to bottom of window on new response text -- check every \(viewModel.settings.scrollOnNewTextFrequencyMsec) msec"
-                    : "Scroll to bottom of window on new response text -- check every \(PersistentDefaultCSUISettings.default_scrollOnNewTextFrequencyMsec) msec"
+                    ? "scroll every \(viewModel.settings.scrollOnNewTextFrequencyMsec) msec"
+                    : "scroll every \(PersistentDefaultCSUISettings.default_scrollOnNewTextFrequencyMsec) msec"
                 )
+                .font(.subheadline)
+                .foregroundStyle(Color(.disabledControlTextColor))
             }
 
             Toggle(isOn: $viewModel.settings.animateNewResponseText) {
