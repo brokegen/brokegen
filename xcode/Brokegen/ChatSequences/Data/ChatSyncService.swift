@@ -55,6 +55,34 @@ class ChatSyncService: ObservableObject {
     }
 
     func addClientModel(
+        from clientModel: OneSequenceViewModel,
+        for sequence: ChatSequence
+    ) -> OneSequenceViewModel {
+        let newClientModel = OneSequenceViewModel(
+            sequence: sequence,
+            chatService: clientModel.chatService,
+            // TODO: Confirm that these values are actually cloned, and won't impact the previous clientModel.
+            settings: CSCSettingsService.SettingsProxy(
+                defaults: clientModel.settings.defaults,
+                override: clientModel.settings.override,
+                inference: clientModel.settings.inference),
+            chatSettingsService: clientModel.chatSettingsService,
+            appSettings: clientModel.appSettings
+        )
+        // Modify the branched client model so it clones our current settings.
+        newClientModel.promptInEdit = clientModel.promptInEdit
+        newClientModel.showTextEntryView = clientModel.showTextEntryView
+        newClientModel.showUiOptions = clientModel.showUiOptions
+        newClientModel.showInferenceOptions = clientModel.showInferenceOptions
+        newClientModel.showRetrievalOptions = clientModel.showRetrievalOptions
+        newClientModel.continuationInferenceModel = clientModel.continuationInferenceModel
+        newClientModel.showAssistantResponseSeed = clientModel.showAssistantResponseSeed
+        newClientModel.showSystemPromptOverride = clientModel.showSystemPromptOverride
+
+        return self.addClientModel(newClientModel)
+    }
+
+    func addClientModel(
         fromBlank blankModel: BlankSequenceViewModel,
         for sequence: ChatSequence
     ) -> OneSequenceViewModel {
@@ -63,6 +91,7 @@ class ChatSyncService: ObservableObject {
         model.submittedAssistantResponseSeed = blankModel.submittedAssistantResponseSeed
         model.serverStatus = blankModel.serverStatus
 
+        model.promptInEdit = blankModel.promptInEdit
         model.showTextEntryView = blankModel.showTextEntryView
         model.showUiOptions = blankModel.showUiOptions
         model.showInferenceOptions = blankModel.showInferenceOptions
@@ -71,21 +100,7 @@ class ChatSyncService: ObservableObject {
         model.showAssistantResponseSeed = blankModel.showAssistantResponseSeed
         model.showSystemPromptOverride = blankModel.showSystemPromptOverride
 
-        if let dupe = chatSequenceClientModels.first(where: { $0 == model }) {
-            return model
-        }
-        if let dupe = chatSequenceClientModels.first(where: { $0.sequence == model.sequence }) {
-            print("[ERROR] ChatSyncService already contains another ViewModel for ChatSequence \(dupe.sequence.displayRecognizableDesc())")
-            return dupe
-        }
-        if let dupe = chatSequenceClientModels.first(where: { $0.sequence.serverId == model.sequence.serverId }) {
-            print("[ERROR] ChatSyncService already contains another ViewModel for ChatSequenceID \(dupe.sequence.serverId)")
-            return dupe
-        }
-
-        // After some duplicate-checking, we're good to go ahead and add the model.
-        chatSequenceClientModels.append(model)
-        return model
+        return self.addClientModel(model)
     }
 
     // MARK: - ChatSequence construction

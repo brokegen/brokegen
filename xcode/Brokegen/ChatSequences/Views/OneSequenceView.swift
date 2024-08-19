@@ -32,14 +32,15 @@ struct MultiMessageView: View {
 
             let branchAction = {
                 if case .stored(let message) = message {
+                    if let existingClientModel = viewModel.chatService.chatSequenceClientModels.first(where: {$0.sequence.serverId == message.hostSequenceId}) {
+                        pathHost.push(existingClientModel)
+                        return
+                    }
+
                     Task { @MainActor in
                         if let sequence = try? await viewModel.chatService.fetchChatSequenceDetails(message.hostSequenceId) {
-                            pathHost.push(
-                                viewModel.chatService.clientModel(
-                                    for: sequence,
-                                    appSettings: viewModel.appSettings,
-                                    chatSettingsService: viewModel.chatSettingsService)
-                            )
+                            let newClientModel = viewModel.chatService.addClientModel(from: viewModel, for: sequence)
+                            pathHost.push(newClientModel)
                         }
                     }
                 }
