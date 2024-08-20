@@ -580,6 +580,7 @@ struct OneSequenceView: View {
         Section(header: Text("UI Appearance")) {
             Toggle(isOn: $settings.pinChatSequenceDesc) {
                 Text("Keep chat name pinned to top of window")
+                Image(systemName: settings.pinChatSequenceDesc ? "pin" : "pin.slash")
             }
 
             Toggle(isOn: $settings.showMessageHeaders) {
@@ -587,9 +588,8 @@ struct OneSequenceView: View {
             }
 
             Toggle(isOn: $settings.renderAsMarkdown) {
-                Image(systemName:
-                        settings.renderAsMarkdown ? "doc.richtext.fill" : "doc.richtext")
                 Text("Render message content as markdown")
+                Image(systemName: settings.renderAsMarkdown ? "doc.richtext.fill" : "doc.richtext")
             }
 
             Toggle(isOn: $settings.showOFMPicker) {
@@ -627,7 +627,9 @@ struct OneSequenceView: View {
 
         Section(header: Text("Server-Side Chat Data")) {
             Button {
-                viewModel.chatService.pin(sequenceId: viewModel.sequence.serverId, pinned: !viewModel.sequence.userPinned)
+                viewModel.chatService.pin(
+                    sequenceId: viewModel.sequence.serverId,
+                    pinned: !viewModel.sequence.userPinned)
             } label: {
                 Toggle(isOn: .constant(viewModel.sequence.userPinned)) {
                     Text("Pin to sidebar")
