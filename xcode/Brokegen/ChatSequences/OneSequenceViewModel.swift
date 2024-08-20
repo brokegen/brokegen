@@ -299,7 +299,7 @@ class OneSequenceViewModel {
 
                 // Put the real server response prior to any error messages.
                 sequence.messages.insert(
-                    .stored(storedMessage),
+                    .serverOnly(storedMessage),
                     at: sequence.messages.count - receivedExtra)
                 responseInEdit = nil
             }
@@ -433,7 +433,7 @@ class OneSequenceViewModel {
 
         // Manually (re)construct server data, rather than fetching the same data back.
         var replacementMessages = self.sequence.messages
-        replacementMessages.append(.stored(ChatMessage(
+        replacementMessages.append(.serverOnly(ChatMessage(
             serverId: messageId!,
             hostSequenceId: replacementSequenceId!,
             role: "user",

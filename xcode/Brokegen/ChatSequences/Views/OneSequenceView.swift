@@ -31,7 +31,7 @@ struct MultiMessageView: View {
             }()
 
             let branchAction = {
-                if case .stored(let message) = message {
+                if case .serverOnly(let message) = message {
                     if let existingClientModel = viewModel.chatService.chatSequenceClientModels.first(where: {$0.sequence.serverId == message.hostSequenceId}) {
                         pathHost.push(existingClientModel)
                         return
