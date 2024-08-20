@@ -42,7 +42,10 @@ struct SequenceRow: View {
 
     var body: some View {
         Button(action: {
-            action()
+            // TODO: This probably does not need to be wrapped in a Task(), but we'd need to audit callers to confirm.
+            Task.detached { @MainActor in
+                action()
+            }
         }, label: {
             HStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 12) {
