@@ -186,40 +186,49 @@ class OneSequenceViewModel {
         }
     }
 
-    private func flushResponseBuffer() {
+    private func flushResponseBuffer(
+        flushServerStatus: Bool = true,
+        force forceFlush: Bool = false
+    ) {
         guard self.responseInEdit != nil else { return }
-        guard !bufferedResponseContent.isEmpty else { return }
 
-        self.responseInEdit!.content!.append(bufferedResponseContent)
-        bufferedResponseContent = ""
-        bufferedResponseLastFlush = Date.now
-    }
-
-    private func _parseJSONChunk(_ jsonData: JSON) {
         let timeSinceFlush = Date.now.timeIntervalSince(bufferedResponseLastFlush)
-        let flushBufferedUpdates = timeSinceFlush * 1000 > Double(settings.defaults.responseBufferFlushFrequencyMsec)
+        let doFlush = timeSinceFlush * 1000 > Double(settings.defaults.responseBufferFlushFrequencyMsec)
 
-        if let status = jsonData["status"].string {
-            //print("[TRACE] new server status: \(status)")
-            bufferedServerStatus = status
-
-            if flushBufferedUpdates {
-                serverStatus = bufferedServerStatus
-            }
+        if doFlush && flushServerStatus {
+            serverStatus = bufferedServerStatus
         }
 
-        let messageFragment = jsonData["message"]["content"].stringValue
-        bufferedResponseContent.append(messageFragment)
-
-        if flushBufferedUpdates {
+        if doFlush || forceFlush {
             if !bufferedResponseContent.isEmpty {
                 //print("[TRACE] Flushing response buffer: \(bufferedResponseContent.count) chars after \(String(format: "%.3f", timeSinceFlush)) seconds")
             }
 
-            flushResponseBuffer()
+            self.responseInEdit!.content!.append(bufferedResponseContent)
+            bufferedResponseContent = ""
+            bufferedResponseLastFlush = Date.now
+        }
+    }
+
+    private func _parseJSONChunk(_ jsonData: JSON) {
+        if let status = jsonData["status"].string {
+            //print("[TRACE] new server status: \(status)")
+            bufferedServerStatus = status
         }
 
+        if let messageFragment = jsonData["message"]["content"].string {
+            bufferedResponseContent.append(messageFragment)
+        }
+
+        flushResponseBuffer()
+
         if let promptWithTemplating = jsonData["prompt_with_templating"].string {
+            // If we get this end-of-prompt field, flush the response content buffer.
+            // (We're probably done rendering, just autonaming left.)
+            //
+            // Do this prior to constructing the long message, so it shows up in the UI.
+            flushResponseBuffer(force: true)
+
             let templated = TemporaryChatMessage(
                 role: "complete user prompt with templating: \(promptWithTemplating.count) chars",
                 content: promptWithTemplating,
@@ -230,15 +239,11 @@ class OneSequenceViewModel {
 
             sequence.messages.append(.temporary(templated, .serverInfo))
             receivedExtra += 1
-
-            // If we get this end-of-prompt field, flush the response content buffer.
-            // (We're probably done rendering, just autonaming left.)
-            flushResponseBuffer()
         }
 
         if jsonData["done"].boolValue {
             receivedDone += 1
-            flushResponseBuffer()
+            flushResponseBuffer(force: true)
         }
 
         if let errorDesc = jsonData["error"].string {
@@ -266,7 +271,7 @@ class OneSequenceViewModel {
         // NB This block is what actually marks the Sequence as "done" and gives us whatever updates we might need.
         // This also assumes that the next section, "new_message_id", has not happened yet, but will let us extend the new sequence with a new message.
         if let replacementSequenceId: ChatSequenceServerID = jsonData["new_sequence_id"].int {
-            flushResponseBuffer()
+            flushResponseBuffer(force: true)
             let originalSequenceId = self.sequence.serverId
 
             // Mark the old sequence as non-leaf.
@@ -283,8 +288,6 @@ class OneSequenceViewModel {
         }
 
         if let newMessageId: ChatMessageServerID = jsonData["new_message_id"].int {
-            flushResponseBuffer()
-
             if responseInEdit != nil {
                 responseInEdit!.content = (responseInEdit?.content ?? "")
                 responseInEdit!.content!.append(bufferedResponseContent)
