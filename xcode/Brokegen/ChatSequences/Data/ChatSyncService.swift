@@ -181,6 +181,8 @@ class ChatSyncService: ObservableObject {
         if !disablePublish {
             // Without this, SwiftUI won't notice renames in particular.
             // Possibly because we're keeping the Identifiable .id the same?
+            //
+            // TODO: autonames show that this is being published from a background thread
             objectWillChange.send()
         }
     }
