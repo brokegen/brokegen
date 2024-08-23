@@ -640,7 +640,7 @@ struct OneSequenceView: View {
                     viewModel.settings.pinChatSequenceDesc = true
                 }
 
-                Task.detached { @MainActor in
+                Task { @MainActor in
                     _ = try? await viewModel.chatService.autonameBlocking(sequenceId: viewModel.sequence.serverId, preferredAutonamingModel: viewModel.appSettings.preferredAutonamingModel?.serverId)
                 }
             } label: {

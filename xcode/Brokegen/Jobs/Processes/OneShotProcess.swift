@@ -94,7 +94,7 @@ class OneShotProcess: Job {
 
         status = .requestedStop
 
-        Task.detached {
+        Task {
             await withCheckedContinuation { continuation in
                 self.task?.waitUntilExit()
                 self.task = nil

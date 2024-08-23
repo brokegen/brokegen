@@ -219,7 +219,7 @@ class ManagedService: Job {
             }
         }
         else {
-            Task.detached {
+            Task {
                 for process in self.processes {
                     process.waitUntilExit()
                 }

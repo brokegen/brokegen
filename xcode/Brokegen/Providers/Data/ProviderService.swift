@@ -134,7 +134,7 @@ class DefaultProviderService: ProviderService {
         }
 
         if !repeatUntilSuccess {
-            modelFetcher = Task.detached {
+            modelFetcher = Task {
                 print("[TRACE] DefaultProviderService.fetchAvailableModels(repeatUntilSuccess: \(repeatUntilSuccess)) starting")
                 do {
                     try await self.doFetchAvailableModels()
@@ -150,7 +150,7 @@ class DefaultProviderService: ProviderService {
             }
         }
         else {
-            modelFetcher = Task.detached {
+            modelFetcher = Task {
                 do {
                     try await self.doFetchAvailableModels()
                     DispatchQueue.main.async {
@@ -182,7 +182,7 @@ class DefaultProviderService: ProviderService {
         guard providerFetcher == nil else { return }
 
         if !repeatUntilSuccess {
-            providerFetcher = Task.detached {
+            providerFetcher = Task {
                 try? await self.doFetchAllProviders()
 
                 DispatchQueue.main.async {
@@ -191,7 +191,7 @@ class DefaultProviderService: ProviderService {
             }
         }
         else {
-            providerFetcher = Task.detached {
+            providerFetcher = Task {
                 do {
                     try await self.doFetchAllProviders()
 

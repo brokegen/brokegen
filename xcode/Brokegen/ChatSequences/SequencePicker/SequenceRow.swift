@@ -43,7 +43,7 @@ struct SequenceRow: View {
     var body: some View {
         Button(action: {
             // TODO: This probably does not need to be wrapped in a Task(), but we'd need to audit callers to confirm.
-            Task.detached { @MainActor in
+            Task { @MainActor in
                 action()
             }
         }, label: {
@@ -209,7 +209,7 @@ struct RenameableSequenceRow: View {
                                 }
                             }
                             .onSubmit {
-                                Task.detached { @MainActor in
+                                Task { @MainActor in
                                     await action(newSequenceName)
                                 }
                             }

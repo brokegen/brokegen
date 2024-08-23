@@ -648,7 +648,7 @@ struct BlankOneSequenceView: View {
     func requestSave() {
         waitingForNavigation = true
 
-        Task.detached {
+        Task {
             let constructedSequence: ChatSequence? = await viewModel.requestSave()
             if constructedSequence == nil {
                 DispatchQueue.main.async {
@@ -672,7 +672,7 @@ struct BlankOneSequenceView: View {
     func requestStartAndTransfer(withRetrieval: Bool) {
         waitingForNavigation = true
 
-        Task.detached {
+        Task {
             let constructedSequence: ChatSequence? = await viewModel.requestSave()
             if constructedSequence == nil {
                 DispatchQueue.main.async {

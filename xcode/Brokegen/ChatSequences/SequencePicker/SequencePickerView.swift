@@ -149,7 +149,7 @@ struct SequencePickerView: View {
 
             Button {
                 // NB We intentionally run this sequentially, so rate limiting is done on the client side.
-                Task.detached { @MainActor in
+                Task { @MainActor in
                     for sequence in sequences {
                         _ = try? await chatService.autonameBlocking(sequenceId: sequence.serverId, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
                     }
@@ -173,7 +173,7 @@ struct SequencePickerView: View {
             Divider()
 
             Button {
-                Task.detached {
+                Task {
                     for sequence in sequences {
                         if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
                             DispatchQueue.main.async {
@@ -217,7 +217,7 @@ struct SequencePickerView: View {
             }
 
             Button {
-                Task.detached { @MainActor in
+                Task { @MainActor in
                     _ = try? await chatService.autonameBlocking(sequenceId: sequence.serverId, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
                 }
             } label: {
@@ -239,7 +239,7 @@ struct SequencePickerView: View {
             Divider()
 
             Button {
-                Task.detached {
+                Task {
                     if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
                         DispatchQueue.main.async {
                             self.chatService.updateSequence(withSameId: refreshedSequence)
@@ -259,21 +259,21 @@ struct SequencePickerView: View {
 
         HStack(spacing: 24) {
             Button("Refresh \(itemCount)", systemImage: "arrow.clockwise") {
-                Task.detached { try? await chatService.fetchRecents(limit: itemCount, onlyUserPinned: onlyUserPinned) }
+                Task { try? await chatService.fetchRecents(limit: itemCount, onlyUserPinned: onlyUserPinned) }
             }
             .buttonStyle(.accessoryBar)
             .padding(12)
             .layoutPriority(0.2)
 
             Button("Refresh -- 2d", systemImage: "arrow.clockwise") {
-                Task.detached { try? await chatService.fetchRecents(lookback: 172_800, onlyUserPinned: onlyUserPinned) }
+                Task { try? await chatService.fetchRecents(lookback: 172_800, onlyUserPinned: onlyUserPinned) }
             }
             .buttonStyle(.accessoryBar)
             .padding(12)
             .layoutPriority(0.2)
 
             Button("Refresh -- 14d", systemImage: "arrow.clockwise") {
-                Task.detached { try? await chatService.fetchRecents(lookback: 1_209_600, onlyUserPinned: onlyUserPinned) }
+                Task { try? await chatService.fetchRecents(lookback: 1_209_600, onlyUserPinned: onlyUserPinned) }
             }
             .buttonStyle(.accessoryBar)
             .lineLimit(1...3)

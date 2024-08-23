@@ -74,7 +74,7 @@ struct MiniSequencePickerSidebar: View {
                         // do something with ProgressView and timeouts.
                         Button("Refresh Chats List", systemImage: "arrow.clockwise") {
                             timesRefreshClicked += 1
-                            Task.detached { try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: true) }
+                            Task { try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: true) }
                         }
                         .padding(.leading, -24)
                         .padding(.trailing, -24)
@@ -82,7 +82,7 @@ struct MiniSequencePickerSidebar: View {
                     else {
                         Button("Load Chats", systemImage: "arrow.clockwise") {
                             timesRefreshClicked += 1
-                            Task.detached {
+                            Task {
                                 try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: true)
                                 try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: false)
                             }
@@ -130,7 +130,7 @@ struct MiniSequencePickerSidebar: View {
             }
         }
         .onAppear {
-            Task.detached {
+            Task {
                 try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: true)
                 try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: false)
             }
@@ -205,7 +205,7 @@ struct MiniSequencePickerSidebar: View {
                 }
 
                 Button {
-                    Task.detached { @MainActor in
+                    Task { @MainActor in
                         _ = try? await chatService.autonameBlocking(sequenceId: sequence.serverId, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
                     }
                 } label: {
@@ -227,7 +227,7 @@ struct MiniSequencePickerSidebar: View {
                 Divider()
 
                 Button {
-                    Task.detached {
+                    Task {
                         if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
                             DispatchQueue.main.async {
                                 self.chatService.updateSequence(withSameId: refreshedSequence)

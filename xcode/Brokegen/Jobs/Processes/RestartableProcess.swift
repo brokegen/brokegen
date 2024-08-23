@@ -98,7 +98,7 @@ class RestartableProcess: Job {
 
         status = .requestedStop
 
-        Task.detached {
+        Task {
             await withCheckedContinuation { continuation in
                 for process in self.processes {
                     process.waitUntilExit()
