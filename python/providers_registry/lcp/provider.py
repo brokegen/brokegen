@@ -664,9 +664,9 @@ class LlamaCppProvider(BaseProvider):
     def trim_loaded_models(self, model_limit: int):
         while len(self.loaded_models) > model_limit:
             # Use this elaborate syntax so we delete the _oldest_ item.
-            del self.loaded_models[
-                next(iter(self.loaded_models))
-            ]
+            oldest_model_index: int = next(iter(self.loaded_models))
+            logger.info(f"Unloading llama_cpp model: {self.loaded_models[oldest_model_index].model_name}")
+            del self.loaded_models[oldest_model_index]
 
     #  region ----- Actual chat completion endpoints
     async def _do_chat_nolog(
