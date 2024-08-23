@@ -73,6 +73,7 @@ struct OneMessageView: View {
     let stillExpectingUpdate: Bool
     let showMessageHeaders: Bool
     let messageFontSize: CGFloat
+    let shouldAnimate: Bool
 
     // TODO: These need to be a @Binding, or hosted in the parent/ViewModel, if we want them to persist across settings changes.
     @State private var localExpandContent: Bool? = nil
@@ -93,6 +94,7 @@ struct OneMessageView: View {
         stillUpdating stillExpectingUpdate: Bool = false,
         showMessageHeaders: Bool,
         messageFontSize: CGFloat = 12,
+        shouldAnimate: Bool = false,
         expandContent defaultExpandContent: Bool,
         renderAsMarkdown defaultRenderAsMarkdown: Bool
     ) {
@@ -103,6 +105,7 @@ struct OneMessageView: View {
         self.stillExpectingUpdate = stillExpectingUpdate
         self.showMessageHeaders = showMessageHeaders
         self.messageFontSize = messageFontSize
+        self.shouldAnimate = shouldAnimate
 
         self.defaultExpandContent = defaultExpandContent
         self.defaultRenderAsMarkdown = defaultRenderAsMarkdown
@@ -187,62 +190,65 @@ struct OneMessageView: View {
     }
 
     @ViewBuilder
-    var bodyNoButtons: some View {
-        let fixedHeaderSize: CGFloat = 12
+    var contentSection: some View {
+        HStack(spacing: 0) {
+            if stillExpectingUpdate && message.content.isEmpty {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .padding(messageFontSize * 4/3)
+                    .padding(.bottom, messageFontSize * 2/3)
+                    .id("progress view")
+                    .layoutPriority(0.2)
+            }
 
-        if showMessageHeaders {
-            headerSection(fixedHeaderSize)
-        }
-
-        if expandContent {
-            HStack(spacing: 0) {
-                if stillExpectingUpdate && message.content.isEmpty {
-                    ProgressView()
-                        .progressViewStyle(.circular)
-                        .padding(messageFontSize * 4/3)
-                        .padding(.bottom, messageFontSize * 2/3)
-                        .id("progress view")
+            else if !message.content.isEmpty {
+                if renderAsMarkdown {
+                    MarkdownView(content: renderMessageContent(message), messageFontSize: messageFontSize)
+                    // https://stackoverflow.com/questions/56505929/the-text-doesnt-get-wrapped-in-swift-ui
+                    // Render faster
+                        .fixedSize(horizontal: false, vertical: true)
                         .layoutPriority(0.2)
                 }
-
-                else if !message.content.isEmpty {
-                    if renderAsMarkdown {
-                        MarkdownView(content: renderMessageContent(message), messageFontSize: messageFontSize)
-                        // https://stackoverflow.com/questions/56505929/the-text-doesnt-get-wrapped-in-swift-ui
-                        // Render faster
-                            .fixedSize(horizontal: false, vertical: true)
-                            .layoutPriority(0.2)
-                    }
-                    else {
-                        Text(message.content)
-                            .font(.system(size: messageFontSize * 1.5))
-                            .lineSpacing(6)
-                        // Enabling text selection on very large text views gets difficult;
-                        // rely on the extra "copy" button, in those cases.
-                            .modifier(TextSelection(enabled: message.content.count < 4_000))
-                            .padding(messageFontSize * 4/3)
-                            .background(
-                                RoundedRectangle(cornerRadius: messageFontSize, style: .continuous)
-                                    .fill(Color(.controlBackgroundColor))
-                            )
-                        // https://stackoverflow.com/questions/56505929/the-text-doesnt-get-wrapped-in-swift-ui
-                        // Render faster
-                            .fixedSize(horizontal: false, vertical: true)
-                            .layoutPriority(0.2)
-                    }
+                else {
+                    Text(message.content)
+                        .font(.system(size: messageFontSize * 1.5))
+                        .lineSpacing(6)
+                    // Enabling text selection on very large text views gets difficult;
+                    // rely on the extra "copy" button, in those cases.
+                        .modifier(TextSelection(enabled: message.content.count < 4_000))
+                        .padding(messageFontSize * 4/3)
+                        .background(
+                            RoundedRectangle(cornerRadius: messageFontSize, style: .continuous)
+                                .fill(Color(.controlBackgroundColor))
+                        )
+                    // https://stackoverflow.com/questions/56505929/the-text-doesnt-get-wrapped-in-swift-ui
+                    // Render faster
+                        .fixedSize(horizontal: false, vertical: true)
+                        .layoutPriority(0.2)
                 }
-
-                Spacer()
-                    .frame(minWidth: 0)
             }
+
+            Spacer()
+                .frame(minWidth: 0)
         }
     }
 
     var body: some View {
         let fixedOverlaySize: CGFloat = 12
+        let fixedHeaderSize: CGFloat = 12
 
         VStack(spacing: 0) {
-            bodyNoButtons
+            if showMessageHeaders {
+                headerSection(fixedHeaderSize)
+            }
+
+            if expandContent {
+                contentSection
+                    .animation(
+                        (shouldAnimate && !renderAsMarkdown) ? .easeIn : nil,
+                        value: message.content
+                    )
+            }
         }
         .overlay(alignment: .topTrailing) {
             if isHovered && showMessageHeaders {
