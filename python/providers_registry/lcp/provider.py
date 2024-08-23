@@ -107,6 +107,7 @@ class TemplateApplier(ChatFormatter):
                 return formatter_fn
 
         logger.debug(f"No built-in chat format handler for: {formatter_name}")
+        return None
 
     def llama_cpp_templating(
             self,
@@ -797,8 +798,13 @@ class LlamaCppProvider(BaseProvider):
                 custom_templatoor_succeeded = True
 
             except ValueError as e:
-                status_holder.push(f"Failed to apply custom chat template: {e}")
-                logger.error(f"Failed to apply custom chat template: {e}")
+                logger.error(f"Failed to do_completion: {e}")
+
+                # Re-raise, because this is something that should be surfaced directly, e.g.:
+                #
+                # - Requested tokens exceeded context window
+                #
+                raise
 
             except jinja2.exceptions.TemplateSyntaxError as e:
                 status_holder.push(f"Failed to apply custom chat template: {e}")
