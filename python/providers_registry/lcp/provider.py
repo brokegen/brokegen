@@ -106,6 +106,8 @@ class TemplateApplier(ChatFormatter):
                 formatter_fn = getattr(llama_cpp.llama_chat_format, name)
                 return formatter_fn
 
+        logger.debug(f"No built-in chat format handler for: {formatter_name}")
+
     def llama_cpp_templating(
             self,
             messages: list[ChatCompletionRequestMessage],
@@ -113,6 +115,11 @@ class TemplateApplier(ChatFormatter):
         cfr: ChatFormatterResponse | None = None
 
         formatter_fn = TemplateApplier.chat_formatter_for(self.underlying_model.chat_format)
+        if formatter_fn is None:
+            is_mistral_nemo: bool = safe_get(self.underlying_model.metadata, "general.name") == "Mistral Nemo Instruct 2407"
+            if is_mistral_nemo:
+                formatter_fn = TemplateApplier.chat_formatter_for("mistral-instruct")
+
         if formatter_fn is not None:
             cfr = formatter_fn(messages)
 
