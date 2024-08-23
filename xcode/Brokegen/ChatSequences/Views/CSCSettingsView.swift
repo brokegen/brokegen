@@ -149,64 +149,114 @@ struct CSCSettingsView: View {
         @Bindable var settings = settings
 
         GroupBox(content: {
-            Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
-                GridRow {
-                    Spacer()
+            VStack(spacing: 24) {
+                Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
+                    GridRow {
+                        Spacer()
 
-                    Text("global")
-                        .gridColumnAlignment(.trailing)
+                        Text("global")
+                            .gridColumnAlignment(.trailing)
 
-                    Text("this sequence")
-                        .gridColumnAlignment(.center)
-                        .frame(minWidth: 240)
+                        Text("this sequence")
+                            .gridColumnAlignment(.center)
+                            .frame(minWidth: 240)
+                    }
+                    Divider()
+
+                    combinedGridRow(
+                        "Allow direct continuation (model talks to itself)",
+                        globalIsOn: $settings.defaults.allowContinuation,
+                        localIsOn: $settings.override.allowContinuation,
+                        trueText: "allow",
+                        falseText: "require user prompt"
+                    )
+
+                    combinedGridRow(
+                        "Show separate retrieval button",
+                        globalIsOn: $settings.defaults.showSeparateRetrievalButton,
+                        localIsOn: $settings.override.showSeparateRetrievalButton,
+                        trueText: "show",
+                        falseText: "combine buttons"
+                    )
+
+                    GridRow {
+                        Text("Force retrieval on every query")
+                        // This enables text wrapping, since previous rows are priority: 1.0
+                            .layoutPriority(0.2)
+
+                        Toggle(isOn: $settings.defaults.forceRetrieval) {}
+                            .toggleStyle(.switch)
+                            .disabled(settings.showSeparateRetrievalButton)
+
+                        if settings.showSeparateRetrievalButton {
+                            Picker(selection: .constant(false), content: {
+                                Text("[separate retrieval button]")
+                                    .tag(false)
+                            }, label: {})
+                            .disabled(true)
+                        }
+                        else {
+                            Picker(selection: $settings.override.forceRetrieval, content: {
+                                Text(settings.defaults.forceRetrieval
+                                     ? "inherit global: always use retrieval"
+                                     : "inherit global: disable")
+                                .tag(nil as Bool?)
+
+                                Text("always use retrieval")
+                                    .tag(true as Bool?)
+
+                                Text("disable")
+                                    .tag(false as Bool?)
+                            }, label: {})
+                        }
+                    }
                 }
+
                 Divider()
 
-                combinedGridRow(
-                    "Allow direct continuation (model talks to itself)",
-                    globalIsOn: $settings.defaults.allowContinuation,
-                    localIsOn: $settings.override.allowContinuation,
-                    trueText: "allow",
-                    falseText: "require user prompt"
-                )
+                Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
+                    GridRow {
+                        (
+                            Text("[global] Scroll on new response text \n")
+                            + Text("UI update frequency")
+                                .foregroundStyle(Color(.disabledControlTextColor))
+                        )
+                        .layoutPriority(1.0)
 
-                combinedGridRow(
-                    "Show separate retrieval button",
-                    globalIsOn: $settings.defaults.showSeparateRetrievalButton,
-                    localIsOn: $settings.override.showSeparateRetrievalButton,
-                    trueText: "show",
-                    falseText: "combine buttons"
-                )
+                        HStack {
+                            Picker("", selection: $settings.scrollOnNewTextFrequencyMsec) {
+                                Text("disabled")
+                                    .tag(-1)
 
-                GridRow {
-                    Text("Force retrieval-augmented generation on every query")
-                    // This enables text wrapping, since previous rows are priority: 1.0
-                        .layoutPriority(0.2)
+                                Text("immediately")
+                                    .tag(0)
 
-                    Toggle(isOn: $settings.defaults.forceRetrieval) {}
-                        .toggleStyle(.switch)
-                        .disabled(settings.showSeparateRetrievalButton)
+                                Text("1000 msec")
+                                    .tag(1000)
 
-                    if settings.showSeparateRetrievalButton {
-                        Picker(selection: .constant(false), content: {
-                            Text("[separate retrieval button]")
-                                .tag(false)
-                        }, label: {})
-                        .disabled(true)
-                    }
-                    else {
-                        Picker(selection: $settings.override.forceRetrieval, content: {
-                            Text(settings.defaults.forceRetrieval
-                                 ? "inherit global: always use RAG"
-                                 : "inherit global: disable")
-                            .tag(nil as Bool?)
+                                Text("2000 msec")
+                                    .tag(2000)
 
-                            Text("always use RAG")
-                                .tag(true as Bool?)
+                                Text("5000 msec")
+                                    .tag(5000)
 
-                            Text("disable")
-                                .tag(false as Bool?)
-                        }, label: {})
+                                if !Set([-1, 0, 1000, 2000, 5000]).contains(settings.scrollOnNewTextFrequencyMsec) {
+                                    Text("custom")
+                                        .tag(settings.scrollOnNewTextFrequencyMsec)
+                                }
+                            }
+                            .frame(minWidth: 96)
+
+                            Text("/")
+
+                            Stepper(value: $settings.scrollOnNewTextFrequencyMsec, step: 100) {
+                                Text("\(settings.scrollOnNewTextFrequencyMsec)")
+                            }
+
+                            Text("msec")
+
+                            Spacer()
+                        }
                     }
                 }
             }
@@ -225,8 +275,12 @@ struct CSCSettingsView: View {
         GroupBox(content: {
             Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 12) {
                 GridRow {
-                    Text("Buffer inference output: UI update frequency")
-                        .layoutPriority(1.0)
+                    (
+                        Text("Buffer inference output \n")
+                        + Text("UI update frequency")
+                            .foregroundStyle(Color(.disabledControlTextColor))
+                    )
+                    .layoutPriority(1.0)
 
                     HStack {
                         Picker("", selection: $settings.responseBufferFlushFrequencyMsec) {
@@ -265,51 +319,12 @@ struct CSCSettingsView: View {
                 }
 
                 GridRow {
-                    Text("Scroll to bottom of window on new response text: UI update frequency")
-                        .layoutPriority(0.2)
-
-                    HStack {
-                        Picker("", selection: $settings.scrollOnNewTextFrequencyMsec) {
-                            Text("disabled")
-                                .tag(-1)
-
-                            Text("immediately")
-                                .tag(0)
-
-                            Text("1000 msec")
-                                .tag(1000)
-
-                            Text("2000 msec")
-                                .tag(2000)
-
-                            Text("5000 msec")
-                                .tag(5000)
-
-                            if !Set([-1, 0, 1000, 2000, 5000]).contains(settings.scrollOnNewTextFrequencyMsec) {
-                                Text("custom")
-                                    .tag(settings.scrollOnNewTextFrequencyMsec)
-                            }
-                        }
-                        .frame(minWidth: 96)
-
-                        Text("/")
-
-                        Stepper(value: $settings.scrollOnNewTextFrequencyMsec, step: 100) {
-                            Text("\(settings.scrollOnNewTextFrequencyMsec)")
-                        }
-
-                        Text("msec")
-
-                        Spacer()
-                    }
-                }
-
-                GridRow {
-                    VStack(alignment: .leading) {
-                        Text("Animate (fade in) new response text")
-                        Text("(ignored if rendering message as markdown)")
+                    (
+                        Text("Animate (fade in) new response text \n")
+                        + Text("(ignored if rendering message as markdown)")
                             .foregroundStyle(Color(.disabledControlTextColor))
-                    }
+                    )
+                    .layoutPriority(1.0)
 
                     Picker("", selection: $settings.animateNewResponseText) {
                         Text("animate")
@@ -374,14 +389,12 @@ struct CSCSettingsView: View {
                     }
 
                     GridRow {
-                        VStack(alignment: .leading) {
-                            Text("[global] Batch size for prompt evaluation")
-                                .layoutPriority(1.0)
-                            Text("Smaller sizes take longer due to prefix-matching.")
+                        (
+                            Text("[global] Batch size for prompt evaluation \n")
+                            + Text("(smaller sizes take longer due to prefix-matching)")
                                 .foregroundStyle(Color(.disabledControlTextColor))
-                            // This enables text wrapping, since previous rows are priority: 1.0
-                                .layoutPriority(0.2)
-                        }
+                        )
+                        .layoutPriority(1.0)
 
                         HStack {
                             let defaultSizes = [64, 128, 256, 512, 1_024, 2_048, 4_096, 8_192, 16_384]
