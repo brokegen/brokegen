@@ -106,7 +106,9 @@ struct MultiMessageView: View {
             .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
                 self.isAppActive = true
             }
-            .animation(shouldAnimate ? .easeIn : nil, value: viewModel.responseInEdit)
+            .animation(
+                shouldAnimate ? .interactiveSpring : nil,
+                value: viewModel.responseInEdit)
             .padding(.leading, messageIndent)
             .id(-1)
         }
