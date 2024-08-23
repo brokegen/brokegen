@@ -9,11 +9,11 @@ struct OMVButton: View {
     @State var isButtonPressed = false
 
     let imageSystemName: String
-    let action: () -> Void
+    let action: () async -> Void
 
     init(
         _ imageSystemName: String,
-        action: (@escaping () -> Void) = {}
+        action: (@escaping () async -> Void) = {}
     ) {
         self.imageSystemName = imageSystemName
         self.action = action
@@ -24,11 +24,15 @@ struct OMVButton: View {
             .scaleEffect(self.isButtonPressed ? 0.9 : 1.0)
             .onTapGesture {
                 self.isButtonPressed = true
-                action()
-                self.isButtonPressed = false
+                Task {
+                    await action()
+                    self.isButtonPressed = false
+                }
             }
             .onLongPressGesture(perform: {
-                action()
+                Task {
+                    await action()
+                }
             }, onPressingChanged: { pressing in
                 self.isButtonPressed = pressing
             })
@@ -69,7 +73,7 @@ struct OneMessageView: View {
     let message: MessageLike
     let renderMessageContent: (MessageLike) -> MarkdownContent
     let sequence: ChatSequence?
-    let branchAction: (() -> Void)?
+    let branchAction: (() async -> Void)?
     let stillExpectingUpdate: Bool
     let showMessageHeaders: Bool
     let messageFontSize: CGFloat
@@ -90,7 +94,7 @@ struct OneMessageView: View {
             MarkdownContent($0.content)
         },
         sequence: ChatSequence? = nil,
-        branchAction: (() -> Void)? = nil,
+        branchAction: (() async -> Void)? = nil,
         stillUpdating stillExpectingUpdate: Bool = false,
         showMessageHeaders: Bool,
         messageFontSize: CGFloat = 12,
@@ -135,7 +139,7 @@ struct OneMessageView: View {
 
             if case .serverOnly(_) = self.message {
                 OMVButton("arrow.triangle.branch") {
-                    self.branchAction?()
+                    await self.branchAction?()
                 }
                 .disabled(self.branchAction == nil)
             }

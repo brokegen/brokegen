@@ -37,8 +37,8 @@ struct MultiMessageView: View {
                         return
                     }
 
-                    Task { @MainActor in
-                        if let sequence = try? await viewModel.chatService.fetchChatSequenceDetails(message.hostSequenceId) {
+                    if let sequence = try? await viewModel.chatService.fetchChatSequenceDetails(message.hostSequenceId) {
+                        DispatchQueue.main.async {
                             let newClientModel = viewModel.chatService.addClientModel(from: viewModel, for: sequence)
                             pathHost.push(newClientModel)
                         }
