@@ -265,11 +265,8 @@ struct CSCSettingsView: View {
                 }
 
                 GridRow {
-                    VStack(alignment: .leading) {
-                        Text("Scroll to bottom of window on new response text: UI update frequency")
-                        Text("(ignored if rendering message as markdown)")
-                            .foregroundStyle(Color(.disabledControlTextColor))
-                    }
+                    Text("Scroll to bottom of window on new response text: UI update frequency")
+                        .layoutPriority(0.2)
 
                     HStack {
                         Picker("", selection: $settings.scrollOnNewTextFrequencyMsec) {

@@ -89,7 +89,6 @@ struct MultiMessageView: View {
         if viewModel.responseInEdit != nil {
             let messageIndent = settings.showMessageHeaders ? 0.0 : settings.messageFontSize * 2
             // Disable animation if we're rendering Markdown, because something in MarkdownUI makes it fade really poorly
-            // NB This also affects scrollToBottomOnNew
             let shouldAnimate = isAppActive && settings.animateNewResponseText && !settings.renderAsMarkdown
 
             OneMessageView(
@@ -755,7 +754,6 @@ struct OneSequenceView: View {
                                 let timeSinceScroll = Date.now.timeIntervalSince(lastScrollOnNewText)
                                 let shouldScroll = (
                                     settings.scrollOnNewText
-                                    && !settings.renderAsMarkdown
                                     && timeSinceScroll * 1000 > Double(settings.scrollOnNewTextFrequencyMsec)
                                 )
 
