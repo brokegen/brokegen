@@ -274,17 +274,23 @@ class OneSequenceViewModel {
             flushResponseBuffer(force: true)
             let originalSequenceId = self.sequence.serverId
 
-            // Mark the old sequence as non-leaf.
-            let nonLeafSequence = self.sequence.replaceIsLeaf(false)
-            print("[TRACE] receiveHandler calling updateSequenceOffline: ChatSequence#\(originalSequenceId).isLeafSequence = false")
-            self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: nonLeafSequence)
-
-            // And then tell everyone to point to the new sequence
+            // Create two new sequence models, prior to future updates.
+            let nonLeafSequence = self.sequence
+                .replaceIsLeaf(false)
+                .replaceUserPinned(pinned: false)
             let updatedSequence = self.sequence
                 .replaceServerId(replacementSequenceId)
                 .replaceIsLeaf(true)
+                .replaceUserPinned(pinned: self.sequence.userPinned)
+
+            print("[TRACE] receiveHandler calling updateSequenceOffline: ChatSequence#\(originalSequenceId).isLeafSequence = false")
+            self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: nonLeafSequence)
+            self.chatService.pin(sequenceId: nonLeafSequence.serverId, pinned: nonLeafSequence.userPinned)
+
+            // And then tell everyone to point to the new sequence
             print("[TRACE] receiveHandler calling updateSequenceOffline: ChatSequence#\(originalSequenceId) => \(replacementSequenceId)")
             self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: updatedSequence)
+            self.chatService.pin(sequenceId: updatedSequence.serverId, pinned: updatedSequence.userPinned)
         }
 
         if let newMessageId: ChatMessageServerID = jsonData["new_message_id"].int {
