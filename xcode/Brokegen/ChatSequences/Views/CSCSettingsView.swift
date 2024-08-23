@@ -391,7 +391,7 @@ struct CSCSettingsView: View {
                     GridRow {
                         (
                             Text("[global] Batch size for prompt evaluation \n")
-                            + Text("(smaller sizes take longer due to prefix-matching)")
+                            + Text("(smaller sizes much more overhead)")
                                 .foregroundStyle(Color(.disabledControlTextColor))
                         )
                         .layoutPriority(1.0)
@@ -418,33 +418,52 @@ struct CSCSettingsView: View {
 
                             Text("/")
 
-                            let stepSize: Int = { referenceSize in
-                                if referenceSize <= 32 {
-                                    return 4
+                            Stepper {
+                                Text("\(settings.promptEvalBatchSize)")
+                            } onIncrement: {
+                                if settings.promptEvalBatchSize < 32 {
+                                    settings.promptEvalBatchSize += 4
                                 }
-                                // Incidentally, the reference/step size increase by 4x each time.
-                                else if referenceSize <= 128 {
-                                    return 8
+                                else if settings.promptEvalBatchSize < 128 {
+                                    settings.promptEvalBatchSize += 8
                                 }
-                                else if referenceSize <= 512 {
-                                    return 64
+                                else if settings.promptEvalBatchSize < 512 {
+                                    settings.promptEvalBatchSize += 64
                                 }
-                                else if referenceSize <= 2_048 {
-                                    return 256
+                                else if settings.promptEvalBatchSize < 2_048 {
+                                    settings.promptEvalBatchSize += 256
                                 }
-                                else if referenceSize <= 8_192 {
-                                    return 1_024
+                                else if settings.promptEvalBatchSize < 8_192 {
+                                    settings.promptEvalBatchSize += 1_024
                                 }
-                                else if referenceSize <= 32_768 {
-                                    return 4_096
+                                else if settings.promptEvalBatchSize < 32_768 {
+                                    settings.promptEvalBatchSize += 2_048
                                 }
                                 else {
-                                    return 8_192
+                                    settings.promptEvalBatchSize += 4_096
                                 }
-                            }(settings.promptEvalBatchSize)
-
-                            Stepper(value: $settings.promptEvalBatchSize, step: stepSize) {
-                                Text("\(settings.promptEvalBatchSize)")
+                            } onDecrement: {
+                                if settings.promptEvalBatchSize <= 32 {
+                                    settings.promptEvalBatchSize -= 4
+                                }
+                                else if settings.promptEvalBatchSize <= 128 {
+                                    settings.promptEvalBatchSize -= 8
+                                }
+                                else if settings.promptEvalBatchSize <= 512 {
+                                    settings.promptEvalBatchSize -= 64
+                                }
+                                else if settings.promptEvalBatchSize <= 2_048 {
+                                    settings.promptEvalBatchSize -= 256
+                                }
+                                else if settings.promptEvalBatchSize <= 8_192 {
+                                    settings.promptEvalBatchSize -= 1_024
+                                }
+                                else if settings.promptEvalBatchSize <= 32_768 {
+                                    settings.promptEvalBatchSize -= 2_048
+                                }
+                                else {
+                                    settings.promptEvalBatchSize -= 4_096
+                                }
                             }
 
                             Text("tokens")
