@@ -751,21 +751,6 @@ struct OneSequenceView: View {
                                 proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
                                 lastScrollOnNewText = Date.now
                             }
-                            .onChange(of: viewModel.sequence.messages) {
-                                let timeSinceScroll = Date.now.timeIntervalSince(lastScrollOnNewText)
-                                let shouldScroll = (
-                                    settings.scrollOnNewText
-                                    && !settings.renderAsMarkdown
-                                    && timeSinceScroll * 1000 > Double(settings.scrollOnNewTextFrequencyMsec)
-                                )
-
-                                if shouldScroll {
-                                    withAnimation {
-                                        proxy.scrollTo(viewModel.sequence.messages.last, anchor: .bottom)
-                                    }
-                                    lastScrollOnNewText = Date.now
-                                }
-                            }
                             .onChange(of: viewModel.responseInEdit?.content) {
                                 let timeSinceScroll = Date.now.timeIntervalSince(lastScrollOnNewText)
                                 let shouldScroll = (
