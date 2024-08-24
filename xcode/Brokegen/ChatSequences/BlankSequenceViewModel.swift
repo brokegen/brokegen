@@ -114,6 +114,9 @@ class BlankSequenceViewModel {
         // Manually (re)construct server data, rather than fetching the same data back.
         let constructedSequence: ChatSequence = ChatSequence(
             serverId: replacementSequenceId!,
+            humanDesc: humanDesc,
+            userPinned: false,
+            generatedAt: Date.now,
             messages: [
                 .serverOnly(ChatMessage(
                     serverId: messageId!,
@@ -121,8 +124,15 @@ class BlankSequenceViewModel {
                     role: "user",
                     content: self.promptInEdit,
                     createdAt: Date.now))
-            ]
+            ],
+            isLeafSequence: true,
+            parentSequences: [replacementSequenceId!]
         )
+
+        print("[TRACE] BlankSequenceViewModel.requestSave calling updateSequenceOffline: ChatSequence#\(replacementSequenceId!)")
+        DispatchQueue.main.sync {
+            self.chatService.updateSequenceOffline(replacementSequenceId!, withReplacement: constructedSequence)
+        }
 
         stopSubmit()
         return constructedSequence

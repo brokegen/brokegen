@@ -121,7 +121,7 @@ class OneSequenceViewModel {
     func refreshSequenceData() {
         Task {
             if let refreshedSequence = try? await self.chatService.fetchChatSequenceDetails(self.sequence.serverId) {
-                DispatchQueue.main.async {
+                DispatchQueue.main.sync {
                     self.chatService.updateSequence(withSameId: refreshedSequence)
                 }
             }
@@ -283,16 +283,17 @@ class OneSequenceViewModel {
                 .replaceIsLeaf(true)
                 .replaceUserPinned(pinned: self.sequence.userPinned)
 
-            print("[TRACE] receiveHandler calling updateSequenceOffline: ChatSequence#\(originalSequenceId).isLeafSequence = false")
+            print("[TRACE] OSVModel.receiveHandler calling updateSequenceOffline: ChatSequence#\(originalSequenceId).isLeafSequence = false")
             self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: nonLeafSequence)
             self.chatService.pin(sequenceId: nonLeafSequence.serverId, pinned: nonLeafSequence.userPinned)
 
             // And then tell everyone to point to the new sequence
-            print("[TRACE] receiveHandler calling updateSequenceOffline: ChatSequence#\(originalSequenceId) => \(replacementSequenceId)")
+            print("[TRACE] OSVModel.receiveHandler calling updateSequenceOffline: ChatSequence#\(originalSequenceId) => \(replacementSequenceId)")
             self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: updatedSequence)
             self.chatService.pin(sequenceId: updatedSequence.serverId, pinned: updatedSequence.userPinned)
         }
 
+        // NB This assumes the previous section, "new_sequence_id", has just happened.
         if let newMessageId: ChatMessageServerID = jsonData["new_message_id"].int {
             if responseInEdit != nil {
                 responseInEdit!.content = (responseInEdit?.content ?? "")
@@ -428,7 +429,6 @@ class OneSequenceViewModel {
         guard messageId != nil else {
             print("[ERROR] Couldn't construct ChatMessage from text: \(promptInEdit)")
             stopSubmitAndReceive()
-
             return nil
         }
 
@@ -436,11 +436,12 @@ class OneSequenceViewModel {
         guard replacementSequenceId != nil else {
             print("[ERROR] Couldn't save new message to sequence \(self.sequence.serverId)")
             stopSubmitAndReceive()
-
             return nil
         }
 
         // Manually (re)construct server data, rather than fetching the same data back.
+        // NB We rely on the caller to update the isLeafSequence/userPinned fields, because
+        //    async/await and Task/block ordering are beyond us.
         var replacementMessages = self.sequence.messages
         replacementMessages.append(.serverOnly(ChatMessage(
             serverId: messageId!,
@@ -474,11 +475,11 @@ class OneSequenceViewModel {
 
         guard !self.promptInEdit.isEmpty else { return }
         guard !submitting else {
-            print("[ERROR] OneSequenceViewModel.requestSave() during another submission")
+            print("[ERROR] OSVModel.requestSave() during another submission")
             return
         }
         guard !receiving else {
-            print("[ERROR] OneSequenceViewModel.requestSave() while receiving response")
+            print("[ERROR] OSVModel.requestSave() while receiving response")
             return
         }
 
@@ -486,20 +487,23 @@ class OneSequenceViewModel {
         self.serverStatus = "/sequences/\(self.sequence.serverId): appending follow-up message"
 
         Task {
-            let appendResult = try? await self.save()
-            guard appendResult != nil else { return }
+            let replacementSequence = try? await self.save()
+            guard replacementSequence != nil else { return }
 
-            DispatchQueue.main.async {
+            DispatchQueue.main.sync {
                 let originalSequenceId = self.sequence.serverId
+                let nonLeafSequence = self.sequence
+                    .replaceIsLeaf(false)
+                    .replaceUserPinned(pinned: false)
 
-                // Set the old sequence as non-leaf
-                let nonLeafSequence = self.sequence.replaceIsLeaf(false)
-                print("[TRACE] requestSave calling updateSequenceOffline: ChatSequence#\(originalSequenceId).isLeafSequence = false")
+                print("[TRACE] OSVModel.requestSave calling updateSequenceOffline: ChatSequence#\(originalSequenceId).isLeafSequence = false")
                 self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: nonLeafSequence)
+                self.chatService.pin(sequenceId: nonLeafSequence.serverId, pinned: nonLeafSequence.userPinned)
 
                 // And then tell everyone to point to the new sequence
-                print("[TRACE] requestSave calling updateSequenceOffline: ChatSequence#\(originalSequenceId) => \(appendResult!.serverId)")
-                self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: appendResult!)
+                print("[TRACE] OSVModel.requestSave calling updateSequenceOffline: ChatSequence#\(originalSequenceId) => \(replacementSequence!.serverId)")
+                self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: replacementSequence!)
+                self.chatService.pin(sequenceId: replacementSequence!.serverId, pinned: replacementSequence!.userPinned)
 
                 self.promptInEdit = ""
                 self.stopSubmitAndReceive()
@@ -585,13 +589,24 @@ class OneSequenceViewModel {
         submittedAssistantResponseSeed = settings.seedAssistantResponse
 
         Task { [self] in
-            let appendResult = try? await self.save()
-            guard appendResult != nil else { return }
+            let replacementSequence = try? await self.save()
+            guard replacementSequence != nil else { return }
 
+            // This must be .sync, because we need the block to finish executing first.
             DispatchQueue.main.sync {
                 let originalSequenceId = self.sequence.serverId
-                print("[TRACE] requestExtend calling updateSequenceOffline: ChatSequence#\(originalSequenceId) => \(appendResult!.serverId)")
-                self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: appendResult!)
+                let nonLeafSequence = self.sequence
+                    .replaceIsLeaf(false)
+                    .replaceUserPinned(pinned: false)
+
+                print("[TRACE] OSVModel.requestExtend calling updateSequenceOffline: ChatSequence#\(originalSequenceId).isLeafSequence = false")
+                self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: nonLeafSequence)
+                self.chatService.pin(sequenceId: nonLeafSequence.serverId, pinned: nonLeafSequence.userPinned)
+
+                // And then tell everyone to point to the new sequence
+                print("[TRACE] OSVModel.requestExtend calling updateSequenceOffline: ChatSequence#\(originalSequenceId) => \(replacementSequence!.serverId)")
+                self.chatService.updateSequenceOffline(originalSequenceId, withReplacement: replacementSequence!)
+                self.chatService.pin(sequenceId: replacementSequence!.serverId, pinned: replacementSequence!.userPinned)
 
                 self.serverStatus = "/sequences/\(self.sequence.serverId)/continue: submitting request"
             }

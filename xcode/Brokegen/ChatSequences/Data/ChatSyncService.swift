@@ -190,6 +190,7 @@ class ChatSyncService: ObservableObject {
     // TODO: There's a couple potential race conditions happening with the way this is implemented.
     // Multiple ChatSequence updates can happen at once, and only the latest one might get reflected.
     func updateSequenceOffline(_ originalSequenceId: ChatSequenceServerID, withReplacement updatedSequence: ChatSequence) {
+        print("[TRACE] ChatSyncService.updateSequenceOffline(\(originalSequenceId), withReplacement: \(updatedSequence.displayServerId()))")
         loadedChatSequences[updatedSequence.serverId] = updatedSequence
 
         // Update any clientModels that might hold it
@@ -201,6 +202,7 @@ class ChatSyncService: ObservableObject {
             clientModel.sequence = updatedSequence
         }
 
+        // TODO: This doesn't broadcast the loadedChatSequences changes correctly.
         objectWillChange.send()
     }
 

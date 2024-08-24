@@ -336,9 +336,6 @@ extension DefaultChatSyncService {
         let responseSequenceId: ChatSequenceServerID? = JSON(responseData!)["sequence_id"].int
         guard responseSequenceId != nil else { throw ChatSyncServiceError.invalidResponseContentReturned }
 
-        // Now that we're done, un-pin the parent sequence, if needed
-        pin(sequenceId: sequence.serverId, pinned: false)
-
         return responseSequenceId
     }
 
