@@ -447,13 +447,13 @@ class _OneModel:
             cfr.prompt.encode('utf-8'),
         )
         cfr_prompt_token_len: int = len(tokenized_prompt)
-        status_holder.push(f"[lcp] \"{self.model_name}\" starting inference: prompt size is {cfr_prompt_token_len:_} tokens")
-        logger.debug(f"[lcp] \"{self.model_name}\" starting inference: prompt size is {cfr_prompt_token_len:_} tokens")
 
         llama_cpp.llama_reset_timings(self.underlying_model.ctx)
 
         # In the normal/fast case, just run a normal completion
         if inference_options.prompt_eval_batch_size is None or inference_options.prompt_eval_batch_size <= 0:
+            status_holder.push(f"\"{self.model_name}\" starting prompt eval + inference with {cfr_prompt_token_len:_} prompt tokens")
+            logger.debug(f"\"{self.model_name}\" starting prompt eval + inference with {cfr_prompt_token_len:_} prompt tokens")
             return self.underlying_model.create_completion(
                 tokenized_prompt,
                 **model_params,
@@ -461,6 +461,8 @@ class _OneModel:
 
         # Split the prompt eval into chunks, so we give the caller(s) a chance to break
         else:
+            status_holder.push(f"\"{self.model_name}\" starting chunked prompt eval: {cfr_prompt_token_len:_} tokens")
+
             chunking_model_params = dict(model_params)
             # NB This should be 0, but 0 has a special value that means "evaluate until model stops" or something.
             # Some providers also use -1 and -2 as special values.
@@ -479,8 +481,8 @@ class _OneModel:
             last_timing_print: datetime
             timing_print_interval: float = 5.0
 
-            logger.info(f"[lcp] Prompt eval will be chunked, `timings.n_eval` may be off by {cfr_prompt_token_len / CHUNK_SIZE:_.1f} tokens")
-            with StatusContext(f"[lcp] Prompt eval: {cfr_prompt_token_len:_} tokens total, batch size {CHUNK_SIZE}",
+            logger.info(f"[lcp] prompt eval will be chunked, `timings.n_eval` may be off by {cfr_prompt_token_len / CHUNK_SIZE:_.1f} tokens")
+            with StatusContext(f"[lcp] prompt eval: {cfr_prompt_token_len:_} tokens total, with batch size {CHUNK_SIZE}",
                                status_holder):
                 # Do an initial print, so we preload the model + don't compute that initial time.
                 await asyncio.sleep(0)
@@ -500,7 +502,7 @@ class _OneModel:
                     estimated_time: float = (cfr_prompt_token_len - tokens_parsed) / tokens_parsed * elapsed_time
 
                     status_holder.set(
-                        f"[lcp] Prompt eval: {tokens_parsed} of {cfr_prompt_token_len:_} tokens total"
+                        f"[lcp] prompt eval: {tokens_parsed} of {cfr_prompt_token_len:_} tokens total"
                         f", {elapsed_time: >7_.3f} seconds elapsed + {estimated_time:_.0f}s remaining")
 
                     # Print similar timing info to the console, but throttled by time.
@@ -510,7 +512,7 @@ class _OneModel:
 
                         if time_since_print > timing_print_interval:
                             logger.debug(
-                                f"[lcp] Prompt eval: {tokens_parsed: >6_} of {cfr_prompt_token_len:_} tokens total"
+                                f"[lcp] prompt eval: {tokens_parsed: >6_} of {cfr_prompt_token_len:_} tokens total"
                                 f", {elapsed_time + estimated_time: >9_.3f} secs estimated total at {count_since_print / time_since_print: >6_.3f} tokens/sec")
 
                             last_tokens_parsed = tokens_parsed
@@ -518,6 +520,7 @@ class _OneModel:
 
                     await asyncio.sleep(0)
 
+            status_holder.push(f"\"{self.model_name}\" done with prompt eval, starting inference with {cfr_prompt_token_len:_} prompt tokens")
             self.underlying_model.verbose = suppressed_model_verbose
             return self.underlying_model.create_completion(tokenized_prompt, **model_params), cfr_prompt_token_len
 
