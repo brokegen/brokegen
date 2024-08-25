@@ -391,7 +391,7 @@ struct CSCSettingsView: View {
                     GridRow {
                         (
                             Text("[global] Batch size for prompt evaluation \n")
-                            + Text("(smaller sizes much more overhead)")
+                            + Text("(smaller sizes have much more overhead)")
                                 .foregroundStyle(Color(.disabledControlTextColor))
                         )
                         .layoutPriority(1.0)
