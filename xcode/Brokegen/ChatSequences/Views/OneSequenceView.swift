@@ -249,7 +249,17 @@ struct OneSequenceView: View {
                             }
                         }
 
-                    let useVerticalLayout = geometry.size.height >= 144 + 36
+                    // This is chosen so that the three buttons + spacer stack up.
+                    // At short heights, the Spacer() causes padding to be added to the top of InlineTextInput,
+                    // which is only visible when you have something (system prompt entry) above it.
+                    //
+                    // - 3 buttons * 32 font size = 96
+                    // - VStackLayout has spacing of 18 = 36
+                    //   and .bottom padding of 18
+                    // - additional spacer gets VStackLayout spacing of 18,
+                    // - ??? not clear where last 30 legical pixels come from
+                    //
+                    let useVerticalLayout = geometry.size.height >= 150 + 48
                     let buttonLayout = useVerticalLayout
                     ? AnyLayout(VStackLayout(spacing: 18))
                     : AnyLayout(HStackLayout(spacing: 12))
