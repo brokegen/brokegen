@@ -145,7 +145,7 @@ struct BlankOneSequenceView: View {
                             }
                         }
 
-                    let useVerticalLayout = geometry.size.height >= 144 + 36
+                    let useVerticalLayout = geometry.size.height >= 150 + 48
                     let buttonLayout = useVerticalLayout
                     ? AnyLayout(VStackLayout(spacing: 18))
                     : AnyLayout(HStackLayout(spacing: 12))
