@@ -778,52 +778,58 @@ struct OneSequenceView: View {
                     }
                     .frame(minHeight: 240)
 
-                    if showStatusBar || showLowerVStack {
-                        VStack(spacing: 0) {
-                            if showStatusBar {
-                                statusBar
-                                    .frame(minHeight: minStatusBarHeight)
-                            }
-
-                            if showLowerVStack {
-                                lowerVStack
-                                    .frame(minHeight: tabBarHeight + 24)
-                                    .fontDesign(settings.textEntryFontDesign)
-                            }
+                    VStack(spacing: 0) {
+                        if showStatusBar {
+                            statusBar
+                                .frame(minHeight: minStatusBarHeight)
                         }
-                    }
 
-                    if showLowerVStackOptions {
-                        GeometryReader { optionsGeometry in
-                            // Use ViewThatFits for the case where the options space is so big
-                            // there's no need to allow scrolling.
-                            ViewThatFits {
-                                VStack(alignment: .center) {
-                                    VFlowLayout(spacing: 24) {
-                                        lowerVStackOptions
-                                    }
-                                    .frame(width: optionsGeometry.size.width)
+                        if showLowerVStack || showLowerVStackOptions {
+                            VSplitView {
+                                if showLowerVStack {
+                                    lowerVStack
+                                        .fontDesign(settings.textEntryFontDesign)
+                                    // NB These numbers don't _actually_ make sense, since they're not specific to individual components of lowerVStack.
+                                    // So, assume 32 pixels for each section, and then we have to rely on the section itself to set a minimum height that works with it.
+                                    // This is probably a consequence of how VSplitView and lowerVStack are defined in different functions.
+                                        .frame(minHeight:
+                                                (viewModel.showSystemPromptOverride ? 32 : 0)
+                                               + (viewModel.showTextEntryView ? 32 : 0)
+                                               + (viewModel.showAssistantResponseSeed ? 32 : 0)
+                                        )
                                 }
-                                .frame(maxWidth: .infinity)
 
-                                ScrollView {
-                                    VStack(alignment: .center) {
-                                        VFlowLayout(spacing: 24) {
-                                            lowerVStackOptions
+                                if showLowerVStackOptions {
+                                    GeometryReader { optionsGeometry in
+                                        // Use ViewThatFits for the case where the options space is so big
+                                        // there's no need to allow scrolling.
+                                        ViewThatFits {
+                                            VStack(alignment: .center) {
+                                                VFlowLayout(spacing: 24) {
+                                                    lowerVStackOptions
+                                                }
+                                                .frame(width: optionsGeometry.size.width)
+                                            }
+                                            .frame(maxWidth: .infinity)
+
+                                            ScrollView {
+                                                VStack(alignment: .center) {
+                                                    VFlowLayout(spacing: 24) {
+                                                        lowerVStackOptions
+                                                    }
+                                                    .frame(width: optionsGeometry.size.width)
+                                                }
+                                                .frame(maxWidth: .infinity)
+                                            }
                                         }
-                                        .frame(width: optionsGeometry.size.width)
                                     }
-                                    .frame(maxWidth: .infinity)
+                                    .frame(minHeight: 144)
                                 }
                             }
                         }
-                        /// - Set a min height so we don't accidentally make a 0-height SplitView pane.
-                        /// - Also, set this in a way proportional to the upper VStack,
-                        ///   since that's what VSplitView uses to read proportions.
-                        .frame(minHeight: 144)
-                    }
 
-                    lowerTabBar(height: tabBarHeight)
+                        lowerTabBar(height: tabBarHeight)
+                    }
                 }
             }
             .contextMenu {
