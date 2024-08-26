@@ -96,7 +96,7 @@ class DefaultChatSyncService: ChatSyncService {
                 endpoint: "/sequences/\(sequenceId)/user_pinned?value=\(userPinned)")
             guard result != nil else { return }
 
-            DispatchQueue.main.async {
+            DispatchQueue.main.sync {
                 let latestSequenceUpdated: ChatSequence? = self.loadedChatSequences[sequenceId]?
                     .replaceUserPinned(pinned: userPinned)
                 if latestSequenceUpdated != nil {

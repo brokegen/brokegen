@@ -176,7 +176,7 @@ struct SequencePickerView: View {
                 Task {
                     for sequence in sequences {
                         if let refreshedSequence = try? await chatService.fetchChatSequenceDetails(sequence.serverId) {
-                            DispatchQueue.main.async {
+                            DispatchQueue.main.sync {
                                 self.chatService.updateSequence(withSameId: refreshedSequence)
                             }
                         }
