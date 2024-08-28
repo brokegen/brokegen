@@ -66,7 +66,7 @@ struct AppWindowView: View {
             NavigationSplitView(sidebar: {
                 sharedSidebar
             }, detail: {
-                SequencePickerView(onlyUserPinned: true)
+                SequencePickerView()
             })
             .navigationDestination(for: OneSequenceViewModel.self) { clientModel in
                 NavigationSplitView(sidebar: {

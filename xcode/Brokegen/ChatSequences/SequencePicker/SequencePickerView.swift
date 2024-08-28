@@ -85,14 +85,23 @@ func dateToSectionName(_ date: Date?) -> String {
     }
 }
 
-func sectionedSequences(
+func sectioned(
     _ loadedChatSequences: [ChatSequence],
-    onlyUserPinned: Bool
+    includeUserPinned: Bool,
+    includeLeafSequences: Bool,
+    includeAll: Bool
 ) -> [(String, [ChatSequence])] {
     var sortedSequences = Array(loadedChatSequences)
-    if onlyUserPinned {
+    if !includeAll {
         sortedSequences = sortedSequences.filter {
-            $0.userPinned == true || $0.isLeafSequence == true
+            if includeUserPinned && $0.userPinned {
+                return true
+            }
+            if includeLeafSequences && ($0.isLeafSequence ?? false) {
+                return true
+            }
+
+            return false
         }
     }
     sortedSequences = sortedSequences.sorted()
@@ -114,14 +123,35 @@ struct SequencePickerView: View {
     @Environment(AppSettings.self) public var appSettings
     @Environment(CSCSettingsService.self) public var chatSettingsService
 
-    let onlyUserPinned: Bool
+    let fetchUserPinned: Bool?
+    let fetchLeafSequences: Bool?
+    let fetchAll: Bool?
     let showNewChatButton: Bool
     let showSequenceIds: Bool
 
     @State private var isRenaming: [ChatSequence] = []
 
-    init(onlyUserPinned: Bool = true, showNewChatButton: Bool = true, showSequenceIds: Bool = false) {
-        self.onlyUserPinned = onlyUserPinned
+    init(
+        fetchUserPinned: Bool? = true,
+        fetchLeafSequences: Bool? = false,
+        showNewChatButton: Bool = true,
+        showSequenceIds: Bool = false
+    ) {
+        self.fetchUserPinned = fetchUserPinned
+        self.fetchLeafSequences = fetchLeafSequences
+        self.fetchAll = nil
+        self.showNewChatButton = showNewChatButton
+        self.showSequenceIds = showSequenceIds
+    }
+
+    init(
+        fetchAll: Bool?,
+        showNewChatButton: Bool = true,
+        showSequenceIds: Bool = false
+    ) {
+        self.fetchUserPinned = nil
+        self.fetchLeafSequences = nil
+        self.fetchAll = fetchAll
         self.showNewChatButton = showNewChatButton
         self.showSequenceIds = showSequenceIds
     }
@@ -255,25 +285,38 @@ struct SequencePickerView: View {
 
     @ViewBuilder
     var upperToolbar: some View {
-        let itemCount = self.onlyUserPinned ? maxSidebarItems : Int(maxSidebarItems * 2)
-
         HStack(spacing: 24) {
-            Button("Refresh \(itemCount)", systemImage: "arrow.clockwise") {
-                Task { try? await chatService.fetchRecents(limit: itemCount, onlyUserPinned: onlyUserPinned) }
+            Button("Refresh \(maxSidebarItems)", systemImage: "arrow.clockwise") {
+                Task { try? await chatService.fetchRecents(
+                    limit: Int(maxSidebarItems),
+                    includeUserPinned: fetchUserPinned,
+                    includeLeafSequences: fetchLeafSequences,
+                    includeAll: fetchAll
+                ) }
             }
             .buttonStyle(.accessoryBar)
             .padding(12)
             .layoutPriority(0.2)
 
             Button("Refresh -- 2d", systemImage: "arrow.clockwise") {
-                Task { try? await chatService.fetchRecents(lookback: 172_800, onlyUserPinned: onlyUserPinned) }
+                Task { try? await chatService.fetchRecents(
+                    lookback: 172_800,
+                    includeUserPinned: fetchUserPinned,
+                    includeLeafSequences: fetchLeafSequences,
+                    includeAll: fetchAll
+                ) }
             }
             .buttonStyle(.accessoryBar)
             .padding(12)
             .layoutPriority(0.2)
 
             Button("Refresh -- 14d", systemImage: "arrow.clockwise") {
-                Task { try? await chatService.fetchRecents(lookback: 1_209_600, onlyUserPinned: onlyUserPinned) }
+                Task { try? await chatService.fetchRecents(
+                    lookback: 1_209_600,
+                    includeUserPinned: fetchUserPinned,
+                    includeLeafSequences: fetchLeafSequences,
+                    includeAll: fetchAll
+                ) }
             }
             .buttonStyle(.accessoryBar)
             .lineLimit(1...3)
@@ -342,7 +385,13 @@ struct SequencePickerView: View {
         GeometryReader { geometry in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 8) {
-                    ForEach(sectionedSequences(Array(chatService.loadedChatSequences.values), onlyUserPinned: onlyUserPinned), id: \.0) { pair in
+                    let sectionedSequences = sectioned(
+                        Array(chatService.loadedChatSequences.values),
+                        includeUserPinned: fetchUserPinned ?? false,
+                        includeLeafSequences: fetchLeafSequences ?? false,
+                        includeAll: fetchAll ?? false
+                    )
+                    ForEach(sectionedSequences, id: \.0) { pair in
                         let (sectionName, sectionSequences) = pair
 
                         Section(content: {

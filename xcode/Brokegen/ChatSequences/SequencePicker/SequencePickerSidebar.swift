@@ -64,7 +64,7 @@ struct MiniSequencePickerSidebar: View {
             
             if chatService.loadedChatSequences.isEmpty {
                 if navLimit <= 0 {
-                    NavigationLink(destination: SequencePickerView(onlyUserPinned: true)) {
+                    NavigationLink(destination: SequencePickerView(fetchUserPinned: true, fetchLeafSequences: false)) {
                         ASRow("Browse Pinned", showChevron: true)
                     }
                 }
@@ -74,7 +74,12 @@ struct MiniSequencePickerSidebar: View {
                         // do something with ProgressView and timeouts.
                         Button("Refresh Chats List", systemImage: "arrow.clockwise") {
                             timesRefreshClicked += 1
-                            Task { try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: true) }
+                            Task { try? await chatService.fetchRecents(
+                                limit: navLimit,
+                                includeUserPinned: true,
+                                includeLeafSequences: nil,
+                                includeAll: nil
+                            ) }
                         }
                         .padding(.leading, -24)
                         .padding(.trailing, -24)
@@ -83,8 +88,16 @@ struct MiniSequencePickerSidebar: View {
                         Button("Load Chats", systemImage: "arrow.clockwise") {
                             timesRefreshClicked += 1
                             Task {
-                                try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: true)
-                                try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: false)
+                                try? await chatService.fetchRecents(
+                                    limit: navLimit,
+                                    includeUserPinned: true,
+                                    includeLeafSequences: nil,
+                                    includeAll: nil)
+                                try? await chatService.fetchRecents(
+                                    limit: navLimit,
+                                    includeUserPinned: nil,
+                                    includeLeafSequences: nil,
+                                    includeAll: true)
                             }
                         }
                         .foregroundStyle(Color.accentColor)
@@ -94,11 +107,11 @@ struct MiniSequencePickerSidebar: View {
                 }
             }
             else {
-                NavigationLink(destination: SequencePickerView(onlyUserPinned: true)) {
+                NavigationLink(destination: SequencePickerView()) {
                     ASRow("Pinned Chats", showChevron: true)
                 }
-                NavigationLink(destination: SequencePickerView(onlyUserPinned: false, showSequenceIds: true)) {
-                    ASRow("All Chats", showChevron: true)
+                NavigationLink(destination: SequencePickerView(fetchLeafSequences: true, showSequenceIds: true)) {
+                    ASRow("Pinned + Leaf Chats", showChevron: true)
                 }
 
                 Divider()
@@ -131,8 +144,16 @@ struct MiniSequencePickerSidebar: View {
         }
         .onAppear {
             Task {
-                try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: true)
-                try? await chatService.fetchRecents(limit: navLimit, onlyUserPinned: false)
+                try? await chatService.fetchRecents(
+                    limit: navLimit,
+                    includeUserPinned: true,
+                    includeLeafSequences: nil,
+                    includeAll: nil)
+                try? await chatService.fetchRecents(
+                    limit: navLimit,
+                    includeUserPinned: nil,
+                    includeLeafSequences: nil,
+                    includeAll: true)
             }
         }
     }

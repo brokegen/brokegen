@@ -157,7 +157,13 @@ class ChatSyncService: ObservableObject {
     }
 
     // MARK: - ChatSequence change members
-    public func fetchRecents(lookback: TimeInterval? = nil, limit: Int? = nil, onlyUserPinned: Bool? = nil) async throws {
+    public func fetchRecents(
+        lookback: TimeInterval? = nil,
+        limit: Int? = nil,
+        includeUserPinned: Bool?,
+        includeLeafSequences: Bool?,
+        includeAll: Bool?
+    ) async throws {
     }
 
     func updateSequence(withSameId updatedSequence: ChatSequence, disablePublish: Bool = false) {

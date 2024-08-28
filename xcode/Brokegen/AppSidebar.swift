@@ -159,7 +159,7 @@ struct AppSidebar: View {
                                 ASRow("Foundation Models")
                             }
 
-                            NavigationLink(destination: SequencePickerView(onlyUserPinned: false, showNewChatButton: false, showSequenceIds: true)) {
+                            NavigationLink(destination: SequencePickerView(fetchAll: true, showNewChatButton: false, showSequenceIds: true)) {
                                 ASRow("ChatSequences", showChevron: true)
                             }
                         }
