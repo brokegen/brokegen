@@ -605,40 +605,12 @@ struct BlankOneSequenceView: View {
                         withAnimation { viewModel.settings.showOFMPicker = true }
                     }
                 }
+                else {
+                    populateRecents(viewModel.continuationInferenceModel?.serverId)
+                }
             }
-            .onChange(of: viewModel.continuationInferenceModel?.serverId ?? -5) { oldValue, newValue in
-                guard newValue != -5 else { return }
-
-                if viewModel.settings.inference.overrideSystemPrompt == nil {
-                    if let content = templates.recents(type: .systemPromptOverride, model: newValue).first?.content {
-                        viewModel.settings.inference.overrideSystemPrompt = content
-                        viewModel.showSystemPromptOverride = true
-                    }
-                }
-
-                if viewModel.settings.inference.overrideModelTemplate == nil {
-                    if let content = templates.recents(type: .modelTemplate, model: newValue).first?.content {
-                        viewModel.settings.overrideModelTemplate = content
-                        viewModel.showSystemPromptOverride = true
-                    }
-                }
-
-                if viewModel.settings.inference.seedAssistantResponse == nil {
-                    if let content = templates.recents(type: .assistantResponseSeed, model: newValue).first?.content {
-                        viewModel.settings.seedAssistantResponse = content
-                        viewModel.showAssistantResponseSeed = true
-                    }
-                }
-                if viewModel.settings.inference.inferenceOptions == nil {
-                    if let content = templates.recents(type: .inferenceOptions, model: newValue).first?.content {
-                        viewModel.settings.inferenceOptions = content
-                        viewModel.showInferenceOptions = true
-                    }
-                }
-
-                if viewModel.settings.retrievalSearchArgs.isEmpty {
-                    viewModel.settings.retrievalSearchArgs = templates.recents(type: .retrievalSearchArgs).first?.content ?? ""
-                }
+            .onChange(of: viewModel.continuationInferenceModel?.serverId) { oldValue, newValue in
+                populateRecents(newValue)
             }
             .contextMenu {
                 contextMenuItems
@@ -695,6 +667,41 @@ struct BlankOneSequenceView: View {
                     viewModel.resetForNewChat()
                 }
             }
+        }
+    }
+
+    private func populateRecents(
+        _ newValue: FoundationModelRecordID?
+    ) {
+        if viewModel.settings.inference.overrideSystemPrompt == nil {
+            if let content = templates.recents(type: .systemPromptOverride, model: newValue).first?.content {
+                viewModel.settings.inference.overrideSystemPrompt = content
+                viewModel.showSystemPromptOverride = true
+            }
+        }
+
+        if viewModel.settings.inference.overrideModelTemplate == nil {
+            if let content = templates.recents(type: .modelTemplate, model: newValue).first?.content {
+                viewModel.settings.overrideModelTemplate = content
+                viewModel.showSystemPromptOverride = true
+            }
+        }
+
+        if viewModel.settings.inference.seedAssistantResponse == nil {
+            if let content = templates.recents(type: .assistantResponseSeed, model: newValue).first?.content {
+                viewModel.settings.seedAssistantResponse = content
+                viewModel.showAssistantResponseSeed = true
+            }
+        }
+        if viewModel.settings.inference.inferenceOptions == nil {
+            if let content = templates.recents(type: .inferenceOptions, model: newValue).first?.content {
+                viewModel.settings.inferenceOptions = content
+                viewModel.showInferenceOptions = true
+            }
+        }
+
+        if viewModel.settings.retrievalSearchArgs.isEmpty {
+            viewModel.settings.retrievalSearchArgs = templates.recents(type: .retrievalSearchArgs).first?.content ?? ""
         }
     }
 }
