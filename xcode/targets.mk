@@ -7,10 +7,9 @@ build/xcode-macos-export-options.plist:
 	plutil -insert "method" -string "mac-application" "$@"
 
 # Internal-only build target; used for a rapid edit-deploy cycle.
-.PHONY: dist-xcode
-dist-xcode: build-xcode-release
-dist-xcode: build/xcode-macos-export-options.plist
-dist-xcode: | dist/Brokegen.app.tzst
+.PHONY: prerelase
+prerelease: build-xcode-release
+prerelease: build/xcode-macos-export-options.plist
 	xcodebuild -quiet \
 		-exportArchive \
 		-archivePath build/"macOS App (Release).xcarchive" \
@@ -41,11 +40,10 @@ dist/Brokegen.app.tzst: build/xcode-macos-export-options.plist
 	xcodebuild -quiet \
 		-exportArchive \
 		-archivePath build/"macOS App (Release).xcarchive" \
-		-exportPath dist/ \
+		-exportPath build/xcode-tzst/ \
 		-exportOptionsPlist build/xcode-macos-export-options.plist
-	cd dist \
-		&& tar cvf Brokegen.app.tzst --zstd --options zstd:compression-level=22 Brokegen.app
-	rm -rf dist/Brokegen.app
+	cd build/xcode-tzst/ \
+		&& tar cvf ../../dist/Brokegen.app.tzst --zstd --options zstd:compression-level=22 Brokegen.app
 
 .PHONY: build-xcode-release
 build: build-xcode-release
