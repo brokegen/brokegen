@@ -561,36 +561,40 @@ struct BlankOneSequenceView: View {
                 }
                 .frame(minHeight: 240)
 
-                if showStatusBar || showLowerVStack {
-                    VStack(spacing: 0) {
-                        if showStatusBar {
-                            statusBar
-                                .frame(minHeight: minStatusBarHeight)
-                        }
-
-                        if showLowerVStack {
-                            lowerVStack
-                                .frame(minHeight: tabBarHeight + 24)
-                                .fontDesign(viewModel.settings.textEntryFontDesign)
-                        }
+                VStack(spacing: 0) {
+                    if showStatusBar {
+                        statusBar
+                            .frame(minHeight: minStatusBarHeight)
                     }
-                }
 
-                if showLowerVStackOptions {
-                    GeometryReader { optionsGeometry in
-                        ScrollView {
-                            VStack(alignment: .center) {
-                                VFlowLayout(spacing: 24) {
-                                    lowerVStackOptions
-                                }
-                                .frame(width: optionsGeometry.size.width)
+                    if showLowerVStack || showLowerVStackOptions {
+                        VSplitView {
+                            if showLowerVStack {
+                                lowerVStack
+                                    .fontDesign(viewModel.settings.textEntryFontDesign)
+                                    .frame(minHeight:
+                                            (viewModel.showSystemPromptOverride ? 32 : 0)
+                                           + (viewModel.showTextEntryView ? 32 : 0)
+                                           + (viewModel.showAssistantResponseSeed ? 32 : 0)
+                                    )
                             }
-                            .frame(maxWidth: .infinity)
+
+                            if showLowerVStackOptions {
+                                GeometryReader { optionsGeometry in
+                                    ScrollView {
+                                        VStack(alignment: .center) {
+                                            VFlowLayout(spacing: 24) {
+                                                lowerVStackOptions
+                                            }
+                                            .frame(width: optionsGeometry.size.width)
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                    }
+                                }
+                                .frame(minHeight: 144)
+                            }
                         }
                     }
-                    // Set this in a way proportional to the upper VStack,
-                    // since that's what VSplitView uses to read proportions.
-                    .frame(minHeight: 144)
                 }
 
                 lowerTabBar(height: tabBarHeight)
