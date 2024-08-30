@@ -534,6 +534,23 @@ class _OneModel:
         if "stopping_criteria" in model_params:
             del model_params["stopping_criteria"]
 
+        # Copied from TemplateApplier.__call__()
+        messages_with_system = list(messages)
+        if inference_options.override_system_prompt is not None:
+            if len(messages_with_system) >= 1 and messages_with_system[0]["role"] == "system":
+                messages_with_system[0]["content"] = inference_options.override_system_prompt
+            else:
+                messages_with_system.insert(0, {
+                    "role": "system",
+                    "content": inference_options.override_system_prompt,
+                })
+
+        # TODO: Should these be outright errors?
+        if inference_options.override_model_template:
+            logger.error(f'Using llama.cpp \"chat\" endpoint, ignoring {inference_options.override_model_template=}')
+        if inference_options.seed_assistant_response:
+            logger.error(f'Using llama.cpp \"chat\" endpoint, ignoring {inference_options.seed_assistant_response=}')
+
         iterator_or_completion: \
             llama_cpp.CreateChatCompletionResponse | Iterator[llama_cpp.CreateChatCompletionStreamResponse]
         return self.underlying_model.create_chat_completion(
