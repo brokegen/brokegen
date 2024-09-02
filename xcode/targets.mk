@@ -10,6 +10,7 @@ build/xcode-macos-export-options.plist:
 .PHONY: prerelase
 prerelease: build-xcode-release
 prerelease: build/xcode-macos-export-options.plist
+prerelease: server-onedir
 	xcodebuild -quiet \
 		-exportArchive \
 		-archivePath build/"macOS App (Release).xcarchive" \
