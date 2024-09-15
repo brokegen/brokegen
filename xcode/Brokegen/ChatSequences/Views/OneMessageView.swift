@@ -19,9 +19,14 @@ struct OMVButton: View {
         self.action = action
     }
 
+    // TODO: The hovering doesnt' work unless/until the view is scrolled a little.
+    // Something else is intercepting the hover/etc events, during the initial static view.
     var body: some View {
         Image(systemName: imageSystemName)
-            .scaleEffect(self.isButtonPressed ? 0.9 : 1.0)
+            .contentShape(Rectangle())
+            .onHover { isHovered in
+                self.isButtonHovered = isHovered
+            }
             .onTapGesture {
                 self.isButtonPressed = true
                 Task {
@@ -42,14 +47,11 @@ struct OMVButton: View {
                     .blur(radius: isButtonHovered ? 8 : 0)
                     .animation(.easeOut(duration: 0.1), value: isButtonHovered)
             )
-            .contentShape(Rectangle())
-            .onHover { isHovered in
-                self.isButtonHovered = isHovered
-            }
             .foregroundStyle(
                 isEnabled
                 ? (isButtonHovered ? Color(.controlAccentColor) : Color(.controlTextColor))
                 : Color(.disabledControlTextColor))
+            .scaleEffect(self.isButtonPressed ? 0.9 : 1.0)
     }
 }
 
