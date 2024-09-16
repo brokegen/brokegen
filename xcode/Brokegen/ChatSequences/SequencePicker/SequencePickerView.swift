@@ -165,10 +165,21 @@ struct SequencePickerView: View {
         Section(header: Text("Server-Side Chat Data")) {
             Button {
                 for sequence in sequences {
+                    chatService.pin(sequenceId: sequence.serverId, pinned: true)
+                }
+            } label: {
+                Toggle(isOn: .constant(sequences.allSatisfy { $0.userPinned })) {
+                    Text("Pin all to sidebar")
+                }
+            }
+            .disabled(sequences.allSatisfy { $0.userPinned })
+
+            Button {
+                for sequence in sequences {
                     chatService.pin(sequenceId: sequence.serverId, pinned: !sequence.userPinned)
                 }
             } label: {
-                Text("Pin all to sidebar")
+                Text("Toggle \"pinned to sidebar\" status for all")
             }
 
             Button {
@@ -222,12 +233,29 @@ struct SequencePickerView: View {
     @ViewBuilder
     func sequenceContextMenu(for sequence: ChatSequence) -> some View {
         if (sequence.humanDesc ?? "").isEmpty {
-            Text(sequence.displayRecognizableDesc())
-                .font(.title2)
+            Button {
+            } label: {
+                Image(systemName:
+                        (sequence.isLeafSequence ?? false)
+                      ? "bubble"
+                      : "eye.slash")
+                Text(sequence.displayRecognizableDesc())
+                    .font(.title2)
+            }
+            .disabled(true)
         }
         else {
-            Text(sequence.humanDesc!)
-                .font(.title2)
+            Button {
+            } label: {
+                Image(systemName:
+                        (sequence.isLeafSequence ?? false)
+                      ? "bubble"
+                      : "eye.slash")
+                Text(sequence.humanDesc!)
+                    .font(.title2)
+            }
+            .disabled(true)
+
             Text(sequence.displayServerId())
         }
 
