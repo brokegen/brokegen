@@ -66,7 +66,8 @@ struct AppWindowView: View {
             NavigationSplitView(sidebar: {
                 sharedSidebar
             }, detail: {
-                SequencePickerView()
+                // Show pinned + leaf ChatSequences as default/home view
+                SequencePickerView(fetchLeafSequences: true)
             })
             .navigationDestination(for: OneSequenceViewModel.self) { clientModel in
                 NavigationSplitView(sidebar: {
