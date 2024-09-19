@@ -172,6 +172,9 @@ struct SequencePickerView: View {
                     Text("Pin all to sidebar")
                 }
             }
+            // Disabled if everything is already pinned.
+            // TODO: Figure out some set of better, less-wordy options that will do what the user wants.
+            //       Seems like this'll be hard to do without analytics/user studies/more specific user personas.
             .disabled(sequences.allSatisfy { $0.userPinned })
 
             Button {
@@ -181,6 +184,8 @@ struct SequencePickerView: View {
             } label: {
                 Text("Toggle \"pinned to sidebar\" status for all")
             }
+            // This is disabled if "Pin all" is the only option here, and it will do the same thing
+            .disabled(sequences.allSatisfy { !$0.userPinned })
 
             Button {
                 self.isRenaming.append(contentsOf: sequences)
