@@ -110,7 +110,7 @@ class BaseProvider:
         Any InferenceEvent logging will be done per-provider, since only the provider knows what was generated.
         However, autonaming and context retrieval can happen separately.
         """
-        raise NotImplementedError()
+        raise NotImplementedError(f"{type(self)}: do_chat_nolog() not implemented!")
 
     @abstractmethod
     async def do_chat(
@@ -127,7 +127,7 @@ class BaseProvider:
         NB This may not be implemented if the client doesn't log inference events.
         In that case, the caller falls back to .do_chat_nolog.
         """
-        raise NotImplementedError()
+        raise NotImplementedError(f"{type(self)}: do_chat() not implemented!")
 
     async def chat(
             self,

@@ -165,7 +165,13 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             try:
                 async for item in (await response_maker_awaitable):
                     yield item
+
             except Exception as e:
+                logger.warning(f"{type(e)}: {str(e)}")
+
+                # NB This eventually triggers a RuntimeWarning: coroutine 'with_retrieval' was never awaited
+                #    (which resolves to `response_maker_awaitable` here).
+                # TODO: `await`/handle the coroutine correctly on exceptions, especially for `NotImplementedError`
                 yield {
                     "error": str(e),
                     "done": True,
