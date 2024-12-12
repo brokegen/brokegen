@@ -53,6 +53,7 @@ class AppSettings {
                 self!.cached_showDebugSidebarItems = self!.live_showDebugSidebarItems
                 self!.cached_startServicesImmediately = self!.live_startServicesImmediately
                 self!.cached_allowExternalTraffic = self!.live_allowExternalTraffic
+                self!.cached_serverBaseURL = self!.live_serverBaseURL
             }
 
         startUpdater()
@@ -260,5 +261,39 @@ class AppSettings {
     var allowExternalTraffic: Bool {
         get { cached_allowExternalTraffic ?? stored_allowExternalTraffic }
         set { live_allowExternalTraffic = newValue }
+    }
+
+
+    @AppStorage("serverBaseURL")
+    @ObservationIgnored var stored_serverBaseURL: String = "http://127.0.0.1:6635"
+
+    private var cached_serverBaseURL: String? = nil
+
+    @ObservationIgnored
+    var live_serverBaseURL: String {
+        get {
+            access(keyPath: \.live_serverBaseURL)
+            return stored_serverBaseURL
+        }
+        set {
+            withMutation(keyPath: \.live_serverBaseURL) {
+                stored_serverBaseURL = newValue
+                cached_serverBaseURL = newValue
+            }
+        }
+    }
+
+    /// Only returns the serverBaseURL that was available to us on launch.
+    private var firstRetrieved_serverBaseURL: String? = nil
+
+    var launch_serverBaseURL: String {
+        get {
+            if firstRetrieved_serverBaseURL != nil {
+                return firstRetrieved_serverBaseURL!
+            }
+
+            firstRetrieved_serverBaseURL = live_serverBaseURL
+            return firstRetrieved_serverBaseURL!
+        }
     }
 }

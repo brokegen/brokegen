@@ -2,7 +2,6 @@ import Combine
 import Foundation
 import SwiftUI
 
-let serverBaseURL: String = "http://127.0.0.1:6635"
 let configuration: URLSessionConfiguration = { slowTimeouts in
     // Keep the timeout to 2 seconds, because we virtually require the embedded server to be up.
     // For slow/loaded systems, or if a debugger is attached, we should bump this number.
@@ -46,14 +45,14 @@ struct BrokegenApp: App {
             templates = Templates.fromInMemory()
         }
         else {
-            chatService = DefaultChatSyncService(serverBaseURL, configuration: configuration)
-            let providerService = DefaultProviderService(serverBaseURL, configuration: configuration)
+            let appSettings = AppSettings()
+            self.appSettings = appSettings
+
+            chatService = DefaultChatSyncService(self.appSettings.launch_serverBaseURL, configuration: configuration)
+            let providerService = DefaultProviderService(self.appSettings.launch_serverBaseURL, configuration: configuration)
             self.providerService = providerService
             providerService.fetchAllProviders(repeatUntilSuccess: true)
             providerService.fetchAvailableModels(repeatUntilSuccess: true)
-
-            let appSettings = AppSettings()
-            self.appSettings = appSettings
             appSettings.link(to: providerService)
 
             let jobsService = DefaultJobsManagerService(
