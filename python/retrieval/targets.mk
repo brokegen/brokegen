@@ -16,11 +16,11 @@ ingest-cli: $(pyinstaller_ingest_venv)
 			--noconfirm \
 			--specpath dist \
 			--onefile --name "brokegen-ingest-cli" \
-			$(python_root)ingest/ingest_cli.py
+			$(python_root)retrieval/ingest_cli.py
 
 .PHONY: run-ingest
 run-ingest:
-	python $(python_root)ingest/ingest_cli.py $(python_root)
+	python $(python_root)retrieval/ingest_cli.py $(python_root)
 
 
 
