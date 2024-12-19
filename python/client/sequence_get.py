@@ -2,6 +2,7 @@ import itertools
 import json
 import logging
 from datetime import datetime, timezone, timedelta
+from time import sleep
 from typing import Annotated, Iterable
 
 import fastapi.routing
@@ -241,6 +242,9 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
             if where_clauses:
                 query = query.where(or_(*where_clauses))
+
+        # DEBUG: Add long delay, so we can debug client responsiveness
+        sleep(15.0)
 
         return {"sequences": [
             emit_sequence_details(match_object, history_db)
