@@ -8,7 +8,7 @@ build/xcode-macos-export-options.plist:
 
 # Internal-only build target; used for a rapid edit-deploy cycle.
 .PHONY: prerelase
-prerelease: build-xcode-release
+prerelease: build-xcode-debug
 prerelease: build/xcode-macos-export-options.plist
 prerelease: server-onedir
 	xcodebuild -quiet \
