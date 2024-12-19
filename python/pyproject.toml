@@ -30,7 +30,7 @@ inference = [
     # 'llama-cpp-python',
     'orjson',
     'psutil',
-    'simsimd==3.7.7',
+    'simsimd',
     'SQLAlchemy',
     'tqdm',
     'uvicorn',
