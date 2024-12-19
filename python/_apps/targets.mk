@@ -67,6 +67,10 @@ endif
 		&& CMAKE_ARGS="-DLLAMA_METAL=on -DLLAMA_ACCELERATE=on -DLLAMA_AVX=on -DLLAMA_AVX2=on -DLLAMA_AVX512=off -DLLAMA_FMA=on -DLLAMA_F16C=on" \
 			arch -x86_64 python -m pip \
 			install --upgrade llama-cpp-python --no-cache-dir
+	# A bunch of extra Python dependencies are included that we don't use, remove them to save space
+	source "$@"/bin/activate \
+		&& arch -x86_64 python -m pip \
+			uninstall pyarrow transformers pandas sympy
 
 .PHONY: clean-inference
 clean: clean-inference
