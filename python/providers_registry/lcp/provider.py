@@ -448,7 +448,7 @@ class _OneModel:
         )
         cfr_prompt_token_len: int = len(tokenized_prompt)
 
-        llama_cpp.llama_reset_timings(self.underlying_model.ctx)
+        llama_cpp.llama_perf_context_reset(self.underlying_model.ctx)
 
         # In the normal/fast case, just run a normal completion
         if inference_options.prompt_eval_batch_size is None or inference_options.prompt_eval_batch_size <= 0:
@@ -732,13 +732,13 @@ class LlamaCppProvider(BaseProvider):
                 primordial: AsyncIterator[T],
                 cfr_prompt_token_len: int | None,
         ) -> AsyncIterator[T]:
-            timings: llama_cpp.llama_timings | None = None
+            timings: llama_cpp.llama_perf_context_data | None = None
 
             try:
                 async for chunk in primordial:
                     yield chunk
 
-                    timings = llama_cpp.llama_get_timings(loaded_model.underlying_model.ctx)
+                    timings = llama_cpp.llama_perf_context(loaded_model.underlying_model.ctx)
                     evaluation_desc: str = f"{timings.n_eval} tokens generated in {timings.t_eval_ms / 1000:_.3f} seconds"
 
                     if timings.n_p_eval == 0:
@@ -926,7 +926,7 @@ class LlamaCppProvider(BaseProvider):
                 reason="LlamaCppProvider.do_chat_logged",
             )
 
-            timings: llama_cpp.llama_timings = llama_cpp.llama_get_timings(
+            timings: llama_cpp.llama_perf_context_data = llama_cpp.llama_perf_context(
                 self.loaded_models[inference_model.id].underlying_model.ctx)
 
             inference_event.prompt_tokens = timings.n_p_eval
