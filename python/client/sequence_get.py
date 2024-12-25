@@ -2,7 +2,6 @@ import itertools
 import json
 import logging
 from datetime import datetime, timezone, timedelta
-from time import sleep
 from typing import Annotated, Iterable
 
 import fastapi.routing
@@ -18,9 +17,9 @@ from starlette.exceptions import HTTPException
 from _util.json import JSONDict, DatetimeEncoder, CatchAllEncoder
 from _util.typing import ChatSequenceID
 from providers.foundation_models.orm import FoundationModelRecordOrm, lookup_foundation_model_for_event_id
+from .database import HistoryDB, get_db as get_history_db
 from .message import ChatMessageOrm, ChatMessage, ChatMessageResponse
 from .sequence import ChatSequenceOrm, lookup_sequence_parents, ChatSequenceResponse, ChatSequence, InfoMessageOut
-from .database import HistoryDB, get_db as get_history_db
 
 logger = logging.getLogger(__name__)
 
@@ -242,9 +241,6 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
             if where_clauses:
                 query = query.where(or_(*where_clauses))
-
-        # DEBUG: Add long delay, so we can debug client responsiveness
-        sleep(15.0)
 
         return {"sequences": [
             emit_sequence_details(match_object, history_db)
