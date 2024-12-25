@@ -122,7 +122,16 @@ struct OneMessageView: View {
     }
 
     var renderAsMarkdown: Bool {
-        get { localRenderAsMarkdown ?? defaultRenderAsMarkdown }
+        get {
+            // markdown lib fails on large messages, so never parse them
+            if self.message.content.count > 10_000 {
+                print("[WARN] will not render as markdown, message length is \(self.message.content.count)")
+                return false
+            }
+            else {
+                return localRenderAsMarkdown ?? defaultRenderAsMarkdown
+            }
+        }
     }
 
     @ViewBuilder
