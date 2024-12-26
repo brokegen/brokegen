@@ -448,8 +448,6 @@ class _OneModel:
         )
         cfr_prompt_token_len: int = len(tokenized_prompt)
 
-        llama_cpp.llama_perf_context_reset(self.underlying_model.ctx)
-
         # In the normal/fast case, just run a normal completion
         if inference_options.prompt_eval_batch_size is None or inference_options.prompt_eval_batch_size <= 0:
             status_holder.push(f"\"{self.model_name}\" starting prompt eval + inference with {cfr_prompt_token_len:_} prompt tokens")
