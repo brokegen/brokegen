@@ -5,7 +5,7 @@ let tabBarHeight: CGFloat = 48
 let statusBarVPadding: CGFloat = 12
 let minStatusBarHeight: CGFloat = statusBarVPadding + 12 + statusBarVPadding
 
-struct MultiMessageView: View {
+fileprivate struct MultiMessageView: View {
     @Environment(PathHost.self) private var pathHost
     var viewModel: OneSequenceViewModel
     var settings: CSCSettingsService.SettingsProxy
@@ -110,15 +110,11 @@ struct MultiMessageView: View {
     }
 }
 
-struct OneSequenceView: View {
-    @Environment(PathHost.self) private var pathHost
-    @Environment(Templates.self) private var templates
+fileprivate struct TextEntryView: View {
     var viewModel: OneSequenceViewModel
     var settings: CSCSettingsService.SettingsProxy
-    @State private var lastScrollOnNewText: Date = Date.distantPast
 
     @FocusState private var focusTextInput: Bool
-    @State private var showContinuationModelPicker: Bool = false
 
     init(_ viewModel: OneSequenceViewModel) {
         self.viewModel = viewModel
@@ -234,7 +230,7 @@ struct OneSequenceView: View {
         .id("aio button")
     }
 
-    var textEntryView: some View {
+    var body: some View {
         VStack(spacing: 0) {
             GeometryReader { geometry in
                 HStack(spacing: 12) {
@@ -279,6 +275,21 @@ struct OneSequenceView: View {
                 .padding(.trailing, 12)
             }
         }
+    }
+}
+
+struct OneSequenceView: View {
+    @Environment(PathHost.self) private var pathHost
+    @Environment(Templates.self) private var templates
+    var viewModel: OneSequenceViewModel
+    var settings: CSCSettingsService.SettingsProxy
+    @State private var lastScrollOnNewText: Date = Date.distantPast
+
+    @State private var showContinuationModelPicker: Bool = false
+
+    init(_ viewModel: OneSequenceViewModel) {
+        self.viewModel = viewModel
+        self.settings = viewModel.settings
     }
 
     var showStatusBar: Bool {
@@ -353,7 +364,7 @@ struct OneSequenceView: View {
         }
 
         if viewModel.showTextEntryView {
-            textEntryView
+            TextEntryView(viewModel)
                 .background(inputBackgroundStyle)
         }
 
