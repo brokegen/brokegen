@@ -210,6 +210,13 @@ class _OneModel:
         context_params = {
             "model_path": self.model_path,
             "n_ctx": 512,
+
+            # TODO: This is not yet present as of llama-cpp-python v0.3.5
+            #
+            # - llama_cpp.py: add `no_perf` to class llama_context_params
+            # - llama.py add argument + use in Llama.__init__()
+            #
+            "no_perf": False,
         }
 
         parsed_inference_options = {}
