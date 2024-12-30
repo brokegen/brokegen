@@ -457,8 +457,8 @@ class _OneModel:
 
         # In the normal/fast case, just run a normal completion
         if inference_options.prompt_eval_batch_size is None or inference_options.prompt_eval_batch_size <= 0:
-            status_holder.push(f"\"{self.model_name}\" starting prompt eval + inference with {cfr_prompt_token_len:_} prompt tokens")
-            logger.debug(f"\"{self.model_name}\" starting prompt eval + inference with {cfr_prompt_token_len:_} prompt tokens")
+            status_holder.push(f"\"{self.model_name}\" starting prompt eval ({cfr_prompt_token_len:_} prompt tokens) + inference")
+            logger.debug(f"\"{self.model_name}\" starting prompt eval ({cfr_prompt_token_len:_} prompt tokens) + inference")
             return self.underlying_model.create_completion(
                 tokenized_prompt,
                 **model_params,
