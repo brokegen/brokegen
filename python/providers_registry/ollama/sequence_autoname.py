@@ -41,7 +41,7 @@ async def do_autoname_sequence(
         request_content={
             'model': autonaming_model.human_id,
             'prompt': templated_query,
-            'raw': False,
+            'raw': True,
             'stream': True,
         },
         history_db=next(get_history_db()),
