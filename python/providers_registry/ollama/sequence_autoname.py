@@ -4,7 +4,7 @@ import starlette.responses
 
 from _util.json import safe_get, JSONDict
 from _util.status import ServerStatusHolder, StatusContext
-from _util.typing import PromptText
+from _util.typing import PromptText, TemplatedPromptText
 from audit.http import get_db as get_audit_db
 from client.database import get_db as get_history_db
 from client.message import ChatMessage
@@ -30,12 +30,21 @@ async def do_autoname_sequence(
             or None
     )
 
-    templated_query = await apply_llm_template(
+    templated_query: TemplatedPromptText = await apply_llm_template(
         model_template=model_template,
         system_message=final_system_message,
         user_prompt=user_prompt,
         assistant_response=assistant_response,
         break_early_on_response=True)
+
+    # For some (most?) templates, the assistant response "seed" is treated as its own message.
+    # (Specifically, llama-3.1-8b-instruct default template appends "<|eot_id|>\n<|start_header_id|>assistant<|end_header_id|>\n".)
+    #
+    # To work around this, snip off any trailing text after the prompt.
+    if assistant_response is not None:
+        assistant_response_start_index = templated_query.rfind(assistant_response)
+        if assistant_response_start_index != -1:
+            templated_query = templated_query[:assistant_response_start_index + len(assistant_response)]
 
     response0: starlette.responses.StreamingResponse = await do_generate_raw_templated(
         request_content={
@@ -56,8 +65,15 @@ async def do_autoname_sequence(
     consolidated_response = {}
     async for chunk in iter2:
         consolidated_response = ollama_response_consolidator(chunk, consolidated_response)
+        # TODO: We can probably check the response-so-far for a complete title, aka non-blank lines, and exit early.
 
-    return ollama_log_indexer(consolidated_response)
+    returned_title = ollama_log_indexer(consolidated_response)
+    for maybe_title in returned_title.splitlines():
+        stripped_title = maybe_title.strip()
+        if stripped_title:
+            return stripped_title
+
+    return ""
 
 
 async def ollama_autoname_sequence(
