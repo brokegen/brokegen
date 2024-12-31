@@ -3,6 +3,10 @@ python_amd64 := /Library/Frameworks/Python.framework/Versions/3.11/bin/python3.1
 
 socks_proxy_wheel := $(wildcard $(HOME)/Documents/PySocks-1.7.1-py3-none-any.whl)
 
+# Current PyInstaller output is ~269 MB, add 10% rails
+server_minsize_mb := 242
+server_maxsize_mb := 296
+
 
 
 server-onefile: dist/server-onefile-tmp
@@ -41,8 +45,8 @@ dist: server-onedir
 server-onedir: dist/server-onedir-tmp
 	"./dist/server-onedir-tmp/server-onedir-tmp" --help > /dev/null
 	rm -rf dist/server-internal
-	test "$$(du -sm dist/server-onedir-tmp/ | awk '{print $$1}')" -gt "261" \
-	    && test "$$(du -sm dist/server-onedir-tmp/ | awk '{print $$1}')" -lt "319" \
+	test "$$(du -sm dist/server-onedir-tmp/ | awk '{print $$1}')" -gt "$(server_minsize_mb)" \
+	    && test "$$(du -sm dist/server-onedir-tmp/ | awk '{print $$1}')" -lt "$(server_maxsize_mb)" \
 	    && mv dist/server-onedir-tmp/server-internal dist/server-internal \
 	    && mv dist/server-onedir-tmp/server-onedir-tmp dist/server-onedir
 
