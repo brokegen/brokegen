@@ -88,6 +88,12 @@ dist/mxbai-embed-large-v1-f16.llamafile:
 
 # Download the non-Electron binary
 #
+# https://github.com/ollama/ollama/pull/8125:
+#
+# - After v0.5.2, the standalone binary does not include AVX, which might be
+#   a significant performance penalty.
+#   We should prefer to build our own, or prefer lcp (once autoname works better).
+#
 dist/ollama-darwin:
 	cd "$(dir $@)" \
 		&& curl -L -O https://github.com/ollama/ollama/releases/download/v0.5.2/ollama-darwin
