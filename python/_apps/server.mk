@@ -44,6 +44,8 @@ build: server-onedir
 dist: server-onedir
 server-onedir: dist/server-onedir-tmp
 	"./dist/server-onedir-tmp/server-onedir-tmp" --help > /dev/null
+	# NB Having a Finder window open + compute directory sizes will create .DS_Store files,
+	#    which makes parts of the build fail because we couldn't remove a directory.
 	rm -rf dist/server-internal
 	test "$$(du -sm dist/server-onedir-tmp/ | awk '{print $$1}')" -gt "$(server_minsize_mb)" \
 	    && test "$$(du -sm dist/server-onedir-tmp/ | awk '{print $$1}')" -lt "$(server_maxsize_mb)" \
