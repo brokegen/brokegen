@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CE04510C2D2DB397004F0621 /* SerializedChatSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE04510B2D2DB397004F0621 /* SerializedChatSyncService.swift */; };
 		CE145DA32C18071E00577314 /* MultiProviderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE145DA22C18071E00577314 /* MultiProviderView.swift */; };
 		CE145DA52C18074100577314 /* FoundationModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE145DA42C18074100577314 /* FoundationModel.swift */; };
 		CE145DA82C1A0DFD00577314 /* SequenceWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE145DA72C1A0DFD00577314 /* SequenceWidgets.swift */; };
@@ -93,6 +94,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		CE04510B2D2DB397004F0621 /* SerializedChatSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SerializedChatSyncService.swift; sourceTree = "<group>"; };
 		CE145DA22C18071E00577314 /* MultiProviderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiProviderView.swift; sourceTree = "<group>"; };
 		CE145DA42C18074100577314 /* FoundationModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoundationModel.swift; sourceTree = "<group>"; };
 		CE145DA72C1A0DFD00577314 /* SequenceWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequenceWidgets.swift; sourceTree = "<group>"; };
@@ -348,6 +350,7 @@
 				CEAA2B6F2C070AE3002BEB26 /* ChatSequence+Extend.swift */,
 				CE4634F32BFBB4900063142E /* ChatSyncService.swift */,
 				CE6807C12C35D9F400B0053A /* DefaultChatSyncService.swift */,
+				CE04510B2D2DB397004F0621 /* SerializedChatSyncService.swift */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -563,6 +566,7 @@
 				CEAA2B722C070B2E002BEB26 /* ChatSequence.swift in Sources */,
 				CEFA69452C14AE67007EEF8D /* CSCSettingsService.swift in Sources */,
 				CEE99E692C0FD9FC008E1B07 /* AppSettings.swift in Sources */,
+				CE04510C2D2DB397004F0621 /* SerializedChatSyncService.swift in Sources */,
 				CE145DAA2C1A0E9800577314 /* OneSequenceView.swift in Sources */,
 				CE66FAFE2C16818800BD8745 /* ChatMessage.swift in Sources */,
 			);

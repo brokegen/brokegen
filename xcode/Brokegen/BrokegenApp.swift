@@ -48,7 +48,7 @@ struct BrokegenApp: App {
             let appSettings = AppSettings()
             self.appSettings = appSettings
 
-            chatService = DefaultChatSyncService(self.appSettings.launch_serverBaseURL, configuration: configuration)
+            chatService = SerializedChatSyncService(self.appSettings.launch_serverBaseURL, configuration: configuration)
             let providerService = DefaultProviderService(self.appSettings.launch_serverBaseURL, configuration: configuration)
             self.providerService = providerService
             providerService.fetchAllProviders(repeatUntilSuccess: true)
