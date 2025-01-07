@@ -43,12 +43,6 @@ extension DefaultChatSyncService {
     public func doSequenceContinue(
         _ params: ContinueParameters
     ) async -> AnyPublisher<Data, AFErrorAndData> {
-        guard params.sequenceId != nil else {
-            let error: AFError = AFError.invalidURL(url: "/sequences/???/continue")
-            return Fail(error: AFErrorAndData(error: error, data: nil))
-                .eraseToAnyPublisher()
-        }
-
         let subject = PassthroughSubject<Data, AFErrorAndData>()
 
         let encodedParams: Data? = try? jsonEncoder.encode(params)
