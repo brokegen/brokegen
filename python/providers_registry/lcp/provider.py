@@ -701,6 +701,14 @@ class LlamaCppProvider(BaseProvider):
             inference_options: InferenceOptions,
             status_holder: ServerStatusHolder,
     ) -> (ChatFormatterResponse, AsyncIterator[JSONDict]):
+        """
+        Base method for llama-cpp-python-based inference.
+
+        TODO: The initial load step can be very long (47 GB takes 75 seconds on my system),
+              and the server mostly just stalls during this load. No output to the client.
+
+              For now, clients don't really have a problem with this, it just appears like an unresponsive server.
+        """
         loaded_model = self._load_model(inference_model, inference_options, status_holder)
 
         def chat_completion_choice0_extractor(chunk: JSONDict) -> str:

@@ -32,7 +32,11 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
             registry: ProviderRegistry = Depends(ProviderRegistry),
     ):
         """
-        This method is an HTTP GET, because we do a redirect once the discovery process is done.
+        This method is an HTTP GET (instead of POST), because we do a redirect once the discovery process is done.
+
+        TODO: The way we've decided to asyncio this means that the call to ollama generally times out.
+              Fixing it generally means serialization (reversing this), or we can just… open the client twice
+              (the second request will succeed, because the "slow" discovery from the first pass is cached).
         """
         discoverers: list[Awaitable[None]] = [
             factory.discover(provider_type=None, registry=registry)
