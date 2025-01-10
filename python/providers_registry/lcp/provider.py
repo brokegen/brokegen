@@ -185,7 +185,7 @@ class TemplateApplier(ChatFormatter):
         logger.debug(
             f"Couldn't find chat format handler, falling back to .gguf template for: {self.underlying_model.chat_format}")
         cfr: ChatFormatterResponse = self.jinja_templator(messages=messages)
-        cfr.prompt += self.inference_options.seed_assistant_response
+        cfr.prompt += self.inference_options.seed_assistant_response or ""
         return cfr
 
 
