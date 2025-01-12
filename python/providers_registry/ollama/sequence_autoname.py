@@ -90,7 +90,7 @@ async def ollama_autoname_sequence(
             system_message=None,
             user_prompt="Summarize the provided messages, suitable as a short description for a tab title. " +
                         "Answer with that title only, do not provide additional information. Reply with exactly one title.\n\n" +
-                        '\n'.join([m.content for m in messages_list if m.role != "system"]),
+                        '\n'.join([m.content for m in messages_list]),
             assistant_response="Tab title: ",
         )
 
