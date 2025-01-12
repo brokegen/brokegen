@@ -155,7 +155,11 @@ def _lookup_one_sequence(
         parent_sequence = merge_one_sequence(dst_conn, src_conn, (r['parent_sequence'],), r)
 
     # Check if this row already exists in the destination
-    # TODO: We don't have InferenceEvents in, so inference_job_id will always be NULL
+    #
+    # - TODO: We don't have InferenceEvents in, so inference_job_id will always be NULL
+    # - NB We uniquify based on the `human_desc` as well, so renames will result in a new object.
+    #   This is okay because rows are pretty cheap, but we should consider attaching a `last_updated`.
+    #
     dst_cursor = dst_conn.execute("""\
             SELECT id FROM ChatSequences
             WHERE
