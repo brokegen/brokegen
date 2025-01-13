@@ -160,7 +160,7 @@ def _lookup_one_sequence(
     # - NB We uniquify based on the `human_desc` as well, so renames will result in a new object.
     #   This is okay because rows are pretty cheap, but we should consider attaching a `last_updated`.
     #
-    dst_cursor = dst_conn.execute("""\
+    dst_exact = dst_conn.execute("""\
             SELECT id FROM ChatSequences
             WHERE
                 human_desc IS ?
@@ -173,9 +173,33 @@ def _lookup_one_sequence(
         """, (
         r['human_desc'], r['user_pinned'], current_message, parent_sequence, r['generated_at'],
         r['generation_complete'], r['inference_error'],), )
-    existing_dst_sequence = dst_cursor.fetchone()
+    existing_dst_sequence = dst_exact.fetchone()
     if existing_dst_sequence is not None:
         return existing_dst_sequence[0]
+
+    # Check if this row already exists, but with a blank description
+    if r['human_desc']:
+        dst_blank = dst_conn.execute("""\
+                SELECT id FROM ChatSequences
+                WHERE
+                    human_desc IS ?
+                    AND user_pinned IS ?
+                    AND current_message IS ?
+                    AND parent_sequence IS ?
+                    AND generated_at IS ?
+                    AND generation_complete IS ?
+                    AND inference_error IS ?
+            """, (
+            None, r['user_pinned'], current_message, parent_sequence, r['generated_at'],
+            r['generation_complete'], r['inference_error'],), )
+        existing_dst_sequence = dst_blank.fetchone()
+        if existing_dst_sequence is not None:
+            dst_conn.execute("""\
+                UPDATE ChatSequences
+                SET human_desc = ?
+                WHERE id is ?
+            """, (r['human_desc'], existing_dst_sequence[0]))
+            return existing_dst_sequence[0]
 
     else:
         src_cursor = src_conn.execute("""
