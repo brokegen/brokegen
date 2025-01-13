@@ -201,36 +201,27 @@ def _lookup_one_sequence(
             """, (r['human_desc'], existing_dst_sequence[0]))
             return existing_dst_sequence[0]
 
-    else:
-        src_cursor = src_conn.execute("""
-            SELECT
-                ChatSequences.human_desc, ChatSequences.user_pinned, ChatSequences.current_message, ChatSequences.parent_sequence, ChatSequences.generated_at, ChatSequences.generation_complete, ChatSequences.inference_job_id, ChatSequences.inference_error
-            FROM ChatSequences
-            WHERE id IS ?
-        """, src_key)
-        sequence_info = src_cursor.fetchone()
-
-        # NB We re-insert the ChatMessage row just in case;
-        # we don't necessarily want every ChatMessage merged in.
-        dst_conn.execute(
-            "INSERT OR IGNORE INTO ChatSequences(human_desc, user_pinned, current_message, parent_sequence, generated_at, generation_complete, inference_error) "
-            "VALUES(?,?,?,?,?,?,?)",
-            (r['human_desc'], r['user_pinned'], current_message, parent_sequence, r['generated_at'],
-             r['generation_complete'], r['inference_error'],),
-        )
-        dst_cursor = dst_conn.execute("""\
-            SELECT id FROM ChatSequences
-            WHERE
-                human_desc IS ?
-                AND user_pinned IS ?
-                AND current_message IS ?
-                AND parent_sequence IS ?
-                AND generated_at IS ?
-                AND generation_complete IS ?
-                AND inference_error IS ?
-            """, (r['human_desc'], r['user_pinned'], current_message, parent_sequence, r['generated_at'],
-                  r['generation_complete'], r['inference_error'],), )
-        return dst_cursor.fetchone()[0]
+    # NB We re-insert the ChatSequence row just in case;
+    # we don't necessarily want every ChatSequence merged in.
+    dst_conn.execute(
+        "INSERT OR IGNORE INTO ChatSequences(human_desc, user_pinned, current_message, parent_sequence, generated_at, generation_complete, inference_error) "
+        "VALUES(?,?,?,?,?,?,?)",
+        (r['human_desc'], r['user_pinned'], current_message, parent_sequence, r['generated_at'],
+         r['generation_complete'], r['inference_error'],),
+    )
+    dst_cursor = dst_conn.execute("""\
+        SELECT id FROM ChatSequences
+        WHERE
+            human_desc IS ?
+            AND user_pinned IS ?
+            AND current_message IS ?
+            AND parent_sequence IS ?
+            AND generated_at IS ?
+            AND generation_complete IS ?
+            AND inference_error IS ?
+        """, (r['human_desc'], r['user_pinned'], current_message, parent_sequence, r['generated_at'],
+              r['generation_complete'], r['inference_error'],), )
+    return dst_cursor.fetchone()[0]
 
 
 sequence_cache = {}
