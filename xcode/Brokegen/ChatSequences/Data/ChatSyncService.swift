@@ -189,7 +189,14 @@ class ChatSyncService: ObservableObject {
             // Possibly because we're keeping the Identifiable .id the same?
             //
             // TODO: autonames show that this is being published from a background thread
-            objectWillChange.send()
+            if Thread.isMainThread {
+                objectWillChange.send()
+            }
+            else {
+                print("[ERROR] Publishing value from background thread")
+                print(Thread.callStackSymbols)
+                objectWillChange.send()
+            }
         }
     }
 
