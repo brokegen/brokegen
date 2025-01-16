@@ -417,7 +417,7 @@ struct SequencePickerView: View {
 
         GeometryReader { geometry in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 8) {
                     let sectionedSequences = sectioned(
                         Array(chatService.loadedChatSequences.values),
                         includeUserPinned: fetchUserPinned ?? false,
@@ -461,7 +461,7 @@ struct SequencePickerView: View {
                         .frame(maxWidth: .infinity)
 
                     Spacer()
-                } // LazyVStack
+                } // VStack
                 .padding([.leading, .trailing], 12)
             }
             .background(BackgroundEffectView().ignoresSafeArea())
