@@ -489,18 +489,17 @@ class _OneModel:
             logger.info(f"[lcp] prompt eval will be chunked, `timings.n_eval` may be off by {cfr_prompt_token_len / CHUNK_SIZE:_.1f} tokens")
             with StatusContext(f"[lcp] prompt eval: {cfr_prompt_token_len:_} tokens total, with batch size {CHUNK_SIZE}",
                                status_holder):
-                # Do an initial print, so we preload the model + don't compute that initial time.
+                # Force an initial print, so we preload the model + don't compute that initial time.
                 await asyncio.sleep(0)
-                self.underlying_model.create_completion(
-                    tokenized_prompt[:1], **chunking_model_params)
+                self.underlying_model.create_completion(tokenized_prompt[:1], **chunking_model_params)
                 # Don't update tokens_parsed, because we want to stick to CHUNK_SIZE boundaries, if possible.
                 start_time = datetime.now(tz=timezone.utc)
                 last_tokens_parsed = 1
                 last_timing_print = start_time
 
                 while tokens_parsed < cfr_prompt_token_len:
-                    self.underlying_model.create_completion(
-                        tokenized_prompt[:tokens_parsed + CHUNK_SIZE], **chunking_model_params)
+                    await asyncio.sleep(0)
+                    self.underlying_model.create_completion(tokenized_prompt[:tokens_parsed + CHUNK_SIZE], **chunking_model_params)
                     tokens_parsed = min(tokens_parsed + CHUNK_SIZE, cfr_prompt_token_len)
 
                     elapsed_time: float = (datetime.now(tz=timezone.utc) - start_time).total_seconds()
@@ -523,13 +522,11 @@ class _OneModel:
                             last_tokens_parsed = tokens_parsed
                             last_timing_print = datetime.now(tz=timezone.utc)
 
-                    await asyncio.sleep(0)
-
             status_holder.push(f"\"{self.model_name}\" done with prompt eval, starting inference with {cfr_prompt_token_len:_} prompt tokens")
             self.underlying_model.verbose = suppressed_model_verbose
             return self.underlying_model.create_completion(tokenized_prompt, **model_params), cfr_prompt_token_len
 
-    def do_chat(
+    async def do_chat(
             self,
             messages: list[ChatCompletionRequestMessage],
             inference_options: InferenceOptions,
@@ -847,7 +844,7 @@ class LlamaCppProvider(BaseProvider):
         if not custom_templatoor_succeeded:
             iterator_or_completion: \
                 llama_cpp.CreateChatCompletionResponse | Iterator[llama_cpp.CreateChatCompletionStreamResponse]
-            iterator_or_completion = loaded_model.do_chat(
+            iterator_or_completion = await loaded_model.do_chat(
                 messages=[m.model_dump() for m in messages_list],
                 inference_options=inference_options,
             )
