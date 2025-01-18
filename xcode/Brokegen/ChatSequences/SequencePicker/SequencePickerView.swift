@@ -195,7 +195,7 @@ struct SequencePickerView: View {
 
             Button {
                 // NB We intentionally run this sequentially, so rate limiting is done on the client side.
-                Task { @MainActor in
+                Task {
                     for sequence in sequences {
                         _ = try? await chatService.autonameBlocking(sequenceId: sequence.serverId, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
                     }
@@ -280,7 +280,7 @@ struct SequencePickerView: View {
             }
 
             Button {
-                Task { @MainActor in
+                Task {
                     _ = try? await chatService.autonameBlocking(sequenceId: sequence.serverId, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
                 }
             } label: {

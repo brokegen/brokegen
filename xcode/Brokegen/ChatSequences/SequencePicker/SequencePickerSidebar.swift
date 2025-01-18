@@ -226,7 +226,7 @@ struct MiniSequencePickerSidebar: View {
                 }
 
                 Button {
-                    Task { @MainActor in
+                    Task {
                         _ = try? await chatService.autonameBlocking(sequenceId: sequence.serverId, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
                     }
                 } label: {

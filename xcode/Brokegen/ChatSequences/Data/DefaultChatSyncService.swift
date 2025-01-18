@@ -34,7 +34,6 @@ class DefaultChatSyncService: ChatSyncService {
         return try await doFetchChatSequenceDetails(sequenceId)
     }
 
-    // TODO: Mark this as requiring @MainActor
     override func autonameBlocking(
         sequenceId: ChatSequenceServerID,
         preferredAutonamingModel: FoundationModelRecordID?
@@ -46,13 +45,20 @@ class DefaultChatSyncService: ChatSyncService {
 
         if let resultData: Data = try? await self.postDataBlocking(nil, endpoint: endpointBuilder) {
             if let autoname: String = JSON(resultData)["autoname"].string {
-                // NB We explicitly "re-load" the ChatSequence info because `await` takes time.
-                let autonamedSequence: ChatSequence? = self.loadedChatSequences[sequenceId]?
-                    .replaceHumanDesc(desc: autoname)
-                guard autonamedSequence != nil else { return nil }
+                return await withCheckedContinuation { continuation in
+                    // NB We explicitly "re-load" the ChatSequence info because `await` takes time.
+                    let autonamedSequence: ChatSequence? = self.loadedChatSequences[sequenceId]?
+                        .replaceHumanDesc(desc: autoname)
+                    guard autonamedSequence != nil else {
+                        continuation.resume(returning: nil)
+                        return
+                    }
 
-                self.updateSequence(withSameId: autonamedSequence!)
-                return autonamedSequence?.humanDesc
+                    DispatchQueue.main.async {
+                        self.updateSequence(withSameId: autonamedSequence!)
+                        continuation.resume(returning: autonamedSequence?.humanDesc)
+                    }
+                }
             }
         }
 
