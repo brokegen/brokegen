@@ -1,4 +1,6 @@
 # https://pyinstaller.org/en/v6.6.0/common-issues-and-pitfalls.html#common-issues
+from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
+
 if __name__ == '__main__':
     # Doubly needed when working with uvicorn, probably
     # https://github.com/encode/uvicorn/issues/939
@@ -253,8 +255,8 @@ def run_proxy(
         """
         NB Installing this causes the app to exit on any HTTP exceptions!
         """
-        return starlette.responses.PlainTextResponse(
-            str(exc.detail),
+        return starlette.responses.JSONResponse(
+            jsonable_encoder({"error": str(exc.detail)}),
             status_code=exc.status_code,
             background=BackgroundTask(exit_app),
         )
@@ -264,8 +266,8 @@ def run_proxy(
             request: starlette.requests.Request,
             exc,
     ):
-        return starlette.responses.PlainTextResponse(
-            str(exc),
+        return starlette.responses.JSONResponse(
+            jsonable_encoder({"error": str(exc)}),
             status_code=getattr(exc, "status_code", fastapi.status.HTTP_500_INTERNAL_SERVER_ERROR),
         )
 

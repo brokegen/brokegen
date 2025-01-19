@@ -134,6 +134,8 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
                 select_continuation_model(sequence_id, parameters.continuation_model_id, parameters.fallback_model_id,
                                           history_db)
             provider: BaseProvider | None = registry.provider_from(inference_model)
+            if not provider:
+                raise ValueError(f"Couldn't find Provider from foundational model {inference_model}")
 
             nonlocal status_holder
             status_holder.push(f"{function_id}: processing on {inference_model.human_id}")
