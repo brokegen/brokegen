@@ -125,7 +125,7 @@ class TemplateApplier(ChatFormatter):
             cfr = formatter_fn(messages)
 
         if cfr is not None:
-            cfr.prompt += self.inference_options.seed_assistant_response
+            cfr.prompt += (self.inference_options.seed_assistant_response or "")
 
         return cfr
 
@@ -145,7 +145,7 @@ class TemplateApplier(ChatFormatter):
 
         # Given how most .gguf templates seem to work, we can just append the seed response,
         # instead of doing anything fancy like embedding a magic token and then truncating the templated text there.
-        cfr.prompt += self.inference_options.seed_assistant_response
+        cfr.prompt += (self.inference_options.seed_assistant_response or "")
 
         return cfr
 
