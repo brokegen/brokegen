@@ -430,7 +430,7 @@ class PersistentDefaultCSUISettings: CSUISettings {
 
 
     @AppStorage("serverInferenceSettings.promptEvalBatchSize")
-    @ObservationIgnored private var stored_promptEvalBatchSize: Int = 0
+    @ObservationIgnored private var stored_promptEvalBatchSize: Int = 512
 
     private var cached_promptEvalBatchSize: Int? = nil
 
