@@ -654,6 +654,8 @@ class LlamaCppProvider(BaseProvider):
             inference_options: InferenceOptions,
             status_holder: ServerStatusHolder,
     ) -> _OneModel:
+        reference_available_ram = f"{psutil.virtual_memory().available / (1 << 30):_.1f}"
+
         # Check whether we're running out of resources. Preemptively.
         # Interestingly enough, we only ever worry about RAM:
         #
@@ -662,7 +664,7 @@ class LlamaCppProvider(BaseProvider):
         #
         available_ram = psutil.virtual_memory().available / (1 << 30)
         total_ram = psutil.virtual_memory().total / (1 << 30)
-        logger.info(f"Available RAM: {available_ram:_.1f} GB / {total_ram:_.1f} total")
+        logger.info(f"Available RAM ({len(self.loaded_models)} models loaded): {available_ram:_.1f} GB / {total_ram:_.1f} total")
 
         # Now load the model
         target_model: _OneModel
@@ -679,8 +681,19 @@ class LlamaCppProvider(BaseProvider):
         else:
             target_model = self.loaded_models[inference_model.id]
 
+        if reference_available_ram != f"{psutil.virtual_memory().available / (1 << 30):_.1f}":
+            available_ram = psutil.virtual_memory().available / (1 << 30)
+            total_ram = psutil.virtual_memory().total / (1 << 30)
+            logger.info(f"Available RAM (post-trim): {available_ram:_.1f} GB / {total_ram:_.1f} total")
+
         with StatusContext(f"{target_model.model_name}: loading model", status_holder):
             target_model.launch_with_params(None, inference_options)
+
+            if reference_available_ram != f"{psutil.virtual_memory().available / (1 << 30):_.1f}":
+                available_ram = psutil.virtual_memory().available / (1 << 30)
+                total_ram = psutil.virtual_memory().total / (1 << 30)
+                logger.info(f"Available RAM (post-load): {available_ram:_.1f} GB / {total_ram:_.1f} total")
+
             return target_model
 
     def trim_loaded_models(self, model_limit: int):
