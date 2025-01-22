@@ -710,6 +710,7 @@ class LlamaCppProvider(BaseProvider):
             inference_model: FoundationModelRecordOrm,
             inference_options: InferenceOptions,
             status_holder: ServerStatusHolder,
+            tee_to_console: bool = False,
     ) -> (ChatFormatterResponse, AsyncIterator[JSONDict]):
         """
         Base method for llama-cpp-python-based inference.
@@ -877,8 +878,12 @@ class LlamaCppProvider(BaseProvider):
             cfr_prompt_token_len: int | None = None
 
         iter3: AsyncIterator[JSONDict] = format_response(iter2)
-        iter4: AsyncIterator[JSONDict] = tee_to_console_output(iter3,
-                                                               lambda chunk: safe_get(chunk, "message", "content"))
+        if tee_to_console:
+            iter4: AsyncIterator[JSONDict] = \
+                tee_to_console_output(iter3,
+                                      lambda chunk: safe_get(chunk, "message", "content"))
+        else:
+            iter4 = iter3
         iter5: AsyncIterator[JSONDict] = update_status_and_log_info(iter4, cfr_prompt_token_len=cfr_prompt_token_len)
 
         status_holder.set(f"{loaded_model.model_name} loaded, starting inference")

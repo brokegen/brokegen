@@ -180,7 +180,7 @@ class OllamaEgressEventBuilder:
     async def wrap_entire_streaming_response(
             self,
             upstream_response: httpx.Response,
-            enable_logging: bool = False,
+            tee_to_console: bool = False,
     ) -> starlette.responses.StreamingResponse:
         async def egress_event_recorder(
                 consolidated_response: OllamaResponseContentJSON,
@@ -207,7 +207,7 @@ class OllamaEgressEventBuilder:
 
         iter0: AsyncIterator[bytes] = upstream_response.aiter_bytes()
         iter1: AsyncIterator[JSONDict] = stream_bytes_to_json(iter0)
-        if enable_logging:
+        if tee_to_console:
             iter2: AsyncIterator[JSONDict] = tee_to_console_output(iter1, ollama_log_indexer)
         else:
             iter2 = iter1
