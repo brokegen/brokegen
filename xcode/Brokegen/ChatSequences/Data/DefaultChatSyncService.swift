@@ -45,20 +45,13 @@ class DefaultChatSyncService: ChatSyncService {
 
         if let resultData: Data = try? await self.postDataBlocking(nil, endpoint: endpointBuilder) {
             if let autoname: String = JSON(resultData)["autoname"].string {
-                return await withCheckedContinuation { continuation in
-                    DispatchQueue.main.async {
-                        // NB We explicitly "re-load" the ChatSequence info because `await` takes time.
-                        let autonamedSequence: ChatSequence? = self.loadedChatSequences[sequenceId]?
-                            .replaceHumanDesc(desc: autoname)
-                        guard autonamedSequence != nil else {
-                            continuation.resume(returning: nil)
-                            return
-                        }
+                // NB We explicitly "re-load" the ChatSequence info because `await` takes time.
+                let autonamedSequence: ChatSequence? = self.loadedChatSequences[sequenceId]?
+                    .replaceHumanDesc(desc: autoname)
+                guard autonamedSequence != nil else { return nil }
 
-                        self.updateSequence(withSameId: autonamedSequence!)
-                        continuation.resume(returning: autonamedSequence?.humanDesc)
-                    }
-                }
+                await self.updateSequenceBlocking(withSameId: autonamedSequence!)
+                return autonamedSequence?.humanDesc
             }
         }
 
@@ -77,21 +70,14 @@ class DefaultChatSyncService: ChatSyncService {
             nil,
             endpoint: "/sequences/\(sequenceId)/human_desc?value=\(newHumanDesc ?? "")")
 
-        return await withCheckedContinuation { continuation in
-            DispatchQueue.main.async {
-                // NB We explicitly "re-load" the ChatSequence info because `await` takes time.
-                let updatedSequence: ChatSequence? = self.loadedChatSequences[sequenceId]?
-                    .replaceHumanDesc(desc: newHumanDesc)
-                guard updatedSequence != nil else {
-                    continuation.resume(returning: nil)
-                    return
-                }
+        // NB We explicitly "re-load" the ChatSequence info because `await` takes time.
+        let updatedSequence: ChatSequence? = self.loadedChatSequences[sequenceId]?
+            .replaceHumanDesc(desc: newHumanDesc)
+        guard updatedSequence != nil else { return nil }
 
-                self.updateSequence(withSameId: updatedSequence!)
-                print("[TRACE] Finished rename to \(updatedSequence!.displayRecognizableDesc(replaceNewlines: true))")
-                continuation.resume(returning: updatedSequence)
-            }
-        }
+        await self.updateSequenceBlocking(withSameId: updatedSequence!)
+        print("[TRACE] Finished rename to \(updatedSequence!.displayRecognizableDesc(replaceNewlines: true))")
+        return updatedSequence
     }
 
     override func pin(

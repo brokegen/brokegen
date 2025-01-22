@@ -128,7 +128,7 @@ class ChatSyncService: ObservableObject {
 
         if let result = Optional("[mock client-side autoname]") {
             let autonamedSequence = sequence!.replaceHumanDesc(desc: result)
-            self.updateSequence(withSameId: autonamedSequence)
+            await self.updateSequenceBlocking(withSameId: autonamedSequence)
             return result
         }
         return nil
@@ -140,7 +140,7 @@ class ChatSyncService: ObservableObject {
         guard newHumanDesc != sequence!.humanDesc else { return nil }
 
         let updatedSequence = sequence!.replaceHumanDesc(desc: newHumanDesc)
-        self.updateSequence(withSameId: updatedSequence)
+        await self.updateSequenceBlocking(withSameId: updatedSequence)
         return updatedSequence
     }
 
@@ -164,6 +164,40 @@ class ChatSyncService: ObservableObject {
         includeLeafSequences: Bool?,
         includeAll: Bool?
     ) async throws {
+    }
+
+    @MainActor func updateSequenceBlocking(withSameId updatedSequence: ChatSequence, disablePublish: Bool = false) {
+        loadedChatSequences[updatedSequence.serverId] = updatedSequence
+
+        // Update matching client models that held the original sequence,
+        // but ONLY if it's not currently undergoing a refresh.
+        let matchingClientModels = chatSequenceClientModels.filter {
+            $0.sequence.serverId == updatedSequence.serverId
+        }
+
+        for clientModel in matchingClientModels {
+            if clientModel.receiving {
+                print("[INFO] clientModel for \(updatedSequence) is still updating, will ignore incoming JSON model data")
+            }
+            else {
+                clientModel.sequence = updatedSequence
+            }
+        }
+
+        if !disablePublish {
+            // Without this, SwiftUI won't notice renames in particular.
+            // Possibly because we're keeping the Identifiable .id the same?
+            //
+            // TODO: autonames show that this is being published from a background thread
+            if Thread.isMainThread {
+                objectWillChange.send()
+            }
+            else {
+                print("[ERROR] Publishing value from background thread")
+                print(Thread.callStackSymbols)
+                objectWillChange.send()
+            }
+        }
     }
 
     func updateSequence(withSameId updatedSequence: ChatSequence, disablePublish: Bool = false) {
