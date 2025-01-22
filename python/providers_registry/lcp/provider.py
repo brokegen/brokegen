@@ -882,6 +882,11 @@ class LlamaCppProvider(BaseProvider):
         iter5: AsyncIterator[JSONDict] = update_status_and_log_info(iter4, cfr_prompt_token_len=cfr_prompt_token_len)
 
         status_holder.set(f"{loaded_model.model_name} loaded, starting inference")
+
+        available_ram = psutil.virtual_memory().available / (1 << 30)
+        total_ram = psutil.virtual_memory().total / (1 << 30)
+        logger.info(f"Available RAM (cache allocated): {available_ram:_.1f} GB / {total_ram:_.1f} total")
+
         return cfr, iter5
 
     async def do_chat_nolog(
