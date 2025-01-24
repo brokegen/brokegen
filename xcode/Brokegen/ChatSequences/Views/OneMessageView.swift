@@ -121,11 +121,16 @@ struct OneMessageView: View {
         get { localExpandContent ?? defaultExpandContent }
     }
 
-    var renderAsMarkdown: Bool {
+    var disableRenderAsMarkdown: Bool {
         get {
             // markdown lib fails on large messages, so never parse them
-            if self.message.content.count > 10_000 {
-                print("[WARN] will not render as markdown, message length is \(self.message.content.count)")
+            return self.message.content.count > 10_000
+        }
+    }
+
+    var renderAsMarkdown: Bool {
+        get {
+            if disableRenderAsMarkdown {
                 return false
             }
             else {
@@ -140,6 +145,7 @@ struct OneMessageView: View {
             OMVButton(renderAsMarkdown ? "doc.richtext.fill" : "doc.richtext") {
                 localRenderAsMarkdown = !renderAsMarkdown
             }
+            .disabled(self.disableRenderAsMarkdown)
 
             OMVButton("clipboard") {
                 let pasteboard = NSPasteboard.general
