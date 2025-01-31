@@ -106,7 +106,6 @@ class TemplateApplier(ChatFormatter):
                 formatter_fn = getattr(llama_cpp.llama_chat_format, name)
                 return formatter_fn
 
-        logger.debug(f"No built-in chat format handler for: {formatter_name}")
         return None
 
     def llama_cpp_templating(
@@ -182,8 +181,6 @@ class TemplateApplier(ChatFormatter):
             return maybe_cfr
 
         # Third: read settings from .gguf file
-        logger.debug(
-            f"Couldn't find chat format handler, falling back to .gguf template for: {self.underlying_model.chat_format}")
         cfr: ChatFormatterResponse = self.jinja_templator(messages=messages)
         cfr.prompt += self.inference_options.seed_assistant_response or ""
         return cfr
