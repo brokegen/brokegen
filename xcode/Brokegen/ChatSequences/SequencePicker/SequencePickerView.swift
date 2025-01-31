@@ -193,10 +193,18 @@ struct SequencePickerView: View {
                 Text("Rename all...")
             }
 
+            let unnamedSequenceCount: Int = sequences
+                .filter { ($0.humanDesc ?? "").isEmpty }
+                .count
+
             Button {
                 // NB We intentionally run this sequentially, so rate limiting is done on the client side.
                 Task {
                     for sequence in sequences {
+                        if !(sequence.humanDesc ?? "").isEmpty {
+                            continue
+                        }
+
                         _ = try? await chatService.autonameBlocking(sequenceId: sequence.serverId, preferredAutonamingModel: appSettings.preferredAutonamingModel?.serverId)
                     }
                 }
@@ -209,12 +217,12 @@ struct SequencePickerView: View {
                     : "\(appSettings.preferredAutonamingModel!)"
                 }()
 
-                Text("Autoname all\n")
+                Text("Autoname \(unnamedSequenceCount) unnamed sequences\n")
                 + Text(subtitle)
                     .font(.subheadline)
                     .foregroundStyle(Color(.disabledControlTextColor))
             }
-            .disabled(appSettings.preferredAutonamingModel == nil)
+            .disabled(appSettings.preferredAutonamingModel == nil || unnamedSequenceCount == 0)
 
             Divider()
 
