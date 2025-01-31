@@ -795,9 +795,11 @@ class LlamaCppProvider(BaseProvider):
                 # that span multiple tokens (the llama-cpp-python decoder groups them together).
                 #
                 tokens_remaining = loaded_model.underlying_model.context_params.n_ctx - cfr_prompt_token_len - timings.n_eval
-                if tokens_remaining < 512:
-                    logger.debug(
-                        f"{tokens_remaining} token remaining in total context size of {loaded_model.underlying_model.context_params.n_ctx}")
+                if tokens_remaining < 0:
+                    # NB This happens fairly often, especially for long text like transcript summaries.
+                    logger.debug(f"{tokens_remaining:_} token overflow for total context size of {loaded_model.underlying_model.context_params.n_ctx}")
+                elif tokens_remaining < 512:
+                    logger.debug(f"{tokens_remaining:_} tokens remaining in total context size of {loaded_model.underlying_model.context_params.n_ctx}")
 
                 if tokens_remaining < 10:
                     info_str = (
