@@ -94,6 +94,7 @@ async def do_continuation(
                 history_db=history_db,
             )
             if not response_message:
+                print(f"[ERROR] Failed to construct_assistant_message() from \"{ollama_log_indexer(consolidated_response)}\"")
                 return
 
             response_sequence: ChatSequenceOrm = await construct_new_sequence_from(

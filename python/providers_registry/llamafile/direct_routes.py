@@ -109,7 +109,7 @@ def install_test_points(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter)
 
                 async def jsonner() -> AsyncIterable[JSONDict]:
                     async for chunk in upstream_response.aiter_bytes():
-                        # The first few bytes of the llamafile response always start with 'data: '
+                        # The first few bytes of the llamafile response always start with b'data: '
                         if chunk[0:6] == b'data: ':
                             chunk = chunk[6:]
 

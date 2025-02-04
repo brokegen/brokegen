@@ -34,7 +34,7 @@ U = TypeVar('U')
 
 
 def chat_completion_choice0_extractor(chunk: JSONDict) -> str:
-    response_choices = safe_get(chunk, "choices")
+    response_choices = safe_get(chunk, "choices") or []
     if len(response_choices) > 1:
         logger.warning(f"Received {len(response_choices)=}, ignoring all but the first")
 
@@ -47,8 +47,6 @@ def openai_response_consolidator(
 ) -> JSONDict:
     """
     https://platform.openai.com/docs/api-reference/chat/streaming
-
-    TODO: Check the values of each individual field
     """
     if not consolidated_response:
         return chunk
@@ -63,12 +61,9 @@ def openai_response_consolidator(
                 logger.warning(f"Received {len(v)} completion choices, ignoring all but the first")
 
             if not safe_get_arrayed(consolidated_response, k, 0, 'delta', 'content'):
-                consolidated_response[k][0]['delta']['content'] = safe_get_arrayed(v, k, 0, 'delta', 'content') or ""
+                consolidated_response[k][0]['delta']['content'] = safe_get_arrayed(v, 0, 'delta', 'content') or ""
             else:
-                consolidated_response[k][0]['delta']['content'] += safe_get_arrayed(v, k, 0, 'delta', 'content') or ""
-
-        # In the non-exceptional case, just update with the new value.
-        consolidated_response[k] = v
+                consolidated_response[k][0]['delta']['content'] += safe_get_arrayed(v, 0, 'delta', 'content') or ""
 
     return consolidated_response
 
@@ -253,7 +248,15 @@ class LMStudioProvider(BaseProvider):
                 if chunk[0:6] == b'data: ':
                     chunk = chunk[6:]
 
-                yield orjson.loads(chunk)
+                # TODO: What the _hell_ is this chunk? Continuing.
+                if chunk[0:6] == b'[DONE]':
+                    continue
+
+                try:
+                    yield orjson.loads(chunk)
+                except orjson.JSONDecodeError:
+                    print(f"[ERROR] Failed to decode chunk, continuing: {chunk}")
+                    continue
 
         async def update_status(
                 primordial: AsyncIterator[JSONDict],
@@ -276,15 +279,19 @@ class LMStudioProvider(BaseProvider):
         ) -> AsyncIterator[JSONDict]:
             async for chunk in primordial:
                 current_time = datetime.now(tz=timezone.utc)
-                yield {
-                    "model": inference_model.human_id,
-                    "created_at": current_time.isoformat() + "Z",
-                    "done": False,
-                    "message": {
-                        "role": "assistant",
-                        "content": chat_completion_choice0_extractor(chunk),
+                if chat_completion_choice0_extractor(chunk):
+                    yield {
+                        "model": inference_model.human_id,
+                        "created_at": current_time.isoformat() + "Z",
+                        "done": False,
+                        "message": {
+                            "role": "assistant",
+                            "content": chat_completion_choice0_extractor(chunk),
+                        }
                     }
-                }
+                else:
+                    # This is really important for the output from `append_response_chunk`
+                    yield chunk
 
         async def append_response_chunk(
                 consolidated_response: JSONDict,
@@ -299,16 +306,22 @@ class LMStudioProvider(BaseProvider):
                     reason="LMStudioProvider.do_chat_logged",
                 )
 
+                if safe_get(consolidated_response, 'error'):
+                    inference_event.response_error = safe_get(consolidated_response, 'error', 'message')
+                else:
+                    inference_event.response_error = None
+
                 history_db.add(inference_event)
                 history_db.commit()
 
                 response_message: ChatMessageOrm | None = construct_assistant_message(
                     maybe_response_seed=inference_options.seed_assistant_response or "",
-                    assistant_response=safe_get(consolidated_response, "message", "content") or "",
+                    assistant_response=chat_completion_choice0_extractor(consolidated_response),
                     created_at=inference_event.response_created_at,
                     history_db=history_db,
                 )
                 if not response_message:
+                    print(f"[ERROR] Failed to construct_assistant_message() from \"{chat_completion_choice0_extractor(consolidated_response)}\"")
                     return
 
                 original_sequence: ChatSequenceOrm = history_db.execute(
