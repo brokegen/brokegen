@@ -51,6 +51,7 @@ class InferenceOptions(BaseModel):
 
     override_model_template: Optional[str] = None
     override_system_prompt: Optional[PromptText] = None
+    """NB This will override any ChatMessage-recorded system messages!"""
     seed_assistant_response: Optional[PromptText] = None
 
 

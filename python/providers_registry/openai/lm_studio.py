@@ -378,25 +378,39 @@ class LMStudioProvider(BaseProvider):
                     "done": True,
                 }
 
-        # TODO: make system messages/overrides available here
-        messages_list: list[ChatMessage] = fetch_messages_for_sequence(sequence_id, history_db)
+        # Copied from TemplateApplier.__call__()
+        messages_with_system: list[JSONDict] = [
+            message.model_dump() for message in fetch_messages_for_sequence(sequence_id, history_db)
+        ]
+        if inference_options.override_system_prompt is not None:
+            if len(messages_with_system) >= 1 and messages_with_system[0]["role"] == "system":
+                messages_with_system[0]["content"] = inference_options.override_system_prompt
+            else:
+                messages_with_system.insert(0, {
+                    "role": "system",
+                    "content": inference_options.override_system_prompt,
+                })
+
+        # TODO: Should these be outright errors?
+        if inference_options.override_model_template:
+            logger.error(f'Using lm_studio \"chat\" endpoint, ignoring {inference_options.override_model_template=}')
+        if inference_options.seed_assistant_response:
+            logger.error(f'Using lm_studio \"chat\" endpoint, ignoring {inference_options.seed_assistant_response=}')
 
         request_content = {
             'stream': True,
         }
         request_content.update(orjson.loads(inference_options.inference_options or "{}"))
-        request_content['messages'] = [
-            message.model_dump() for message in messages_list
-        ]
+        request_content['messages'] = messages_with_system
         request_content['model'] = inference_model.human_id
 
-        with HttpxLogger(self.server_comms, next(get_audit_db())):
-            headers = httpx.Headers()
-            headers['content-type'] = 'application/json'
-            # https://github.com/encode/httpx/discussions/2959
-            # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
-            headers['connection'] = 'close'
+        headers = httpx.Headers()
+        headers['content-type'] = 'application/json'
+        # https://github.com/encode/httpx/discussions/2959
+        # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
+        headers['connection'] = 'close'
 
+        with HttpxLogger(self.server_comms, next(get_audit_db())):
             request = self.server_comms.build_request(
                 method='POST',
                 url='/v1/chat/completions',
