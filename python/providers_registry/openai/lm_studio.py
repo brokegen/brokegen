@@ -1,23 +1,34 @@
 import logging
 import os.path
 from datetime import datetime, timezone
-from typing import AsyncGenerator
+from typing import AsyncGenerator, AsyncIterator, Awaitable, TypeVar, Callable
 
 import fastapi
 import httpx
 import orjson
-from sqlalchemy import select
-
 from _util.json import JSONDict, safe_get
+from _util.status import ServerStatusHolder
+from _util.typing import ChatSequenceID, PromptText
+from audit.http import AuditDB
+from audit.http import get_db as get_audit_db
+from audit.http_raw import HttpxLogger
 from client.database import HistoryDB, get_db as get_history_db
-from providers_registry._util import local_provider_identifiers, local_fetch_machine_info
-from providers.foundation_models.orm import FoundationModelRecord
+from client.message import ChatMessage
+from client.sequence_get import fetch_messages_for_sequence
+from inference.iterators import stream_str_to_json, consolidate_and_call, consolidate_and_yield
+from providers.foundation_models.orm import FoundationModelRecord, InferenceEventOrm
 from providers.foundation_models.orm import lookup_foundation_model_detailed, \
     FoundationModelAddRequest, FoundationModelRecordOrm
 from providers.orm import ProviderRecordOrm, ProviderLabel, ProviderRecord, ProviderType
-from providers.registry import ProviderRegistry, BaseProvider, ProviderFactory
+from providers.registry import ProviderRegistry, BaseProvider, ProviderFactory, InferenceOptions
+from providers_registry._util import local_provider_identifiers, local_fetch_machine_info
+from providers_registry.ollama.api_chat.logging import ollama_response_consolidator
+from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
+
+T = TypeVar('T')
+U = TypeVar('U')
 
 
 class LMStudioProvider(BaseProvider):
@@ -88,7 +99,7 @@ class LMStudioProvider(BaseProvider):
         new_provider = ProviderRecordOrm(
             identifiers=provider_identifiers,
             created_at=datetime.now(tz=timezone.utc),
-            machine_info = await local_fetch_machine_info(),
+            machine_info=await local_fetch_machine_info(),
         )
         history_db.add(new_provider)
         history_db.commit()
@@ -148,6 +159,105 @@ class LMStudioProvider(BaseProvider):
 
                 yield FoundationModelRecord.model_validate(new_model)
                 continue
+
+    async def do_chat_nolog(
+            self,
+            messages_list: list[ChatMessage],
+            inference_model: FoundationModelRecordOrm,
+            inference_options: InferenceOptions,
+            status_holder: ServerStatusHolder,
+            history_db: HistoryDB,
+            audit_db: AuditDB,
+    ) -> AsyncIterator[JSONDict]:
+        request_content = dict(
+            orjson.loads(inference_options.inference_options or "{}")
+        )
+        request_content['model'] = inference_model.human_id
+        request_content['messages'] = [
+            message.model_dump() for message in messages_list
+        ]
+
+        request = self.server_comms.build_request(
+            method='POST',
+            url='/v1/chat/completions',
+            content=orjson.dumps(request_content),
+            # https://github.com/encode/httpx/discussions/2959
+            # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
+            headers=[('Connection', 'close')],
+        )
+
+        upstream_response = await self.server_comms.send(request, stream=True)
+
+        iter0: AsyncIterator[str] = upstream_response.aiter_text()
+        iter1: AsyncIterator[JSONDict] = stream_str_to_json(iter0)
+
+        return iter1
+
+    async def do_chat(
+            self,
+            sequence_id: ChatSequenceID,
+            inference_model: FoundationModelRecordOrm,
+            inference_options: InferenceOptions,
+            retrieval_context: Awaitable[PromptText | None],
+            status_holder: ServerStatusHolder,
+            history_db: HistoryDB,
+            audit_db: AuditDB,
+    ) -> AsyncIterator[JSONDict]:
+        messages_list: list[ChatMessage] = fetch_messages_for_sequence(sequence_id, history_db)
+
+        request_content = {
+            'stream': True,
+        }
+        request_content.update(orjson.loads(inference_options.inference_options or "{}"))
+        request_content['messages'] = [
+            message.model_dump() for message in messages_list
+        ]
+        request_content['model'] = inference_model.human_id
+
+        inference_event = InferenceEventOrm(
+            model_record_id=inference_model.id,
+            prompt_with_templating=None,
+            response_created_at=datetime.now(tz=timezone.utc),
+            response_error="[haven't received/finalized response info yet]",
+            reason=None,
+        )
+        history_db.add(inference_event)
+        history_db.commit()
+
+        def do_finalize_inference_job(response_content):
+            merged_inference_event = history_db.merge(inference_event)
+            if safe_get(response_content, 'error'):
+                inference_event.response_error = safe_get(response_content, 'error', 'message')
+            else:
+                inference_event.response_error = None
+
+            history_db.add(merged_inference_event)
+            history_db.commit()
+
+        with HttpxLogger(self.server_comms, next(get_audit_db())):
+            headers = httpx.Headers()
+            headers['content-type'] = 'application/json'
+            # https://github.com/encode/httpx/discussions/2959
+            # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
+            headers['connection'] = 'close'
+
+            request = self.server_comms.build_request(
+                method='POST',
+                url='/v1/chat/completions',
+                content=orjson.dumps(request_content),
+                headers=headers,
+            )
+            upstream_response: httpx.Response
+            upstream_response = await self.server_comms.send(request, stream=True)
+
+            iter0: AsyncIterator[str] = upstream_response.aiter_text()
+            iter1: AsyncIterator[JSONDict] = stream_str_to_json(iter0)
+            iter2: AsyncIterator[JSONDict] = consolidate_and_yield(
+                iter1, ollama_response_consolidator, {},
+                do_finalize_inference_job,
+            )
+
+            return iter2
 
 
 class LMStudioFactory(ProviderFactory):
