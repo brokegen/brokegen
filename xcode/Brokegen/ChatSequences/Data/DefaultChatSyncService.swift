@@ -121,10 +121,6 @@ class DefaultChatSyncService: ChatSyncService {
         )
     }
 
-    // Limiter to avoid spamming requests at the server
-    // TODO: Figure out why things like alt-tab wind up spamming this endpoint 12/24 times
-    var blockFetchRecentsUntil: Date = Date.distantPast
-
     // MARK: - ChatSequence continue
     override public func sequenceContinue(_ params: ContinueParameters) async -> AnyPublisher<Data, AFErrorAndData> {
         return await doSequenceContinue(params)

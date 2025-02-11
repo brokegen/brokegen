@@ -355,16 +355,6 @@ extension DefaultChatSyncService {
         includeLeafSequences: Bool?,
         includeAll: Bool?
     ) async throws {
-        let ratelimitingTime = Date.now
-        if ratelimitingTime < blockFetchRecentsUntil {
-            print("[INFO] Rate limiting doFetchRecents (blocked for another \(blockFetchRecentsUntil.timeIntervalSince(ratelimitingTime)))")
-            return
-        }
-        else {
-            print("[TRACE] DefaultChatSyncService.doFetchRecents: ratelimit check succeeded, starting request")
-            blockFetchRecentsUntil = Date.distantFuture
-        }
-
         var endpointMaker = "/sequences/.recent/as-json?"
 
         if lookback != nil {
@@ -414,9 +404,6 @@ extension DefaultChatSyncService {
             if elapsedMsec > 8.333 {
                 print("[TRACE] DefaultChatSyncService.fetchRecents() update time: \(String(format: "%.3f", elapsedMsec)) msec for \(sequenceUpdates.count) sequences")
             }
-
-            // Set ratelimiting factor to be at least N seconds _between_ calls
-            self.blockFetchRecentsUntil = Date.now.addingTimeInterval(2.0)
         }
     }
 }
