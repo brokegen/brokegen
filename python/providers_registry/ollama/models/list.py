@@ -51,6 +51,8 @@ async def do_list_available_models(
         # https://github.com/encode/httpx/discussions/2959
         # httpx tries to reuse a connection later on, but asyncio can't, so "RuntimeError: Event loop is closed"
         headers=[('Connection', 'close')],
+        # TODO: Determine what causes ollama's /api/tags to hit a timeout, rather than hard-coding to 300 seconds.
+        timeout=httpx.Timeout(300)
     )
     try:
         response: httpx.Response = await provider.client.send(upstream_request)
