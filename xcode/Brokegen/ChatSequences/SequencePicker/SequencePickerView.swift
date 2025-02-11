@@ -117,43 +117,30 @@ func sectioned(
 }
 
 // MARK: - actual SequencePicker
-struct SequencePickerView: View {
+
+/// TODO: Re-implement renaming
+struct SequencePickerSectionView: View {
     @EnvironmentObject private var chatService: ChatSyncService
     @Environment(PathHost.self) private var pathHost
     @Environment(AppSettings.self) public var appSettings
     @Environment(CSCSettingsService.self) public var chatSettingsService
 
-    let fetchUserPinned: Bool?
-    let fetchLeafSequences: Bool?
-    let fetchAll: Bool?
-    let showNewChatButton: Bool
+    let sectionName: String
+    let sectionSequences: [ChatSequence]
     let showSequenceIds: Bool
 
-    @State private var isRenaming: [ChatSequence] = []
+    @Binding private var isRenaming: [ChatSequence]
 
     init(
-        fetchUserPinned: Bool? = true,
-        fetchLeafSequences: Bool? = false,
-        showNewChatButton: Bool = true,
-        showSequenceIds: Bool = false
+        sectionName: String,
+        sectionSequences: [ChatSequence],
+        showSequenceIds: Bool,
+        isRenaming: Binding<[ChatSequence]>
     ) {
-        self.fetchUserPinned = fetchUserPinned
-        self.fetchLeafSequences = fetchLeafSequences
-        self.fetchAll = nil
-        self.showNewChatButton = showNewChatButton
+        self.sectionName = sectionName
+        self.sectionSequences = sectionSequences
         self.showSequenceIds = showSequenceIds
-    }
-
-    init(
-        fetchAll: Bool?,
-        showNewChatButton: Bool = true,
-        showSequenceIds: Bool = false
-    ) {
-        self.fetchUserPinned = nil
-        self.fetchLeafSequences = nil
-        self.fetchAll = fetchAll
-        self.showNewChatButton = showNewChatButton
-        self.showSequenceIds = showSequenceIds
+        self._isRenaming = isRenaming
     }
 
     @ViewBuilder
@@ -324,6 +311,108 @@ struct SequencePickerView: View {
         }
     }
 
+    func hasPendingInference(_ sequence: ChatSequence) -> Bool {
+        if let existingClientModel = chatService.chatSequenceClientModels.first(where: {
+            $0.sequence == sequence
+        }) {
+            return existingClientModel.receiving
+        }
+
+        return false
+    }
+
+    @ViewBuilder
+    func sequenceRow(_ sequence: ChatSequence) -> some View {
+        if self.isRenaming.contains(where: { $0 == sequence }) {
+            RenameableSequenceRow(sequence, hasPending: hasPendingInference(sequence)) { newHumanDesc in
+                print("[TRACE] Attempting rename from \(sequence.displayRecognizableDesc(replaceNewlines: true))")
+                if let updatedSequence = try? await chatService.renameBlocking(sequenceId: sequence.serverId, to: newHumanDesc) {
+                }
+                else {
+                    print("[TRACE] Failed rename to \(sequence.displayRecognizableDesc(replaceNewlines: true))")
+                }
+
+                self.isRenaming.removeAll { $0.serverId == sequence.serverId }
+            }
+        }
+        else {
+            SequenceRow(sequence, hasPending: hasPendingInference(sequence), showSequenceId: showSequenceIds) {
+                pathHost.push(
+                    chatService.clientModel(for: sequence, appSettings: appSettings, chatSettingsService: chatSettingsService)
+                )
+            }
+        }
+    }
+
+    var body: some View {
+        Section(content: {
+            ForEach(sectionSequences, id: \.serverId) { sequence in
+                sequenceRow(sequence)
+                    .contextMenu {
+                        sequenceContextMenu(for: sequence)
+                    }
+
+                Divider()
+            }
+        }, header: {
+            Text(sectionName)
+                .font(.title)
+                .monospaced()
+                .foregroundColor(.accentColor)
+                .padding(.top, 48)
+                .contextMenu {
+                    if sectionSequences.count == 1 {
+                        sequenceContextMenu(for: sectionSequences.first!)
+                    }
+                    else {
+                        sectionContextMenu(for: sectionName, sequences: sectionSequences)
+                    }
+                }
+
+            Divider()
+        })
+    }
+}
+
+struct SequencePickerView: View {
+    @EnvironmentObject private var chatService: ChatSyncService
+    @Environment(PathHost.self) private var pathHost
+    @Environment(AppSettings.self) public var appSettings
+    @Environment(CSCSettingsService.self) public var chatSettingsService
+
+    let fetchUserPinned: Bool?
+    let fetchLeafSequences: Bool?
+    let fetchAll: Bool?
+    let showNewChatButton: Bool
+    let showSequenceIds: Bool
+
+    @State private var isRenaming: [ChatSequence] = []
+
+    init(
+        fetchUserPinned: Bool? = true,
+        fetchLeafSequences: Bool? = false,
+        showNewChatButton: Bool = true,
+        showSequenceIds: Bool = false
+    ) {
+        self.fetchUserPinned = fetchUserPinned
+        self.fetchLeafSequences = fetchLeafSequences
+        self.fetchAll = nil
+        self.showNewChatButton = showNewChatButton
+        self.showSequenceIds = showSequenceIds
+    }
+
+    init(
+        fetchAll: Bool?,
+        showNewChatButton: Bool = true,
+        showSequenceIds: Bool = false
+    ) {
+        self.fetchUserPinned = nil
+        self.fetchLeafSequences = nil
+        self.fetchAll = fetchAll
+        self.showNewChatButton = showNewChatButton
+        self.showSequenceIds = showSequenceIds
+    }
+
     @ViewBuilder
     var upperToolbar: some View {
         HStack(spacing: 24) {
@@ -385,39 +474,6 @@ struct SequencePickerView: View {
         }
     }
 
-    func hasPendingInference(_ sequence: ChatSequence) -> Bool {
-        if let existingClientModel = chatService.chatSequenceClientModels.first(where: {
-            $0.sequence == sequence
-        }) {
-            return existingClientModel.receiving
-        }
-
-        return false
-    }
-
-    @ViewBuilder
-    func sequenceRow(_ sequence: ChatSequence) -> some View {
-        if self.isRenaming.contains(where: { $0 == sequence }) {
-            RenameableSequenceRow(sequence, hasPending: hasPendingInference(sequence)) { newHumanDesc in
-                print("[TRACE] Attempting rename from \(sequence.displayRecognizableDesc(replaceNewlines: true))")
-                if let updatedSequence = try? await chatService.renameBlocking(sequenceId: sequence.serverId, to: newHumanDesc) {
-                }
-                else {
-                    print("[TRACE] Failed rename to \(sequence.displayRecognizableDesc(replaceNewlines: true))")
-                }
-
-                self.isRenaming.removeAll { $0.serverId == sequence.serverId }
-            }
-        }
-        else {
-            SequenceRow(sequence, hasPending: hasPendingInference(sequence), showSequenceId: showSequenceIds) {
-                pathHost.push(
-                    chatService.clientModel(for: sequence, appSettings: appSettings, chatSettingsService: chatSettingsService)
-                )
-            }
-        }
-    }
-
     var body: some View {
         upperToolbar
             .padding(24)
@@ -425,7 +481,7 @@ struct SequencePickerView: View {
 
         GeometryReader { geometry in
             ScrollView {
-                VStack(alignment: .leading, spacing: 8) {
+                LazyVStack(alignment: .leading, spacing: 8) {
                     let sectionedSequences = sectioned(
                         Array(chatService.loadedChatSequences.values),
                         includeUserPinned: fetchUserPinned ?? false,
@@ -434,33 +490,11 @@ struct SequencePickerView: View {
                     )
                     ForEach(sectionedSequences, id: \.0) { pair in
                         let (sectionName, sectionSequences) = pair
-
-                        Section(content: {
-                            ForEach(sectionSequences, id: \.serverId) { sequence in
-                                sequenceRow(sequence)
-                                    .contextMenu {
-                                        sequenceContextMenu(for: sequence)
-                                    }
-
-                                Divider()
-                            }
-                        }, header: {
-                            Text(sectionName)
-                                .font(.title)
-                                .monospaced()
-                                .foregroundColor(.accentColor)
-                                .padding(.top, 48)
-                                .contextMenu {
-                                    if sectionSequences.count == 1 {
-                                        sequenceContextMenu(for: sectionSequences.first!)
-                                    }
-                                    else {
-                                        sectionContextMenu(for: sectionName, sequences: sectionSequences)
-                                    }
-                                }
-
-                            Divider()
-                        })
+                        SequencePickerSectionView(
+                            sectionName: sectionName,
+                            sectionSequences: sectionSequences,
+                            showSequenceIds: showSequenceIds,
+                            isRenaming: $isRenaming)
                     }
 
                     Text("End of loaded ChatSequences")
