@@ -1,5 +1,6 @@
 import functools
 import logging
+import traceback
 from datetime import datetime, timezone
 from typing import AsyncIterator, Annotated, Awaitable
 
@@ -170,6 +171,7 @@ def install_routes(router_ish: fastapi.FastAPI | fastapi.routing.APIRouter) -> N
 
             except Exception as e:
                 logger.warning(f"{type(e)}: {str(e)}")
+                logger.debug(traceback.format_exc())
 
                 # NB This eventually triggers a RuntimeWarning: coroutine 'with_retrieval' was never awaited
                 #    (which resolves to `response_maker_awaitable` here).
