@@ -120,7 +120,7 @@ struct MiniSequencePickerSidebar: View {
                     let (sectionName, sectionSequences) = pair
                     
                     Section(content: {
-                        ForEach(sectionSequences, id: \.serverId) { sequence in
+                        ForEach(sectionSequences) { sequence in
                             Button(action: {
                                 pathHost.push(
                                     chatService.clientModel(for: sequence, appSettings: appSettings, chatSettingsService: chatSettingsService)

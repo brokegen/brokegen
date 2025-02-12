@@ -346,7 +346,7 @@ struct SequencePickerSectionView: View {
 
     var body: some View {
         Section(content: {
-            ForEach(sectionSequences, id: \.serverId) { sequence in
+            ForEach(sectionSequences) { sequence in
                 sequenceRow(sequence)
                     .contextMenu {
                         sequenceContextMenu(for: sequence)

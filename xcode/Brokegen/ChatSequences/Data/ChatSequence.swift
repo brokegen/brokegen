@@ -111,7 +111,6 @@ class ChatSequence: Identifiable {
         parentSequences?.insert(newServerId, at: 0)
 
         return ChatSequence(
-            clientId: self.id,
             serverId: newServerId,
             humanDesc: self.humanDesc,
             userPinned: self.userPinned,
@@ -125,7 +124,6 @@ class ChatSequence: Identifiable {
 
     func replaceHumanDesc(desc humanDesc: String?) -> ChatSequence {
         return ChatSequence(
-            clientId: self.id,
             serverId: self.serverId,
             humanDesc: humanDesc,
             userPinned: self.userPinned,
@@ -139,7 +137,6 @@ class ChatSequence: Identifiable {
 
     func replaceUserPinned(pinned userPinned: Bool) -> ChatSequence {
         return ChatSequence(
-            clientId: self.id,
             serverId: self.serverId,
             humanDesc: self.humanDesc,
             userPinned: userPinned,
@@ -153,7 +150,6 @@ class ChatSequence: Identifiable {
 
     func replaceIsLeaf(_ isLeafSequence: Bool) -> ChatSequence {
         return ChatSequence(
-            clientId: self.id,
             serverId: self.serverId,
             humanDesc: self.humanDesc,
             userPinned: userPinned,
