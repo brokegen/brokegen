@@ -4,7 +4,7 @@ import functools
 import json
 import logging
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import AsyncGenerator, AsyncIterator, Iterator, TypeVar, Any, Callable, Union, Awaitable
 
 import jinja2.exceptions
@@ -116,7 +116,7 @@ class TemplateApplier(ChatFormatter):
 
         formatter_fn = TemplateApplier.chat_formatter_for(self.underlying_model.chat_format)
         if formatter_fn is None:
-            is_mistral_nemo: bool = safe_get(self.underlying_model.metadata, "general.name") == "Mistral Nemo Instruct 2407"
+            is_mistral_nemo: bool = safe_get(self.underlying_model.metadata,"general.name") == "Mistral Nemo Instruct 2407"
             if is_mistral_nemo:
                 formatter_fn = TemplateApplier.chat_formatter_for("mistral-instruct")
 
@@ -484,8 +484,7 @@ class _OneModel:
             timing_print_interval: float = 5.0
 
             logger.info(f"[lcp] prompt eval will be chunked, `timings.n_eval` may be off by {cfr_prompt_token_len / CHUNK_SIZE:_.1f} tokens")
-            with StatusContext(f"[lcp] prompt eval: {cfr_prompt_token_len:_} tokens total, with batch size {CHUNK_SIZE}",
-                               status_holder):
+            with StatusContext(f"[lcp] prompt eval: {cfr_prompt_token_len:_} tokens total, with batch size {CHUNK_SIZE}", status_holder):
                 # Force an initial print, so we preload the model + don't compute that initial time.
                 await asyncio.sleep(0)
                 self.underlying_model.create_completion(tokenized_prompt[:1], **chunking_model_params)
@@ -753,29 +752,28 @@ class LlamaCppProvider(BaseProvider):
                 primordial: AsyncIterator[T],
                 cfr_prompt_token_len: int | None,
         ) -> AsyncIterator[T]:
-            timings: llama_cpp.llama_perf_context_data | None = None
+            response_tokens = 0
+            response_eval_start_time = datetime.now(tz=timezone.utc)
 
             try:
                 async for chunk in primordial:
                     yield chunk
 
-                    timings = llama_cpp.llama_perf_context(loaded_model.underlying_model.ctx)
-                    evaluation_desc: str = f"{timings.n_eval} tokens generated in {timings.t_eval_ms / 1000:_.3f} seconds"
+                    response_tokens += 1
+                    response_eval_time = (datetime.now(tz=timezone.utc) - response_eval_start_time).total_seconds()
 
-                    if timings.n_p_eval == 0:
-                        if cfr_prompt_token_len == 0:
-                            status_holder.set(f"{loaded_model.model_name}: " + evaluation_desc)
-                        else:
-                            status_holder.set(
-                                f"{loaded_model.model_name}: {cfr_prompt_token_len} total prompt tokens => " + evaluation_desc)
+                    evaluation_desc: str = f"{response_tokens} tokens generated in {response_eval_time:_.3f} seconds"
+
+                    if cfr_prompt_token_len == 0:
+                        status_holder.set(f"{loaded_model.model_name}: " + evaluation_desc)
                     else:
                         status_holder.set(
-                            f"{loaded_model.model_name}: {timings.n_p_eval} new prompt tokens => " + evaluation_desc)
+                            f"{loaded_model.model_name}: {cfr_prompt_token_len} total prompt tokens => " + evaluation_desc)
 
             except Exception as e:
                 # Probably ran out of tokens; continue on and rely on final handler(s)
                 logger.exception(f"Caught exception during inference, probably out of tokens")
-                if timings is None:
+                if response_tokens == 0:
                     yield {
                         "error": f"{type(e)}: {e}",
                         "done": False,
@@ -784,14 +782,14 @@ class LlamaCppProvider(BaseProvider):
 
             # Add an error message if we _probably_ ran out of tokens.
             # It's okay to mark it as an error + toss previous work because the user wants a not-truncated response.
-            if timings is not None:
+            if response_tokens > 0:
                 # For some kind of error margin, complain if we're within 10 tokens of the end.
                 # This doesn't work well for extremely short contexts, but for ten tokens? blame the user.
                 #
                 # This "safety" margin can probably reduced to 1 or 2, depending on whether we have Unicode sequences
                 # that span multiple tokens (the llama-cpp-python decoder groups them together).
                 #
-                tokens_remaining = loaded_model.underlying_model.context_params.n_ctx - cfr_prompt_token_len - timings.n_eval
+                tokens_remaining = loaded_model.underlying_model.context_params.n_ctx - cfr_prompt_token_len - response_tokens
                 if tokens_remaining < 0:
                     # NB This happens fairly often, especially for long text like transcript summaries.
                     logger.debug(f"{tokens_remaining:_} token overflow for total context size of {loaded_model.underlying_model.context_params.n_ctx}")
@@ -800,7 +798,7 @@ class LlamaCppProvider(BaseProvider):
 
                 if tokens_remaining < 10:
                     info_str = (
-                        f"Token count near or exceeded context size: {cfr_prompt_token_len} prompt + {timings.n_eval} new"
+                        f"Token count near or exceeded context size: {cfr_prompt_token_len} prompt + {response_tokens} new"
                         f" >= n_ctx={loaded_model.underlying_model.context_params.n_ctx}"
                     )
                     status_holder.set("[lcp] " + info_str)
@@ -946,30 +944,28 @@ class LlamaCppProvider(BaseProvider):
 
             return response
 
-        def record_inference_event(
-                consolidated_response: JSONDict,
-                cfr: ChatFormatterResponse,
-        ) -> InferenceEventOrm:
-            inference_event = InferenceEventOrm(
-                model_record_id=inference_model.id,
-                prompt_with_templating=cfr.prompt,
-                response_created_at=datetime.now(tz=timezone.utc),
-                response_info=consolidated_response,
-                reason="LlamaCppProvider.do_chat_logged",
-            )
+        async def update_inference_event(
+                primordial: AsyncIterator[JSONDict],
+                active_inference_event: InferenceEventOrm,
+        ) -> AsyncIterator[JSONDict]:
+            # TODO: Figure out if prompt evaluation times show up here
+            response_tokens = 0
 
-            timings: llama_cpp.llama_perf_context_data = llama_cpp.llama_perf_context(
-                self.loaded_models[inference_model.id].underlying_model.ctx)
+            async for chunk in primordial:
+                yield chunk
+                response_tokens += 1
 
-            inference_event.prompt_tokens = timings.n_p_eval
-            inference_event.prompt_eval_time = timings.t_p_eval_ms / 1000.
-            inference_event.response_tokens = timings.n_eval
-            inference_event.response_eval_time = timings.t_eval_ms / 1000.
+            # Once we're done, actually update the statistics fields
+            response_eval_time = (
+                    datetime.now(tz=timezone.utc).replace(tzinfo=None)
+                    - active_inference_event.response_created_at
+            ).total_seconds()
 
-            history_db.add(inference_event)
-            history_db.commit()
-
-            return inference_event
+            active_inference_event.response_tokens = response_tokens
+            active_inference_event.response_eval_time = response_eval_time
+            # NB Don't add this to SQLite object graph until after inference is done,
+            # because the object becomes stale and will need to be merged back in.
+            history_db.add(active_inference_event)
 
         async def prepend_prompt_text(
                 primordial: AsyncIterator[JSONDict],
@@ -987,15 +983,18 @@ class LlamaCppProvider(BaseProvider):
         async def append_response_chunk(
                 consolidated_response: JSONDict,
                 cfr: ChatFormatterResponse,
+                active_inference_event: InferenceEventOrm,
         ) -> AsyncIterator[JSONDict]:
             # And now, construct the ChatSequence (which references the InferenceEvent, actually)
             try:
-                inference_event: InferenceEventOrm = record_inference_event(consolidated_response, cfr)
+                active_inference_event.prompt_with_templating = cfr.prompt
+                active_inference_event.response_info = consolidated_response
+                active_inference_event.reason = "LlamaCppProvider.do_chat_logged"
 
                 response_message: ChatMessageOrm | None = construct_assistant_message(
                     maybe_response_seed=inference_options.seed_assistant_response or "",
                     assistant_response=safe_get(consolidated_response, "message", "content") or "",
-                    created_at=inference_event.response_created_at,
+                    created_at=active_inference_event.response_created_at,
                     history_db=history_db,
                 )
                 if not response_message:
@@ -1016,16 +1015,17 @@ class LlamaCppProvider(BaseProvider):
 
                 history_db.add(response_sequence)
 
-                response_sequence.generated_at = inference_event.response_created_at
+                response_sequence.generated_at = active_inference_event.response_created_at
                 response_sequence.generation_complete = True
-                response_sequence.inference_job_id = inference_event.id
-                if inference_event.response_error:
-                    response_sequence.inference_error = inference_event.response_error
+                response_sequence.inference_job_id = active_inference_event.id
+                if active_inference_event.response_error:
+                    response_sequence.inference_error = active_inference_event.response_error
 
+                # TODO: Investigate replacing this with plain .flush()
                 history_db.commit()
 
                 # And complete the circular reference that really should be handled in the SQLAlchemy ORM
-                inference_job = history_db.merge(inference_event)
+                inference_job = history_db.merge(active_inference_event)
                 inference_job.parent_sequence = response_sequence.id
 
                 history_db.add(inference_job)
@@ -1074,6 +1074,17 @@ class LlamaCppProvider(BaseProvider):
             else:
                 messages_list.append(rag_message)
 
+        active_inference_event = InferenceEventOrm(
+            model_record_id=inference_model.id,
+            prompt_with_templating=None,
+            response_created_at=datetime.now(tz=timezone.utc),
+            response_info={},
+            reason="LlamaCppProvider.do_chat_logged (in progress/exited prematurely)",
+        )
+
+        history_db.add(active_inference_event)
+        history_db.commit()
+
         iter3: AsyncIterator[JSONDict]
         cfr, iter3 = await self._do_chat_nolog(
             messages_list,
@@ -1082,10 +1093,11 @@ class LlamaCppProvider(BaseProvider):
             status_holder,
         )
         iter4: AsyncIterator[JSONDict] = prepend_prompt_text(iter3, cfr)
-        iter5: AsyncIterator[JSONDict] = consolidate_and_yield(
-            iter4, content_consolidator, {},
-            functools.partial(append_response_chunk, cfr=cfr))
+        iter5: AsyncIterator[JSONDict] = update_inference_event(iter4, active_inference_event)
+        iter6: AsyncIterator[JSONDict] = consolidate_and_yield(
+            iter5, content_consolidator, {},
+            functools.partial(append_response_chunk, cfr=cfr, active_inference_event=active_inference_event))
 
-        return iter5
+        return iter6
 
     #  endregion
