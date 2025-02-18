@@ -126,17 +126,6 @@ async def convert_chat_to_generate(
         )
         templated_messages.append(converted)
 
-    # NB The "last" message might still be an assistant response, in which case we append the message now.
-    if not used_assistant_response_seed:
-        converted = await apply_llm_template(
-            model_template,
-            None,
-            None,
-            inference_options.seed_assistant_response,
-            True,
-        )
-        templated_messages.append(converted)
-
     if prompt_override is not None:
         # If we only have one message, then override differently
         if len(ollama_chat_messages) == 0:
@@ -163,6 +152,17 @@ async def convert_chat_to_generate(
                 '',
                 break_early_on_response=True,
             ))
+
+    # NB The "last" message might still be an assistant response, in which case we append the message now.
+    if not used_assistant_response_seed:
+        converted = await apply_llm_template(
+            model_template,
+            None,
+            None,
+            inference_options.seed_assistant_response,
+            True,
+        )
+        templated_messages.append(converted)
 
     generate_request_content = dict(chat_request_content)
     generate_request_content['prompt'] = '\n'.join(templated_messages)
