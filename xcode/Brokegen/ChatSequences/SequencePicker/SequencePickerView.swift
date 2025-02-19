@@ -204,7 +204,7 @@ struct SequencePickerSectionView: View {
                     : "\(appSettings.preferredAutonamingModel!)"
                 }()
 
-                Text("Autoname \(unnamedSequenceCount) unnamed sequences\n")
+                Text("Autoname \(unnamedSequenceCount) unnamed sequences (\(sequences.count) total)\n")
                 + Text(subtitle)
                     .font(.subheadline)
                     .foregroundStyle(Color(.disabledControlTextColor))
