@@ -752,17 +752,27 @@ class LlamaCppProvider(BaseProvider):
                 primordial: AsyncIterator[T],
                 cfr_prompt_token_len: int | None,
         ) -> AsyncIterator[T]:
+            prompt_tokens = cfr_prompt_token_len or 0
+            prompt_eval_start_time = datetime.now(tz=timezone.utc)
+            prompt_eval_end_time: datetime | None = None
+
             response_tokens = 0
-            response_eval_start_time = datetime.now(tz=timezone.utc)
+            response_eval_start_time: datetime | None = None
 
             try:
                 async for chunk in primordial:
                     yield chunk
 
-                    response_tokens += 1
-                    response_eval_time = (datetime.now(tz=timezone.utc) - response_eval_start_time).total_seconds()
+                    # If this is the first token we're picking up
+                    if prompt_eval_end_time is None or response_eval_start_time is None:
+                        reference_time = datetime.now(tz=timezone.utc)
+                        prompt_eval_end_time = reference_time
+                        response_eval_start_time = reference_time
 
-                    evaluation_desc: str = f"{response_tokens} tokens generated in {response_eval_time:_.3f} seconds"
+                    response_tokens += 1
+                    response_eval_duration = (datetime.now(tz=timezone.utc) - response_eval_start_time).total_seconds()
+
+                    evaluation_desc: str = f"{response_tokens} tokens generated in {response_eval_duration:_.3f} seconds"
 
                     if cfr_prompt_token_len == 0:
                         status_holder.set(f"{loaded_model.model_name}: " + evaluation_desc)
@@ -948,21 +958,37 @@ class LlamaCppProvider(BaseProvider):
                 primordial: AsyncIterator[JSONDict],
                 active_inference_event: InferenceEventOrm,
         ) -> AsyncIterator[JSONDict]:
-            # TODO: Figure out if prompt evaluation times show up here
+            # TODO: Calculate how many tokens are in our actual prompt
+            #       Don't tokenize twice, deduplicate with the _OneModel's earlier tokenization.
+            #       Or maybe it doesn't matter too much.
+            prompt_tokens: int | None = None
+            prompt_eval_start_time = active_inference_event.response_created_at or datetime.now(tz=timezone.utc).replace(tzinfo=None)
+            prompt_eval_end_time: datetime | None = None
+
             response_tokens = 0
+            response_eval_start_time: datetime | None = None
 
             async for chunk in primordial:
                 yield chunk
+
+                # If this is the first token we're picking up
+                if prompt_eval_end_time is None or response_eval_start_time is None:
+                    reference_time = datetime.now(tz=timezone.utc)
+                    prompt_eval_end_time = reference_time
+                    response_eval_start_time = reference_time
+
                 response_tokens += 1
 
             # Once we're done, actually update the statistics fields
-            response_eval_time = (
-                    datetime.now(tz=timezone.utc).replace(tzinfo=None)
-                    - active_inference_event.response_created_at
-            ).total_seconds()
+            active_inference_event.prompt_tokens = prompt_tokens
+            if prompt_eval_end_time is not None and prompt_eval_start_time is not None:
+                active_inference_event.prompt_eval_time = (prompt_eval_end_time - prompt_eval_start_time).total_seconds()
 
             active_inference_event.response_tokens = response_tokens
-            active_inference_event.response_eval_time = response_eval_time
+            if response_eval_start_time is not None:
+                response_eval_duration = (datetime.now(tz=timezone.utc) - response_eval_start_time).total_seconds()
+                active_inference_event.response_eval_time = response_eval_duration
+
             # NB Don't add this to SQLite object graph until after inference is done,
             # because the object becomes stale and will need to be merged back in.
             history_db.add(active_inference_event)
