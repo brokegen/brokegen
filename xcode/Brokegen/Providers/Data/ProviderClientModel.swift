@@ -12,7 +12,7 @@ struct ProviderLabel {
     let id: ProviderID
 }
 
-struct ProviderClientModel: Identifiable { //: Equatable, Hashable {
+struct ProviderClientModel: Identifiable {
     // TODO: Use the ProviderLabel as the ObjectIdentifier
     let id: UUID = UUID()
     let label: ProviderLabel

@@ -235,7 +235,7 @@ extension ChatSequence: CustomStringConvertible {
 
 extension ChatSequence: Equatable {
     static func == (lhs: ChatSequence, rhs: ChatSequence) -> Bool {
-        return lhs.serverId == rhs.serverId
+        return lhs.id == rhs.id && lhs.serverId == rhs.serverId
     }
 }
 

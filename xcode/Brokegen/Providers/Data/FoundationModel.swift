@@ -74,15 +74,7 @@ extension FoundationModel {
 
 extension FoundationModel: Equatable {
     public static func == (lhs: FoundationModel, rhs: FoundationModel) -> Bool {
-        if lhs.serverId != rhs.serverId {
-            return false
-        }
-
-        if lhs.id != rhs.id {
-            return false
-        }
-
-        return true
+        return lhs.id == rhs.id && lhs.serverId == rhs.serverId
     }
 }
 
