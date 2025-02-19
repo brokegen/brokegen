@@ -55,9 +55,13 @@ def select_continuation_model(
         return inference_model
 
     if fallback_model_id is not None:
-        return history_db.execute(
+        fallback_model = history_db.execute(
             select(FoundationModelRecordOrm)
             .where(FoundationModelRecordOrm.id == fallback_model_id)
-        ).scalar_one()
+        ).scalar_one_or_none()
+        if fallback_model is None:
+            raise HTTPException(400, f"Couldn't find {fallback_model_id=}")
 
-    raise HTTPException(400, f"Couldn't find any models ({requested_model_id=}, {fallback_model_id}, {sequence_id=})")
+        return fallback_model
+
+    raise HTTPException(400, f"Couldn't find any models ({requested_model_id=}, {fallback_model_id=}, {sequence_id=})")
