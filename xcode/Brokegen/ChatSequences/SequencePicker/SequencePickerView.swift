@@ -120,7 +120,7 @@ func sectioned(
 
 /// TODO: Re-implement renaming
 struct SequencePickerSectionView: View {
-    @EnvironmentObject private var chatService: ChatSyncService
+    @Environment(ChatSyncService.self) private var chatService
     @Environment(PathHost.self) private var pathHost
     @Environment(AppSettings.self) public var appSettings
     @Environment(CSCSettingsService.self) public var chatSettingsService
@@ -375,7 +375,7 @@ struct SequencePickerSectionView: View {
 }
 
 struct SequencePickerView: View {
-    @EnvironmentObject private var chatService: ChatSyncService
+    @Environment(ChatSyncService.self) private var chatService
     @Environment(PathHost.self) private var pathHost
     @Environment(AppSettings.self) public var appSettings
     @Environment(CSCSettingsService.self) public var chatSettingsService

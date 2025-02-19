@@ -101,8 +101,8 @@ struct BrokegenApp: App {
             )
 
             AppWindowView(blankViewModel: blankViewModel)
-                .environmentObject(chatService)
-                .environmentObject(jobsService)
+                .environment(chatService)
+                .environment(jobsService)
                 .environment(providerService)
                 .environment(appSettings)
                 .environment(chatSettingsService)
