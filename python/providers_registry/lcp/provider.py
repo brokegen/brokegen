@@ -974,7 +974,7 @@ class LlamaCppProvider(BaseProvider):
                 # If this is the first token we're picking up
                 if prompt_eval_end_time is None or response_eval_start_time is None:
                     reference_time = datetime.now(tz=timezone.utc)
-                    prompt_eval_end_time = reference_time
+                    prompt_eval_end_time = reference_time.replace(tzinfo=None)
                     response_eval_start_time = reference_time
 
                 response_tokens += 1
