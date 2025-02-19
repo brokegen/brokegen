@@ -70,26 +70,6 @@ extension FoundationModel {
             recentTokensPerSecond: jsonModel["recent_tokens_per_second"].floatValue
         )
     }
-
-    func replaceId(_ newClientId: UUID) -> FoundationModel {
-        return FoundationModel(
-            id: newClientId,
-            serverId: self.serverId,
-            humanId: self.humanId,
-            firstSeenAt: self.firstSeenAt,
-            lastSeen: self.lastSeen,
-            providerIdentifiers: self.providerIdentifiers,
-            modelIdentifiers: self.modelIdentifiers,
-            combinedInferenceParameters: self.combinedInferenceParameters,
-            displayStats: self.displayStats,
-            allStats: self.allStats,
-            label: self.label,
-            available: self.available,
-            latestInferenceEvent: self.latestInferenceEvent,
-            recentInferenceEvents: self.recentInferenceEvents,
-            recentTokensPerSecond: self.recentTokensPerSecond
-        )
-    }
 }
 
 extension FoundationModel: Equatable {

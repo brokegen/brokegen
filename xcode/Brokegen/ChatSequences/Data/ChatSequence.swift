@@ -70,7 +70,6 @@ class ChatSequence: Identifiable {
     }
 
     init(
-        clientId: UUID = UUID(),
         serverId: ChatSequenceServerID,
         humanDesc: String? = nil,
         userPinned: Bool = false,
@@ -80,7 +79,7 @@ class ChatSequence: Identifiable {
         isLeafSequence: Bool? = nil,
         parentSequences: [ChatSequenceServerID]? = nil
     ) {
-        self.id = clientId
+        self.id = UUID()
         self.serverId = serverId
         self.humanDesc = humanDesc
         self.userPinned = userPinned
@@ -89,20 +88,6 @@ class ChatSequence: Identifiable {
         self.inferenceModelId = inferenceModelId
         self.isLeafSequence = isLeafSequence
         self.parentSequences = parentSequences
-    }
-
-    func replaceId(_ newClientId: UUID) -> ChatSequence {
-        return ChatSequence(
-            clientId: newClientId,
-            serverId: self.serverId,
-            humanDesc: self.humanDesc,
-            userPinned: self.userPinned,
-            generatedAt: self.generatedAt,
-            messages: self.messages,
-            inferenceModelId: self.inferenceModelId,
-            isLeafSequence: self.isLeafSequence,
-            parentSequences: self.parentSequences
-        )
     }
 
     func replaceServerId(_ newServerId: ChatSequenceServerID) -> ChatSequence {

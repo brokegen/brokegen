@@ -36,14 +36,12 @@ class ProviderService {
 
     @MainActor
     func replaceModelById(_ originalModelId: FoundationModelRecordID?, with updatedModel: FoundationModel) {
-        var priorClientId: UUID? = nil
         var priorRemovalIndex: Int? = nil
 
         if originalModelId != nil {
             if let removalIndex = allModels.firstIndex(where: {
                 $0.serverId == originalModelId
             }) {
-                priorClientId = allModels[removalIndex].id
                 priorRemovalIndex = removalIndex
             }
 
@@ -52,23 +50,11 @@ class ProviderService {
             })
         }
 
-        if let clientId = priorClientId {
-            if priorRemovalIndex != nil {
-                allModels.insert(
-                    updatedModel.replaceId(clientId),
-                    at: priorRemovalIndex!)
-            }
-            else {
-                allModels.append(updatedModel.replaceId(clientId))
-            }
+        if priorRemovalIndex != nil {
+            allModels.insert(updatedModel, at: priorRemovalIndex!)
         }
         else {
-            if priorRemovalIndex != nil {
-                allModels.insert(updatedModel, at: priorRemovalIndex!)
-            }
-            else {
-                allModels.append(updatedModel)
-            }
+            allModels.append(updatedModel)
         }
     }
 }
