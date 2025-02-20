@@ -484,6 +484,7 @@ class _OneModel:
             timing_print_interval: float = 5.0
 
             logger.info(f"[lcp] prompt eval will be chunked, `timings.n_eval` may be off by {cfr_prompt_token_len / CHUNK_SIZE:_.1f} tokens")
+            logger.debug(f"[lcp] prompt eval: {0: >6_} of {cfr_prompt_token_len:_} tokens total, cache prefix-match and estimated total unknown")
             with StatusContext(f"[lcp] prompt eval: {cfr_prompt_token_len:_} tokens total, with batch size {CHUNK_SIZE}", status_holder):
                 # Force an initial print, so we preload the model + don't compute that initial time.
                 await asyncio.sleep(0)
@@ -511,6 +512,7 @@ class _OneModel:
                         time_since_print: float = (datetime.now(tz=timezone.utc) - last_timing_print).total_seconds()
 
                         if time_since_print > timing_print_interval:
+                            # NB This will only be useful if caller set a max batch eval size; otherwise, only called once at end of prompt eval.
                             logger.debug(
                                 f"[lcp] prompt eval: {tokens_parsed: >6_} of {cfr_prompt_token_len:_} tokens total"
                                 f", {elapsed_time + estimated_time: >9_.3f} secs estimated total at {count_since_print / time_since_print: >6_.3f} tokens/sec")
