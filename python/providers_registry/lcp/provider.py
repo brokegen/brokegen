@@ -887,13 +887,12 @@ class LlamaCppProvider(BaseProvider):
         iter3: AsyncIterator[JSONDict] = format_response(iter2)
         if tee_to_console:
             iter4: AsyncIterator[JSONDict] = \
-                tee_to_console_output(iter3,
-                                      lambda chunk: safe_get(chunk, "message", "content"))
+                tee_to_console_output(iter3, lambda chunk: safe_get(chunk, "message", "content"))
         else:
             iter4 = iter3
         iter5: AsyncIterator[JSONDict] = update_status_and_log_info(iter4, cfr_prompt_token_len=cfr_prompt_token_len)
 
-        status_holder.set(f"{loaded_model.model_name} loaded, starting inference")
+        status_holder.set(f"{inference_model.human_id} loaded, starting inference")
 
         available_ram = psutil.virtual_memory().available / (1 << 30)
         total_ram = psutil.virtual_memory().total / (1 << 30)
