@@ -167,13 +167,21 @@ async def do_continuation(
     async def update_status(
             primordial: AsyncIterator[JSONDict],
     ) -> AsyncIterator[JSONDict]:
-        chunk_number: int = 0
+        # NB We're assuming one token per chunk, which seems like the most likely implementation.
+        # TODO: Double check this, and across ollama version updates, too.
+        response_tokens = 0
+        response_eval_start_time: datetime | None = None
 
         async for chunk in primordial:
-            # In this rare instance, we update `status_holder` first so any downstream iterator-processors read it.
-            # (Otherwise, we usually try to yield the chunk asap, so client appears more responsive.)
-            chunk_number += 1
-            status_holder.set(f"[ollama] {inference_model.human_id}: received response chunk #{chunk_number}")
+            # If this is the first token we're picking up
+            if response_eval_start_time is None:
+                response_eval_start_time = datetime.now(tz=timezone.utc)
+
+            response_tokens += 1
+            response_eval_duration = (datetime.now(tz=timezone.utc) - response_eval_start_time).total_seconds()
+
+            # Update `status_holder` first so any downstream iterator-processors read it.
+            status_holder.set(f"{inference_model.human_id}: {response_tokens} generated in {response_eval_duration:_.3f} seconds")
 
             # For the most part, the upstream chunk generators are forwarded straight from ollama.
             # We don't expect any of them to have the "status" set, but check anyway.
