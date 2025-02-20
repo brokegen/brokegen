@@ -682,7 +682,7 @@ class LlamaCppProvider(BaseProvider):
             total_ram = psutil.virtual_memory().total / (1 << 30)
             logger.info(f"Available RAM (post-trim): {available_ram:_.1f} GB / {total_ram:_.1f} total")
 
-        with StatusContext(f"{target_model.model_name}: loading model", status_holder):
+        with StatusContext(f"{inference_model.human_id}: loading model", status_holder):
             target_model.launch_with_params(None, inference_options)
 
             if reference_available_ram != f"{psutil.virtual_memory().available / (1 << 30):_.1f}":
@@ -775,10 +775,9 @@ class LlamaCppProvider(BaseProvider):
                     evaluation_desc: str = f"{response_tokens} tokens generated in {response_eval_duration:_.3f} seconds"
 
                     if cfr_prompt_token_len == 0:
-                        status_holder.set(f"{loaded_model.model_name}: " + evaluation_desc)
+                        status_holder.set(f"{inference_model.human_id}: " + evaluation_desc)
                     else:
-                        status_holder.set(
-                            f"{loaded_model.model_name}: {cfr_prompt_token_len} total prompt tokens => " + evaluation_desc)
+                        status_holder.set(f"{inference_model.human_id}: {cfr_prompt_token_len} total prompt tokens => " + evaluation_desc)
 
             except Exception as e:
                 # Probably ran out of tokens; continue on and rely on final handler(s)
