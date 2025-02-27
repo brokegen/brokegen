@@ -427,13 +427,19 @@ class _OneModel:
 
     @property
     def model_name(self) -> FoundationModelHumanID | None:
+        """
+        For now, rely on using the .gguf filename to identify the model.
+        """
         if self.underlying_model is None:
             return os.path.basename(self.model_path)
 
-        return "[lcp] " + (
-                safe_get(self.underlying_model.metadata, "general.name")
-                or os.path.basename(self.model_path)
-        )
+        general_name = safe_get(self.underlying_model.metadata, "general.name")
+        # TODO: console output has the string we want in `llm_load_print_meta: model ftype`, but can't figure out how to access it
+        model_ftype: str | None = None
+        if general_name and model_ftype:
+            return f"[lcp] {general_name} {model_ftype}"
+
+        return "[lcp] " + os.path.basename(self.model_path)
 
     async def do_completion(
             self,
