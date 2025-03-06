@@ -91,14 +91,21 @@ class ChatSyncService: ObservableObject {
         model.submittedAssistantResponseSeed = blankModel.submittedAssistantResponseSeed
         model.serverStatus = blankModel.serverStatus
 
-        model.promptInEdit = blankModel.promptInEdit
+        // If user set a title, show that title.
+        if !(sequence.humanDesc ?? "").isEmpty {
+            model.settings.pinChatSequenceDesc = true
+        }
+
+        // -- When continuing a new chat, hide most of the panels.
+        model.promptInEdit = ""
+        // This is always true in practice, since our "submit" button is within this view.
         model.showTextEntryView = blankModel.showTextEntryView
-        model.showUiOptions = blankModel.showUiOptions
-        model.showInferenceOptions = blankModel.showInferenceOptions
-        model.showRetrievalOptions = blankModel.showRetrievalOptions
+        model.showUiOptions = false
+        model.showInferenceOptions = false
+        model.showRetrievalOptions = false
         model.continuationInferenceModel = blankModel.continuationInferenceModel
-        model.showAssistantResponseSeed = blankModel.showAssistantResponseSeed
-        model.showSystemPromptOverride = blankModel.showSystemPromptOverride
+        model.showAssistantResponseSeed = false
+        model.showSystemPromptOverride = false
 
         return self.addClientModel(model)
     }
