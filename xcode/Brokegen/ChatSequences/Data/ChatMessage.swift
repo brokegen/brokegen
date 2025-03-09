@@ -166,7 +166,6 @@ enum MessageLike: Equatable, Hashable {
             switch(self) {
             case .serverOnly(let m):
                 m.createdAt
-
             case .temporary(let m, _):
                 m.createdAt
             }

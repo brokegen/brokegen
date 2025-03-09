@@ -71,9 +71,20 @@ struct TextSelection: ViewModifier {
     }
 }
 
+fileprivate func hasReasoningTokens(_ content: String) -> Bool {
+    return content.contains("</think>")
+}
+
+fileprivate func removeReasoningTokens(_ content: String) -> String {
+    let splitMessage = content.split(separator: "</think>")
+    return String(splitMessage.last ?? "")
+        // Remove leading newlines, since those are frequently seen after </think>.
+        .replacingOccurrences(of: #"^\s*"#, with: "", options: .regularExpression)
+}
+
 struct OneMessageView: View {
     let message: MessageLike
-    let renderMessageContent: (MessageLike) -> MarkdownContent
+    let renderMessageContent: (String) -> MarkdownContent
     let sequence: ChatSequence?
     let branchAction: (() async -> Void)?
     let stillExpectingUpdate: Bool
@@ -88,12 +99,15 @@ struct OneMessageView: View {
     @State private var localRenderAsMarkdown: Bool? = nil
     private let defaultRenderAsMarkdown: Bool
 
+    @State private var localHideReasoning: Bool? = nil
+    private let defaultHideReasoning: Bool = true
+
     @State private var isHovered: Bool = false
 
     init(
         _ message: MessageLike,
-        renderMessageContent: @escaping ((MessageLike) -> MarkdownContent) = {
-            MarkdownContent($0.content)
+        renderMessageContent: @escaping ((String) -> MarkdownContent) = {
+            MarkdownContent($0)
         },
         sequence: ChatSequence? = nil,
         branchAction: (() async -> Void)? = nil,
@@ -139,19 +153,39 @@ struct OneMessageView: View {
         }
     }
 
+    var hideReasoning: Bool {
+        get { localHideReasoning ?? defaultHideReasoning }
+    }
+
+    var hideReasoningMessageContent: String {
+        get {
+            if hideReasoning && hasReasoningTokens(message.content) {
+                removeReasoningTokens(message.content)
+            }
+            else {
+                message.content
+            }
+        }
+    }
+
     @ViewBuilder
     func buttons(_ baseFontSize: CGFloat) -> some View {
         HStack(alignment: .bottom, spacing: baseFontSize * 2) {
+            OMVButton(hideReasoning ? "lightbulb.slash" : "lightbulb") {
+                localHideReasoning = !hideReasoning
+            }
+            .disabled(!stillExpectingUpdate && !hasReasoningTokens(message.content))
+
             OMVButton(renderAsMarkdown ? "doc.richtext.fill" : "doc.richtext") {
                 localRenderAsMarkdown = !renderAsMarkdown
             }
-            .disabled(self.disableRenderAsMarkdown)
+            .disabled(disableRenderAsMarkdown)
 
             OMVButton("clipboard") {
                 let pasteboard = NSPasteboard.general
                 // https://stackoverflow.com/questions/49211910/s
                 pasteboard.clearContents()
-                pasteboard.setString(message.content, forType: .string)
+                pasteboard.setString(hideReasoningMessageContent, forType: .string)
             }
 
             if case .serverOnly(_) = self.message {
@@ -196,7 +230,7 @@ struct OneMessageView: View {
             .buttonStyle(.borderless)
             .layoutPriority(0.2)
 
-            if stillExpectingUpdate && (!message.content.isEmpty || !expandContent) {
+            if stillExpectingUpdate && (!hideReasoningMessageContent.isEmpty || !expandContent) {
                 ProgressView()
                     .controlSize(.mini)
                     .id("progress view")
@@ -213,7 +247,7 @@ struct OneMessageView: View {
     @ViewBuilder
     var contentSection: some View {
         HStack(spacing: 0) {
-            if stillExpectingUpdate && message.content.isEmpty {
+            if stillExpectingUpdate && hideReasoningMessageContent.isEmpty {
                 ProgressView()
                     .progressViewStyle(.circular)
                     .padding(messageFontSize * 4/3)
@@ -222,21 +256,21 @@ struct OneMessageView: View {
                     .layoutPriority(0.2)
             }
 
-            else if !message.content.isEmpty {
+            else if !hideReasoningMessageContent.isEmpty {
                 if renderAsMarkdown {
-                    MarkdownView(content: renderMessageContent(message), messageFontSize: messageFontSize)
+                    MarkdownView(content: renderMessageContent(hideReasoningMessageContent), messageFontSize: messageFontSize)
                     // https://stackoverflow.com/questions/56505929/the-text-doesnt-get-wrapped-in-swift-ui
                     // Render faster
                         .fixedSize(horizontal: false, vertical: true)
                         .layoutPriority(0.2)
                 }
                 else {
-                    Text(message.content)
+                    Text(hideReasoningMessageContent)
                         .font(.system(size: messageFontSize * 1.5))
                         .lineSpacing(6)
                     // Enabling text selection on very large text views gets difficult;
                     // rely on the extra "copy" button, in those cases.
-                        .modifier(TextSelection(enabled: message.content.count < 4_000))
+                        .modifier(TextSelection(enabled: hideReasoningMessageContent.count < 4_000))
                         .padding(messageFontSize * 4/3)
                         .background(
                             RoundedRectangle(cornerRadius: messageFontSize, style: .continuous)
@@ -268,7 +302,7 @@ struct OneMessageView: View {
                     contentSection
                         .animation(
                             (shouldAnimate && !renderAsMarkdown) ? .easeIn : nil,
-                            value: message.content
+                            value: hideReasoningMessageContent
                         )
                 }
             }

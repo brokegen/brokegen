@@ -17,7 +17,7 @@ let maxPinChatSequenceDesc = 140
 @Observable
 class OneSequenceViewModel {
     var sequence: ChatSequence
-    @ObservationIgnored private var prerenderedMessages: [MessageLike : MarkdownContent] = [:]
+    @ObservationIgnored private var prerenderedMessages: [String : MarkdownContent] = [:]
     let chatService: ChatSyncService
     let settings: CSCSettingsService.SettingsProxy
     let chatSettingsService: CSCSettingsService
@@ -103,17 +103,17 @@ class OneSequenceViewModel {
 
     func prerenderMessages() {
         for message in sequence.messages {
-            _ = markdownLookup(message)
+            _ = markdownLookup(message.content)
         }
     }
 
-    func markdownLookup(_ message: MessageLike) -> MarkdownContent {
-        if let rendered = prerenderedMessages[message] {
+    func markdownLookup(_ content: String) -> MarkdownContent {
+        if let rendered = prerenderedMessages[content] {
             return rendered
         }
         else {
-            let rendered = MarkdownContent(message.content)
-            prerenderedMessages[message] = rendered
+            let rendered = MarkdownContent(content)
+            prerenderedMessages[content] = rendered
             return rendered
         }
     }
