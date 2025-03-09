@@ -258,18 +258,22 @@ struct OneMessageView: View {
         let fixedOverlaySize: CGFloat = 12
         let fixedHeaderSize: CGFloat = 12
 
-        VStack(spacing: 0) {
-            if showMessageHeaders {
-                headerSection(fixedHeaderSize)
+        HStack(spacing: 0) {
+            VStack(spacing: 0) {
+                if showMessageHeaders {
+                    headerSection(fixedHeaderSize)
+                }
+
+                if expandContent {
+                    contentSection
+                        .animation(
+                            (shouldAnimate && !renderAsMarkdown) ? .easeIn : nil,
+                            value: message.content
+                        )
+                }
             }
 
-            if expandContent {
-                contentSection
-                    .animation(
-                        (shouldAnimate && !renderAsMarkdown) ? .easeIn : nil,
-                        value: message.content
-                    )
-            }
+            Spacer()
         }
         .overlay(alignment: .topTrailing) {
             if isHovered && showMessageHeaders {
