@@ -71,6 +71,11 @@ struct TextSelection: ViewModifier {
     }
 }
 
+fileprivate func messageTooLong(_ content: String) -> Bool {
+    // markdown lib fails on large messages, so never parse them
+    return content.count > 10_000
+}
+
 fileprivate func hasReasoningTokens(_ content: String) -> Bool {
     return content.contains("</think>")
 }
@@ -135,22 +140,8 @@ struct OneMessageView: View {
         get { localExpandContent ?? defaultExpandContent }
     }
 
-    var disableRenderAsMarkdown: Bool {
-        get {
-            // markdown lib fails on large messages, so never parse them
-            return self.message.content.count > 10_000
-        }
-    }
-
     var renderAsMarkdown: Bool {
-        get {
-            if disableRenderAsMarkdown {
-                return false
-            }
-            else {
-                return localRenderAsMarkdown ?? defaultRenderAsMarkdown
-            }
-        }
+        get { localRenderAsMarkdown ?? defaultRenderAsMarkdown }
     }
 
     var hideReasoning: Bool {
@@ -179,7 +170,7 @@ struct OneMessageView: View {
             OMVButton(renderAsMarkdown ? "doc.richtext.fill" : "doc.richtext") {
                 localRenderAsMarkdown = !renderAsMarkdown
             }
-            .disabled(disableRenderAsMarkdown)
+            .disabled(messageTooLong(message.content))
 
             OMVButton("clipboard") {
                 let pasteboard = NSPasteboard.general
@@ -257,7 +248,7 @@ struct OneMessageView: View {
             }
 
             else if !hideReasoningMessageContent.isEmpty {
-                if renderAsMarkdown {
+                if renderAsMarkdown && !messageTooLong(hideReasoningMessageContent) {
                     MarkdownView(content: renderMessageContent(hideReasoningMessageContent), messageFontSize: messageFontSize)
                     // https://stackoverflow.com/questions/56505929/the-text-doesnt-get-wrapped-in-swift-ui
                     // Render faster
@@ -301,7 +292,7 @@ struct OneMessageView: View {
                 if expandContent {
                     contentSection
                         .animation(
-                            (shouldAnimate && !renderAsMarkdown) ? .easeIn : nil,
+                            (shouldAnimate && (!renderAsMarkdown || messageTooLong(hideReasoningMessageContent))) ? .easeIn : nil,
                             value: hideReasoningMessageContent
                         )
                 }
