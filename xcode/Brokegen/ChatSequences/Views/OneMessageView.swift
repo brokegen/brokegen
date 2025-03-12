@@ -97,15 +97,12 @@ struct OneMessageView: View {
     let messageFontSize: CGFloat
     let shouldAnimate: Bool
 
-    // TODO: These need to be a @Binding, or hosted in the parent/ViewModel, if we want them to persist across settings changes.
     @State private var localExpandContent: Bool? = nil
     private let defaultExpandContent: Bool
-    // TODO: These need to be a @Binding, or hosted in the parent/ViewModel, if we want them to persist across settings changes.
     @State private var localRenderAsMarkdown: Bool? = nil
     private let defaultRenderAsMarkdown: Bool
-
     @State private var localHideReasoning: Bool? = nil
-    private let defaultHideReasoning: Bool = true
+    private let defaultHideReasoning: Bool
 
     @State private var isHovered: Bool = false
 
@@ -121,7 +118,8 @@ struct OneMessageView: View {
         messageFontSize: CGFloat = 12,
         shouldAnimate: Bool = false,
         expandContent defaultExpandContent: Bool,
-        renderAsMarkdown defaultRenderAsMarkdown: Bool
+        renderAsMarkdown defaultRenderAsMarkdown: Bool,
+        hideReasoning defaultHideReasoning: Bool = true
     ) {
         self.message = message
         self.renderMessageContent = renderMessageContent
@@ -134,6 +132,7 @@ struct OneMessageView: View {
 
         self.defaultExpandContent = defaultExpandContent
         self.defaultRenderAsMarkdown = defaultRenderAsMarkdown
+        self.defaultHideReasoning = defaultHideReasoning
     }
 
     var expandContent: Bool {
@@ -148,7 +147,7 @@ struct OneMessageView: View {
         get { localHideReasoning ?? defaultHideReasoning }
     }
 
-    var hideReasoningMessageContent: String {
+    var renderableMessageContent: String {
         get {
             if hideReasoning && hasReasoningTokens(message.content) {
                 removeReasoningTokens(message.content)
@@ -176,7 +175,7 @@ struct OneMessageView: View {
                 let pasteboard = NSPasteboard.general
                 // https://stackoverflow.com/questions/49211910/s
                 pasteboard.clearContents()
-                pasteboard.setString(hideReasoningMessageContent, forType: .string)
+                pasteboard.setString(renderableMessageContent, forType: .string)
             }
 
             if case .serverOnly(_) = self.message {
@@ -221,7 +220,7 @@ struct OneMessageView: View {
             .buttonStyle(.borderless)
             .layoutPriority(0.2)
 
-            if stillExpectingUpdate && (!hideReasoningMessageContent.isEmpty || !expandContent) {
+            if stillExpectingUpdate && (!renderableMessageContent.isEmpty || !expandContent) {
                 ProgressView()
                     .controlSize(.mini)
                     .id("progress view")
@@ -238,7 +237,7 @@ struct OneMessageView: View {
     @ViewBuilder
     var contentSection: some View {
         HStack(spacing: 0) {
-            if stillExpectingUpdate && hideReasoningMessageContent.isEmpty {
+            if stillExpectingUpdate && renderableMessageContent.isEmpty {
                 ProgressView()
                     .progressViewStyle(.circular)
                     .padding(messageFontSize * 4/3)
@@ -247,21 +246,21 @@ struct OneMessageView: View {
                     .layoutPriority(0.2)
             }
 
-            else if !hideReasoningMessageContent.isEmpty {
-                if renderAsMarkdown && !messageTooLong(hideReasoningMessageContent) {
-                    MarkdownView(content: renderMessageContent(hideReasoningMessageContent), messageFontSize: messageFontSize)
+            else if !renderableMessageContent.isEmpty {
+                if renderAsMarkdown && !messageTooLong(renderableMessageContent) {
+                    MarkdownView(content: renderMessageContent(renderableMessageContent), messageFontSize: messageFontSize)
                     // https://stackoverflow.com/questions/56505929/the-text-doesnt-get-wrapped-in-swift-ui
                     // Render faster
                         .fixedSize(horizontal: false, vertical: true)
                         .layoutPriority(0.2)
                 }
                 else {
-                    Text(hideReasoningMessageContent)
+                    Text(renderableMessageContent)
                         .font(.system(size: messageFontSize * 1.5))
                         .lineSpacing(6)
                     // Enabling text selection on very large text views gets difficult;
                     // rely on the extra "copy" button, in those cases.
-                        .modifier(TextSelection(enabled: hideReasoningMessageContent.count < 4_000))
+                        .modifier(TextSelection(enabled: renderableMessageContent.count < 4_000))
                         .padding(messageFontSize * 4/3)
                         .background(
                             RoundedRectangle(cornerRadius: messageFontSize, style: .continuous)
@@ -292,8 +291,8 @@ struct OneMessageView: View {
                 if expandContent {
                     contentSection
                         .animation(
-                            (shouldAnimate && (!renderAsMarkdown || messageTooLong(hideReasoningMessageContent))) ? .easeIn : nil,
-                            value: hideReasoningMessageContent
+                            (shouldAnimate && (!renderAsMarkdown || messageTooLong(renderableMessageContent))) ? .easeIn : nil,
+                            value: renderableMessageContent
                         )
                 }
             }
