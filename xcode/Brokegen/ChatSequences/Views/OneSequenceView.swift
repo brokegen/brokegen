@@ -88,13 +88,17 @@ fileprivate struct MultiMessageView: View {
 
         if viewModel.responseInEdit != nil {
             let messageIndent = settings.showMessageHeaders ? 0.0 : settings.messageFontSize * 2
+            let shouldAnimate = isAppActive &&
+            (settings.renderAsMarkdown
+             ? (settings.animateResponseText == .always)
+             : (settings.animateResponseText == .plaintextOnly || settings.animateResponseText == .always))
 
             OneMessageView(
                 .temporary(viewModel.responseInEdit!, .assistant),
                 stillUpdating: true,
                 showMessageHeaders: settings.showMessageHeaders,
                 messageFontSize: settings.messageFontSize,
-                shouldAnimate: isAppActive && settings.animateNewResponseText,
+                shouldAnimate: shouldAnimate,
                 expandContent: true,
                 renderAsMarkdown: settings.renderAsMarkdown
             )
@@ -638,7 +642,7 @@ struct OneSequenceView: View {
                 .foregroundStyle(Color(.disabledControlTextColor))
             }
 
-            Toggle(isOn: $settings.animateNewResponseText) {
+            Toggle(isOn: $settings.animateResponseTextSimple) {
                 Text("Animate (fade in) new response text")
             }
         }

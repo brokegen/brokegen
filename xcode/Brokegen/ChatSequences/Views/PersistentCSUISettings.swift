@@ -61,7 +61,7 @@ class PersistentDefaultCSUISettings: CSUISettings {
 
                 self!.cached_responseBufferFlushFrequencyMsec = self!.live_responseBufferFlushFrequencyMsec
                 self!.cached_scrollOnNewTextFrequencyMsec = self!.live_scrollOnNewTextFrequencyMsec
-                self!.cached_animateNewResponseText = self!.live_animateNewResponseText
+                self!.cached_animateResponseText = self!.live_animateResponseText
 
                 self!.cached_showOFMPicker = self!.live_showOFMPicker
                 self!.cached_stayAwakeDuringInference = self!.live_stayAwakeDuringInference
@@ -199,7 +199,7 @@ class PersistentDefaultCSUISettings: CSUISettings {
 
 
     @AppStorage("defaultUiSettings.messageFontDesign")
-    @ObservationIgnored private var stored_messageFontDesign: String = "serif"
+    @ObservationIgnored private var stored_messageFontDesign: String = Font.Design.serif.toString()
 
     private var cached_messageFontDesign: String? = nil
 
@@ -353,28 +353,28 @@ class PersistentDefaultCSUISettings: CSUISettings {
     }
 
 
-    @AppStorage("defaultUiSettings.animateNewResponseText")
-    @ObservationIgnored private var stored_animateNewResponseText: Bool = true
+    @AppStorage("defaultUiSettings.animateResponseText")
+    @ObservationIgnored private var stored_animateResponseText: String = AnimateText.plaintextOnly.toString()
 
-    private var cached_animateNewResponseText: Bool? = nil
+    private var cached_animateResponseText: String? = nil
 
     @ObservationIgnored
-    var live_animateNewResponseText: Bool {
+    var live_animateResponseText: String {
         get {
-            access(keyPath: \.live_animateNewResponseText)
-            return stored_animateNewResponseText
+            access(keyPath: \.live_animateResponseText)
+            return stored_animateResponseText
         }
         set {
-            withMutation(keyPath: \.live_animateNewResponseText) {
-                stored_animateNewResponseText = newValue
-                cached_animateNewResponseText = newValue
+            withMutation(keyPath: \.live_animateResponseText) {
+                stored_animateResponseText = newValue
+                cached_animateResponseText = newValue
             }
         }
     }
 
-    var animateNewResponseText: Bool {
-        get { cached_animateNewResponseText ?? stored_animateNewResponseText }
-        set { live_animateNewResponseText = newValue }
+    var animateResponseText: String {
+        get { cached_animateResponseText ?? stored_animateResponseText }
+        set { live_animateResponseText = newValue }
     }
 
 

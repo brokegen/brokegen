@@ -1,3 +1,35 @@
+enum AnimateText: String, CaseIterable, Identifiable {
+    case never, plaintextOnly, always
+
+    var id: String { self.toString() }
+
+    static func fromString(_ s: String) -> AnimateText {
+        switch(s) {
+        case "never":
+            AnimateText.never
+        case "plaintextOnly":
+            AnimateText.plaintextOnly
+        case "always":
+            AnimateText.always
+        default:
+            AnimateText.never
+        }
+    }
+
+    func toString() -> String {
+        switch(self) {
+        case .never:
+            "never"
+        case .plaintextOnly:
+            "plaintextOnly"
+        case .always:
+            "always"
+        @unknown default:
+            String(describing: self)
+        }
+    }
+}
+
 protocol CSUISettings {
     // MARK: - UI Behaviors
     var allowContinuation: Bool { get set }
@@ -18,7 +50,7 @@ protocol CSUISettings {
     var responseBufferFlushFrequencyMsec: Int { get set }
     /// NB Value of 0 means scrolling is immediate, values less than 0 mean disabled.
     var scrollOnNewTextFrequencyMsec: Int { get set }
-    var animateNewResponseText: Bool { get set }
+    var animateResponseText: String { get set }
 
     // MARK: - misc
     var showOFMPicker: Bool { get set }
@@ -42,7 +74,7 @@ struct InMemoryCSUISettings: CSUISettings {
 
     var responseBufferFlushFrequencyMsec: Int
     var scrollOnNewTextFrequencyMsec: Int
-    var animateNewResponseText: Bool
+    var animateResponseText: String
 
     var showOFMPicker: Bool
     var stayAwakeDuringInference: Bool

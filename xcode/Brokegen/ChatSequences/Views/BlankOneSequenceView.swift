@@ -503,7 +503,7 @@ struct BlankOneSequenceView: View {
                 .foregroundStyle(Color(.disabledControlTextColor))
             }
 
-            Toggle(isOn: $viewModel.settings.animateNewResponseText) {
+            Toggle(isOn: $viewModel.settings.animateResponseTextSimple) {
                 Text("Animate (fade in) new response text")
             }
         }

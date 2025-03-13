@@ -326,12 +326,11 @@ struct CSCSettingsView: View {
                     )
                     .layoutPriority(1.0)
 
-                    Picker("", selection: $settings.animateNewResponseText) {
-                        Text("animate")
-                            .tag(true)
-
-                        Text("don't animate")
-                            .tag(false)
+                    Picker("", selection: $settings.animateResponseText) {
+                        ForEach(AnimateText.allCases) { animateText in
+                            Text(animateText.toString())
+                                .tag(animateText)
+                        }
                     }
                 }
             }

@@ -137,9 +137,20 @@ class CSCSettingsService {
             }
         }
 
-        var animateNewResponseText: Bool {
-            get { defaults.animateNewResponseText }
-            set { defaults.animateNewResponseText = newValue }
+        var animateResponseText: AnimateText {
+            get { AnimateText.fromString(defaults.animateResponseText) }
+            set {
+                defaults.animateResponseText = newValue.toString()
+            }
+        }
+
+        var animateResponseTextSimple: Bool {
+            get { AnimateText.fromString(defaults.animateResponseText) != .never }
+            set {
+                defaults.animateResponseText = newValue
+                ? AnimateText.plaintextOnly.toString()
+                : AnimateText.never.toString()
+            }
         }
 
         var showOFMPicker: Bool {

@@ -132,7 +132,7 @@ struct SimpleOneSequenceView: View {
 
                                 if viewModel.responseInEdit != nil {
                                     SimpleOneMessageView(.temporary(viewModel.responseInEdit!, .assistant), stillUpdating: true)
-                                        .animation(settings.animateNewResponseText ? .easeIn : nil, value: viewModel.responseInEdit)
+                                        .animation(settings.animateResponseTextSimple ? .easeIn : nil, value: viewModel.responseInEdit)
                                         .id(-1)
                                         .fontDesign(settings.messageFontDesign)
                                 }
