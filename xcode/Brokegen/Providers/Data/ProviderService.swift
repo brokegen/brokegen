@@ -98,6 +98,14 @@ class DefaultProviderService: ProviderService {
         let allModelsData = await self.getDataBlocking("/providers/any/any/models")
         guard allModelsData != nil else { throw ProviderServiceError.noResponseContentReturned }
 
+        // TODO: This "error" check should be done somewhere else, maybe. For consistency.
+        if JSON(allModelsData!).contains { key, value in
+            key == "error"
+        } {
+            print("[ERROR] Couldn't update provider models: \(allModelsData!)")
+            throw ProviderServiceError.invalidResponseContentReturned
+        }
+
         let oldCount = self.allModels.count
 
         if !preserveExisting {
