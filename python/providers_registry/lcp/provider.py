@@ -13,6 +13,7 @@ import llama_cpp
 import orjson
 import psutil
 import sqlalchemy
+from jinja2 import TemplateSyntaxError
 from llama_cpp import ChatCompletionRequestMessage, CreateCompletionStreamResponse, \
     ChatCompletionRequestSystemMessage
 from llama_cpp.llama_chat_format import ChatFormatter, ChatFormatterResponse
@@ -316,7 +317,7 @@ class _OneModel:
                 vocab_only=True,
                 logits_all=True,
             )
-        except ValueError as e:
+        except (ValueError, TemplateSyntaxError) as e:
             # Exception usually happens because we loaded an invalid .gguf file; ignore it.
             logger.warning(e)
             return False
