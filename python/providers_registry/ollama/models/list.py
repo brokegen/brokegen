@@ -82,7 +82,7 @@ async def do_list_available_models(
                 await asyncio.sleep(0)
 
             except RuntimeError as e:
-                logger.warning(f"Skipping {inference_model} in listing, {e}")
+                logger.warning(f"Skipping {inference_model.human_id} in listing, {e}")
                 yield inference_model
 
     async for amodel in api_show_injector(available_models_generator):
