@@ -2,9 +2,12 @@ import SwiftData
 import SwiftUI
 
 
-@Observable
+@MainActor @Observable
 class Templates {
-    private var modelContext: ModelContext
+    private var modelContainer: ModelContainer
+    var modelContext: ModelContext {
+        get { modelContainer.mainContext }
+    }
 
     // List of models loaded from ModelContainer
     //
@@ -14,7 +17,6 @@ class Templates {
     @ObservationIgnored @Published
     private var loadedTemplates: [StoredTextKey : [StoredText]] = [:]
 
-    @MainActor
     static func fromInMemory() -> Templates {
         let schema = Schema([
             StoredTextKey.self,
@@ -34,7 +36,6 @@ class Templates {
         }
     }
 
-    @MainActor
     static func fromPath(
         _ containerFilename: String = "client-only.sqlite"
     ) throws -> Templates {
@@ -56,9 +57,8 @@ class Templates {
         return Templates(modelContainer)
     }
 
-    @MainActor
     public init(_ modelContainer: ModelContainer) {
-        self.modelContext = modelContainer.mainContext
+        self.modelContainer = modelContainer
 
         // Do initial population of some templates
         if recents(type: .retrievalSearchArgs).isEmpty {
@@ -114,7 +114,7 @@ class Templates {
             // predicate: #Predicate { $0 == newKey }
         )
 
-        let results = try? self.modelContext.fetch(fetchDescriptor)
+        let results = try? modelContext.fetch(fetchDescriptor)
             .filter { $0 == newKey }
 
         if let theResult = results?.first {
@@ -172,7 +172,7 @@ class Templates {
             )
             fetchDescriptor.fetchLimit = sharedFetchLimit
 
-            let results = try? self.modelContext.fetch(fetchDescriptor)
+            let results = try? modelContext.fetch(fetchDescriptor)
                 .filter { $0.key == key }
             if results != nil {
                 loadedTemplates[key]!.append(contentsOf: results!)
@@ -190,7 +190,7 @@ class Templates {
             sortBy: [SortDescriptor(\StoredText.createdAt, order: .reverse)]
         )
 
-        let results = try? self.modelContext.fetch(fetchDescriptor)
+        let results = try? modelContext.fetch(fetchDescriptor)
             .filter { $0.key.contentType == type }
         for st: StoredText in results ?? [] {
             if loadedTemplates[st.key] == nil {
