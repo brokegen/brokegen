@@ -55,22 +55,13 @@ struct BrokegenApp: App {
             providerService.fetchAvailableModels(repeatUntilSuccess: true)
             appSettings.link(to: providerService)
 
-            let jobsService = DefaultJobsManagerService(
-                startServicesImmediately: appSettings.startServicesImmediately,
-                allowExternalTraffic: appSettings.allowExternalTraffic
-            )
-            self.jobsService = jobsService
+            self.jobsService = JobsManagerService()
             do {
                 templates = try Templates.fromPath()
             }
             catch {
                 print("[ERROR] Could not Templates.fromPath(), falling back to in-memory SwiftData store")
                 templates = Templates.fromInMemory()
-            }
-
-            NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { _ in
-                // Terminate Jobs on exit
-                jobsService.terminateAll()
             }
         }
     }
