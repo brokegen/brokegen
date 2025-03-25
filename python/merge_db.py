@@ -152,6 +152,10 @@ def _lookup_one_sequence(
 
     parent_sequence = None
     if r['parent_sequence']:
+        # Check for recursion error; not sure what to do here.
+        if src_key == (r['parent_sequence'],):
+            raise ValueError(f"[ERROR] Tried to look up circular-referenced sequence: {r['parent_sequence']}")
+
         parent_sequence = merge_one_sequence(dst_conn, src_conn, (r['parent_sequence'],), r)
 
     # Check if this row already exists in the destination
