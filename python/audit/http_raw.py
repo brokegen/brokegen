@@ -15,7 +15,7 @@ import sqlalchemy.exc
 from fastapi import FastAPI
 from sqlalchemy import Column, String, DateTime, JSON, LargeBinary, Integer, inspect
 from sqlalchemy.orm import AttributeState
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, _StreamingResponse
 from starlette.responses import StreamingResponse
 
 from audit.content_scrubber import scrub_bytes
@@ -127,7 +127,7 @@ class SqlLoggingMiddleware(BaseHTTPMiddleware):
         event.response_headers = response.headers.items()
 
         event.response_content = b"[not read yet]"
-        if isinstance(response, StreamingResponse):
+        if isinstance(response, StreamingResponse) or isinstance(response, _StreamingResponse):
             response.body_iterator = \
                 event.wrap_response_content_stream(response.body_iterator, self.audit_db)
         else:
