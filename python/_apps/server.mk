@@ -3,9 +3,9 @@ python_amd64 := /Library/Frameworks/Python.framework/Versions/3.11/bin/python3.1
 
 socks_proxy_wheel := $(wildcard $(HOME)/Documents/PySocks-1.7.1-py3-none-any.whl)
 
-# Current PyInstaller output is ~269 MB, add 10% rails
-server_minsize_mb := 242
-server_maxsize_mb := 296
+# Current PyInstaller output is ~177 MB, add 10% rails
+server_minsize_mb := 159
+server_maxsize_mb := 195
 
 
 
@@ -17,8 +17,8 @@ server-onefile: dist/server-onefile-tmp
 	#
 	#     pip uninstall torch pyarrow transformers pandas sympy
 	#
-	test -n "$$(find "$^" -a -size +75M)" \
-	    && test -n "$$(find "$^" -a -size -91M)" \
+	test -n "$$(find "$^" -a -size +54M)" \
+	    && test -n "$$(find "$^" -a -size -66M)" \
 	    && mv "$^" "dist/brokegen-server"
 
 # Make this .PHONY because we rely on pyinstaller to rebuild constantly.
