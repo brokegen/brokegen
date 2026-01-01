@@ -1,11 +1,11 @@
 python_root := $(realpath $(dir $(realpath $(lastword $(MAKEFILE_LIST))))..)/
-python_amd64 := /Library/Frameworks/Python.framework/Versions/3.11/bin/python3.11-intel64
 
-socks_proxy_wheel := $(wildcard $(HOME)/Documents/PySocks-1.7.1-py3-none-any.whl)
-
-# Current PyInstaller output is ~177 MB, add 10% rails
-server_minsize_mb := 159
-server_maxsize_mb := 195
+# Current PyInstaller output sizes with 10% rails.
+# Min size is important, in case Python suddenly drops a library or something.
+server_onefile_minsize := 70M
+server_onefile_maxsize := 90M
+server_onedir_minsize  := 190
+server_onedir_maxsize  := 230
 
 
 
@@ -17,8 +17,8 @@ server-onefile: dist/server-onefile-tmp
 	#
 	#     pip uninstall torch pyarrow transformers pandas sympy
 	#
-	test -n "$$(find "$^" -a -size +54M)" \
-	    && test -n "$$(find "$^" -a -size -66M)" \
+	test        -n "$$(find "$^" -a -size +$(server_onefile_minsize))" \
+	    && test -n "$$(find "$^" -a -size -$(server_onefile_maxsize))" \
 	    && mv "$^" "dist/brokegen-server"
 
 # Make this .PHONY because we rely on pyinstaller to rebuild constantly.
@@ -47,8 +47,8 @@ server-onedir: dist/server-onedir-tmp
 	# NB Having a Finder window open + compute directory sizes will create .DS_Store files,
 	#    which makes parts of the build fail because we couldn't remove a directory.
 	rm -rf dist/server-internal
-	test "$$(du -sm dist/server-onedir-tmp/ | awk '{print $$1}')" -gt "$(server_minsize_mb)" \
-	    && test "$$(du -sm dist/server-onedir-tmp/ | awk '{print $$1}')" -lt "$(server_maxsize_mb)" \
+	test        "$$(du -sm dist/server-onedir-tmp/ | awk '{print $$1}')" -gt "$(server_onedir_minsize)" \
+	    && test "$$(du -sm dist/server-onedir-tmp/ | awk '{print $$1}')" -lt "$(server_onedir_maxsize)" \
 	    && mv dist/server-onedir-tmp/server-internal dist/server-internal \
 	    && mv dist/server-onedir-tmp/server-onedir-tmp dist/server-onedir
 

@@ -22,7 +22,7 @@ test:
 -include python/retrieval/targets.mk
 
 venv:
-	python3 -m venv "$@"
+	python3.13 -m venv "$@"
 ifneq (,$(socks_proxy_wheel))
 	source "$@"/bin/activate \
 		&& pip install --no-deps $(socks_proxy_wheel) \
@@ -30,6 +30,8 @@ ifneq (,$(socks_proxy_wheel))
 endif
 	source "$@"/bin/activate \
 		&& cd python \
+		&& python -m pip \
+			install --upgrade pip setuptools wheel \
 		&& python -m pip \
 			install --editable ".[inference,ingest,testing]"
 	xcode-select --print-path

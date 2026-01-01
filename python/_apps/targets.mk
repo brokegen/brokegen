@@ -1,5 +1,5 @@
 python_root := $(realpath $(dir $(realpath $(lastword $(MAKEFILE_LIST))))..)/
-python_amd64 := /Library/Frameworks/Python.framework/Versions/3.11/bin/python3.11-intel64
+python_amd64 := /Library/Frameworks/Python.framework/Versions/3.13/bin/python3.13-intel64
 
 # On local development system, we need to set `https_proxy` to download new pip wheels.
 socks_proxy_wheel := $(wildcard $(HOME)/Documents/PySocks-1.7.1-py3-none-any.whl)
@@ -58,6 +58,8 @@ ifneq (,$(socks_proxy_wheel))
 endif
 	source "$@"/bin/activate \
 		&& cd "$(python_root)" \
+		&& arch -x86_64 python -m pip \
+			install --upgrade pip setuptools wheel \
 		&& arch -x86_64 python -m pip \
 			install --editable ".[inference]"
 	xcode-select --print-path

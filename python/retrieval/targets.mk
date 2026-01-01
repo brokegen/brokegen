@@ -1,5 +1,5 @@
 python_root := $(realpath $(dir $(realpath $(lastword $(MAKEFILE_LIST))))..)/
-python_amd64 := /Library/Frameworks/Python.framework/Versions/3.11/bin/python3.11-intel64
+python_amd64 := /Library/Frameworks/Python.framework/Versions/3.13/bin/python3.13-intel64
 
 socks_proxy_wheel := $(wildcard $(HOME)/Documents/PySocks-1.7.1-py3-none-any.whl)
 pyinstaller_ingest_venv := $(python_root)venv-ingest-amd64
